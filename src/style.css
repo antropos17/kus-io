@@ -159,8 +159,9 @@ body.touch #dash b{font-size:clamp(17px,5vmin,22px)}
 body.touch #dodge b{font-size:clamp(13px,3.6vmin,16px)}
 body.touch #dash small,body.touch #dodge small{display:none}
 /* see-through HUD so the arena stays visible on a small screen */
-body.touch #board{background:rgba(20,11,8,.42);color:var(--cream);box-shadow:none;border:1px solid rgba(255,241,220,.16);border-radius:12px;padding:6px 9px 5px;width:min(150px,40vw);pointer-events:auto}
+body.touch #board{background:rgba(20,11,8,.86);color:var(--cream);box-shadow:none;border:1px solid rgba(255,241,220,.16);border-radius:12px;padding:6px 9px 5px;width:min(150px,40vw);pointer-events:auto}
 body.touch #board .bt{display:none}
+body.touch:not(.playing) #board{display:none} /* menu card has a bitten corner that clipped the table */
 body.touch #lb{font-size:13px}
 body.touch #lb .n{color:rgba(255,241,220,.6)}
 body.touch #lb li.me{color:var(--lemon)}
