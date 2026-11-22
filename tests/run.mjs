@@ -106,6 +106,8 @@ test('streak, jelly wobble and swallowing whole', async () => {
   const r = await g.page.evaluate(`(() => { ${QUIET} const out = {};
     P.mass = 120; for (let i = 0; i < 40; i++) k.update(1/60);
     const V = k.spawnBot(400); V.ai = null; V.spawnT = 0; for (let i = 0; i < 30; i++) k.update(1/60);
+    // the game ran on its own for a moment before the pause and may have started a streak already: clear it the way it lapses
+    P.combo = 0; P.comboT = 0;
     let last = P.stats.bites, sq = 0, rip = false; out.combos = [];
     for (let n = 0; n < 4; n++) { k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; P.biteCd = 0; let f = 0;
       while (f < 90 && P.stats.bites === last) { P.tx = V.x; P.ty = V.y; V.tx = V.x; V.ty = V.y; V.biteCd = 9; k.update(1/60); f++; sq = Math.max(sq, Math.abs(V.sq)); if (V.rip) rip = true; }
@@ -113,12 +115,12 @@ test('streak, jelly wobble and swallowing whole', async () => {
     out.sq = sq; out.rip = rip;
     for (const b of k.blobs) if (b === V) b.alive = false; for (let i = 0; i < 5; i++) k.update(1/60);
     const S = k.spawnBot(20); S.ai = null; S.spawnT = 0; P.mass = 400; for (let i = 0; i < 30; i++) k.update(1/60);
-    k.place(P, 2000, 2500, 0); k.place(S, 2000 + P.Rs + S.Rs - 4, 2500, 0); P.biteCd = 0; const m0 = P.mass;
+    k.place(P, 2000, 2500, 0); k.place(S, 2000 + P.Rs + S.Rs - 4, 2500, 0); P.biteCd = 0; const m0 = P.mass, k0 = P.stats.kills;
     for (let i = 0; i < 120; i++) { P.tx = S.x; P.ty = S.y; k.update(1/60); }
-    out.kills = P.stats.kills; out.gain = P.mass - m0; out.finite = Number.isFinite(P.x + P.sq + k.cam.z + k.cam.kx); return out; })()`);
+    out.kills = P.stats.kills - k0; out.gain = P.mass - m0; out.finite = Number.isFinite(P.x + P.sq + k.cam.z + k.cam.kx); return out; })()`);
   assert(r.combos.join() === '1,2,3,4', `streak should count 1,2,3,4, got ${r.combos}`);
   assert(r.sq > 0.01 && r.rip, 'a bite must make the victim wobble and ripple');
-  assert(r.kills === 1 && r.gain > 10, 'a tiny candy must be swallowed whole');
+  assert(r.kills === 1 && r.gain > 10, `a tiny candy must be swallowed whole: kills ${r.kills}, gain ${r.gain.toFixed(1)}`);
   assert(r.finite, 'numbers went bad');
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
