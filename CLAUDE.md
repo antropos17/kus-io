@@ -4,95 +4,96 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # КУСЬ.io
 
-Браузерная игра в духе agar.io: мягкие конфеты откусывают друг от друга куски, раненый продолжает есть. Canvas 2D, без библиотек, без сервера. Играют с ПК и с телефона (iPhone обязан работать).
+A browser game in the spirit of agar.io: soft candies bite pieces off each other, and the wounded one keeps eating. Canvas 2D, no libraries, no server. Played on PC and on phones (the iPhone must work).
 
-- Сайт: https://antropos17.github.io/kus-io/ (GitHub Pages, ветка `main`, корень репозитория)
-- Язык интерфейса русский, комментарии в коде английские
+- Site: https://antropos17.github.io/kus-io/ (GitHub Pages, branch `main`, repository root)
+- The game's interface is in Russian, code comments are in English
 
-## Команды
+## Commands
 
 ```
-npm install        один раз: prettier и playwright-core
-npm run build      собрать index.html из src/
-npm test           собрать и прогнать тесты в headless Chrome (нужен установленный Chrome)
-npm run format     prettier по src/js, tools, tests
-node tests/run.mjs soak    только тесты, в названии которых есть "soak" (без сборки: сначала npm run build)
-npm run check      выйти с ошибкой, если index.html не совпадает с src/
-npm run og         пересобрать og.png — картинку превью ссылки 1200×630 из настоящего кадра игры
+npm install        once: prettier and playwright-core
+npm run build      build index.html from src/
+npm test           build and run the tests in headless Chrome (needs an installed Chrome)
+npm run format     prettier over src/js, tools, tests
+node tests/run.mjs soak    only the tests whose name contains "soak" (no build: run npm run build first)
+npm run check      exit with an error if index.html does not match src/
+npm run og         rebuild og.png, the 1200×630 link preview picture, from a real frame of the game
+npm run shots      rebuild the README screenshots in docs/media/ from real frames of the game
 ```
 
-Тесты берут установленный Chrome (`channel: chrome`); другой бинарник: `CHROME=/путь/к/chrome`.
+The tests use the installed Chrome (`channel: chrome`); another binary: `CHROME=/path/to/chrome`.
 
-Выкладка: `npm test`, закоммитить `src/` вместе с собранным `index.html`, `git push`. Pages обновляется за минуту.
+Deploying: `npm test`, commit `src/` together with the built `index.html`, `git push`. Pages updates within a minute.
 
-## Главное правило
+## The main rule
 
-`index.html` в корне СГЕНЕРИРОВАН. Править только `src/`, потом `npm run build`. Собранный файл коммитится: его раздаёт Pages, и он же самодостаточная страница (один файл, без запросов кроме шрифтов), которую можно отправить или открыть как `file://`.
+`index.html` in the root is GENERATED. Edit only `src/`, then `npm run build`. The built file is committed: Pages serves it, and it is also a self-contained page (one file, no requests except fonts) that can be sent around or opened as `file://`.
 
-`og.png` в корне — картинка превью для чатов (`og:image`). Это отдельный файл рядом со страницей: страница его не загружает, правило «один файл» он не нарушает. Значок вкладки встроен в `<head>` как data-URI SVG.
+`og.png` in the root is the preview picture for chats (`og:image`). It is a separate file next to the page: the page does not load it, so it does not break the "one file" rule. The tab icon is embedded in `<head>` as a data-URI SVG.
 
-## Устройство
+## How it is put together
 
-`tools/build.mjs` вставляет `src/style.css` и все `src/js/*.js` по порядку имён в шаблон `src/index.html` на места меток `/*__CSS__*/` и `/*__JS__*/` (каждая ровно один раз). Фрагменты JS попадают в ОДИН блок `{ ... }`, поэтому:
+`tools/build.mjs` inserts `src/style.css` and all of `src/js/*.js`, in name order, into the template `src/index.html` at the markers `/*__CSS__*/` and `/*__JS__*/` (each exactly once). The JS pieces end up in ONE `{ ... }` block, so:
 
-- все `const`/`let`/функции верхнего уровня общие для всех файлов, импортов нет;
-- порядок файлов важен: `const`/`let` из более позднего файла нельзя трогать на верхнем уровне более раннего (TDZ). Внутри функций можно;
-- новый файл получает номер по месту в порядке загрузки.
+- all top-level `const`/`let`/functions are shared by all files, there are no imports;
+- file order matters: a `const`/`let` from a later file must not be touched at the top level of an earlier one (TDZ). Inside functions it is fine;
+- a new file gets a number by its place in the load order.
 
-| Файл | Что внутри |
+| File | What is inside |
 |---|---|
 | `01-helpers` | `clamp`, `lerp`, `rand`, `angDiff`, `vnoise`, `FONT` |
-| `02-tuning` | константы мира, `massToR`, `biteOf`, `lethalFor`, палитры, бонусы `PICK`, шапки, узоры (`SKINS`, `skinTile`, `drawSkin`), имена ботов |
-| `03-dom` | `$`, canvas, `resize`, `PIXEL_BUDGET`, безопасные отступы |
-| `04-state` | общее состояние: `blobs`, `food`, `parts`, `player`, `state`, `mode`, `cam`, `calm`, `input`, `stick`; настройки `SET`, сложность `DIFFS`, читы `CHEAT`, задания `M`, `haptic` |
-| `05-sound` | `Sfx`: весь звук синтезируется Web Audio, файлов нет |
-| `06-softbody` | `Blob`, раны, `updateBlob`, кольцо точек (`computeTargets`, `stepPoints`), контакты, `jolt` (желейное колебание) |
-| `07-bites` | `Strand` (тянучка), `Chunk` (кусок), `Gulp`, `checkBites`, `doBite`, `swallowWhole`, рывок, язык |
-| `08-food-particles` | посыпка, крошки, бонусы, частицы, всплывающий текст |
-| `09-bots` | ИИ ботов, появление, ёж, пираньи, торт, `population` |
-| `10-daily` | «Конфета дня» (режим `daily`): условие дня `DAILY` по местной дате (`dailyOf`), `day` — условие в силе, рекорд дня и серия дней (`dailySave`) |
-| `10-flow` | задания и узоры, старт и конец забега, режим на 3 минуты, `updateCamera`, `updateHUD`, главный `update` |
-| `11-draw-world` | поднос, `buildPath` (контур тела), посыпка, тянучки, раны |
-| `12-draw-face` | рот (`mouthGeo`, `drawMouthBack`, `drawMouthFront`), глаза, язык, шапки |
-| `13-draw-body` | тела, куски, подписи, миникарта, `render` |
-| `14-input` | мышь, клавиатура, джойстик и кнопки на телефоне, выбор вкуса, узора и шапки в меню |
-| `15-admin` | админ-панель с читами |
-| `16-settings` | пауза, настройки, ссылка-вызов |
-| `17-boot` | `adapt` (автоподстройка графики), `frame`, запуск, `window.__kus` |
+| `02-tuning` | world constants, `massToR`, `biteOf`, `lethalFor`, palettes, `PICK` bonuses, hats, patterns (`SKINS`, `skinTile`, `drawSkin`), bot names |
+| `03-dom` | `$`, canvas, `resize`, `PIXEL_BUDGET`, safe-area insets |
+| `04-state` | shared state: `blobs`, `food`, `parts`, `player`, `state`, `mode`, `cam`, `calm`, `input`, `stick`; settings `SET`, difficulty `DIFFS`, cheats `CHEAT`, missions `M`, `haptic` |
+| `05-sound` | `Sfx`: all sound is synthesized with Web Audio, there are no files |
+| `06-softbody` | `Blob`, wounds, `updateBlob`, the ring of points (`computeTargets`, `stepPoints`), contacts, `jolt` (jelly wobble) |
+| `07-bites` | `Strand` (the stretchy strand), `Chunk` (a bitten piece), `Gulp`, `checkBites`, `doBite`, `swallowWhole`, the dash, the tongue |
+| `08-food-particles` | sprinkles, crumbs, bonuses, particles, floating text |
+| `09-bots` | bot AI, spawning, hedgehog, piranhas, cake, `population` |
+| `10-daily` | "Конфета дня" (candy of the day, mode `daily`): the twist of the day `DAILY` by the local date (`dailyOf`), `day` — the twist in force, the best of the day and the days-in-a-row streak (`dailySave`) |
+| `10-flow` | missions and patterns, start and end of a run, the 3-minute mode, `updateCamera`, `updateHUD`, the main `update` |
+| `11-draw-world` | the tray, `buildPath` (body outline), sprinkles, strands, wounds |
+| `12-draw-face` | mouth (`mouthGeo`, `drawMouthBack`, `drawMouthFront`), eyes, tongue, hats |
+| `13-draw-body` | bodies, pieces, labels, minimap, `render` |
+| `14-input` | mouse, keyboard, joystick and buttons on phones, choosing flavour, pattern and hat in the menu |
+| `15-admin` | the admin panel with cheats |
+| `16-settings` | pause, settings, the challenge link |
+| `17-boot` | `adapt` (automatic graphics tuning), `frame`, startup, `window.__kus` |
 
-Кадр: `frame` → `update(dt)` (боты, тела, столкновения, укусы, еда, кольца точек, камера, HUD) → `render()`.
+A frame: `frame` → `update(dt)` (bots, bodies, collisions, bites, food, rings of points, camera, HUD) → `render()`.
 
-Укус по шагам (`checkBites`): замах → щелчок → `doBite` → кусок зажат в зубах и тянется нитью → жевание → `Chunk.finish` (масса прибавляется).
+A bite step by step (`checkBites`): wind-up → snap → `doBite` → the piece is held in the teeth and stretches on a strand → chewing → `Chunk.finish` (the mass is added).
 
-`window.__kus` в `17-boot` отдаёт тестам состояние и функции (`player`, `blobs`, `update`, `render`, `place`, `spawnBot`, `spawnSpecial`, `Sfx`, `cam`, `CHEAT`, `pause`, `setLod`). Новую механику проще всего проверять через него.
+`window.__kus` in `17-boot` gives the tests the state and functions (`player`, `blobs`, `update`, `render`, `place`, `spawnBot`, `spawnSpecial`, `Sfx`, `cam`, `CHEAT`, `pause`, `setLod`). The easiest way to test a new mechanic is through it.
 
-Сохранения в `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.best`, `kus.best3`, `kus.mode`, `kus.diff`, `kus.set`, `kus.m` (задания и открытые узоры), `kus.seen` (показанные подсказки), `kus.cheat`, `kus.lbmin`, `kus.daily` (конфета дня: дата `d` вида 20261123, лучший за день `best`, дней подряд `streak`, рекорд серии `top`).
+Saves in `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.best`, `kus.best3`, `kus.mode`, `kus.diff`, `kus.set`, `kus.m` (missions and unlocked patterns), `kus.seen` (hints already shown), `kus.cheat`, `kus.lbmin`, `kus.daily` (candy of the day: date `d` like 20261123, best of the day `best`, days in a row `streak`, longest streak `top`).
 
-## Решения, которые нельзя ломать
+## Decisions that must not be broken
 
-- Никаких стоп-кадров и пауз игрового времени на укусе: игрок воспринимал их как зависания. Замедление времени есть только при глотании целиком, плавной дугой.
-- Камера без случайной тряски: толчок идёт через пружину (`cam.kx`, `cam.ky`, `cam.zk`). Задать толчок: `cam.shake = сила; cam.sa = угол`.
-- Всё движение считается от `dt` и одинаково при 30 и 120 кадрах в секунду. Не писать «на кадр» (`*= 0.9`), писать через `Math.exp(-dt * k)`.
-- `calm` (системная настройка «уменьшить движение») отключает вспышки, толчки камеры и замедление.
-- Телефон: джойстик под пальцем в любом месте экрана, кнопки «Кусь» и «Язык», всё помещается в 360×640 и в альбомной 844×390. После правок интерфейса смотреть оба размера.
-- Сложность `DIFFS`, спасение от смертельного укуса (`graceT`) и послабления для маленького игрока в `09-bots` держат новичка в живых. Баланс проверять автопилотом (`player.ai = newAI()`), а не на глаз.
-- Страница остаётся одним файлом без внешних скриптов. Синтаксис и CSS без новинок, которых нет в iOS 15 Safari (`inset`, например, уже заменён).
-- Встроенный в начало `<body>` скрипт на ES5 показывает ошибку на экране. Его не трогать и не переводить на современный синтаксис.
+- No freeze frames and no pauses of game time on a bite: the player took them for hangs. Time slows down only when swallowing whole, in a smooth curve.
+- No random camera shake: a kick goes through a spring (`cam.kx`, `cam.ky`, `cam.zk`). To give a kick: `cam.shake = strength; cam.sa = angle`.
+- All movement is computed from `dt` and is the same at 30 and at 120 frames per second. Do not write "per frame" (`*= 0.9`), write it through `Math.exp(-dt * k)`.
+- `calm` (the system setting "reduce motion") turns off flashes, camera kicks and the slow-down.
+- Phone: the joystick appears under the finger anywhere on the screen, buttons «Кусь» (bite) and «Язык» (tongue), everything fits in 360×640 and in landscape 844×390. After interface changes look at both sizes.
+- The difficulty `DIFFS`, the rescue from a lethal bite (`graceT`) and the allowances for a small player in `09-bots` keep a newcomer alive. Check the balance with the autopilot (`player.ai = newAI()`), not by eye.
+- The page stays one file with no external scripts. No syntax or CSS newer than what iOS 15 Safari has (`inset`, for example, has already been replaced).
+- The ES5 script embedded at the start of `<body>` shows errors on screen. Do not touch it and do not move it to modern syntax.
 
-## Производительность
+## Performance
 
-- `adapt` в `17-boot` снижает детализацию (`lod` 0/1/2) и разрешение (`quality`), когда кадры падают или скрипт занимает больше 62% кадра. Размер canvas посреди раунда меняется не чаще раза в 12 секунд.
-- Тяжёлое в отрисовке: рот и лицо, поднос, градиенты тел. Обводки и заливки тел идут через один `Path2D` на тело (`buildPath`).
-- В горячих циклах не создавать лишних объектов и не использовать `clip`, кроме уже существующих мест.
-- В паузе есть «Показывать FPS»: кадры, худший кадр, время работы скрипта, уровень детализации.
+- `adapt` in `17-boot` lowers the detail (`lod` 0/1/2) and the resolution (`quality`) when frames drop or the script takes more than 62% of a frame. The canvas size changes mid-round no more than once every 12 seconds.
+- Heavy in drawing: the mouth and face, the tray, body gradients. Body outlines and fills go through one `Path2D` per body (`buildPath`).
+- In hot loops do not create needless objects and do not use `clip`, except in the places that already have it.
+- The pause has «Показывать FPS» (show FPS): frames, the worst frame, script time, detail level.
 
-## Тесты
+## Tests
 
-`tests/run.mjs` проверяет: запуск на ПК и телефоне, кнопки в пределах экрана, правила укуса (ёж, торт, щит), серию и желе, сложность и графику, каждый звук, трёхминутный прогон автопилота на рваных кадрах (NaN, вылет за поле, скачки позиции, зависшие состояния). К новой механике добавлять проверку туда же.
+`tests/run.mjs` checks: startup on PC and phone, buttons within the screen, bite rules (hedgehog, cake, shield), the streak and the jelly, difficulty and graphics, every sound, a three-minute autopilot run on ragged frames (NaN, leaving the field, position jumps, stuck states). Add a check for a new mechanic there too.
 
-Тесты не видят картинку и не слышат звук. Внешний вид проверять скриншотами, на реальном iPhone игру автоматически никто не проверял.
+The tests do not see the picture and do not hear the sound. Check the look with screenshots; nobody has checked the game automatically on a real iPhone.
 
-## Чего нет
+## What is not there
 
-- Мультиплеера: нужен сервер, сейчас все соперники боты.
-- Telegram Mini App: код определяет запуск внутри Telegram, но бот не создавался.
+- Multiplayer: it needs a server, for now all rivals are bots.
+- Telegram Mini App: the code detects running inside Telegram, but no bot has been created.
