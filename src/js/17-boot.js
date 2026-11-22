@@ -157,7 +157,8 @@ function start(data) {
   best = Math.max(+data.best || 0, stored);
   try {
     best3 = parseInt(localStorage.getItem('kus.best3'), 10) || 0;
-    if (localStorage.getItem('kus.mode') === 't3') mode = 't3';
+    const md = localStorage.getItem('kus.mode');
+    if (md === 't3' || md === 'daily') mode = md;
     const st = JSON.parse(localStorage.getItem('kus.set') || '{}');
     if (st.lefty === true) SET.lefty = true;
     if (st.gfx === 'low' || st.gfx === 'high') SET.gfx = st.gfx;
@@ -186,9 +187,16 @@ function start(data) {
     document.body.classList.add('first');
   }
   if (challenge) {
-    $('chal').textContent = `${challenge.n} набрал ${challenge.c}. Побей в свободной игре!`;
+    const t = dailyOf(todayKey());
+    $('chal').textContent = !challenge.d
+      ? `${challenge.n} набрал ${challenge.c}. Побей в свободной игре!`
+      : chalToday()
+        ? `${challenge.n} набрал ${challenge.c} в конфете дня «${t.name}». Побей сегодня`
+        : challenge.d > t.key
+          ? `Это вызов на конфету за ${keyText(challenge.d)}, у тебя она ещё не началась. Сегодня «${t.name}», сыграй её`
+          : `Это ${challenge.d === prevKey(t.key) ? 'вчерашняя конфета' : `конфета за ${keyText(challenge.d)}`}, она уже закончилась. Сегодня новая: «${t.name}», сыграй её`;
     $('chal').classList.remove('hidden');
-    mode = 'free';
+    mode = challenge.d ? 'daily' : 'free';
   }
   renderSwatches();
   renderSkins();
@@ -283,6 +291,27 @@ window.__kus = {
   setMode(m) {
     mode = m;
     renderMode();
+  },
+  toMenu,
+  daily: {
+    force(id) {
+      dayForce = id;
+    },
+    of: dailyOf,
+    todayKey,
+    prevKey,
+    save: dailySave,
+    best: dailyBest,
+    streak: dailyStreak,
+    get rec() {
+      return dailyRec;
+    },
+    get day() {
+      return day;
+    },
+  },
+  get challenge() {
+    return challenge;
   },
   get run() {
     return run;

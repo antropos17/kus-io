@@ -119,24 +119,26 @@ function countUp(el, n) {
     };
   tick();
 }
-function nearText(t3, score) {
+function nearText(m, score) {
   // the "so close" line: the nearest thing just out of reach
-  const out = [];
+  const out = [],
+    t3 = m === 't3';
   if (!run.cheated) {
+    if (m === 'daily' && score < run.dayPrev) out.push(`До лучшего за сегодня не хватило ${run.dayPrev - score}`);
     if (t3 && score < best3) out.push(`До рекорда на 3 минуты не хватило ${best3 - score}`);
-    if (!t3 && score < best) out.push(`До рекорда не хватило ${best - score}`);
+    if (m === 'free' && score < best) out.push(`До рекорда не хватило ${best - score}`);
     const h = HATS.find((x) => x.need > best);
-    if (!t3 && h) out.push(`До шапки «${h.name}» ещё ${h.need - best} массы`);
+    if (m === 'free' && h) out.push(`До шапки «${h.name}» ещё ${h.need - best} массы`);
   }
   const s = cheapestSkin();
   if (s) out.push(sugar >= s.price ? `Сахара хватает на узор «${s.name}», он в меню` : `До узора «${s.name}» ещё ${s.price - sugar} сахара`);
   return out.slice(0, 2).join('. ');
 }
-function renderSweet(t3, score) {
+function renderSweet(m, score) {
   const got = run.got || 0;
   $('sweet').classList.toggle('hidden', !got);
   overEl.querySelector('.card').classList.toggle('paid', !!got); // on short screens the sugar takes the missions' place
-  $('near').textContent = nearText(t3, score);
+  $('near').textContent = nearText(m, score);
   if (!got) return;
   countUp($('sweetN'), got);
   $('sweetBank').textContent = `в копилке ${sugar}`;
@@ -163,7 +165,7 @@ $('chestRow').addEventListener('click', (e) => {
   });
   $('chestT').textContent = won === base * 5 ? `Самая сладкая! +${won} сахара` : `+${won} сахара`;
   $('sweetBank').textContent = `в копилке ${sugar}`;
-  $('near').textContent = nearText(mode === 't3', Math.round(run.max));
+  $('near').textContent = nearText(mode, Math.round(run.max));
   Sfx.power();
   haptic(won === base * 5 ? 30 : 12);
 });
@@ -174,15 +176,28 @@ function renderMissions() {
 function renderMode() {
   for (const b of $('modeSeg').children) b.setAttribute('aria-pressed', String(b.dataset.m === mode));
   for (const b of $('diffSeg').children) b.setAttribute('aria-pressed', String(b.dataset.v === diff));
+  renderDaily();
+}
+const timed = () => mode === 't3' || mode === 'daily';
+let diffPick = null; // the difficulty chosen in the menu while the candy of the day plays on normal
+function fixDiff() {
+  if (mode === 'daily') {
+    if (!diffPick) diffPick = diff;
+    diff = 'normal';
+  } else if (diffPick) {
+    diff = diffPick;
+    diffPick = null;
+  }
 }
 function spawnPlayer(spawnT) {
-  shownMass = DIFFS[diff].start;
+  const m0 = day === 'tiny' ? 16 : DIFFS[diff].start;
+  shownMass = m0;
   const name = (nick.value || '').trim().slice(0, 14) || 'Кусака',
     [x, y] = safeSpawn();
   player = new Blob({
     name,
     pal: PALS[chosen],
-    mass: DIFFS[diff].start,
+    mass: m0,
     x,
     y,
     isPlayer: true,
@@ -213,15 +228,18 @@ function startGame() {
     localStorage.setItem('kus.hat', chosenHat);
     localStorage.setItem('kus.skin', chosenSkin);
     localStorage.setItem('kus.mode', mode);
-    localStorage.setItem('kus.diff', diff);
+    localStorage.setItem('kus.diff', diffPick || diff);
   } catch (e) {}
+  fixDiff();
   rollMissions();
   saveM();
   run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0 };
   shownSugar = -1;
   sugarEl.textContent = '';
   runActive = true;
-  timeLeft = mode === 't3' ? 180 : 0;
+  timeLeft = timed() ? 180 : 0;
+  day = null;
+  if (mode === 'daily') startDaily();
   spawnPlayer(4);
   tutor = newcomer ? { prey: tutorPrey() } : null;
   document.body.classList.add('playing');
@@ -235,6 +253,7 @@ function startGame() {
     if (!tutor) addFeed('<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты'); // the first run tells this after the first bite
   } else if (tutor) addFeed('Веди мышью: пасть смотрит на курсор');
   else addFeed('<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты');
+  if (day) addFeed(`<b>${run.rule.name}</b>: ${run.rule.note.charAt(0).toLowerCase() + run.rule.note.slice(1)}`, 6500);
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 }
 function tally() {
@@ -252,6 +271,7 @@ function finishRun() {
   run.got = 0;
   if (!run.cheated) {
     if (mode === 't3') best3 = Math.max(best3, Math.round(run.max));
+    else if (mode === 'daily') dailySave(run.day, Math.round(run.max));
     else best = Math.max(best, Math.round(run.max));
     run.got = Math.floor(run.sugar + Math.sqrt(run.max)); // plus a bonus for the biggest mass that tails off
     sugar += run.got;
@@ -279,7 +299,7 @@ function die(by) {
   state = 'dead';
   deadT = 0;
   killer = by;
-  if (mode === 't3' && runActive && timeLeft > 0) {
+  if (timed() && runActive && timeLeft > 0) {
     run.deaths++;
     addFeed('Тебя съели. Сейчас вернёшься на поле');
     return;
@@ -309,6 +329,11 @@ function toMenu() {
   state = 'menu';
   paused = false;
   runActive = false;
+  day = null;
+  if (diffPick) {
+    diff = diffPick;
+    diffPick = null;
+  }
   document.body.classList.remove('playing');
   overEl.classList.add('hidden');
   $('pause').classList.add('hidden');
@@ -318,42 +343,56 @@ function toMenu() {
   renderHats();
   renderMissions();
   renderBank();
+  renderMode();
   menuSwitchT = 0;
   menuFade();
 }
 function showOver() {
-  const t3 = mode === 't3',
+  const t3 = timed(),
+    daily = mode === 'daily' && run.rule,
     secs = Math.max(0, Math.round(time - run.t0)),
     score = Math.round(run.max);
   $('overT').textContent = t3 ? 'Время вышло' : 'Тебя доели';
-  whoEl.innerHTML = t3
-    ? 'Три минуты позади. В зачёт идёт самая большая масса.'
-    : killer
-      ? `Последний кусь: <b>${esc(killer.name)}</b>`
-      : 'Тебя растащили по кусочкам';
+  whoEl.innerHTML = daily
+    ? `Конфета дня «${esc(run.rule.name)}»`
+    : t3
+      ? 'Три минуты позади. В зачёт идёт самая большая масса.'
+      : killer
+        ? `Последний кусь: <b>${esc(killer.name)}</b>`
+        : 'Тебя растащили по кусочкам';
   $('sMax').textContent = score;
   $('sBites').textContent = run.bites;
   $('sKills').textContent = run.kills;
   $('sTime').textContent = t3 ? run.deaths : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
   $('sTimeL').textContent = t3 ? 'раз тебя съели' : 'время в игре';
   $('overMis').innerHTML = missionRows();
-  renderSweet(t3, score);
+  renderSweet(mode, score);
   const fresh = HATS.filter((h) => h.need > prevBest && h.need <= best).map((h) => h.name);
+  const streak = daily ? dailyStreak(run.day) : 0;
   bestEl.textContent = run.cheated
-    ? 'С читами рекорд и задания не засчитаны'
-    : t3
-      ? best3 > prevBest3
-        ? `Новый рекорд на 3 минуты: ${best3}`
-        : `Рекорд на 3 минуты: ${best3}`
-      : (best > prevBest ? `Новый рекорд: ${best}` : `Рекорд: ${best}`) + (fresh.length ? `. Открыта шапка: ${fresh.join(', ')}` : '');
+    ? daily
+      ? 'С читами результат дня и задания не засчитаны'
+      : 'С читами рекорд и задания не засчитаны'
+    : daily
+      ? `${score > run.dayPrev && run.dayPrev ? 'Новый лучший' : 'Лучший'} за сегодня: ${dailyBest(run.day)}. ` +
+        (streak > 1 ? `${streak} ${daysWord(streak)} подряд` : 'Первый день серии') +
+        (dailyRec.top > streak ? `, рекорд ${dailyRec.top}` : '')
+      : t3
+        ? best3 > prevBest3
+          ? `Новый рекорд на 3 минуты: ${best3}`
+          : `Рекорд на 3 минуты: ${best3}`
+        : (best > prevBest ? `Новый рекорд: ${best}` : `Рекорд: ${best}`) + (fresh.length ? `. Открыта шапка: ${fresh.join(', ')}` : '');
   $('chalRes').textContent =
-    !challenge || t3 || run.cheated
+    !challenge || (t3 && !(daily && challenge.d === run.day)) || (!t3 && challenge.d) || run.cheated
       ? ''
-      : score > challenge.c
-        ? `Вызов побит: у игрока ${challenge.n} было ${challenge.c}, у тебя ${score}.`
-        : `Вызов от игрока ${challenge.n}: ${challenge.c}. Твой результат: ${score}.`;
-  $('chalBtn').classList.toggle('hidden', t3 || run.cheated || score < 1);
-  $('chalBtn').textContent = 'Бросить вызов другу';
+      : daily
+        ? `${score > challenge.c ? 'Вызов побит' : 'Вызов'}: ${challenge.n} ${challenge.c}, ты ${score}.`
+        : score > challenge.c
+          ? `Вызов побит: у игрока ${challenge.n} было ${challenge.c}, у тебя ${score}.`
+          : `Вызов от игрока ${challenge.n}: ${challenge.c}. Твой результат: ${score}.`;
+  overEl.querySelector('.card').classList.toggle('chal', !!$('chalRes').textContent); // on short screens the challenge line takes the "so close" line's place
+  $('chalBtn').classList.toggle('hidden', (t3 && !daily) || run.cheated || score < 1);
+  $('chalBtn').textContent = daily ? 'Поделиться' : 'Бросить вызов другу';
   $('chalLink').classList.add('hidden');
   overEl.classList.remove('hidden');
   hudEl.classList.add('hidden');
@@ -489,8 +528,14 @@ function updateHUD(dt) {
     mission('time', time - player.stats.t0, true);
   }
   const tl = Math.ceil(timeLeft);
-  $('timer').textContent = runActive && mode === 't3' ? `осталось ${Math.floor(tl / 60)}:${String(tl % 60).padStart(2, '0')}` : '';
-  $('goal').textContent = challenge && mode === 'free' && runActive ? `цель: ${challenge.c}` : '';
+  $('timer').textContent = runActive && timed() ? `осталось ${Math.floor(tl / 60)}:${String(tl % 60).padStart(2, '0')}` : '';
+  $('goal').textContent = !runActive
+    ? ''
+    : day
+      ? `конфета дня: ${run.rule.name}${challenge && challenge.d === run.day ? ` · побей ${challenge.c}` : ''}`
+      : challenge && !challenge.d && mode === 'free'
+        ? `цель: ${challenge.c}`
+        : '';
   let fx = '';
   if (player && player.alive)
     for (const [k, prop] of [
@@ -644,7 +689,7 @@ function update(dt) {
   updateParts(dt);
   if (blobs.some((b) => !b.alive)) blobs = blobs.filter((b) => b.alive);
   population();
-  if (runActive && mode === 't3') {
+  if (runActive && timed()) {
     timeLeft -= dt;
     if (timeLeft <= 0) {
       timeLeft = 0;

@@ -259,6 +259,114 @@ test('sugar: none for a run with cheats', async () => {
   await g.close();
 });
 
+// Candy of the day: the clock is pinned through Date.now, which is all the game reads the date from.
+const DAY = `const k = window.__kus;
+  const at = (key, h = 12) => { const t = new Date(Math.floor(key / 10000), (Math.floor(key / 100) % 100) - 1, key % 100, h, 30).getTime(); Date.now = () => t; };
+  const play = (key, mass, cheat) => { at(key); k.pause(true); k.setMode('daily'); if (k.state !== 'menu') k.toMenu(); k.startGame();
+    const P = k.player; P.spawnT = 0; P.stats.maxMass = mass; if (cheat) P.cheated = true; k.setTimeLeft(0.001);
+    for (let i = 0; i < 90; i++) k.update(1 / 60); return { ...k.daily.rec }; };`;
+
+test('daily: the twist depends only on the date', async () => {
+  const g = await open({ play: false });
+  const r = await g.page.evaluate(`(() => { ${DAY} const out = {};
+    out.same = k.daily.of(20261123).id === k.daily.of(20261123).id;
+    at(20261123, 0); const a = k.daily.todayKey(); at(20261123, 23); out.wholeDay = a === 20261123 && k.daily.todayKey() === 20261123;
+    out.twoDays = [k.daily.of(20261123).id, k.daily.of(20261124).id];
+    const ids = [], d = new Date(2026, 0, 1);
+    for (let i = 0; i < 120; i++) { ids.push(k.daily.of(d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate()).id); d.setDate(d.getDate() + 1); }
+    out.repeats = ids.filter((x, i) => i && x === ids[i - 1]).length; out.kinds = new Set(ids).size;
+    at(20261124); k.toMenu(); out.menu = document.querySelector('#modeSeg [data-m=daily]').textContent;
+    out.name24 = k.daily.of(20261124).name;
+    k.setMode('daily'); k.startGame(); out.rule = k.daily.day; return out; })()`);
+  assert(r.same && r.wholeDay, 'one date must always give the same twist, from midnight to midnight');
+  assert(r.twoDays[0] !== r.twoDays[1], `two neighbouring days gave the same twist ${r.twoDays}`);
+  assert(r.repeats === 0 && r.kinds >= 6, `over 120 days: ${r.repeats} repeats on neighbouring days, ${r.kinds} different twists`);
+  assert(r.menu.includes(r.name24), `menu shows "${r.menu}", expected today's "${r.name24}"`);
+  assert(r.rule === r.twoDays[1], `the run plays "${r.rule}", the date says "${r.twoDays[1]}"`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('daily: best of the day and days in a row, a missed day breaks the streak', async () => {
+  const g = await open({ play: false });
+  const r = await g.page.evaluate(`(() => { ${DAY} const out = {};
+    out.a1 = play(20261123, 120); out.a2 = play(20261123, 90); out.a3 = play(20261123, 150);
+    out.over = document.getElementById('best').textContent;
+    out.b = play(20261124, 70); out.overB = document.getElementById('best').textContent;
+    out.c = play(20261125, 80);
+    at(20261127); out.gone = k.daily.streak(20261127);
+    out.d = play(20261127, 60); out.overD = document.getElementById('best').textContent;
+    out.saved = JSON.parse(localStorage.getItem('kus.daily')); return out; })()`);
+  assert(r.a1.best === 120 && r.a1.streak === 1, `first run: ${JSON.stringify(r.a1)}`);
+  assert(r.a2.best === 120 && r.a3.best === 150 && r.a3.streak === 1, `same day must keep the best: ${JSON.stringify([r.a2, r.a3])}`);
+  assert(r.over.includes('150'), `end screen: "${r.over}"`);
+  assert(r.b.best === 70 && r.b.streak === 2 && r.overB.includes('2 дня подряд'), `next day: ${JSON.stringify(r.b)} "${r.overB}"`);
+  assert(r.c.streak === 3 && r.c.top === 3, `third day: ${JSON.stringify(r.c)}`);
+  assert(r.gone === 0, 'a missed day must show no streak');
+  assert(r.d.streak === 1 && r.d.top === 3 && r.d.best === 60 && r.overD.includes('рекорд 3'), `after a gap: ${JSON.stringify(r.d)} "${r.overD}"`);
+  assert(r.saved && r.saved.d === 20261127 && r.saved.best === 60, `kus.daily: ${JSON.stringify(r.saved)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('daily: a run with cheats is not recorded', async () => {
+  const g = await open({ play: false });
+  const r = await g.page.evaluate(`(() => { ${DAY} play(20261123, 100); const a = play(20261123, 500, true);
+    return { a, best: document.getElementById('best').textContent, saved: localStorage.getItem('kus.daily') }; })()`);
+  assert(r.a.best === 100 && r.a.streak === 1, `cheated run changed the day: ${JSON.stringify(r.a)}`);
+  assert(r.best.includes('читами'), `end screen: "${r.best}"`);
+  assert(JSON.parse(r.saved).best === 100, `saved: ${r.saved}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('daily: a challenge link opens the same candy, an old one says so', async () => {
+  const out = {};
+  for (const d of [20261123, 20261122]) {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(String(e)));
+    await page.addInitScript(() => {
+      const t = new Date(2026, 10, 23, 12).getTime();
+      Date.now = () => t;
+    });
+    await page.goto(URL + `?c=143&n=${encodeURIComponent('Сеня')}&d=${d}`);
+    await page.waitForTimeout(600);
+    out[d] = await page.evaluate(() => {
+      const k = window.__kus,
+        o = {};
+      o.chal = document.getElementById('chal').textContent;
+      o.pressed = document.querySelector('#modeSeg [aria-pressed=true]').dataset.m;
+      o.name = k.daily.of(20261123).name;
+      k.pause(true);
+      k.startGame();
+      k.player.spawnT = 0;
+      k.update(1 / 60);
+      for (let i = 0; i < 2; i++) k.update(0.3);
+      o.goal = document.getElementById('goal').textContent;
+      k.player.stats.maxMass = 200;
+      k.setTimeLeft(0.001);
+      for (let i = 0; i < 90; i++) k.update(1 / 60);
+      o.res = document.getElementById('chalRes').textContent;
+      document.getElementById('chalBtn').click();
+      o.link = document.getElementById('chalLink').value;
+      o.btn = document.getElementById('chalBtn').textContent;
+      return o;
+    });
+    assert(errors.length === 0, errors.join(' | '));
+    await ctx.close();
+  }
+  const a = out[20261123],
+    b = out[20261122];
+  assert(a.pressed === 'daily' && a.chal.includes(a.name) && a.chal.includes('143'), `today's link: "${a.chal}", mode ${a.pressed}`);
+  assert(a.goal.includes('побей 143'), `HUD goal: "${a.goal}"`);
+  assert(a.res.includes('Вызов побит'), `end line: "${a.res}"`);
+  assert(/[?&]c=200&/.test(a.link) && a.link.includes('&d=20261123'), `share link: ${a.link}`);
+  assert(b.pressed === 'daily' && b.chal.includes('вчерашняя') && b.chal.includes(b.name), `yesterday's link: "${b.chal}"`);
+  assert(!b.goal.includes('побей') && b.res === '', `an old challenge must not set a target: "${b.goal}" / "${b.res}"`);
+});
+
 test('settings: difficulty and graphics apply and are remembered', async () => {
   const g = await open({ play: false, returning: true });
   const mass = {};

@@ -147,8 +147,14 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #chestRow button.open{background:#f0dcc6;color:#7a5a49}
 #chestRow button.got{background:var(--berry);color:#fff}
 #near{margin-top:6px}
-@media (max-height:760px){#over .card.paid #overMis{display:none}#over .card.paid .stats{margin-bottom:6px}#over .card.paid .best{margin-top:6px}}
+@media (max-height:760px){#over .card.paid.chal #near{display:none}#over .card.paid #overMis{display:none}#over .card.paid .stats{margin-bottom:6px}#over .card.paid .best{margin-top:6px}}
 #near:empty{display:none}
+#modeSeg [data-m=daily]{grid-column:1/-1;grid-row:1;display:flex;align-items:baseline;justify-content:center;gap:0 8px;flex-wrap:wrap}
+#modeSeg [data-m=daily] small{font:700 13px/1.2 var(--font);color:#7a5a49}
+#dif.fixed .seg3{opacity:.45;pointer-events:none}
+#dif.fixed .pl::after{content:': в конфете дня обычная'}
+.row2{display:flex;gap:8px}
+.row2 .btn2{flex:1 1 0;min-width:0}
 #pause .grp{font:900 15px/1.2 var(--font);margin:14px 0 8px;color:var(--ink)}
 #skins button.lock{cursor:not-allowed}
 #mute{position:fixed;right:14px;bottom:162px;z-index:3;width:44px;height:44px;border-radius:50%;border:0;background:var(--cream);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.4);padding:0}
@@ -246,6 +252,9 @@ body.touch #feed div{background:rgba(20,11,8,.55);color:var(--cream);box-shadow:
   .tag,.help,#rec,.pl,#mis,#chal,#dif{display:none}
   .seg2,.seg3{margin-bottom:6px}
   .seg2 button,.seg3 button{min-height:34px;padding:4px 8px}
+  #modeSeg{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #modeSeg [data-m=daily]{grid-column:3;grid-row:auto;display:block}
+  #modeSeg [data-m=daily] small{display:block;font-size:12px}
   #overMis{display:none}
   #bank{margin:0 40px 0 0;flex:0 1 13em;font-size:13px;line-height:1.2}
   #sweet{margin-bottom:4px;padding:6px 10px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:center}
@@ -258,6 +267,7 @@ body.touch #feed div{background:rgba(20,11,8,.55);color:var(--cream);box-shadow:
   #over .card.paid .stats{margin-bottom:8px}
   #over .card.paid .best{margin-top:3px;font-size:13px}
   #over .card.paid .btn2{margin-top:5px;padding:8px}
+  #over .card.paid #chalRes{margin-top:5px}
   .btn2{margin-top:6px;padding:9px}
   #nick{flex:1;width:auto;padding:9px 12px;font-size:16px}
   body.first .top{flex-wrap:wrap;row-gap:10px} /* first visit has room for the one line about the game, the name goes below it */
@@ -340,7 +350,7 @@ document.getElementById('nojs').style.display = 'none';
     <div class="pk later"><span class="pl">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор"></div></div>
     <div class="pk later"><span class="pl">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка"></div></div>
     <div class="pk later" id="mis"><span class="pl" id="misT">Задания</span><div id="misList"></div></div>
-    <div class="go"><div class="seg2 later" id="modeSeg" role="group" aria-label="Режим"><button type="button" data-m="free">Свободная игра</button><button type="button" data-m="t3">3 минуты на счёт</button></div><button id="play" class="btn" type="button">Играть</button></div>
+    <div class="go"><div class="seg2 later" id="modeSeg" role="group" aria-label="Режим"><button type="button" data-m="free">Свободная игра</button><button type="button" data-m="t3">3 минуты на счёт</button><button type="button" data-m="daily">Конфета дня</button></div><button id="play" class="btn" type="button">Играть</button></div>
     <p class="best later" id="rec"></p>
     <ul class="help later">
       <li class="kb"><span><b>Мышь</b>: куда смотрит пасть</span></li>
@@ -386,9 +396,8 @@ document.getElementById('nojs').style.display = 'none';
     </div>
     <div id="overMis"></div>
     <button id="again" class="btn" type="button">Ещё кусь</button>
-    <button id="chalBtn" class="btn2" type="button">Бросить вызов другу</button>
+    <div class="row2"><button id="chalBtn" class="btn2" type="button">Бросить вызов другу</button><button id="toMenu" class="btn2" type="button">В меню</button></div>
     <input id="chalLink" class="hidden" readonly aria-label="Ссылка-вызов">
-    <button id="toMenu" class="btn2" type="button">В меню</button>
     <p id="chalRes"></p>
     <p class="best" id="best"></p>
     <p class="best" id="near"></p>
@@ -870,7 +879,8 @@ const challenge = (() => {
     const q = new URLSearchParams(location.search),
       c = parseInt(q.get('c'), 10),
       n = (q.get('n') || '').slice(0, 14);
-    return c > 0 && c < 100000 ? { c, n: n || 'Друг' } : null;
+    const d = parseInt(q.get('d'), 10); // the date of a candy-of-the-day challenge, 20261123
+    return c > 0 && c < 100000 ? { c, n: n || 'Друг', d: d > 20000000 && d < 30000000 ? d : 0 } : null;
   } catch (e) {
     return null;
   }
@@ -1349,7 +1359,7 @@ function updateBlob(b, dt) {
   const want = Blob.ptsFor(b.Rs);
   if (Math.abs(want - b.pts.length) > Math.max(2, b.pts.length * 0.08)) b.buildPoints(want);
   b.biteCd -= dt;
-  b.dashCd -= dt;
+  b.dashCd -= b.isPlayer && day === 'quick' ? dt * 2 : dt;
   b.dashT -= dt;
   b.dodgeCd -= dt;
   b.dodgeT -= dt;
@@ -2502,9 +2512,14 @@ function grant(b, type) {
 function updatePickups(dt) {
   pickT -= dt;
   if (pickT <= 0) {
-    pickT = rand(5, 9);
+    pickT = day === 'magnet' ? rand(2.5, 4.5) : rand(5, 9);
     if (pickups.length < 6)
-      pickups.push({ type: ['speed', 'shield', 'magnet'][randi(3)], x: rand(220, WORLD - 220), y: rand(220, WORLD - 220), t: 0 });
+      pickups.push({
+        type: day === 'magnet' ? 'magnet' : ['speed', 'shield', 'magnet'][randi(3)],
+        x: rand(220, WORLD - 220),
+        y: rand(220, WORLD - 220),
+        t: 0,
+      });
   }
   for (let i = pickups.length - 1; i >= 0; i--) {
     const p = pickups[i];
@@ -2556,7 +2571,7 @@ function updateFood(dt) {
       const d2 = dx * dx + dy * dy,
         er = b.Rs * 0.88 + 2;
       if (d2 < er * er) {
-        b.mass += f.m;
+        b.mass += day === 'double' && !f.kind ? f.m * 2 : f.m;
         if (b.isPlayer) {
           Sfx.pop();
           if (!f.kind) mission('food', 1);
@@ -2849,6 +2864,7 @@ function botSteer(b, dt) {
 }
 function randomBotMass(first) {
   const r = Math.random();
+  if (day === 'small') return rand(12, 50);
   if (first) return r < 0.55 ? rand(12, 40) : r < 0.88 ? rand(40, 140) : r < 0.98 ? rand(140, 380) : rand(380, 600);
   return r < 0.7 ? rand(12, 45) : r < 0.95 ? rand(45, 150) : rand(150, 350);
 }
@@ -2971,11 +2987,11 @@ function population() {
       else if (b.kind === 'cake') cake++;
       else if (b.kind === 'piranha') pir++;
     }
-    if (hed < 2) spawnSpecial('hedgehog');
-    if (cake) cakeAt = time + 35;
+    if (hed < (day === 'hedge' ? 4 : 2)) spawnSpecial('hedgehog');
+    if (cake) cakeAt = time + (day === 'cake' ? 8 : 35);
     else if (time > cakeAt) spawnSpecial('cake');
-    if (pir) pirAt = time + 40;
-    else if (time > pirAt && (state !== 'play' || !player || !player.alive || player.mass > 90)) spawnSpecial('piranha');
+    if (pir) pirAt = time + (day === 'piranha' ? 20 : 40);
+    else if (time > pirAt && (day === 'piranha' || state !== 'play' || !player || !player.alive || player.mass > 90)) spawnSpecial('piranha');
   }
   let n = respawnQ.length;
   for (const b of blobs) if (b.ai && !b.kind) n++;
@@ -2985,6 +3001,104 @@ function population() {
       respawnQ.splice(i, 1);
       spawnBot(randomBotMass());
     }
+}
+
+// ---------- candy of the day ----------
+// One three-minute run a day with a twist that is the same for everyone on that date. The twist comes from the local date alone, no server.
+const DAILY = [
+  // id, name, one line of explanation
+  ['hedge', 'День ежей', 'Ежей на поле вдвое больше. Кусай их в морду, со спины колются'],
+  ['double', 'Двойная посыпка', 'Каждая посыпка весит вдвое больше, растут все'],
+  ['tiny', 'Кроха', 'Ты начинаешь крошечным, и после каждого раза тоже'],
+  ['piranha', 'Пираньи', 'Стаи пираний с первых секунд и вдвое чаще'],
+  ['magnet', 'Магнитный день', 'Все бонусы — магниты, и падают они чаще'],
+  ['cake', 'Торт с утра', 'Торт на поле с самого начала. Кусай в вишенку'],
+  ['small', 'Мелюзга', 'Все соперники мелкие, крупных сегодня нет'],
+  ['quick', 'Быстрые зубы', 'Твой рывок с укусом перезаряжается вдвое быстрее'],
+];
+let day = null, // id of the twist in force during a candy-of-the-day run
+  dayForce = null; // tests and balance runs pin a twist by id
+const dayKey = (d) => d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); // 20261123
+const keyDate = (k) => new Date(Math.floor(k / 10000), (Math.floor(k / 100) % 100) - 1, k % 100);
+const todayKey = () => dayKey(new Date(Date.now()));
+const prevKey = (k) => {
+  const d = keyDate(k);
+  d.setDate(d.getDate() - 1);
+  return dayKey(d);
+};
+function dailyOf(k) {
+  // every block of N days plays all N twists in a shuffled order; a block never starts with the twist the last one ended on
+  const d = keyDate(k),
+    n = DAILY.length,
+    num = Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5),
+    blk = Math.floor(num / n);
+  const order = (b) => {
+    let s = (b * 2654435761 + 7) >>> 0;
+    const rnd = () => {
+      s = (s + 0x6d2b79f5) >>> 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const p = DAILY.map((_, i) => i);
+    for (let i = n - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [p[i], p[j]] = [p[j], p[i]];
+    }
+    return p;
+  };
+  const p = order(blk);
+  if (p[0] === order(blk - 1)[n - 1]) [p[0], p[1]] = [p[1], p[0]];
+  const t = DAILY[p[num - blk * n]];
+  return { key: k, id: t[0], name: t[1], note: t[2] };
+}
+const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+const keyText = (k) => `${k % 100} ${MONTHS[(Math.floor(k / 100) % 100) - 1]}`;
+const daysWord = (n) => (n % 10 === 1 && n % 100 !== 11 ? 'день' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'дня' : 'дней');
+
+// kus.daily: the last day played, the best of that day, days in a row, the longest run of days
+let dailyRec = { d: 0, best: 0, streak: 0, top: 0 };
+try {
+  const v = JSON.parse(localStorage.getItem('kus.daily') || 'null');
+  if (v && v.d > 0) dailyRec = { d: v.d | 0, best: v.best | 0, streak: v.streak | 0, top: v.top | 0 };
+} catch (e) {}
+const dailyBest = (k) => (dailyRec.d === k ? dailyRec.best : 0);
+const dailyStreak = (k) => (dailyRec.d === k || dailyRec.d === prevKey(k) ? dailyRec.streak : 0); // a missed day breaks it
+function dailySave(k, score) {
+  const r = dailyRec;
+  if (r.d === k) r.best = Math.max(r.best, score);
+  else {
+    r.streak = r.d === prevKey(k) ? r.streak + 1 : 1;
+    r.d = k;
+    r.best = score;
+  }
+  r.top = Math.max(r.top, r.streak);
+  try {
+    localStorage.setItem('kus.daily', JSON.stringify(r));
+  } catch (e) {}
+}
+const chalToday = () => !!(challenge && challenge.d && challenge.d === todayKey()); // a challenge for today's candy
+function renderDaily() {
+  const t = dailyOf(todayKey()),
+    b = dailyBest(t.key),
+    btn = $('modeSeg').querySelector('[data-m=daily]');
+  btn.innerHTML = `<b>Конфета дня</b><small>${t.name}${b ? ` · ${b}` : ''}</small>`;
+  btn.title = t.note;
+  $('dif').classList.toggle('fixed', mode === 'daily');
+}
+function startDaily() {
+  // the twists that act once, when the run begins
+  const t = dailyOf(todayKey()),
+    f = dayForce && DAILY.find((x) => x[0] === dayForce);
+  if (f) [t.id, t.name, t.note] = f;
+  run.day = t.key;
+  run.rule = t;
+  run.dayPrev = dailyBest(t.key);
+  day = t.id;
+  if (day === 'piranha') pirAt = time + 6;
+  if (day === 'cake' && !blobs.some((b) => b.kind === 'cake' && b.alive)) spawnSpecial('cake');
+  if (day === 'small') for (const b of blobs) if (b.ai && !b.kind && b.mass > 55) b.mass = rand(14, 50);
+  if (day === 'hedge') for (let i = 0; i < 2; i++) spawnSpecial('hedgehog');
 }
 
 // ---------- game flow ----------
@@ -3108,24 +3222,26 @@ function countUp(el, n) {
     };
   tick();
 }
-function nearText(t3, score) {
+function nearText(m, score) {
   // the "so close" line: the nearest thing just out of reach
-  const out = [];
+  const out = [],
+    t3 = m === 't3';
   if (!run.cheated) {
+    if (m === 'daily' && score < run.dayPrev) out.push(`До лучшего за сегодня не хватило ${run.dayPrev - score}`);
     if (t3 && score < best3) out.push(`До рекорда на 3 минуты не хватило ${best3 - score}`);
-    if (!t3 && score < best) out.push(`До рекорда не хватило ${best - score}`);
+    if (m === 'free' && score < best) out.push(`До рекорда не хватило ${best - score}`);
     const h = HATS.find((x) => x.need > best);
-    if (!t3 && h) out.push(`До шапки «${h.name}» ещё ${h.need - best} массы`);
+    if (m === 'free' && h) out.push(`До шапки «${h.name}» ещё ${h.need - best} массы`);
   }
   const s = cheapestSkin();
   if (s) out.push(sugar >= s.price ? `Сахара хватает на узор «${s.name}», он в меню` : `До узора «${s.name}» ещё ${s.price - sugar} сахара`);
   return out.slice(0, 2).join('. ');
 }
-function renderSweet(t3, score) {
+function renderSweet(m, score) {
   const got = run.got || 0;
   $('sweet').classList.toggle('hidden', !got);
   overEl.querySelector('.card').classList.toggle('paid', !!got); // on short screens the sugar takes the missions' place
-  $('near').textContent = nearText(t3, score);
+  $('near').textContent = nearText(m, score);
   if (!got) return;
   countUp($('sweetN'), got);
   $('sweetBank').textContent = `в копилке ${sugar}`;
@@ -3152,7 +3268,7 @@ $('chestRow').addEventListener('click', (e) => {
   });
   $('chestT').textContent = won === base * 5 ? `Самая сладкая! +${won} сахара` : `+${won} сахара`;
   $('sweetBank').textContent = `в копилке ${sugar}`;
-  $('near').textContent = nearText(mode === 't3', Math.round(run.max));
+  $('near').textContent = nearText(mode, Math.round(run.max));
   Sfx.power();
   haptic(won === base * 5 ? 30 : 12);
 });
@@ -3163,15 +3279,28 @@ function renderMissions() {
 function renderMode() {
   for (const b of $('modeSeg').children) b.setAttribute('aria-pressed', String(b.dataset.m === mode));
   for (const b of $('diffSeg').children) b.setAttribute('aria-pressed', String(b.dataset.v === diff));
+  renderDaily();
+}
+const timed = () => mode === 't3' || mode === 'daily';
+let diffPick = null; // the difficulty chosen in the menu while the candy of the day plays on normal
+function fixDiff() {
+  if (mode === 'daily') {
+    if (!diffPick) diffPick = diff;
+    diff = 'normal';
+  } else if (diffPick) {
+    diff = diffPick;
+    diffPick = null;
+  }
 }
 function spawnPlayer(spawnT) {
-  shownMass = DIFFS[diff].start;
+  const m0 = day === 'tiny' ? 16 : DIFFS[diff].start;
+  shownMass = m0;
   const name = (nick.value || '').trim().slice(0, 14) || 'Кусака',
     [x, y] = safeSpawn();
   player = new Blob({
     name,
     pal: PALS[chosen],
-    mass: DIFFS[diff].start,
+    mass: m0,
     x,
     y,
     isPlayer: true,
@@ -3202,15 +3331,18 @@ function startGame() {
     localStorage.setItem('kus.hat', chosenHat);
     localStorage.setItem('kus.skin', chosenSkin);
     localStorage.setItem('kus.mode', mode);
-    localStorage.setItem('kus.diff', diff);
+    localStorage.setItem('kus.diff', diffPick || diff);
   } catch (e) {}
+  fixDiff();
   rollMissions();
   saveM();
   run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0 };
   shownSugar = -1;
   sugarEl.textContent = '';
   runActive = true;
-  timeLeft = mode === 't3' ? 180 : 0;
+  timeLeft = timed() ? 180 : 0;
+  day = null;
+  if (mode === 'daily') startDaily();
   spawnPlayer(4);
   tutor = newcomer ? { prey: tutorPrey() } : null;
   document.body.classList.add('playing');
@@ -3224,6 +3356,7 @@ function startGame() {
     if (!tutor) addFeed('<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты'); // the first run tells this after the first bite
   } else if (tutor) addFeed('Веди мышью: пасть смотрит на курсор');
   else addFeed('<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты');
+  if (day) addFeed(`<b>${run.rule.name}</b>: ${run.rule.note.charAt(0).toLowerCase() + run.rule.note.slice(1)}`, 6500);
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 }
 function tally() {
@@ -3241,6 +3374,7 @@ function finishRun() {
   run.got = 0;
   if (!run.cheated) {
     if (mode === 't3') best3 = Math.max(best3, Math.round(run.max));
+    else if (mode === 'daily') dailySave(run.day, Math.round(run.max));
     else best = Math.max(best, Math.round(run.max));
     run.got = Math.floor(run.sugar + Math.sqrt(run.max)); // plus a bonus for the biggest mass that tails off
     sugar += run.got;
@@ -3268,7 +3402,7 @@ function die(by) {
   state = 'dead';
   deadT = 0;
   killer = by;
-  if (mode === 't3' && runActive && timeLeft > 0) {
+  if (timed() && runActive && timeLeft > 0) {
     run.deaths++;
     addFeed('Тебя съели. Сейчас вернёшься на поле');
     return;
@@ -3298,6 +3432,11 @@ function toMenu() {
   state = 'menu';
   paused = false;
   runActive = false;
+  day = null;
+  if (diffPick) {
+    diff = diffPick;
+    diffPick = null;
+  }
   document.body.classList.remove('playing');
   overEl.classList.add('hidden');
   $('pause').classList.add('hidden');
@@ -3307,42 +3446,56 @@ function toMenu() {
   renderHats();
   renderMissions();
   renderBank();
+  renderMode();
   menuSwitchT = 0;
   menuFade();
 }
 function showOver() {
-  const t3 = mode === 't3',
+  const t3 = timed(),
+    daily = mode === 'daily' && run.rule,
     secs = Math.max(0, Math.round(time - run.t0)),
     score = Math.round(run.max);
   $('overT').textContent = t3 ? 'Время вышло' : 'Тебя доели';
-  whoEl.innerHTML = t3
-    ? 'Три минуты позади. В зачёт идёт самая большая масса.'
-    : killer
-      ? `Последний кусь: <b>${esc(killer.name)}</b>`
-      : 'Тебя растащили по кусочкам';
+  whoEl.innerHTML = daily
+    ? `Конфета дня «${esc(run.rule.name)}»`
+    : t3
+      ? 'Три минуты позади. В зачёт идёт самая большая масса.'
+      : killer
+        ? `Последний кусь: <b>${esc(killer.name)}</b>`
+        : 'Тебя растащили по кусочкам';
   $('sMax').textContent = score;
   $('sBites').textContent = run.bites;
   $('sKills').textContent = run.kills;
   $('sTime').textContent = t3 ? run.deaths : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
   $('sTimeL').textContent = t3 ? 'раз тебя съели' : 'время в игре';
   $('overMis').innerHTML = missionRows();
-  renderSweet(t3, score);
+  renderSweet(mode, score);
   const fresh = HATS.filter((h) => h.need > prevBest && h.need <= best).map((h) => h.name);
+  const streak = daily ? dailyStreak(run.day) : 0;
   bestEl.textContent = run.cheated
-    ? 'С читами рекорд и задания не засчитаны'
-    : t3
-      ? best3 > prevBest3
-        ? `Новый рекорд на 3 минуты: ${best3}`
-        : `Рекорд на 3 минуты: ${best3}`
-      : (best > prevBest ? `Новый рекорд: ${best}` : `Рекорд: ${best}`) + (fresh.length ? `. Открыта шапка: ${fresh.join(', ')}` : '');
+    ? daily
+      ? 'С читами результат дня и задания не засчитаны'
+      : 'С читами рекорд и задания не засчитаны'
+    : daily
+      ? `${score > run.dayPrev && run.dayPrev ? 'Новый лучший' : 'Лучший'} за сегодня: ${dailyBest(run.day)}. ` +
+        (streak > 1 ? `${streak} ${daysWord(streak)} подряд` : 'Первый день серии') +
+        (dailyRec.top > streak ? `, рекорд ${dailyRec.top}` : '')
+      : t3
+        ? best3 > prevBest3
+          ? `Новый рекорд на 3 минуты: ${best3}`
+          : `Рекорд на 3 минуты: ${best3}`
+        : (best > prevBest ? `Новый рекорд: ${best}` : `Рекорд: ${best}`) + (fresh.length ? `. Открыта шапка: ${fresh.join(', ')}` : '');
   $('chalRes').textContent =
-    !challenge || t3 || run.cheated
+    !challenge || (t3 && !(daily && challenge.d === run.day)) || (!t3 && challenge.d) || run.cheated
       ? ''
-      : score > challenge.c
-        ? `Вызов побит: у игрока ${challenge.n} было ${challenge.c}, у тебя ${score}.`
-        : `Вызов от игрока ${challenge.n}: ${challenge.c}. Твой результат: ${score}.`;
-  $('chalBtn').classList.toggle('hidden', t3 || run.cheated || score < 1);
-  $('chalBtn').textContent = 'Бросить вызов другу';
+      : daily
+        ? `${score > challenge.c ? 'Вызов побит' : 'Вызов'}: ${challenge.n} ${challenge.c}, ты ${score}.`
+        : score > challenge.c
+          ? `Вызов побит: у игрока ${challenge.n} было ${challenge.c}, у тебя ${score}.`
+          : `Вызов от игрока ${challenge.n}: ${challenge.c}. Твой результат: ${score}.`;
+  overEl.querySelector('.card').classList.toggle('chal', !!$('chalRes').textContent); // on short screens the challenge line takes the "so close" line's place
+  $('chalBtn').classList.toggle('hidden', (t3 && !daily) || run.cheated || score < 1);
+  $('chalBtn').textContent = daily ? 'Поделиться' : 'Бросить вызов другу';
   $('chalLink').classList.add('hidden');
   overEl.classList.remove('hidden');
   hudEl.classList.add('hidden');
@@ -3478,8 +3631,14 @@ function updateHUD(dt) {
     mission('time', time - player.stats.t0, true);
   }
   const tl = Math.ceil(timeLeft);
-  $('timer').textContent = runActive && mode === 't3' ? `осталось ${Math.floor(tl / 60)}:${String(tl % 60).padStart(2, '0')}` : '';
-  $('goal').textContent = challenge && mode === 'free' && runActive ? `цель: ${challenge.c}` : '';
+  $('timer').textContent = runActive && timed() ? `осталось ${Math.floor(tl / 60)}:${String(tl % 60).padStart(2, '0')}` : '';
+  $('goal').textContent = !runActive
+    ? ''
+    : day
+      ? `конфета дня: ${run.rule.name}${challenge && challenge.d === run.day ? ` · побей ${challenge.c}` : ''}`
+      : challenge && !challenge.d && mode === 'free'
+        ? `цель: ${challenge.c}`
+        : '';
   let fx = '';
   if (player && player.alive)
     for (const [k, prop] of [
@@ -3633,7 +3792,7 @@ function update(dt) {
   updateParts(dt);
   if (blobs.some((b) => !b.alive)) blobs = blobs.filter((b) => b.alive);
   population();
-  if (runActive && mode === 't3') {
+  if (runActive && timed()) {
     timeLeft -= dt;
     if (timeLeft <= 0) {
       timeLeft = 0;
@@ -5880,8 +6039,9 @@ $('chalBtn').addEventListener('click', () => {
   const score = Math.round(run.max),
     name = (nick.value || '').trim().slice(0, 14) || 'Кусака';
   const base = /^https?:$/.test(location.protocol) && !/claude|anthropic/i.test(location.hostname) ? location.origin + location.pathname : PUBLIC_URL;
-  const url = base + '?c=' + score + '&n=' + encodeURIComponent(name),
-    text = `Я набрал ${score} в КУСЬ.io. Побей!`,
+  const daily = mode === 'daily' && run.rule, // a candy-of-the-day link opens the same day's run
+    url = base + '?c=' + score + '&n=' + encodeURIComponent(name) + (daily ? '&d=' + run.day : ''),
+    text = daily ? `КУСЬ.io, конфета дня «${run.rule.name}»: у меня ${score}. Побей до полуночи` : `Я набрал ${score} в КУСЬ.io. Побей!`,
     box = $('chalLink');
   box.value = url;
   box.classList.remove('hidden');
@@ -5892,7 +6052,7 @@ $('chalBtn').addEventListener('click', () => {
     } catch (e) {}
   };
   try {
-    if (touchMode && navigator.share) {
+    if ((touchMode || daily) && navigator.share) {
       navigator.share({ title: 'КУСЬ.io', text, url }).catch(() => {});
       return;
     }
@@ -6063,7 +6223,8 @@ function start(data) {
   best = Math.max(+data.best || 0, stored);
   try {
     best3 = parseInt(localStorage.getItem('kus.best3'), 10) || 0;
-    if (localStorage.getItem('kus.mode') === 't3') mode = 't3';
+    const md = localStorage.getItem('kus.mode');
+    if (md === 't3' || md === 'daily') mode = md;
     const st = JSON.parse(localStorage.getItem('kus.set') || '{}');
     if (st.lefty === true) SET.lefty = true;
     if (st.gfx === 'low' || st.gfx === 'high') SET.gfx = st.gfx;
@@ -6092,9 +6253,16 @@ function start(data) {
     document.body.classList.add('first');
   }
   if (challenge) {
-    $('chal').textContent = `${challenge.n} набрал ${challenge.c}. Побей в свободной игре!`;
+    const t = dailyOf(todayKey());
+    $('chal').textContent = !challenge.d
+      ? `${challenge.n} набрал ${challenge.c}. Побей в свободной игре!`
+      : chalToday()
+        ? `${challenge.n} набрал ${challenge.c} в конфете дня «${t.name}». Побей сегодня`
+        : challenge.d > t.key
+          ? `Это вызов на конфету за ${keyText(challenge.d)}, у тебя она ещё не началась. Сегодня «${t.name}», сыграй её`
+          : `Это ${challenge.d === prevKey(t.key) ? 'вчерашняя конфета' : `конфета за ${keyText(challenge.d)}`}, она уже закончилась. Сегодня новая: «${t.name}», сыграй её`;
     $('chal').classList.remove('hidden');
-    mode = 'free';
+    mode = challenge.d ? 'daily' : 'free';
   }
   renderSwatches();
   renderSkins();
@@ -6189,6 +6357,27 @@ window.__kus = {
   setMode(m) {
     mode = m;
     renderMode();
+  },
+  toMenu,
+  daily: {
+    force(id) {
+      dayForce = id;
+    },
+    of: dailyOf,
+    todayKey,
+    prevKey,
+    save: dailySave,
+    best: dailyBest,
+    streak: dailyStreak,
+    get rec() {
+      return dailyRec;
+    },
+    get day() {
+      return day;
+    },
+  },
+  get challenge() {
+    return challenge;
   },
   get run() {
     return run;

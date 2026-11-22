@@ -204,7 +204,7 @@ function updateBlob(b, dt) {
   const want = Blob.ptsFor(b.Rs);
   if (Math.abs(want - b.pts.length) > Math.max(2, b.pts.length * 0.08)) b.buildPoints(want);
   b.biteCd -= dt;
-  b.dashCd -= dt;
+  b.dashCd -= b.isPlayer && day === 'quick' ? dt * 2 : dt;
   b.dashT -= dt;
   b.dodgeCd -= dt;
   b.dodgeT -= dt;

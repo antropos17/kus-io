@@ -54,9 +54,14 @@ function grant(b, type) {
 function updatePickups(dt) {
   pickT -= dt;
   if (pickT <= 0) {
-    pickT = rand(5, 9);
+    pickT = day === 'magnet' ? rand(2.5, 4.5) : rand(5, 9);
     if (pickups.length < 6)
-      pickups.push({ type: ['speed', 'shield', 'magnet'][randi(3)], x: rand(220, WORLD - 220), y: rand(220, WORLD - 220), t: 0 });
+      pickups.push({
+        type: day === 'magnet' ? 'magnet' : ['speed', 'shield', 'magnet'][randi(3)],
+        x: rand(220, WORLD - 220),
+        y: rand(220, WORLD - 220),
+        t: 0,
+      });
   }
   for (let i = pickups.length - 1; i >= 0; i--) {
     const p = pickups[i];
@@ -108,7 +113,7 @@ function updateFood(dt) {
       const d2 = dx * dx + dy * dy,
         er = b.Rs * 0.88 + 2;
       if (d2 < er * er) {
-        b.mass += f.m;
+        b.mass += day === 'double' && !f.kind ? f.m * 2 : f.m;
         if (b.isPlayer) {
           Sfx.pop();
           if (!f.kind) mission('food', 1);
