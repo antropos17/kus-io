@@ -77,7 +77,7 @@ Between runs:
 - The whole game is one HTML file with no external scripts (only web fonts are loaded). It is built from the sources in `src/` and can be opened straight from disk.
 - Canvas 2D and plain JavaScript: no libraries, no framework, no server. All rivals are bots that run in the page.
 - Soft bodies: every candy is a ring of points that springs back to its shape, dents on contact and wobbles like jelly.
-- All sound is synthesized with the Web Audio API while the game runs; there are no audio files.
+- Sound: most effects are short recorded takes made with [earshot](https://github.com/Leonxlnx/earshot) and embedded in the page as data, so there are still no separate audio files. The stretchy strand, and any take that fails to decode, is synthesized with the Web Audio API.
 - The graphics tune themselves: when frames start to drop, the game lowers the detail and then the resolution, and raises them again when there is room.
 - Movement does not depend on the frame rate, and the system "reduce motion" setting turns off flashes and camera kicks.
 
@@ -92,6 +92,7 @@ npm test        # build, then run the tests in headless Chrome
 npm run check   # fail if index.html does not match src/
 npm run og      # rebuild og.png, the link preview picture
 npm run shots   # rebuild the screenshots in docs/media/
+npm run sfx     # re-embed the sound takes listed in tools/sfx.json (needs ffmpeg and the earshot takes on disk)
 ```
 
 `index.html` in the root is generated from `src/` and committed together with the sources, because GitHub Pages serves it. Edit `src/`, then run `npm run build`.

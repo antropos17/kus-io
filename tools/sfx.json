@@ -1,0 +1,20 @@
+{
+  "about": "Which earshot take plays each sound event. `node tools/sfx.mjs` turns this into src/js/05-sound-data.js. An event left out (or set to null) plays the old synth. max: seconds kept from the start of the take, trim_db: extra level on top of the level matched to the synth.",
+  "src": "X:/Claude/tools/kus-sfx",
+  "events": {
+    "chomp": { "sound": "step/snow", "max": 0.32, "trim_db": 0 },
+    "munch": { "sound": "step/grass", "max": 0.22, "trim_db": 0 },
+    "stretch": null,
+    "snap": { "sound": "like/pop", "max": 0.25, "trim_db": 0 },
+    "bloop": { "sound": "drip/bloop", "max": 0.3, "trim_db": 0 },
+    "ding": { "sound": "coin/soft", "max": 0.8, "trim_db": 0 },
+    "hurt": { "sound": "toy/squeak", "max": 0.45, "trim_db": 0 },
+    "gulp": { "sound": "teleport/out", "max": 0.55, "trim_db": 0 },
+    "pop": { "sound": "drip/tiny", "max": 0.12, "trim_db": 0 },
+    "boing": { "sound": "jump/spring", "max": 0.6, "trim_db": 0 },
+    "thwip": { "sound": "flick/thin", "max": 0.25, "trim_db": 0 },
+    "squelch": { "sound": "step/mud", "max": 0.5, "trim_db": 0 },
+    "power": { "sound": "power_up/rise", "max": 1.1, "trim_db": 0 },
+    "dash": { "sound": "dash/air", "max": 0.5, "trim_db": 0 }
+  }
+}
