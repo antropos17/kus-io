@@ -155,13 +155,29 @@ hatsEl.addEventListener('click', (e) => {
   const el = hatsEl.querySelector(`[data-h="${chosenHat}"]`);
   if (el) el.focus();
 });
-const skinsEl = $('skins');
+const skinsEl = $('skins'),
+  bankEl = $('bank');
+let askSkin = null,
+  bankT = 0;
+function renderBank(msg) {
+  // the sugar balance; a message replaces it for a few seconds
+  clearTimeout(bankT);
+  bankEl.textContent = msg || `Сахар: ${sugar}`;
+  if (msg) bankT = setTimeout(() => renderBank(), 3200);
+}
 function renderSkins() {
   if (!SKINS.some((k) => k[0] === chosenSkin)) chosenSkin = 'plain';
   if (!skinOpen(chosenSkin)) chosenSkin = 'plain';
-  skinsEl.innerHTML = SKINS.map(([id, name]) => {
-    const lock = !skinOpen(id);
-    return `<button type="button" role="radio" aria-checked="${id === chosenSkin}" aria-disabled="${lock}" aria-label="${name}${lock ? ', откроется за задание' : ''}" title="${name}${lock ? ': откроется за задание' : ''}" data-s="${id}"${lock ? ' class="lock"' : ''}><canvas width="92" height="92"></canvas></button>`;
+  skinsEl.innerHTML = SKINS.map(([id, name], i) => {
+    const lock = !skinOpen(id),
+      price = SKIN_PRICE(i),
+      tag = !lock
+        ? ''
+        : askSkin === id
+          ? '<small class="pz ask">купить</small>'
+          : `<small class="pz${sugar >= price ? ' can' : ''}">${price}</small>`,
+      why = lock ? `: за задание или за ${price} сахара` : '';
+    return `<button type="button" role="radio" aria-checked="${id === chosenSkin}" aria-label="${name}${why}" title="${name}${why}" data-s="${id}"${lock ? ' class="lock"' : ''}><canvas width="92" height="92"></canvas>${tag}</button>`;
   }).join('');
   const pal = PALS[chosen];
   for (const btn of skinsEl.children) {
@@ -211,9 +227,42 @@ function renderSkins() {
 }
 skinsEl.addEventListener('click', (e) => {
   const t = e.target.closest('button');
-  if (!t || t.classList.contains('lock')) return;
-  chosenSkin = t.dataset.s;
-  for (const b of skinsEl.children) b.setAttribute('aria-checked', String(b.dataset.s === chosenSkin));
+  if (!t) return;
+  const id = t.dataset.s,
+    i = SKINS.findIndex((k) => k[0] === id),
+    price = SKIN_PRICE(i),
+    name = SKINS[i][1],
+    wasAsk = askSkin;
+  if (t.classList.contains('lock')) {
+    // a locked pattern is bought with two taps, so a stray tap never spends sugar
+    if (sugar < price) {
+      askSkin = null;
+      renderBank(`«${name}»: ${price} сахара, у тебя ${sugar}`);
+    } else if (askSkin !== id) {
+      askSkin = id;
+      renderBank(`Ещё раз: купить «${name}» за ${price}`);
+    } else {
+      sugar -= price;
+      saveSugar();
+      M.open.push(id);
+      saveM();
+      askSkin = null;
+      chosenSkin = id;
+      Sfx.init();
+      Sfx.power();
+      haptic(20);
+      renderMissions();
+      renderBank(`Узор «${name}» твой`);
+    }
+    if (wasAsk !== askSkin || chosenSkin === id) renderSkins();
+    const el = skinsEl.querySelector(`[data-s="${id}"]`);
+    if (el) el.focus();
+    return;
+  }
+  askSkin = null;
+  chosenSkin = id;
+  if (wasAsk) renderSkins();
+  else for (const b of skinsEl.children) b.setAttribute('aria-checked', String(b.dataset.s === chosenSkin));
 });
 function renderSwatches() {
   swEl.innerHTML = PALS.map(
@@ -230,3 +279,16 @@ swEl.addEventListener('click', (e) => {
   const el = swEl.querySelector(`[data-i="${chosen}"]`);
   if (el) el.focus();
 });
+
+// The sticky play block covers whatever scrolls under it. Fade that edge only while it really covers something:
+// a zero-height mark sits where the block would be without sticky, so the block is stuck when it rides above the mark.
+const menuCard = menuEl.querySelector('.card'),
+  menuGo = menuEl.querySelector('.go'),
+  menuGoMark = document.createElement('div');
+menuGo.parentNode.insertBefore(menuGoMark, menuGo);
+function menuFade() {
+  menuGo.classList.toggle('stuck', menuGoMark.getBoundingClientRect().top > menuGo.getBoundingClientRect().top + 1);
+}
+menuCard.addEventListener('scroll', menuFade, { passive: true });
+addEventListener('resize', menuFade);
+requestAnimationFrame(menuFade);

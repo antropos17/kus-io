@@ -149,6 +149,7 @@ function start(data) {
     stored = parseInt(localStorage.getItem('kus.best'), 10) || 0;
     chosenHat = localStorage.getItem('kus.hat') || 'none';
     chosenSkin = localStorage.getItem('kus.skin') || 'plain';
+    sugar = Math.max(0, parseInt(localStorage.getItem('kus.sugar'), 10) || 0);
     if (localStorage.getItem('kus.lbmin') === '1') $('board').classList.add('min');
   } catch (e) {}
   if (typeof data.skin === 'string') chosenSkin = data.skin;
@@ -184,6 +185,7 @@ function start(data) {
   renderSkins();
   renderHats();
   renderMissions();
+  renderBank();
   renderMode();
   applySet();
   for (let i = 0; i < FOOD_TARGET; i++) addSprinkle();
@@ -257,6 +259,15 @@ window.__kus = {
   },
   spawnSpecial,
   M,
+  mission,
+  get sugar() {
+    return sugar;
+  },
+  setSugar(v) {
+    sugar = v;
+    renderBank();
+    renderSkins();
+  },
   get pickups() {
     return pickups;
   },

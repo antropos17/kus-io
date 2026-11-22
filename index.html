@@ -108,6 +108,29 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #chalRes{margin:10px 0 0;font:800 14px/1.3 var(--font);color:var(--ink)}
 #chalLink{display:block;width:100%;margin-top:8px;font:700 13px var(--font);padding:9px 10px;border:2px solid #ead2b9;border-radius:10px;background:#fff;color:var(--ink);-webkit-user-select:text;user-select:text}
 #overMis{margin:0 0 14px}
+#sugar{display:inline-block;transform-origin:0 50%;margin-top:4px;font:900 14px/1 var(--font);color:var(--ink);background:var(--lemon);padding:4px 9px;border-radius:99px;font-variant-numeric:tabular-nums}
+#sugar:empty{display:none}
+#bank{margin:8px 0 0;font:800 14px/1.3 var(--font);color:#7a5a49;font-variant-numeric:tabular-nums}
+#skins button{position:relative}
+#skins .pz{position:absolute;left:50%;bottom:0;transform:translateX(-50%);font:900 10px/1 var(--font);padding:2px 5px;border-radius:99px;background:#ead2b9;color:var(--ink);white-space:nowrap;pointer-events:none;font-variant-numeric:tabular-nums}
+#skins .pz.can{background:var(--lemon)}
+#skins .pz.ask{background:var(--berry);color:#fff}
+#sweet{margin:0 0 10px;padding:8px 12px;border-radius:14px;background:#fff;box-shadow:inset 0 -3px 0 #f0dcc6}
+.sw1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.sw1 b{font:900 26px/1.1 var(--font);color:var(--berry2);font-variant-numeric:tabular-nums}
+.sw1 span{font:700 13px/1.2 var(--font);color:#7a5a49}
+#sweetBank{margin-left:auto;font-weight:800}
+#chestT{margin:6px 0 8px;font:800 14px/1.3 var(--font);color:var(--ink)}
+#chestRow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#chestRow button{min-height:48px;border:0;border-radius:14px;background:var(--lemon);color:var(--ink);font:900 20px/1 var(--font);cursor:pointer;box-shadow:0 4px 0 #d9a91f;transition:transform .08s}
+#chestRow button:active{transform:translateY(2px)}
+#chestRow button:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
+#chestRow button:disabled{cursor:default;box-shadow:none}
+#chestRow button.open{background:#f0dcc6;color:#7a5a49}
+#chestRow button.got{background:var(--berry);color:#fff}
+#near{margin-top:6px}
+@media (max-height:760px){#over .card.paid #overMis{display:none}#over .card.paid .stats{margin-bottom:6px}#over .card.paid .best{margin-top:6px}}
+#near:empty{display:none}
 #pause .grp{font:900 15px/1.2 var(--font);margin:14px 0 8px;color:var(--ink)}
 #skins button.lock{cursor:not-allowed}
 #mute{position:fixed;right:14px;bottom:162px;z-index:3;width:44px;height:44px;border-radius:50%;border:0;background:var(--cream);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.4);padding:0}
@@ -136,6 +159,9 @@ h2.dead{margin:0;font:900 clamp(32px,6vw,42px)/1.05 var(--font);letter-spacing:-
 .pl{display:block;font:800 13px/1.2 var(--font);color:#7a5a49;margin:0 0 6px}
 .pr{display:flex;flex-wrap:wrap;gap:8px}
 .go{position:sticky;bottom:0;z-index:1;margin-top:6px;padding:12px 0 8px;background:linear-gradient(rgba(255,241,220,0),var(--cream) 12px)} /* the button stays in reach however long the menu gets */
+.go::before{content:'';position:absolute;left:-6px;right:-6px;bottom:100%;height:56px;background:linear-gradient(rgba(255,241,220,0),var(--cream) 70%);pointer-events:none;opacity:0;transition:opacity .15s} /* while the block covers a row, fade that row out instead of slicing it */
+.go.stuck{background:var(--cream);box-shadow:-6px 0 0 var(--cream),6px 0 0 var(--cream)}
+.go.stuck::before{opacity:1}
 #skins button{width:50px;height:50px;border-radius:50%;border:3px solid transparent;padding:0;background:none;cursor:pointer;transition:transform .1s}
 #skins canvas{display:block;width:100%;height:100%;border-radius:50%}
 #skins button[aria-checked=true]{border-color:var(--ink);transform:scale(1.08)}
@@ -202,6 +228,17 @@ body.touch #feed div{background:rgba(20,11,8,.55);color:var(--cream);box-shadow:
   .seg2,.seg3{margin-bottom:6px}
   .seg2 button,.seg3 button{min-height:34px;padding:4px 8px}
   #overMis{display:none}
+  #bank{margin:0 40px 0 0;flex:0 1 13em;font-size:13px;line-height:1.2}
+  #sweet{margin-bottom:4px;padding:6px 10px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:center}
+  .sw1 b{font-size:20px}
+  .sw1 span:not(#sweetBank){display:none}
+  #chestT{margin:0;font-size:13px}
+  #chestRow{grid-column:1/-1}
+  #chestRow button{min-height:34px;font-size:16px}
+  #over .card.paid .tag{display:none}
+  #over .card.paid .stats{margin-bottom:8px}
+  #over .card.paid .best{margin-top:3px;font-size:13px}
+  #over .card.paid .btn2{margin-top:5px;padding:8px}
   .btn2{margin-top:6px;padding:9px}
   #nick{flex:1;width:auto;padding:9px 12px;font-size:16px}
   .pk{margin-top:8px}
@@ -255,7 +292,7 @@ document.getElementById('nojs').style.display = 'none';
 <div id="safe"></div>
 
 <div id="hud" class="hidden">
-  <div id="score"><div id="mass">0</div><div class="lbl">масса</div><div id="timer"></div><div id="goal"></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="feed" aria-live="polite"></div></div>
+  <div id="score"><div id="mass">0</div><div class="lbl">масса</div><div id="sugar"></div><div id="timer"></div><div id="goal"></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="feed" aria-live="polite"></div></div>
   <button id="pauseBtn" type="button" aria-label="Пауза" title="Пауза (Esc)"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
   <button id="dash" type="button" aria-label="Рывок с укусом"><span><b>Кусь</b><small>пробел</small></span></button>
   <button id="dodge" type="button" aria-label="Язык-присоска"><span><b>Язык</b><small>shift</small></span></button>
@@ -273,6 +310,7 @@ document.getElementById('nojs').style.display = 'none';
     <h1 class="logo">КУСЬ<span>.io</span></h1>
     <p class="tag">Откусывай куски от других конфет и расти. Тебя тоже будут кусать: ранки затянутся, а есть можно дальше.</p>
     <input id="nick" maxlength="14" placeholder="Твоё имя" autocomplete="off" spellcheck="false" aria-label="Имя">
+    <p id="bank" aria-live="polite"></p>
     </div>
     <p id="chal" class="hidden"></p>
     <div class="pk" id="dif"><span class="pl">Сложность</span><div class="seg3" id="diffSeg" role="group" aria-label="Сложность"><button type="button" data-v="easy">Лёгкая</button><button type="button" data-v="normal">Обычная</button><button type="button" data-v="hard">Жёсткая</button></div></div>
@@ -319,6 +357,11 @@ document.getElementById('nojs').style.display = 'none';
       <div><b id="sKills">0</b><span>съедено целиком</span></div>
       <div><b id="sTime">0:00</b><span id="sTimeL">время в игре</span></div>
     </div>
+    <div id="sweet" class="hidden">
+      <div class="sw1"><b id="sweetN">+0</b><span>сахара за раунд</span><span id="sweetBank"></span></div>
+      <p id="chestT"></p>
+      <div id="chestRow" role="group" aria-label="Три конфеты"></div>
+    </div>
     <div id="overMis"></div>
     <button id="again" class="btn" type="button">Ещё кусь</button>
     <button id="chalBtn" class="btn2" type="button">Бросить вызов другу</button>
@@ -326,6 +369,7 @@ document.getElementById('nojs').style.display = 'none';
     <button id="toMenu" class="btn2" type="button">В меню</button>
     <p id="chalRes"></p>
     <p class="best" id="best"></p>
+    <p class="best" id="near"></p>
   </div></div>
 </div>
 
@@ -445,6 +489,8 @@ const SKINS = [
   ['galaxy', 'Космос'],
 ];
 const FREE_SKINS = 4; // the rest are prizes for missions
+const SKIN_PRICE = (i) => 150 + (i - FREE_SKINS) * 100; // or bought with sugar, dearer further down the list
+const SUGAR = { bites: 1, food: 0.2, kills: 6, wound: 1, tongue: 2, pickup: 2, piranha: 2, hedge: 3, cake: 3 }; // sugar per action in a clean run
 const skinArt = {};
 function skinTile(id) {
   // each skin is one small see-through tile, painted once and laid over any flavour
@@ -782,7 +828,8 @@ let mode = 'free',
   best3 = 0,
   prevBest3 = 0,
   lastFx = '';
-let run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: 0, cheated: false }; // totals for the whole run, across lives in the timed mode
+let run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: 0, cheated: false, sugar: 0 }; // totals for the whole run, across lives in the timed mode
+let sugar = 0; // sugar in the bank, spent on patterns
 const SET = { lefty: false, bs: 1, gfx: 'auto', fps: false };
 const DIFFS = {
   // start mass, how eagerly bots go for you, seconds between lucky escapes (0 = none), your speed edge, how long a bot keeps chasing
@@ -2950,11 +2997,13 @@ function rollMissions() {
 }
 function mission(type, n, absolute) {
   if (!runActive || !player || player.cheated) return;
+  if (!absolute && SUGAR[type]) earn(n * SUGAR[type] * (type === 'bites' ? Math.min(player.combo || 1, 5) : 1)); // a streak sweetens every bite
   for (const m of M.act) {
     if (m.type !== type || m.got >= m.need) continue;
     m.got = absolute ? Math.max(m.got, Math.min(m.need, Math.floor(n))) : Math.min(m.need, m.got + n);
     if (m.got >= m.need) {
       // done: the prize is the next locked skin
+      earn(15);
       const pz = nextPrize();
       if (pz) {
         M.open.push(pz[0]);
@@ -2974,6 +3023,87 @@ const missionRows = () =>
       return `<div class="mi${done ? ' ok' : ''}"><span class="mt">${t[1]}${done ? (m.prize ? `: открыт узор «${m.prize}»` : ': готово') : ''}</span><span class="mv">${Math.floor(m.got)} / ${m.need}</span><div class="mb"><i style="width:${Math.round((100 * m.got) / m.need)}%"></i></div></div>`;
     })
     .join('');
+// ---------- sugar ----------
+const sugarEl = $('sugar');
+let shownSugar = -1;
+function earn(n) {
+  run.sugar += n;
+  const v = Math.floor(run.sugar);
+  if (v === shownSugar) return;
+  shownSugar = v;
+  sugarEl.textContent = `сахар ${v}`;
+  if (!calm && sugarEl.animate) sugarEl.animate([{ transform: 'scale(1.25)' }, { transform: 'scale(1)' }], { duration: 220, easing: 'ease-out' });
+}
+function saveSugar() {
+  try {
+    localStorage.setItem('kus.sugar', String(sugar));
+  } catch (e) {}
+}
+function cheapestSkin() {
+  const i = SKINS.findIndex((k) => !skinOpen(k[0]));
+  return i < 0 ? null : { id: SKINS[i][0], name: SKINS[i][1], price: SKIN_PRICE(i) };
+}
+function countUp(el, n) {
+  if (calm || n < 2) {
+    el.textContent = '+' + n;
+    return;
+  }
+  const t0 = performance.now(),
+    tick = () => {
+      const k = Math.min(1, (performance.now() - t0) / 800);
+      el.textContent = '+' + Math.round(n * (1 - (1 - k) * (1 - k)));
+      if (k < 1) requestAnimationFrame(tick);
+    };
+  tick();
+}
+function nearText(t3, score) {
+  // the "so close" line: the nearest thing just out of reach
+  const out = [];
+  if (!run.cheated) {
+    if (t3 && score < best3) out.push(`До рекорда на 3 минуты не хватило ${best3 - score}`);
+    if (!t3 && score < best) out.push(`До рекорда не хватило ${best - score}`);
+    const h = HATS.find((x) => x.need > best);
+    if (!t3 && h) out.push(`До шапки «${h.name}» ещё ${h.need - best} массы`);
+  }
+  const s = cheapestSkin();
+  if (s) out.push(sugar >= s.price ? `Сахара хватает на узор «${s.name}», он в меню` : `До узора «${s.name}» ещё ${s.price - sugar} сахара`);
+  return out.slice(0, 2).join('. ');
+}
+function renderSweet(t3, score) {
+  const got = run.got || 0;
+  $('sweet').classList.toggle('hidden', !got);
+  overEl.querySelector('.card').classList.toggle('paid', !!got); // on short screens the sugar takes the missions' place
+  $('near').textContent = nearText(t3, score);
+  if (!got) return;
+  countUp($('sweetN'), got);
+  $('sweetBank').textContent = `в копилке ${sugar}`;
+  $('chestT').textContent = 'Выбери конфету: в одной много сахара';
+  $('chestRow').innerHTML = [0, 1, 2].map((i) => `<button type="button" data-i="${i}" aria-label="Конфета ${i + 1}">?</button>`).join('');
+}
+$('chestRow').addEventListener('click', (e) => {
+  const t = e.target.closest('button');
+  if (!t || !run.chest) return;
+  run.chest = false;
+  const base = clamp(Math.round(run.got * 0.3), 3, 40),
+    prizes = [base, base * 2, base * 5];
+  for (let i = 2; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [prizes[i], prizes[j]] = [prizes[j], prizes[i]];
+  }
+  const won = prizes[+t.dataset.i];
+  sugar += won;
+  saveSugar();
+  [...$('chestRow').children].forEach((b, i) => {
+    b.textContent = '+' + prizes[i];
+    b.disabled = true;
+    b.classList.add(b === t ? 'got' : 'open');
+  });
+  $('chestT').textContent = won === base * 5 ? `Самая сладкая! +${won} сахара` : `+${won} сахара`;
+  $('sweetBank').textContent = `в копилке ${sugar}`;
+  $('near').textContent = nearText(mode === 't3', Math.round(run.max));
+  Sfx.power();
+  haptic(won === base * 5 ? 30 : 12);
+});
 function renderMissions() {
   $('misT').textContent = nextPrize() ? 'Задания: за каждое новый узор' : 'Задания (все узоры уже открыты)';
   $('misList').innerHTML = missionRows();
@@ -3024,7 +3154,9 @@ function startGame() {
   } catch (e) {}
   rollMissions();
   saveM();
-  run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false };
+  run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0 };
+  shownSugar = -1;
+  sugarEl.textContent = '';
   runActive = true;
   timeLeft = mode === 't3' ? 180 : 0;
   spawnPlayer(4);
@@ -3052,10 +3184,15 @@ function finishRun() {
   document.body.classList.remove('playing');
   prevBest = best;
   prevBest3 = best3;
+  run.got = 0;
   if (!run.cheated) {
     if (mode === 't3') best3 = Math.max(best3, Math.round(run.max));
     else best = Math.max(best, Math.round(run.max));
+    run.got = Math.floor(run.sugar + Math.sqrt(run.max)); // plus a bonus for the biggest mass that tails off
+    sugar += run.got;
   }
+  run.chest = run.got > 0;
+  saveSugar();
   try {
     localStorage.setItem('kus.best', String(best));
     localStorage.setItem('kus.best3', String(best3));
@@ -3109,7 +3246,9 @@ function toMenu() {
   renderSkins();
   renderHats();
   renderMissions();
+  renderBank();
   menuSwitchT = 0;
+  menuFade();
 }
 function showOver() {
   const t3 = mode === 't3',
@@ -3127,6 +3266,7 @@ function showOver() {
   $('sTime').textContent = t3 ? run.deaths : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
   $('sTimeL').textContent = t3 ? 'раз тебя съели' : 'время в игре';
   $('overMis').innerHTML = missionRows();
+  renderSweet(t3, score);
   const fresh = HATS.filter((h) => h.need > prevBest && h.need <= best).map((h) => h.name);
   bestEl.textContent = run.cheated
     ? 'С читами рекорд и задания не засчитаны'
@@ -5201,13 +5341,29 @@ hatsEl.addEventListener('click', (e) => {
   const el = hatsEl.querySelector(`[data-h="${chosenHat}"]`);
   if (el) el.focus();
 });
-const skinsEl = $('skins');
+const skinsEl = $('skins'),
+  bankEl = $('bank');
+let askSkin = null,
+  bankT = 0;
+function renderBank(msg) {
+  // the sugar balance; a message replaces it for a few seconds
+  clearTimeout(bankT);
+  bankEl.textContent = msg || `Сахар: ${sugar}`;
+  if (msg) bankT = setTimeout(() => renderBank(), 3200);
+}
 function renderSkins() {
   if (!SKINS.some((k) => k[0] === chosenSkin)) chosenSkin = 'plain';
   if (!skinOpen(chosenSkin)) chosenSkin = 'plain';
-  skinsEl.innerHTML = SKINS.map(([id, name]) => {
-    const lock = !skinOpen(id);
-    return `<button type="button" role="radio" aria-checked="${id === chosenSkin}" aria-disabled="${lock}" aria-label="${name}${lock ? ', откроется за задание' : ''}" title="${name}${lock ? ': откроется за задание' : ''}" data-s="${id}"${lock ? ' class="lock"' : ''}><canvas width="92" height="92"></canvas></button>`;
+  skinsEl.innerHTML = SKINS.map(([id, name], i) => {
+    const lock = !skinOpen(id),
+      price = SKIN_PRICE(i),
+      tag = !lock
+        ? ''
+        : askSkin === id
+          ? '<small class="pz ask">купить</small>'
+          : `<small class="pz${sugar >= price ? ' can' : ''}">${price}</small>`,
+      why = lock ? `: за задание или за ${price} сахара` : '';
+    return `<button type="button" role="radio" aria-checked="${id === chosenSkin}" aria-label="${name}${why}" title="${name}${why}" data-s="${id}"${lock ? ' class="lock"' : ''}><canvas width="92" height="92"></canvas>${tag}</button>`;
   }).join('');
   const pal = PALS[chosen];
   for (const btn of skinsEl.children) {
@@ -5257,9 +5413,42 @@ function renderSkins() {
 }
 skinsEl.addEventListener('click', (e) => {
   const t = e.target.closest('button');
-  if (!t || t.classList.contains('lock')) return;
-  chosenSkin = t.dataset.s;
-  for (const b of skinsEl.children) b.setAttribute('aria-checked', String(b.dataset.s === chosenSkin));
+  if (!t) return;
+  const id = t.dataset.s,
+    i = SKINS.findIndex((k) => k[0] === id),
+    price = SKIN_PRICE(i),
+    name = SKINS[i][1],
+    wasAsk = askSkin;
+  if (t.classList.contains('lock')) {
+    // a locked pattern is bought with two taps, so a stray tap never spends sugar
+    if (sugar < price) {
+      askSkin = null;
+      renderBank(`«${name}»: ${price} сахара, у тебя ${sugar}`);
+    } else if (askSkin !== id) {
+      askSkin = id;
+      renderBank(`Ещё раз: купить «${name}» за ${price}`);
+    } else {
+      sugar -= price;
+      saveSugar();
+      M.open.push(id);
+      saveM();
+      askSkin = null;
+      chosenSkin = id;
+      Sfx.init();
+      Sfx.power();
+      haptic(20);
+      renderMissions();
+      renderBank(`Узор «${name}» твой`);
+    }
+    if (wasAsk !== askSkin || chosenSkin === id) renderSkins();
+    const el = skinsEl.querySelector(`[data-s="${id}"]`);
+    if (el) el.focus();
+    return;
+  }
+  askSkin = null;
+  chosenSkin = id;
+  if (wasAsk) renderSkins();
+  else for (const b of skinsEl.children) b.setAttribute('aria-checked', String(b.dataset.s === chosenSkin));
 });
 function renderSwatches() {
   swEl.innerHTML = PALS.map(
@@ -5276,6 +5465,19 @@ swEl.addEventListener('click', (e) => {
   const el = swEl.querySelector(`[data-i="${chosen}"]`);
   if (el) el.focus();
 });
+
+// The sticky play block covers whatever scrolls under it. Fade that edge only while it really covers something:
+// a zero-height mark sits where the block would be without sticky, so the block is stuck when it rides above the mark.
+const menuCard = menuEl.querySelector('.card'),
+  menuGo = menuEl.querySelector('.go'),
+  menuGoMark = document.createElement('div');
+menuGo.parentNode.insertBefore(menuGoMark, menuGo);
+function menuFade() {
+  menuGo.classList.toggle('stuck', menuGoMark.getBoundingClientRect().top > menuGo.getBoundingClientRect().top + 1);
+}
+menuCard.addEventListener('scroll', menuFade, { passive: true });
+addEventListener('resize', menuFade);
+requestAnimationFrame(menuFade);
 
 // ---------- admin panel ----------
 const admEl = $('adm'),
@@ -5772,6 +5974,7 @@ function start(data) {
     stored = parseInt(localStorage.getItem('kus.best'), 10) || 0;
     chosenHat = localStorage.getItem('kus.hat') || 'none';
     chosenSkin = localStorage.getItem('kus.skin') || 'plain';
+    sugar = Math.max(0, parseInt(localStorage.getItem('kus.sugar'), 10) || 0);
     if (localStorage.getItem('kus.lbmin') === '1') $('board').classList.add('min');
   } catch (e) {}
   if (typeof data.skin === 'string') chosenSkin = data.skin;
@@ -5807,6 +6010,7 @@ function start(data) {
   renderSkins();
   renderHats();
   renderMissions();
+  renderBank();
   renderMode();
   applySet();
   for (let i = 0; i < FOOD_TARGET; i++) addSprinkle();
@@ -5880,6 +6084,15 @@ window.__kus = {
   },
   spawnSpecial,
   M,
+  mission,
+  get sugar() {
+    return sugar;
+  },
+  setSugar(v) {
+    sugar = v;
+    renderBank();
+    renderSkins();
+  },
   get pickups() {
     return pickups;
   },

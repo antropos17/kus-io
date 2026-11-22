@@ -124,6 +124,86 @@ test('streak, jelly wobble and swallowing whole', async () => {
   await g.close();
 });
 
+test('sugar: earned in a clean run, paid at the end, one chest pick, two-tap shop', async () => {
+  const g = await open({ play: false });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {};
+    k.setSugar(0);
+    k.pause(true);
+    k.setMode('t3');
+    k.startGame();
+    const P = k.player;
+    P.spawnT = 0;
+    P.combo = 1;
+    k.mission('bites', 1);
+    P.combo = 4;
+    k.mission('bites', 1);
+    k.mission('kills', 1);
+    k.mission('mass', 999, true); // progress-type missions never pay sugar by themselves
+    out.during = k.run.sugar;
+    out.hud = document.getElementById('sugar').textContent;
+    k.setTimeLeft(0.001);
+    for (let i = 0; i < 90; i++) k.update(1 / 60);
+    out.over = !document.getElementById('over').classList.contains('hidden');
+    out.got = k.run.got;
+    out.bank = k.sugar;
+    const row = document.getElementById('chestRow');
+    row.children[1].click();
+    const after = k.sugar;
+    row.children[0].click(); // a second pick does nothing
+    out.prizes = [...row.children].map((b) => +b.textContent);
+    out.chestWon = after - out.bank;
+    out.twice = k.sugar === after;
+    out.near = document.getElementById('near').textContent;
+    // shop: not enough sugar, then a first tap asks, a second tap buys
+    k.setSugar(10);
+    const lock = () => document.querySelector('#skins button.lock');
+    const id = lock().dataset.s;
+    lock().click();
+    out.poor = k.sugar === 10 && !k.M.open.includes(id);
+    k.setSugar(5000);
+    document.querySelector(`#skins [data-s="${id}"]`).click();
+    out.asked = k.sugar === 5000 && !!document.querySelector(`#skins [data-s="${id}"] .pz.ask`);
+    document.querySelector(`#skins [data-s="${id}"]`).click();
+    out.bought = k.M.open.includes(id) && k.sugar === 5000 - 150;
+    out.saved = localStorage.getItem('kus.sugar');
+    return out;
+  });
+  assert(r.during === 1 + 4 + 6, `sugar during the run should be 11 (bite, bite ×4 streak, kill), got ${r.during}`);
+  assert(r.hud === 'сахар 11', `HUD shows "${r.hud}"`);
+  assert(r.over && r.got >= 11 && r.bank === r.got, `end of run must pay ${r.got} into the bank, bank is ${r.bank}`);
+  assert(r.prizes.length === 3 && r.prizes.includes(r.chestWon) && r.chestWon > 0, `chest prizes ${r.prizes}, won ${r.chestWon}`);
+  assert(r.twice, 'the chest paid twice');
+  assert(r.near.includes('узор'), `no "so close" line: "${r.near}"`);
+  assert(r.poor, 'a pattern was sold without enough sugar');
+  assert(r.asked, 'the first tap must only ask');
+  assert(r.bought && r.saved === String(5000 - 150), 'the second tap must buy the pattern and save the bank');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('sugar: none for a run with cheats', async () => {
+  const g = await open({ play: false });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus;
+    k.setSugar(0);
+    k.pause(true);
+    k.setMode('t3');
+    k.startGame();
+    k.player.spawnT = 0;
+    k.mission('bites', 1);
+    k.player.cheated = true;
+    k.mission('bites', 1);
+    k.setTimeLeft(0.001);
+    for (let i = 0; i < 90; i++) k.update(1 / 60);
+    return { bank: k.sugar, chest: !document.getElementById('sweet').classList.contains('hidden') };
+  });
+  assert(r.bank === 0 && !r.chest, `a cheated run paid ${r.bank} sugar`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 test('settings: difficulty and graphics apply and are remembered', async () => {
   const g = await open({ play: false });
   const mass = {};

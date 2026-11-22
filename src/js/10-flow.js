@@ -60,11 +60,13 @@ function rollMissions() {
 }
 function mission(type, n, absolute) {
   if (!runActive || !player || player.cheated) return;
+  if (!absolute && SUGAR[type]) earn(n * SUGAR[type] * (type === 'bites' ? Math.min(player.combo || 1, 5) : 1)); // a streak sweetens every bite
   for (const m of M.act) {
     if (m.type !== type || m.got >= m.need) continue;
     m.got = absolute ? Math.max(m.got, Math.min(m.need, Math.floor(n))) : Math.min(m.need, m.got + n);
     if (m.got >= m.need) {
       // done: the prize is the next locked skin
+      earn(15);
       const pz = nextPrize();
       if (pz) {
         M.open.push(pz[0]);
@@ -84,6 +86,87 @@ const missionRows = () =>
       return `<div class="mi${done ? ' ok' : ''}"><span class="mt">${t[1]}${done ? (m.prize ? `: открыт узор «${m.prize}»` : ': готово') : ''}</span><span class="mv">${Math.floor(m.got)} / ${m.need}</span><div class="mb"><i style="width:${Math.round((100 * m.got) / m.need)}%"></i></div></div>`;
     })
     .join('');
+// ---------- sugar ----------
+const sugarEl = $('sugar');
+let shownSugar = -1;
+function earn(n) {
+  run.sugar += n;
+  const v = Math.floor(run.sugar);
+  if (v === shownSugar) return;
+  shownSugar = v;
+  sugarEl.textContent = `сахар ${v}`;
+  if (!calm && sugarEl.animate) sugarEl.animate([{ transform: 'scale(1.25)' }, { transform: 'scale(1)' }], { duration: 220, easing: 'ease-out' });
+}
+function saveSugar() {
+  try {
+    localStorage.setItem('kus.sugar', String(sugar));
+  } catch (e) {}
+}
+function cheapestSkin() {
+  const i = SKINS.findIndex((k) => !skinOpen(k[0]));
+  return i < 0 ? null : { id: SKINS[i][0], name: SKINS[i][1], price: SKIN_PRICE(i) };
+}
+function countUp(el, n) {
+  if (calm || n < 2) {
+    el.textContent = '+' + n;
+    return;
+  }
+  const t0 = performance.now(),
+    tick = () => {
+      const k = Math.min(1, (performance.now() - t0) / 800);
+      el.textContent = '+' + Math.round(n * (1 - (1 - k) * (1 - k)));
+      if (k < 1) requestAnimationFrame(tick);
+    };
+  tick();
+}
+function nearText(t3, score) {
+  // the "so close" line: the nearest thing just out of reach
+  const out = [];
+  if (!run.cheated) {
+    if (t3 && score < best3) out.push(`До рекорда на 3 минуты не хватило ${best3 - score}`);
+    if (!t3 && score < best) out.push(`До рекорда не хватило ${best - score}`);
+    const h = HATS.find((x) => x.need > best);
+    if (!t3 && h) out.push(`До шапки «${h.name}» ещё ${h.need - best} массы`);
+  }
+  const s = cheapestSkin();
+  if (s) out.push(sugar >= s.price ? `Сахара хватает на узор «${s.name}», он в меню` : `До узора «${s.name}» ещё ${s.price - sugar} сахара`);
+  return out.slice(0, 2).join('. ');
+}
+function renderSweet(t3, score) {
+  const got = run.got || 0;
+  $('sweet').classList.toggle('hidden', !got);
+  overEl.querySelector('.card').classList.toggle('paid', !!got); // on short screens the sugar takes the missions' place
+  $('near').textContent = nearText(t3, score);
+  if (!got) return;
+  countUp($('sweetN'), got);
+  $('sweetBank').textContent = `в копилке ${sugar}`;
+  $('chestT').textContent = 'Выбери конфету: в одной много сахара';
+  $('chestRow').innerHTML = [0, 1, 2].map((i) => `<button type="button" data-i="${i}" aria-label="Конфета ${i + 1}">?</button>`).join('');
+}
+$('chestRow').addEventListener('click', (e) => {
+  const t = e.target.closest('button');
+  if (!t || !run.chest) return;
+  run.chest = false;
+  const base = clamp(Math.round(run.got * 0.3), 3, 40),
+    prizes = [base, base * 2, base * 5];
+  for (let i = 2; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [prizes[i], prizes[j]] = [prizes[j], prizes[i]];
+  }
+  const won = prizes[+t.dataset.i];
+  sugar += won;
+  saveSugar();
+  [...$('chestRow').children].forEach((b, i) => {
+    b.textContent = '+' + prizes[i];
+    b.disabled = true;
+    b.classList.add(b === t ? 'got' : 'open');
+  });
+  $('chestT').textContent = won === base * 5 ? `Самая сладкая! +${won} сахара` : `+${won} сахара`;
+  $('sweetBank').textContent = `в копилке ${sugar}`;
+  $('near').textContent = nearText(mode === 't3', Math.round(run.max));
+  Sfx.power();
+  haptic(won === base * 5 ? 30 : 12);
+});
 function renderMissions() {
   $('misT').textContent = nextPrize() ? 'Задания: за каждое новый узор' : 'Задания (все узоры уже открыты)';
   $('misList').innerHTML = missionRows();
@@ -134,7 +217,9 @@ function startGame() {
   } catch (e) {}
   rollMissions();
   saveM();
-  run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false };
+  run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0 };
+  shownSugar = -1;
+  sugarEl.textContent = '';
   runActive = true;
   timeLeft = mode === 't3' ? 180 : 0;
   spawnPlayer(4);
@@ -162,10 +247,15 @@ function finishRun() {
   document.body.classList.remove('playing');
   prevBest = best;
   prevBest3 = best3;
+  run.got = 0;
   if (!run.cheated) {
     if (mode === 't3') best3 = Math.max(best3, Math.round(run.max));
     else best = Math.max(best, Math.round(run.max));
+    run.got = Math.floor(run.sugar + Math.sqrt(run.max)); // plus a bonus for the biggest mass that tails off
+    sugar += run.got;
   }
+  run.chest = run.got > 0;
+  saveSugar();
   try {
     localStorage.setItem('kus.best', String(best));
     localStorage.setItem('kus.best3', String(best3));
@@ -219,7 +309,9 @@ function toMenu() {
   renderSkins();
   renderHats();
   renderMissions();
+  renderBank();
   menuSwitchT = 0;
+  menuFade();
 }
 function showOver() {
   const t3 = mode === 't3',
@@ -237,6 +329,7 @@ function showOver() {
   $('sTime').textContent = t3 ? run.deaths : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
   $('sTimeL').textContent = t3 ? 'раз тебя съели' : 'время в игре';
   $('overMis').innerHTML = missionRows();
+  renderSweet(t3, score);
   const fresh = HATS.filter((h) => h.need > prevBest && h.need <= best).map((h) => h.name);
   bestEl.textContent = run.cheated
     ? 'С читами рекорд и задания не засчитаны'

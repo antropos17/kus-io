@@ -70,6 +70,8 @@ const SKINS = [
   ['galaxy', 'Космос'],
 ];
 const FREE_SKINS = 4; // the rest are prizes for missions
+const SKIN_PRICE = (i) => 150 + (i - FREE_SKINS) * 100; // or bought with sugar, dearer further down the list
+const SUGAR = { bites: 1, food: 0.2, kills: 6, wound: 1, tongue: 2, pickup: 2, piranha: 2, hedge: 3, cake: 3 }; // sugar per action in a clean run
 const skinArt = {};
 function skinTile(id) {
   // each skin is one small see-through tile, painted once and laid over any flavour

@@ -38,7 +38,7 @@ document.getElementById('nojs').style.display = 'none';
 <div id="safe"></div>
 
 <div id="hud" class="hidden">
-  <div id="score"><div id="mass">0</div><div class="lbl">масса</div><div id="timer"></div><div id="goal"></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="feed" aria-live="polite"></div></div>
+  <div id="score"><div id="mass">0</div><div class="lbl">масса</div><div id="sugar"></div><div id="timer"></div><div id="goal"></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="feed" aria-live="polite"></div></div>
   <button id="pauseBtn" type="button" aria-label="Пауза" title="Пауза (Esc)"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
   <button id="dash" type="button" aria-label="Рывок с укусом"><span><b>Кусь</b><small>пробел</small></span></button>
   <button id="dodge" type="button" aria-label="Язык-присоска"><span><b>Язык</b><small>shift</small></span></button>
@@ -56,6 +56,7 @@ document.getElementById('nojs').style.display = 'none';
     <h1 class="logo">КУСЬ<span>.io</span></h1>
     <p class="tag">Откусывай куски от других конфет и расти. Тебя тоже будут кусать: ранки затянутся, а есть можно дальше.</p>
     <input id="nick" maxlength="14" placeholder="Твоё имя" autocomplete="off" spellcheck="false" aria-label="Имя">
+    <p id="bank" aria-live="polite"></p>
     </div>
     <p id="chal" class="hidden"></p>
     <div class="pk" id="dif"><span class="pl">Сложность</span><div class="seg3" id="diffSeg" role="group" aria-label="Сложность"><button type="button" data-v="easy">Лёгкая</button><button type="button" data-v="normal">Обычная</button><button type="button" data-v="hard">Жёсткая</button></div></div>
@@ -102,6 +103,11 @@ document.getElementById('nojs').style.display = 'none';
       <div><b id="sKills">0</b><span>съедено целиком</span></div>
       <div><b id="sTime">0:00</b><span id="sTimeL">время в игре</span></div>
     </div>
+    <div id="sweet" class="hidden">
+      <div class="sw1"><b id="sweetN">+0</b><span>сахара за раунд</span><span id="sweetBank"></span></div>
+      <p id="chestT"></p>
+      <div id="chestRow" role="group" aria-label="Три конфеты"></div>
+    </div>
     <div id="overMis"></div>
     <button id="again" class="btn" type="button">Ещё кусь</button>
     <button id="chalBtn" class="btn2" type="button">Бросить вызов другу</button>
@@ -109,6 +115,7 @@ document.getElementById('nojs').style.display = 'none';
     <button id="toMenu" class="btn2" type="button">В меню</button>
     <p id="chalRes"></p>
     <p class="best" id="best"></p>
+    <p class="best" id="near"></p>
   </div></div>
 </div>
 
