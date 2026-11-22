@@ -100,8 +100,9 @@ $('chalBtn').addEventListener('click', () => {
   const score = Math.round(run.max),
     name = (nick.value || '').trim().slice(0, 14) || 'Кусака';
   const base = /^https?:$/.test(location.protocol) && !/claude|anthropic/i.test(location.hostname) ? location.origin + location.pathname : PUBLIC_URL;
-  const url = base + '?c=' + score + '&n=' + encodeURIComponent(name),
-    text = `Я набрал ${score} в КУСЬ.io. Побей!`,
+  const daily = mode === 'daily' && run.rule, // a candy-of-the-day link opens the same day's run
+    url = base + '?c=' + score + '&n=' + encodeURIComponent(name) + (daily ? '&d=' + run.day : ''),
+    text = daily ? `КУСЬ.io, конфета дня «${run.rule.name}»: у меня ${score}. Побей до полуночи` : `Я набрал ${score} в КУСЬ.io. Побей!`,
     box = $('chalLink');
   box.value = url;
   box.classList.remove('hidden');
@@ -112,7 +113,7 @@ $('chalBtn').addEventListener('click', () => {
     } catch (e) {}
   };
   try {
-    if (touchMode && navigator.share) {
+    if ((touchMode || daily) && navigator.share) {
       navigator.share({ title: 'КУСЬ.io', text, url }).catch(() => {});
       return;
     }

@@ -47,6 +47,7 @@ npm run check      выйти с ошибкой, если index.html не сов
 | `07-bites` | `Strand` (тянучка), `Chunk` (кусок), `Gulp`, `checkBites`, `doBite`, `swallowWhole`, рывок, язык |
 | `08-food-particles` | посыпка, крошки, бонусы, частицы, всплывающий текст |
 | `09-bots` | ИИ ботов, появление, ёж, пираньи, торт, `population` |
+| `10-daily` | «Конфета дня» (режим `daily`): условие дня `DAILY` по местной дате (`dailyOf`), `day` — условие в силе, рекорд дня и серия дней (`dailySave`) |
 | `10-flow` | задания и узоры, старт и конец забега, режим на 3 минуты, `updateCamera`, `updateHUD`, главный `update` |
 | `11-draw-world` | поднос, `buildPath` (контур тела), посыпка, тянучки, раны |
 | `12-draw-face` | рот (`mouthGeo`, `drawMouthBack`, `drawMouthFront`), глаза, язык, шапки |
@@ -62,7 +63,7 @@ npm run check      выйти с ошибкой, если index.html не сов
 
 `window.__kus` в `17-boot` отдаёт тестам состояние и функции (`player`, `blobs`, `update`, `render`, `place`, `spawnBot`, `spawnSpecial`, `Sfx`, `cam`, `CHEAT`, `pause`, `setLod`). Новую механику проще всего проверять через него.
 
-Сохранения в `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.best`, `kus.best3`, `kus.mode`, `kus.diff`, `kus.set`, `kus.m` (задания и открытые узоры), `kus.seen` (показанные подсказки), `kus.cheat`, `kus.lbmin`.
+Сохранения в `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.best`, `kus.best3`, `kus.mode`, `kus.diff`, `kus.set`, `kus.m` (задания и открытые узоры), `kus.seen` (показанные подсказки), `kus.cheat`, `kus.lbmin`, `kus.daily` (конфета дня: дата `d` вида 20261123, лучший за день `best`, дней подряд `streak`, рекорд серии `top`).
 
 ## Решения, которые нельзя ломать
 

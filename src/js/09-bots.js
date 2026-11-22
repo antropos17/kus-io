@@ -203,6 +203,7 @@ function botSteer(b, dt) {
 }
 function randomBotMass(first) {
   const r = Math.random();
+  if (day === 'small') return rand(12, 50);
   if (first) return r < 0.55 ? rand(12, 40) : r < 0.88 ? rand(40, 140) : r < 0.98 ? rand(140, 380) : rand(380, 600);
   return r < 0.7 ? rand(12, 45) : r < 0.95 ? rand(45, 150) : rand(150, 350);
 }
@@ -309,11 +310,11 @@ function population() {
       else if (b.kind === 'cake') cake++;
       else if (b.kind === 'piranha') pir++;
     }
-    if (hed < 2) spawnSpecial('hedgehog');
-    if (cake) cakeAt = time + 35;
+    if (hed < (day === 'hedge' ? 4 : 2)) spawnSpecial('hedgehog');
+    if (cake) cakeAt = time + (day === 'cake' ? 8 : 35);
     else if (time > cakeAt) spawnSpecial('cake');
-    if (pir) pirAt = time + 40;
-    else if (time > pirAt && (state !== 'play' || !player || !player.alive || player.mass > 90)) spawnSpecial('piranha');
+    if (pir) pirAt = time + (day === 'piranha' ? 20 : 40);
+    else if (time > pirAt && (day === 'piranha' || state !== 'play' || !player || !player.alive || player.mass > 90)) spawnSpecial('piranha');
   }
   let n = respawnQ.length;
   for (const b of blobs) if (b.ai && !b.kind) n++;
