@@ -8,7 +8,9 @@ function addFeed(html, ms) {
   const d = document.createElement('div');
   d.innerHTML = html;
   feedEl.prepend(d);
-  while (feedEl.children.length > 4) feedEl.lastElementChild.remove();
+  // a newcomer's first seconds keep to two plaques, so the field in front of the player stays clear
+  const cap = tutor || (run && run.dayNote) ? 2 : 4;
+  while (feedEl.children.length > cap) feedEl.lastElementChild.remove();
   setTimeout(() => {
     d.style.opacity = '0';
     setTimeout(() => d.remove(), 500);
@@ -17,6 +19,7 @@ function addFeed(html, ms) {
 function feedKill(A, B) {
   if (A.isPlayer) addFeed(`Ты съедаешь <b>${esc(B.acc)}</b> целиком`);
   else if (
+    !tutor && // the first run's lesson is not pushed out by other candies' meals
     !B.isPlayer &&
     state === 'play' &&
     player &&
@@ -253,8 +256,16 @@ function startGame() {
     if (!tutor) addFeed('<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты'); // the first run tells this after the first bite
   } else if (tutor) addFeed('Веди мышью: пасть смотрит на курсор');
   else addFeed('<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты');
-  if (day) addFeed(`<b>${run.rule.name}</b>: ${run.rule.note.charAt(0).toLowerCase() + run.rule.note.slice(1)}`, 6500);
+  if (day) {
+    if (tutor)
+      run.dayNote = true; // a newcomer learns to steer and bite first, the twist is told after that
+    else dayFeed();
+  }
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+}
+function dayFeed() {
+  run.dayNote = false;
+  addFeed(`<b>${run.rule.name}</b>: ${run.rule.note.charAt(0).toLowerCase() + run.rule.note.slice(1)}`, 6500);
 }
 function tally() {
   const st = player.stats;
@@ -588,13 +599,20 @@ function updateHUD(dt) {
             : 'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Клик</b>: рывок с укусом',
         );
     }
-    for (const b of blobs) {
-      if (!b.kind || !b.alive || seen[b.kind] || Math.abs(b.x - player.x) > view + b.Rs || Math.abs(b.y - player.y) > view + b.Rs) continue;
-      if (b.kind === 'hedgehog') hint('hedgehog', '<b>Ёж</b>: со спины колется. Кусай его в морду');
-      else if (b.kind === 'cake') hint('cake', '<b>Торт</b>: корка твёрдая. Кусай в вишенку на спине');
-      else hint('piranha', '<b>Пираньи</b>: мелкие, но нападают стаей. Глотай по одной');
+    if (run.dayNote && !tutor) {
+      let live = 0;
+      for (const d of feedEl.children) if (d.style.opacity !== '0') live++;
+      if (live < 2) dayFeed();
     }
-    if (!seen.pickup)
+    if (!tutor)
+      // the first run's lesson goes first, these wait until it is over
+      for (const b of blobs) {
+        if (!b.kind || !b.alive || seen[b.kind] || Math.abs(b.x - player.x) > view + b.Rs || Math.abs(b.y - player.y) > view + b.Rs) continue;
+        if (b.kind === 'hedgehog') hint('hedgehog', '<b>Ёж</b>: со спины колется. Кусай его в морду');
+        else if (b.kind === 'cake') hint('cake', '<b>Торт</b>: корка твёрдая. Кусай в вишенку на спине');
+        else hint('piranha', '<b>Пираньи</b>: мелкие, но нападают стаей. Глотай по одной');
+      }
+    if (!seen.pickup && !tutor)
       for (const q of pickups)
         if (Math.abs(q.x - player.x) < view && Math.abs(q.y - player.y) < view) {
           hint('pickup', '<b>Бонус</b>: наедь на него, чтобы подобрать');

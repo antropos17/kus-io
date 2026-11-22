@@ -209,6 +209,8 @@ body.touch #pauseBtn:before,body.touch #mute:before{content:"";position:absolute
 body.touch #pauseBtn,body.touch #mute{background:rgba(255,241,220,.82);box-shadow:none}
 body.touch:not(.playing) #mute{left:calc(14px + env(safe-area-inset-left,0px))}
 body.touch #feed div{background:rgba(20,11,8,.55);color:var(--cream);box-shadow:none;border-radius:12px;max-width:calc(100vw - 206px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))}
+body.touch #goal{max-width:calc(100vw - 206px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))} /* wraps left of the table, like the feed */
+body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))} /* the first run: hints stop short of the player in the middle */
 @media (max-width:700px){body.touch #board{width:min(150px,42vw)}}
 @media (max-height:520px) and (min-width:701px){ /* phone held sideways: the menu must fit without scrolling */
   .ov{padding:8px max(4vw,16px)}
@@ -216,7 +218,9 @@ body.touch #feed div{background:rgba(20,11,8,.55);color:var(--cream);box-shadow:
   .card{padding:12px 18px;max-height:calc(100vh - 16px);max-height:calc(100svh - 16px)}
   .top{display:flex;align-items:center;gap:14px}
   .logo{font-size:36px;margin:0}
-  .tag,.help,#rec,.pl,#mis,#chal,#dif{display:none}
+  .tag,.help,#rec,.pl,#mis,#dif{display:none}
+  #chal{margin:0 0 4px;padding:4px 10px;font-size:12px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} /* a friend's link still says why you are here, in one row */
+  #chal .lx{display:none}
   .seg2,.seg3{margin-bottom:6px}
   .seg2 button,.seg3 button{min-height:34px;padding:4px 8px}
   #modeSeg{grid-template-columns:repeat(3,minmax(0,1fr))}

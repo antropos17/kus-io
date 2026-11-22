@@ -70,7 +70,7 @@ const ok = await page.evaluate(() => {
   P.spawnT = 0;
   const V = bot(420, 0, 0, Math.PI, 'Зефирка', 'Черника');
   const spots = [
-    // the top left corner is kept for the logo, the bottom right one for the minimap
+    // the top left corner is kept for the logo; setCam below also keeps the minimap out of the frame
     [60, -500, 150, 0.4, 'Пастила', 'Лайм'],
     [110, 420, -190, 2.6, 'Ириска', 'Апельсин'],
     [35, -230, 235, -0.6, 'Мусс', 'Виноград'],
