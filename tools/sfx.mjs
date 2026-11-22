@@ -93,6 +93,7 @@ const level = await page.evaluate(
       for (let i = 0; i < sr; i++) nd[i] = ((q = (q * 16807) % 2147483647) / 2147483647) * 2 - 1;
       S.ok = () => true;
       S.lastPop = S.lastBoing = -9;
+      Math.random = () => (q = (q * 16807) % 2147483647) / 2147483647; // the same noise offsets every build
       S[ev](...(ARGS[ev] || []));
       const a = loud((await off.startRendering()).getChannelData(0));
       let b = 0;
