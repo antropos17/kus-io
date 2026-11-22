@@ -495,18 +495,43 @@ test('sound: every effect plays without throwing', async () => {
       ['power', []],
       ['dash', []],
     ];
-    for (const [m, a] of calls) {
-      try {
-        S.at(window.__kus.cam.x + 300)[m](...a);
-      } catch (e) {
-        bad.push(`${m}: ${e.message}`);
+    // every embedded take must decode; then each effect plays from its takes and, with them switched off, from the synth
+    const failed = await S.ready;
+    const takes = {};
+    for (const k in S.buf) takes[k] = S.buf[k].b.length;
+    const missing = Object.keys(window.__kus.SFX_DATA).filter((k) => takes[k] !== window.__kus.SFX_DATA[k].r.length);
+    let played = 0,
+      withTakes = 0;
+    const orig = S.play;
+    S.play = function (...a) {
+      const ok = orig.apply(this, a);
+      if (ok) played++;
+      return ok;
+    };
+    for (const useBuf of [true, false]) {
+      S.useBuf = useBuf;
+      for (const [m, a] of calls) {
+        S.lastPop = S.lastBoing = -9;
+        try {
+          S.at(window.__kus.cam.x + 300)[m](...a);
+        } catch (e) {
+          bad.push(`${m} (${useBuf ? 'takes' : 'synth'}): ${e.message}`);
+        }
       }
+      if (useBuf) withTakes = played;
+      await new Promise((res) => setTimeout(res, 500));
     }
-    await new Promise((res) => setTimeout(res, 500));
-    return { running: !!S.ok(), bad };
+    S.play = orig;
+    S.useBuf = true;
+    const expected = calls.filter(([m]) => window.__kus.SFX_DATA[m]).length;
+    return { running: !!S.ok(), bad, failed, missing, withTakes, expected, afterSynth: played - withTakes, ms: S.decodeMs };
   });
   assert(r.running, 'audio context is not running, so nothing was actually tested');
+  assert(r.failed === 0 && r.missing.length === 0, `takes that did not decode: ${r.failed}; events missing takes: ${r.missing.join(', ')}`);
+  assert(r.withTakes === r.expected, `with takes, ${r.withTakes} of ${r.expected} calls played a take`);
+  assert(r.afterSynth === 0, 'with takes switched off, a take was still played');
   assert(r.bad.length === 0, r.bad.join(' | '));
+  console.log(`    takes decoded in ${r.ms.toFixed(0)} ms`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
 });

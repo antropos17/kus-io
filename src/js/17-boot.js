@@ -220,6 +220,7 @@ function start(data) {
 }
 window.__kus = {
   Sfx,
+  SFX_DATA,
   get cam() {
     return cam;
   },
