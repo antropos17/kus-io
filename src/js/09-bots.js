@@ -19,6 +19,10 @@ function newAI() {
 function botThink(b) {
   const ai = b.ai,
     myBite = biteOf(b.mass, false);
+  if (b.tame) {
+    ai.mode = 'tame';
+    return;
+  } // the first run's snack neither hunts nor runs
   if (ai.passive) {
     ai.mode = 'wander';
     if (Math.hypot(ai.wx - b.x, ai.wy - b.y) < 300) {
@@ -129,6 +133,13 @@ function botSteer(b, dt) {
   if (ai.think <= 0) {
     ai.think = ai.react + rand(0.08);
     botThink(b);
+  }
+  if (b.tame) {
+    // ambles in a small circle where it was put, slowly enough to be caught
+    const a = time * 0.8 + b.phase;
+    b.tx = b.hx + Math.cos(a) * 24;
+    b.ty = b.hy + Math.sin(a) * 24;
+    return;
   }
   if (b.kind === 'piranha' && ai.lead) {
     // stay with the pack and bite what the leader bites
@@ -255,6 +266,22 @@ function spawnBot(mass) {
     skin: Math.random() < 0.5 ? SKINS[1 + randi(SKINS.length - 1)][0] : 'plain',
   });
   blobs.push(b);
+  return b;
+}
+function tutorPrey() {
+  // the very first run: a candy small enough to swallow in one bite sits just in front of the new player's mouth
+  const P = player,
+    b = spawnBot(14),
+    d = P.Rs + b.Rs + 85; // ambling 24 around this, it comes no closer than 61: the bite hint waits for the player to move in
+  b.x = b.hx = clamp(P.x + Math.cos(P.face) * d, 100, WORLD - 100);
+  b.y = b.hy = clamp(P.y + Math.sin(P.face) * d, 100, WORLD - 100);
+  b.face = P.face; // its back to the player
+  b.vx = b.vy = 0;
+  b.tx = b.x;
+  b.ty = b.y;
+  b.spawnT = 0;
+  b.tame = true;
+  b.resetPoints();
   return b;
 }
 function spawnSpecial(kind) {

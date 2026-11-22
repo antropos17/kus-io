@@ -176,6 +176,15 @@ function start(data) {
   } catch (e) {}
   if (SKINS.some((k) => k[0] === chosenSkin) && !skinOpen(chosenSkin)) M.open.push(chosenSkin); // a skin picked before missions existed stays yours
   rollMissions();
+  newcomer = best <= 0 && best3 <= 0; // the end of every run writes kus.best, so its absence means no run was ever finished
+  try {
+    if (localStorage.getItem('kus.best') !== null) newcomer = false;
+  } catch (e) {}
+  if (newcomer) {
+    mode = 'free';
+    diff = 'normal';
+    document.body.classList.add('first');
+  }
   if (challenge) {
     $('chal').textContent = `${challenge.n} набрал ${challenge.c}. Побей в свободной игре!`;
     $('chal').classList.remove('hidden');
