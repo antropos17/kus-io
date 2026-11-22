@@ -332,10 +332,11 @@ function checkBites(b, dt) {
     b.puff = Math.sin(time * 20);
   } else if (b.clackT > 0) b.mouthWant = 0;
   else if (b.dashT > 0) b.mouthWant = 0.9;
-  else if (tgt && b.spawnT <= 0 && b.biteCd < 0.25 && gap < mR * 0.7 + 30 + b.Rs * 0.6)
+  else if (tgt && (b.spawnT <= 0 || tgt.tame) && b.biteCd < 0.25 && gap < mR * 0.7 + 30 + b.Rs * 0.6)
     b.mouthWant = 0.62 + 0.07 * Math.sin(time * 24 + b.phase); // jaws tremble with hunger
   else b.mouthWant = b.snackT > 0 ? 0.4 : 0;
-  if (tgt && b.biteCd <= 0 && b.spawnT <= 0 && gap < mR * 0.7) {
+  // the first run's snack can be bitten even while the newcomer is still shielded after spawning, and never bites back
+  if (tgt && b.biteCd <= 0 && (b.spawnT <= 0 || tgt.tame) && !b.tame && gap < mR * 0.7) {
     if (c) c.finish();
     b.bite = { ph: 0, t: 0, T: b.dashT > 0 ? 0.045 : 0.1, dash: b.dashT > 0 };
     b.biteTgt = tgt;

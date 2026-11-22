@@ -54,19 +54,19 @@ document.getElementById('nojs').style.display = 'none';
   <div class="wrap"><div class="card">
     <div class="top">
     <h1 class="logo">КУСЬ<span>.io</span></h1>
-    <p class="tag">Откусывай куски от других конфет и расти. Тебя тоже будут кусать: ранки затянутся, а есть можно дальше.</p>
+    <p class="tag">Откусывай куски от других конфет и расти.<span class="later"> Тебя тоже будут кусать: ранки затянутся, а есть можно дальше.</span></p>
     <input id="nick" maxlength="14" placeholder="Твоё имя" autocomplete="off" spellcheck="false" aria-label="Имя">
-    <p id="bank" aria-live="polite"></p>
+    <p id="bank" class="later" aria-live="polite"></p>
     </div>
     <p id="chal" class="hidden"></p>
-    <div class="pk" id="dif"><span class="pl">Сложность</span><div class="seg3" id="diffSeg" role="group" aria-label="Сложность"><button type="button" data-v="easy">Лёгкая</button><button type="button" data-v="normal">Обычная</button><button type="button" data-v="hard">Жёсткая</button></div></div>
+    <div class="pk later" id="dif"><span class="pl">Сложность</span><div class="seg3" id="diffSeg" role="group" aria-label="Сложность"><button type="button" data-v="easy">Лёгкая</button><button type="button" data-v="normal">Обычная</button><button type="button" data-v="hard">Жёсткая</button></div></div>
     <div class="pk"><span class="pl">Вкус</span><div id="sw" class="pr" role="radiogroup" aria-label="Вкус"></div></div>
-    <div class="pk"><span class="pl">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор"></div></div>
-    <div class="pk"><span class="pl">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка"></div></div>
-    <div class="pk" id="mis"><span class="pl" id="misT">Задания</span><div id="misList"></div></div>
-    <div class="go"><div class="seg2" id="modeSeg" role="group" aria-label="Режим"><button type="button" data-m="free">Свободная игра</button><button type="button" data-m="t3">3 минуты на счёт</button></div><button id="play" class="btn" type="button">Играть</button></div>
-    <p class="best" id="rec"></p>
-    <ul class="help">
+    <div class="pk later"><span class="pl">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор"></div></div>
+    <div class="pk later"><span class="pl">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка"></div></div>
+    <div class="pk later" id="mis"><span class="pl" id="misT">Задания</span><div id="misList"></div></div>
+    <div class="go"><div class="seg2 later" id="modeSeg" role="group" aria-label="Режим"><button type="button" data-m="free">Свободная игра</button><button type="button" data-m="t3">3 минуты на счёт</button></div><button id="play" class="btn" type="button">Играть</button></div>
+    <p class="best later" id="rec"></p>
+    <ul class="help later">
       <li class="kb"><span><b>Мышь</b>: куда смотрит пасть</span></li>
       <li class="kb"><span><b>Пробел, клик или «Кусь»</b>: рывок с укусом посильнее</span></li>
       <li class="kb"><span><b>Shift, правый клик или «Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>

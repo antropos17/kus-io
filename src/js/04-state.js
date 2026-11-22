@@ -27,7 +27,9 @@ const DIFFS = {
 };
 let diff = 'normal',
   leader = null,
-  seen = {};
+  seen = {},
+  newcomer = false, // never finished a run: short menu, and a harmless snack waits in front of them
+  tutor = null; // the first run's snack until the first bite
 const M = { seq: 0, act: [], open: [] }; // missions: counter, the three active ones, skins won so far
 const challenge = (() => {
   try {

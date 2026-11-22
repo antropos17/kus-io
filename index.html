@@ -162,6 +162,7 @@ h2.dead{margin:0;font:900 clamp(32px,6vw,42px)/1.05 var(--font);letter-spacing:-
 .go::before{content:'';position:absolute;left:-6px;right:-6px;bottom:100%;height:56px;background:linear-gradient(rgba(255,241,220,0),var(--cream) 70%);pointer-events:none;opacity:0;transition:opacity .15s} /* while the block covers a row, fade that row out instead of slicing it */
 .go.stuck{background:var(--cream);box-shadow:-6px 0 0 var(--cream),6px 0 0 var(--cream)}
 .go.stuck::before{opacity:1}
+body.first .later{display:none} /* first visit: only what the first tap needs, the rest arrives after the first run */
 #skins button{width:50px;height:50px;border-radius:50%;border:3px solid transparent;padding:0;background:none;cursor:pointer;transition:transform .1s}
 #skins canvas{display:block;width:100%;height:100%;border-radius:50%}
 #skins button[aria-checked=true]{border-color:var(--ink);transform:scale(1.08)}
@@ -241,6 +242,9 @@ body.touch #feed div{background:rgba(20,11,8,.55);color:var(--cream);box-shadow:
   #over .card.paid .btn2{margin-top:5px;padding:8px}
   .btn2{margin-top:6px;padding:9px}
   #nick{flex:1;width:auto;padding:9px 12px;font-size:16px}
+  body.first .top{flex-wrap:wrap;row-gap:10px} /* first visit has room for the one line about the game, the name goes below it */
+  body.first .top .tag{display:block;flex:1 1 12em;margin:0 44px 0 0;font-size:15px}
+  body.first #nick{flex:1 1 100%}
   .pk{margin-top:8px}
   #sw button{width:34px;height:34px}
   #skins button{width:40px;height:40px}
@@ -308,19 +312,19 @@ document.getElementById('nojs').style.display = 'none';
   <div class="wrap"><div class="card">
     <div class="top">
     <h1 class="logo">КУСЬ<span>.io</span></h1>
-    <p class="tag">Откусывай куски от других конфет и расти. Тебя тоже будут кусать: ранки затянутся, а есть можно дальше.</p>
+    <p class="tag">Откусывай куски от других конфет и расти.<span class="later"> Тебя тоже будут кусать: ранки затянутся, а есть можно дальше.</span></p>
     <input id="nick" maxlength="14" placeholder="Твоё имя" autocomplete="off" spellcheck="false" aria-label="Имя">
-    <p id="bank" aria-live="polite"></p>
+    <p id="bank" class="later" aria-live="polite"></p>
     </div>
     <p id="chal" class="hidden"></p>
-    <div class="pk" id="dif"><span class="pl">Сложность</span><div class="seg3" id="diffSeg" role="group" aria-label="Сложность"><button type="button" data-v="easy">Лёгкая</button><button type="button" data-v="normal">Обычная</button><button type="button" data-v="hard">Жёсткая</button></div></div>
+    <div class="pk later" id="dif"><span class="pl">Сложность</span><div class="seg3" id="diffSeg" role="group" aria-label="Сложность"><button type="button" data-v="easy">Лёгкая</button><button type="button" data-v="normal">Обычная</button><button type="button" data-v="hard">Жёсткая</button></div></div>
     <div class="pk"><span class="pl">Вкус</span><div id="sw" class="pr" role="radiogroup" aria-label="Вкус"></div></div>
-    <div class="pk"><span class="pl">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор"></div></div>
-    <div class="pk"><span class="pl">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка"></div></div>
-    <div class="pk" id="mis"><span class="pl" id="misT">Задания</span><div id="misList"></div></div>
-    <div class="go"><div class="seg2" id="modeSeg" role="group" aria-label="Режим"><button type="button" data-m="free">Свободная игра</button><button type="button" data-m="t3">3 минуты на счёт</button></div><button id="play" class="btn" type="button">Играть</button></div>
-    <p class="best" id="rec"></p>
-    <ul class="help">
+    <div class="pk later"><span class="pl">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор"></div></div>
+    <div class="pk later"><span class="pl">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка"></div></div>
+    <div class="pk later" id="mis"><span class="pl" id="misT">Задания</span><div id="misList"></div></div>
+    <div class="go"><div class="seg2 later" id="modeSeg" role="group" aria-label="Режим"><button type="button" data-m="free">Свободная игра</button><button type="button" data-m="t3">3 минуты на счёт</button></div><button id="play" class="btn" type="button">Играть</button></div>
+    <p class="best later" id="rec"></p>
+    <ul class="help later">
       <li class="kb"><span><b>Мышь</b>: куда смотрит пасть</span></li>
       <li class="kb"><span><b>Пробел, клик или «Кусь»</b>: рывок с укусом посильнее</span></li>
       <li class="kb"><span><b>Shift, правый клик или «Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
@@ -839,7 +843,9 @@ const DIFFS = {
 };
 let diff = 'normal',
   leader = null,
-  seen = {};
+  seen = {},
+  newcomer = false, // never finished a run: short menu, and a harmless snack waits in front of them
+  tutor = null; // the first run's snack until the first bite
 const M = { seq: 0, act: [], open: [] }; // missions: counter, the three active ones, skins won so far
 const challenge = (() => {
   try {
@@ -2048,10 +2054,11 @@ function checkBites(b, dt) {
     b.puff = Math.sin(time * 20);
   } else if (b.clackT > 0) b.mouthWant = 0;
   else if (b.dashT > 0) b.mouthWant = 0.9;
-  else if (tgt && b.spawnT <= 0 && b.biteCd < 0.25 && gap < mR * 0.7 + 30 + b.Rs * 0.6)
+  else if (tgt && (b.spawnT <= 0 || tgt.tame) && b.biteCd < 0.25 && gap < mR * 0.7 + 30 + b.Rs * 0.6)
     b.mouthWant = 0.62 + 0.07 * Math.sin(time * 24 + b.phase); // jaws tremble with hunger
   else b.mouthWant = b.snackT > 0 ? 0.4 : 0;
-  if (tgt && b.biteCd <= 0 && b.spawnT <= 0 && gap < mR * 0.7) {
+  // the first run's snack can be bitten even while the newcomer is still shielded after spawning, and never bites back
+  if (tgt && b.biteCd <= 0 && (b.spawnT <= 0 || tgt.tame) && !b.tame && gap < mR * 0.7) {
     if (c) c.finish();
     b.bite = { ph: 0, t: 0, T: b.dashT > 0 ? 0.045 : 0.1, dash: b.dashT > 0 };
     b.biteTgt = tgt;
@@ -2629,6 +2636,10 @@ function newAI() {
 function botThink(b) {
   const ai = b.ai,
     myBite = biteOf(b.mass, false);
+  if (b.tame) {
+    ai.mode = 'tame';
+    return;
+  } // the first run's snack neither hunts nor runs
   if (ai.passive) {
     ai.mode = 'wander';
     if (Math.hypot(ai.wx - b.x, ai.wy - b.y) < 300) {
@@ -2739,6 +2750,13 @@ function botSteer(b, dt) {
   if (ai.think <= 0) {
     ai.think = ai.react + rand(0.08);
     botThink(b);
+  }
+  if (b.tame) {
+    // ambles in a small circle where it was put, slowly enough to be caught
+    const a = time * 0.8 + b.phase;
+    b.tx = b.hx + Math.cos(a) * 24;
+    b.ty = b.hy + Math.sin(a) * 24;
+    return;
   }
   if (b.kind === 'piranha' && ai.lead) {
     // stay with the pack and bite what the leader bites
@@ -2865,6 +2883,22 @@ function spawnBot(mass) {
     skin: Math.random() < 0.5 ? SKINS[1 + randi(SKINS.length - 1)][0] : 'plain',
   });
   blobs.push(b);
+  return b;
+}
+function tutorPrey() {
+  // the very first run: a candy small enough to swallow in one bite sits just in front of the new player's mouth
+  const P = player,
+    b = spawnBot(14),
+    d = P.Rs + b.Rs + 85; // ambling 24 around this, it comes no closer than 61: the bite hint waits for the player to move in
+  b.x = b.hx = clamp(P.x + Math.cos(P.face) * d, 100, WORLD - 100);
+  b.y = b.hy = clamp(P.y + Math.sin(P.face) * d, 100, WORLD - 100);
+  b.face = P.face; // its back to the player
+  b.vx = b.vy = 0;
+  b.tx = b.x;
+  b.ty = b.y;
+  b.spawnT = 0;
+  b.tame = true;
+  b.resetPoints();
   return b;
 }
 function spawnSpecial(kind) {
@@ -3160,6 +3194,7 @@ function startGame() {
   runActive = true;
   timeLeft = mode === 't3' ? 180 : 0;
   spawnPlayer(4);
+  tutor = newcomer ? { prey: tutorPrey() } : null;
   document.body.classList.add('playing');
   menuEl.classList.add('hidden');
   overEl.classList.add('hidden');
@@ -3168,8 +3203,9 @@ function startGame() {
   hudT = 0;
   if (touchMode) {
     addFeed(SET.lefty ? 'Справа води пальцем, слева <b>Кусь</b> и <b>Язык</b>' : 'Слева води пальцем, справа <b>Кусь</b> и <b>Язык</b>');
-    addFeed('<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты');
-  } else addFeed('<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты');
+    if (!tutor) addFeed('<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты'); // the first run tells this after the first bite
+  } else if (tutor) addFeed('Веди мышью: пасть смотрит на курсор');
+  else addFeed('<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты');
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 }
 function tally() {
@@ -3199,6 +3235,12 @@ function finishRun() {
   } catch (e) {}
   saveM();
   renderHats();
+  if (tutor) tutor.prey.tame = false;
+  tutor = null;
+  if (newcomer) {
+    newcomer = false; // from now on the menu is the full one
+    document.body.classList.remove('first');
+  }
 }
 function die(by) {
   tally();
@@ -3451,6 +3493,27 @@ function updateHUD(dt) {
         localStorage.setItem('kus.seen', JSON.stringify(seen));
       } catch (e) {}
     };
+    if (tutor) {
+      // the first run: say how to bite once the snack is really within reach, then let it be an ordinary candy
+      const q = tutor.prey;
+      if (player.stats.bites > 0 || !q.alive || time - run.t0 > 30) {
+        q.tame = false;
+        tutor = null;
+        if (player.stats.bites > 0)
+          addFeed(
+            touchMode
+              ? '<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты'
+              : '<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты',
+            5200,
+          );
+      } else if (Math.hypot(q.x - player.x, q.y - player.y) - q.Rs - player.Rs < 50)
+        hint(
+          'bite',
+          touchMode
+            ? 'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Кусь</b>: рывок с укусом'
+            : 'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Клик</b>: рывок с укусом',
+        );
+    }
     for (const b of blobs) {
       if (!b.kind || !b.alive || seen[b.kind] || Math.abs(b.x - player.x) > view + b.Rs || Math.abs(b.y - player.y) > view + b.Rs) continue;
       if (b.kind === 'hedgehog') hint('hedgehog', '<b>Ёж</b>: со спины колется. Кусай его в морду');
@@ -6001,6 +6064,15 @@ function start(data) {
   } catch (e) {}
   if (SKINS.some((k) => k[0] === chosenSkin) && !skinOpen(chosenSkin)) M.open.push(chosenSkin); // a skin picked before missions existed stays yours
   rollMissions();
+  newcomer = best <= 0 && best3 <= 0; // the end of every run writes kus.best, so its absence means no run was ever finished
+  try {
+    if (localStorage.getItem('kus.best') !== null) newcomer = false;
+  } catch (e) {}
+  if (newcomer) {
+    mode = 'free';
+    diff = 'normal';
+    document.body.classList.add('first');
+  }
   if (challenge) {
     $('chal').textContent = `${challenge.n} набрал ${challenge.c}. Побей в свободной игре!`;
     $('chal').classList.remove('hidden');

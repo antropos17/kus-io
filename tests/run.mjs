@@ -23,9 +23,11 @@ function assert(cond, msg) {
 }
 
 // A fresh page with the game started. Bots are parked far away and cheats are off, so a test controls everything it needs.
-async function open({ width = 1200, height = 720, touch = false, dpr = 1, play = true } = {}) {
+// returning: storage says a run was finished before, so the menu is the full one and not the short first-visit one.
+async function open({ width = 1200, height = 720, touch = false, dpr = 1, play = true, returning = false } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: dpr, hasTouch: touch, isMobile: touch });
   const page = await ctx.newPage();
+  if (returning) await page.addInitScript(() => localStorage.getItem('kus.best') === null && localStorage.setItem('kus.best', '0'));
   page.setDefaultTimeout(120000);
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
@@ -56,6 +58,57 @@ test('boot: menu and a new game start without errors (desktop and phone)', async
     assert(s.touch === !!opt.touch, 'touch mode detected wrongly');
     await g.close();
   }
+});
+
+test('first visit: short menu fits 360x640, one tap plays, a snack waits; full menu after a finished run', async () => {
+  const g = await open({ width: 360, height: 640, touch: true, dpr: 2, play: false });
+  const menu = () =>
+    g.page.evaluate(() => {
+      const c = document.querySelector('#menu .card'),
+        shown = (id) => document.getElementById(id).offsetHeight > 0;
+      return {
+        over: c.scrollHeight - c.clientHeight,
+        first: document.body.classList.contains('first'),
+        rows: ['dif', 'skins', 'hats', 'mis', 'modeSeg'].filter(shown),
+        flavour: shown('sw'),
+        focus: document.activeElement && document.activeElement.id,
+      };
+    });
+  const a = await menu();
+  assert(a.first, 'a first visit was not recognised');
+  assert(a.over <= 1, `first-visit menu scrolls by ${a.over}px at 360x640`);
+  assert(a.rows.length === 0 && a.flavour, `first-visit menu shows ${a.rows} (flavour shown: ${a.flavour})`);
+  assert(a.focus !== 'nick', 'the name field took the focus and would open the keyboard');
+  await g.page.tap('#play');
+  await g.page.waitForTimeout(250);
+  const p = await g.page.evaluate(() => {
+    const k = window.__kus,
+      P = k.player,
+      q = k.blobs.find((b) => b.tame);
+    return {
+      state: k.state,
+      name: P.name,
+      diff: localStorage.getItem('kus.diff'),
+      mode: localStorage.getItem('kus.mode'),
+      gap: q ? Math.hypot(q.x - P.x, q.y - P.y) - q.Rs - P.Rs : null,
+      small: q && q.mass < P.mass / 2,
+    };
+  });
+  assert(p.state === 'play' && p.name === 'Кусака', `Play with an empty name: state ${p.state}, name ${p.name}`);
+  assert(p.diff === 'normal' && p.mode === 'free', `first run must be normal and free, got ${p.diff}/${p.mode}`);
+  assert(p.gap !== null && p.gap < 120 && p.small, `no small snack in front of the new player (gap ${p.gap})`);
+  await g.page.tap('#pauseBtn');
+  await g.page.waitForTimeout(150);
+  await g.page.tap('#pMenu');
+  await g.page.waitForTimeout(250);
+  const b = await menu();
+  assert(!b.first && b.rows.length === 5, `after a finished run the menu must be full, shows ${b.rows}`);
+  assert(!(await g.page.evaluate(() => window.__kus.blobs.some((x) => x.tame))), 'the snack stayed tame after the run');
+  await g.page.reload();
+  await g.page.waitForTimeout(600);
+  assert(!(await menu()).first, 'the full menu was not remembered');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
 });
 
 test('phone: play controls stay inside the screen', async () => {
@@ -205,7 +258,7 @@ test('sugar: none for a run with cheats', async () => {
 });
 
 test('settings: difficulty and graphics apply and are remembered', async () => {
-  const g = await open({ play: false });
+  const g = await open({ play: false, returning: true });
   const mass = {};
   for (const d of ['easy', 'hard', 'normal']) {
     await g.page.click(`#diffSeg button[data-v=${d}]`);

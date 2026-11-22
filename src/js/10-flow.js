@@ -223,6 +223,7 @@ function startGame() {
   runActive = true;
   timeLeft = mode === 't3' ? 180 : 0;
   spawnPlayer(4);
+  tutor = newcomer ? { prey: tutorPrey() } : null;
   document.body.classList.add('playing');
   menuEl.classList.add('hidden');
   overEl.classList.add('hidden');
@@ -231,8 +232,9 @@ function startGame() {
   hudT = 0;
   if (touchMode) {
     addFeed(SET.lefty ? 'Справа води пальцем, слева <b>Кусь</b> и <b>Язык</b>' : 'Слева води пальцем, справа <b>Кусь</b> и <b>Язык</b>');
-    addFeed('<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты');
-  } else addFeed('<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты');
+    if (!tutor) addFeed('<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты'); // the first run tells this after the first bite
+  } else if (tutor) addFeed('Веди мышью: пасть смотрит на курсор');
+  else addFeed('<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты');
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 }
 function tally() {
@@ -262,6 +264,12 @@ function finishRun() {
   } catch (e) {}
   saveM();
   renderHats();
+  if (tutor) tutor.prey.tame = false;
+  tutor = null;
+  if (newcomer) {
+    newcomer = false; // from now on the menu is the full one
+    document.body.classList.remove('first');
+  }
 }
 function die(by) {
   tally();
@@ -514,6 +522,27 @@ function updateHUD(dt) {
         localStorage.setItem('kus.seen', JSON.stringify(seen));
       } catch (e) {}
     };
+    if (tutor) {
+      // the first run: say how to bite once the snack is really within reach, then let it be an ordinary candy
+      const q = tutor.prey;
+      if (player.stats.bites > 0 || !q.alive || time - run.t0 > 30) {
+        q.tame = false;
+        tutor = null;
+        if (player.stats.bites > 0)
+          addFeed(
+            touchMode
+              ? '<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты'
+              : '<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты',
+            5200,
+          );
+      } else if (Math.hypot(q.x - player.x, q.y - player.y) - q.Rs - player.Rs < 50)
+        hint(
+          'bite',
+          touchMode
+            ? 'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Кусь</b>: рывок с укусом'
+            : 'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Клик</b>: рывок с укусом',
+        );
+    }
     for (const b of blobs) {
       if (!b.kind || !b.alive || seen[b.kind] || Math.abs(b.x - player.x) > view + b.Rs || Math.abs(b.y - player.y) > view + b.Rs) continue;
       if (b.kind === 'hedgehog') hint('hedgehog', '<b>Ёж</b>: со спины колется. Кусай его в морду');
