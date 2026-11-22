@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#140b08">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>КУСЬ.io</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Rubik+Bubbles&display=swap">
+<style>
+/*__CSS__*/
+</style>
+</head>
+<body>
+<p id="nojs">Игра не запустилась: это предпросмотр файла, скрипты в нём выключены. На iPhone файл из чата открывается только так. Нужна ссылка на игру, её можно открыть в Safari.</p>
+<script>
+/* plain old syntax on purpose: this must run even where the game itself cannot */
+document.getElementById('nojs').style.display = 'none';
+(function () {
+  var n = 0;
+  function show(msg) {
+    if (!msg || msg === 'Script error.' || ++n > 3) return;
+    var el = document.getElementById('err');
+    if (!el) { el = document.createElement('div'); el.id = 'err'; el.onclick = function () { el.style.display = 'none'; }; document.body.appendChild(el); }
+    el.style.display = 'block';
+    el.textContent = 'Ошибка в игре: ' + msg + '. Пришли скриншот этого сообщения.';
+  }
+  window.addEventListener('error', function (e) { show((e.message || '') + (e.lineno ? ' (строка ' + e.lineno + ')' : '')); });
+  window.addEventListener('unhandledrejection', function (e) { show(String(e.reason && e.reason.message || e.reason || '')); });
+})();
+</script>
+<canvas id="c" aria-label="Игровое поле"></canvas>
+<div id="vig"></div>
+<div id="safe"></div>
+
+<div id="hud" class="hidden">
+  <div id="score"><div id="mass">0</div><div class="lbl">масса</div><div id="timer"></div><div id="goal"></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="feed" aria-live="polite"></div></div>
+  <button id="pauseBtn" type="button" aria-label="Пауза" title="Пауза (Esc)"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
+  <button id="dash" type="button" aria-label="Рывок с укусом"><span><b>Кусь</b><small>пробел</small></span></button>
+  <button id="admBtn" type="button" aria-label="Админ-панель" title="Админ-панель (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.3l1.8-1.8"/><circle cx="12" cy="12" r="6.6"/></svg></button>
+  <button id="dodge" type="button" aria-label="Язык-присоска"><span><b>Язык</b><small>shift</small></span></button>
+</div>
+
+<div id="board"><div class="bt">Самые сладкие</div><ol id="lb"></ol></div>
+
+<button id="mute" type="button" aria-label="Выключить звук" title="Звук (M)">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5v14l-4.5-4.5H4z" fill="currentColor"/><path class="on" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="off" d="M16 9.5l5 5m0-5l-5 5"/></svg>
+</button>
+
+<div id="menu" class="ov">
+  <div class="wrap"><div class="card">
+    <div class="top">
+    <h1 class="logo">КУСЬ<span>.io</span></h1>
+    <p class="tag">Откусывай куски от других конфет и расти. Тебя тоже будут кусать: ранки затянутся, а есть можно дальше.</p>
+    <input id="nick" maxlength="14" placeholder="Твоё имя" autocomplete="off" spellcheck="false" aria-label="Имя">
+    </div>
+    <p id="chal" class="hidden"></p>
+    <div class="pk" id="dif"><span class="pl">Сложность</span><div class="seg3" id="diffSeg" role="group" aria-label="Сложность"><button type="button" data-v="easy">Лёгкая</button><button type="button" data-v="normal">Обычная</button><button type="button" data-v="hard">Жёсткая</button></div></div>
+    <div class="pk"><span class="pl">Вкус</span><div id="sw" class="pr" role="radiogroup" aria-label="Вкус"></div></div>
+    <div class="pk"><span class="pl">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор"></div></div>
+    <div class="pk"><span class="pl">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка"></div></div>
+    <div class="pk" id="mis"><span class="pl" id="misT">Задания</span><div id="misList"></div></div>
+    <div class="go"><div class="seg2" id="modeSeg" role="group" aria-label="Режим"><button type="button" data-m="free">Свободная игра</button><button type="button" data-m="t3">3 минуты на счёт</button></div><button id="play" class="btn" type="button">Играть</button></div>
+    <p class="best" id="rec"></p>
+    <ul class="help">
+      <li class="kb"><span><b>Мышь</b>: куда смотрит пасть</span></li>
+      <li class="kb"><span><b>Пробел, клик или «Кусь»</b>: рывок с укусом посильнее</span></li>
+      <li class="kb"><span><b>Shift, правый клик или «Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
+      <li class="tc"><span><b>Води пальцем по экрану</b>: под ним появится джойстик</span></li>
+      <li class="tc"><span><b>«Кусь»</b>: рывок с укусом посильнее, можно держать</span></li>
+      <li class="tc"><span><b>«Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
+      <li><span>Кусает только пасть, так что заходи со спины</span></li>
+      <li><span>На поле лежат бонусы: скорость, щит и магнит</span></li>
+      <li><span>Ёж колется со спины, кусай его в морду. Торт кусай в вишенку</span></li>
+      <li><span>Свежие ранки замедляют и сыплют крошками, добивай подранков</span></li>
+      <li><span>Укус в свежую ранку отрывает на треть больше</span></li>
+    </ul>
+  </div></div>
+</div>
+
+<div id="adm" class="ov center hidden" role="dialog" aria-label="Админ-панель">
+  <div class="wrap"><button class="x" id="admX" type="button" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
+    <h2 class="dead">Админ-панель</h2>
+    <p class="tag">Игра стоит на паузе, пока панель открыта. С включёнными читами рекорд не засчитывается.</p>
+    <div class="grp">Читы</div><div class="tgs" id="admT"></div>
+    <div class="grp">Скорость конфеты</div><div class="seg" id="admS"></div>
+    <div class="grp">Действия</div><div class="acts" id="admA"></div>
+    <button id="admClose" class="btn" type="button">Продолжить</button>
+  </div></div>
+</div>
+
+<div id="over" class="ov center hidden">
+  <div class="wrap"><button class="x" id="overX" type="button" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
+    <h2 class="dead" id="overT">Тебя доели</h2>
+    <p class="tag" id="who"></p>
+    <div class="stats">
+      <div><b id="sMax">0</b><span>макс. масса</span></div>
+      <div><b id="sBites">0</b><span>укусов</span></div>
+      <div><b id="sKills">0</b><span>съедено целиком</span></div>
+      <div><b id="sTime">0:00</b><span id="sTimeL">время в игре</span></div>
+    </div>
+    <div id="overMis"></div>
+    <button id="again" class="btn" type="button">Ещё кусь</button>
+    <button id="chalBtn" class="btn2" type="button">Бросить вызов другу</button>
+    <input id="chalLink" class="hidden" readonly aria-label="Ссылка-вызов">
+    <button id="toMenu" class="btn2" type="button">В меню</button>
+    <p id="chalRes"></p>
+    <p class="best" id="best"></p>
+  </div></div>
+</div>
+
+<div id="pause" class="ov center hidden" role="dialog" aria-label="Пауза">
+  <div class="wrap"><button class="x" id="pauseX" type="button" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
+    <h2 class="dead">Пауза</h2>
+    <div class="grp">Кнопки на экране</div>
+    <div class="seg2" id="handSeg"><button type="button" data-v="0">Справа</button><button type="button" data-v="1">Слева</button></div>
+    <div class="grp">Размер кнопок</div>
+    <div class="seg3" id="sizeSeg"><button type="button" data-v="0.85">Мелкие</button><button type="button" data-v="1">Средние</button><button type="button" data-v="1.18">Крупные</button></div>
+    <div class="grp">Графика</div>
+    <div class="seg3" id="gfxSeg"><button type="button" data-v="auto">Авто</button><button type="button" data-v="low">Лёгкая</button><button type="button" data-v="high">Полная</button></div>
+    <div class="seg2" id="fpsSeg" role="group" aria-label="Счётчик кадров"><button type="button" data-v="0">Без счётчика кадров</button><button type="button" data-v="1">Показывать FPS</button></div>
+    <button id="resume" class="btn" type="button">Продолжить</button>
+    <button id="pAdmin" class="btn2" type="button">Админ-панель</button>
+    <button id="pMenu" class="btn2" type="button">Выйти в меню</button>
+  </div></div>
+</div>
+
+<script>
+{
+'use strict';
+/*__JS__*/
+}
+</script>
+</body>
+</html>
