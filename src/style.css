@@ -48,12 +48,10 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #hats{gap:6px}
 #hats button{font:800 14px/1 var(--font);padding:8px 12px;min-height:40px;border-radius:999px;border:2px solid #ead2b9;background:#fff;color:var(--ink);cursor:pointer}
 #hats button[aria-checked=true]{border-color:var(--ink);background:#ffe3ea}
-#hats button:disabled{opacity:.55;cursor:not-allowed}
+#hats button:disabled{background:transparent;border-style:dashed;border-color:#c9ab92;color:#6b4a3a;cursor:not-allowed}
 #hats small{color:var(--muted);font-weight:700}
+#hats button:disabled small{color:inherit}
 #hats button:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
-#admBtn{position:fixed;right:14px;bottom:214px;z-index:3;width:44px;height:44px;border-radius:50%;border:0;background:var(--cream);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.4);padding:0}
-#admBtn svg{width:24px;height:24px}
-#admBtn:focus-visible{outline:3px solid var(--lemon);outline-offset:3px}
 #fpsTag{font:700 11px/1.3 var(--font);color:rgba(255,241,220,.75);text-shadow:0 1px 0 rgba(0,0,0,.6);font-variant-numeric:tabular-nums;margin-top:2px}
 #cheatTag{font:800 12px/1.3 var(--font);color:var(--lemon);margin-top:4px;text-shadow:0 2px 0 rgba(0,0,0,.5);max-width:60vw}
 #adm .wrap{width:min(480px,100%)}
@@ -69,7 +67,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #adm .acts button.red{border-color:var(--berry)}
 #adm button:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
 #adm .btn{margin-top:16px}
-#pauseBtn{position:fixed;right:14px;bottom:266px;z-index:3;width:44px;height:44px;border-radius:50%;border:0;background:var(--cream);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.4);padding:0}
+#pauseBtn{position:fixed;right:14px;bottom:214px;z-index:3;width:44px;height:44px;border-radius:50%;border:0;background:var(--cream);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.4);padding:0}
 #pauseBtn svg{width:20px;height:20px}
 #pauseBtn:focus-visible{outline:3px solid var(--lemon);outline-offset:3px}
 #timer{font:900 20px/1.15 var(--font);color:var(--lemon);text-shadow:0 2px 0 rgba(0,0,0,.5);font-variant-numeric:tabular-nums}
@@ -168,11 +166,12 @@ body.touch #lb li.gap{color:rgba(255,241,220,.5)}
 body.touch #board.min li:not(.me):not(:first-child){display:none}
 body.touch #feed b{color:var(--lemon)}
 body.touch #pauseBtn{right:auto;bottom:auto;left:calc(100px + env(safe-area-inset-left,0px));top:calc(10px + env(safe-area-inset-top,0px));width:38px;height:38px}
-body.touch #admBtn{display:none}
 body.touch.lefty #dash{right:auto;left:calc(18px + env(safe-area-inset-left,0px))}
 body.touch.lefty #dodge{right:auto;left:calc(18px + (var(--D) - var(--d)) / 2 + env(safe-area-inset-left,0px))}
 body.touch #mute{right:auto;bottom:auto;left:calc(144px + env(safe-area-inset-left,0px));top:calc(10px + env(safe-area-inset-top,0px));width:38px;height:38px}
-body.touch #admBtn svg,body.touch #mute svg{width:20px;height:20px}
+body.touch #mute svg{width:20px;height:20px}
+/* 38px buttons, 44px touch target: an invisible 3px rim (the two buttons sit 6px apart, so the rims meet but do not overlap) */
+body.touch #pauseBtn:before,body.touch #mute:before{content:"";position:absolute;top:-3px;right:-3px;bottom:-3px;left:-3px;border-radius:50%}
 body.touch #pauseBtn,body.touch #mute{background:rgba(255,241,220,.82);box-shadow:none}
 body.touch:not(.playing) #mute{left:calc(14px + env(safe-area-inset-left,0px))}
 body.touch #feed div{background:rgba(20,11,8,.55);color:var(--cream);box-shadow:none;border-radius:12px;max-width:calc(100vw - 206px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))}
@@ -212,7 +211,6 @@ body.touch #feed div{background:rgba(20,11,8,.55);color:var(--cream);box-shadow:
   #dash{width:80px;height:80px}
   #dodge{left:106px;width:62px;height:62px}
   #mute{bottom:118px}
-  #admBtn{bottom:170px}
-  #pauseBtn{bottom:222px}
+  #pauseBtn{bottom:170px}
   #adm .seg{grid-template-columns:repeat(2,minmax(0,1fr))}
 }

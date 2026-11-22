@@ -188,7 +188,6 @@ function closeAdmin() {
   updateCheatTag();
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 }
-$('admBtn').addEventListener('click', openAdmin);
 $('admClose').addEventListener('click', closeAdmin);
 admT.addEventListener('click', (e) => {
   const t = e.target.closest('button');
