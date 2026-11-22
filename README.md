@@ -104,3 +104,7 @@ How the code is organised is described in [`CLAUDE.md`](CLAUDE.md).
 
 - Multiplayer. All rivals are bots; playing against people would need a server.
 - A Telegram Mini App.
+
+## License
+
+[MIT](LICENSE). The code, the art drawn by it and the screenshots are free to use, change and share.

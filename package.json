@@ -2,6 +2,7 @@
   "name": "kus-io",
   "version": "1.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "КУСЬ.io (Kus.io): an agar.io-like browser game where soft candies bite pieces off each other",
   "scripts": {
