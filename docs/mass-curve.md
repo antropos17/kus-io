@@ -1,79 +1,80 @@
-# Кривая массы в свободной игре
+# Mass curve in free play
 
-Замер 23.11.2026 на коммите 509d466 (локальный `main`). Скрипт `tools/mass-curve.mjs`, сырые данные: `docs/mass-curve.json` (сводка и каждый забег по всем наборам). Код игры не менялся.
+Measured on 23.11.2026 at commit 509d466 (the local `main`). Script: `tools/mass-curve.mjs`; raw data: `docs/mass-curve.json` (the summary and every run of every set). The game code was not changed.
 
-Зачем: подобрать пороги массы для этапов забега (первое событие, второе, торт-босс) по настоящим цифрам, а не с потолка.
+Purpose: pick the mass thresholds for the run's stages (first event, second event, the cake boss) from real numbers rather than out of thin air.
 
-## Коротко
+## In short
 
-- **Забег двугорбый.** Игрок либо гибнет в первые одну–три минуты при массе 40–300, либо разгоняется. После массы 800 гибнут редко: 2–6 из 36 на обычной, 3–4 из ~20 у слабых. К 3–4 минуте выжившие упираются в равновесие около 4000: таяние гигантов (`06-softbody.js`, масса выше 300 убывает) съедает прирост. После 4 минут масса почти не растёт.
-- **Обычный автопилот слишком силён:** на обычной сложности до 10 минут доживают 75–83%, медиана максимальной массы 3800. Ориентироваться на него нельзя. Ближе к живому игроку «слабый» и «очень слабый» наборы: 40–48% разгоняются, остальные гибнут, медиана гибели 1:19–1:43.
-- **Жёсткая сложность для автопилота почти непроходима:** медиана забега 0:21, к минуте живы 33%. Боты охотятся вдвое активнее, спасения от смертельного укуса нет.
-- **Особые противники приходят рано:** первая стая пираний на 0:20 (как только масса выше 90), торт есть на поле с самого начала у 55–78% забегов, иначе появляется примерно на 1:00–1:30. Ежи стоят с запуска страницы и почти не обновляются. Сильный автопилот съедает торт в 65–85% забегов на обычной и лёгкой сложности.
-- **Убивают обычные боты** (57–100% смертей), ежи — эпизодически, пираньи и торт не убили ни разу.
+- **Runs are bimodal.** The player either dies in the first one to three minutes at a mass of 40–300, or takes off. Past mass 800 deaths are rare: 2–6 out of 36 on normal, 3–4 out of ~20 for the weak players. By minutes 3–4 the survivors hit an equilibrium near 4000: the melting of giants (`06-softbody.js`, mass above 300 drains away) eats the gain. After 4 minutes mass hardly grows.
+- **The plain autopilot is too strong:** on normal 75–83% live to 10 minutes, median peak mass 3800. It cannot be the yardstick. Closer to a live player are the "weak" and "very weak" sets: 40–48% take off, the rest die, median death time 1:19–1:43.
+- **Hard is almost unplayable for the autopilot:** median run 0:21, 33% alive at one minute. Bots hunt about twice as eagerly and there is no rescue from a lethal bite.
+- **Special enemies come early:** the first piranha pack at 0:20 (as soon as mass is above 90); a cake is on the field from the very start in 55–78% of runs, otherwise it appears around 1:00–1:30. Hedgehogs stand from page load and are hardly ever replaced. The strong autopilot eats the cake in 65–85% of runs on normal and easy.
+- **Ordinary bots do the killing** (57–100% of deaths), hedgehogs now and then; piranhas and the cake never killed the player.
 
-## Условия замера
+## Conditions
 
-- Свободная игра, читы выключены, игрок вернувшийся (`kus.best` записан, ручной добычи первого забега нет). Режим, сложность и отсутствие читов проверены у каждого забега, ошибок страницы 0.
-- Каждый забег на новой странице 1200×720. Перед «Играть» мир 5 игровых секунд живёт в меню, как если бы игрок смотрел меню. Затем `startGame()`, игроку ставится `player.ai = newAI()`.
-- Игра на паузе, время идёт вручную шагами `update(1/60)`, без отрисовки. Забег идёт до первой смерти игрока или до 10 игровых минут. Забеги, дожившие до 10 минут, в длительности считаются как 10:00: перцентили «10:00» означают «не меньше 10 минут».
-- Наборы по 40 забегов:
+- Free play, cheats off, a returning player (`kus.best` is set, so no first-run snack). Mode, difficulty and the absence of cheats were checked on every run; page errors: 0.
+- Every run on a fresh 1200×720 page. Before «Играть» ("Play") the world lives for 5 game seconds in the menu, as if the player were looking at the menu. Then `startGame()`, and the player gets `player.ai = newAI()`.
+- The game is paused; time moves by hand in `update(1/60)` steps, with no rendering. A run lasts until the player's first death or 10 game minutes. Runs that lived to 10 minutes count as 10:00 in run length: a percentile of "10:00" means "at least 10 minutes".
+- Difficulties are named in the menu «Лёгкая» (easy), «Обычная» (normal) and «Жёсткая» (hard); below they are easy, normal and hard.
+- Sets of 40 runs:
 
-| Набор | Команда |
+| Set | Command |
 |---|---|
-| Лёгкая | `node tools/mass-curve.mjs 40 easy 600` |
-| Обычная | `node tools/mass-curve.mjs 40 normal 600` |
-| Обычная, повтор (проверка разброса) | то же |
-| Жёсткая | `node tools/mass-curve.mjs 40 hard 600` |
-| Слабый (обычная) | `node tools/mass-curve.mjs 40 normal 600 weak` |
-| Очень слабый (обычная) | `node tools/mass-curve.mjs 40 normal 600 weaker` |
+| Easy | `node tools/mass-curve.mjs 40 easy 600` |
+| Normal | `node tools/mass-curve.mjs 40 normal 600` |
+| Normal, repeat (spread check) | the same |
+| Hard | `node tools/mass-curve.mjs 40 hard 600` |
+| Weak (normal) | `node tools/mass-curve.mjs 40 normal 600 weak` |
+| Very weak (normal) | `node tools/mass-curve.mjs 40 normal 600 weaker` |
 
-**Слабый игрок.** Это тот же `newAI()`, у которого в скрипте (не в игре) умножены три параметра:
+**The weak player.** It is the same `newAI()` with three parameters multiplied in the script (not in the game):
 
-- `react` — пауза между решениями, обычно 0,2–0,38 с;
-- `fear` — насколько рано и сильно игрок убегает от крупных;
-- `aggro` — тяга к охоте.
+- `react` — the pause between decisions, normally 0.2–0.38 s;
+- `fear` — how early and how hard the player runs from bigger ones;
+- `aggro` — the urge to hunt.
 
-У «слабого» множители ×2,5 / ×0,55 / ×0,7, у «очень слабого» ×4 / ×0,35 / ×0,5. «Слабый» вышел слабым лишь наполовину (43% доживают до 10 минут), поэтому добавлен второй, более жёсткий шаг. Обзор у автопилота остаётся круговым, на 640 px во все стороны, и эти параметры его не меняют. Это главное, чем он сильнее человека, и ослабить это одними параметрами `newAI` нельзя (см. оговорки).
+The "weak" multipliers are ×2.5 / ×0.55 / ×0.7, the "very weak" ones ×4 / ×0.35 / ×0.5. "Weak" came out only half weak (43% live to 10 minutes), so a second, harsher step was added. The autopilot's view stays all-round, 640 px in every direction, and these parameters do not change it. That is the main way it is stronger than a human, and the `newAI` parameters alone cannot weaken it (see caveats).
 
-**Как определялось.**
+**How things were detected.**
 
-- *Появление особого противника* — новый объект `ежа`, `торта` или вожака стаи пираний в `blobs` после старта. «Есть на старте» — уже был на поле в момент «Играть».
-- *Встреча* — первый раз, когда край противника ближе 600 px к краю игрока.
-- *Укус торта и вишенка* — на кадре, когда растёт `player.stats.bites`, ищется тело с наименьшим зазором до рта, как в `biteScan`. Если это торт, укус в вишенку засчитывается по тому же углу, что в `doBite` (±0,55 рад от спины торта). Это восстановление после кадра, а не прямой счётчик игры, так что цифры по вишенке приблизительные.
-- *Торт съеден* — торт исчез на том кадре, когда выросло `player.stats.kills`.
-- *Причина смерти* — ближайшее к игроку тело, у которого на кадре смерти начался глоток (`gulpT > 0`). Неопределённых случаев 0.
+- *A special enemy appears* — a new `hedgehog`, `cake` or piranha pack leader object in `blobs` after the start. "On the field at start" — it was already there at the moment of «Играть».
+- *Meeting* — the first time the enemy's rim comes within 600 px of the player's rim.
+- *A cake bite and the cherry* — on the frame where `player.stats.bites` grows, the body with the smallest gap to the mouth is found, as `biteScan` does. If it is a cake, a cherry bite is counted by the same angle as in `doBite` (±0.55 rad from the cake's back). This is a reconstruction after the frame, not a game counter, so the cherry figures are approximate.
+- *Cake eaten* — the cake disappeared on the frame where `player.stats.kills` grew.
+- *Cause of death* — the body nearest the player that started a gulp on the death frame (`gulpT > 0`). Undetermined cases: 0.
 
-## Проверка разброса: два прогона обычной сложности
+## Spread check: two runs of normal
 
-| | Прогон 1 | Прогон 2 |
+| | Run 1 | Run 2 |
 |---|---|---|
-| Длительность, медиана / p25 | 10:00 / 10:00 | 10:00 / 9:49 |
-| Живы к 3:00 / 10:00 | 98% / 83% | 88% / 75% |
-| Максимальная масса, медиана / p25 | 3832 / 2091 | 3784 / 1624 |
-| Масса живых на 1:00, медиана | 278 | 268 |
-| Масса живых на 2:00, медиана | 494 | 578 |
-| Масса 800: доля / медианное время | 90% / 1:57 | 90% / 1:39 |
-| Масса 1600: доля / медианное время | 80% / 2:31 | 75% / 2:38 |
+| Run length, median / p25 | 10:00 / 10:00 | 10:00 / 9:49 |
+| Alive at 3:00 / 10:00 | 98% / 83% | 88% / 75% |
+| Peak mass, median / p25 | 3832 / 2091 | 3784 / 1624 |
+| Mass of the living at 1:00, median | 278 | 268 |
+| Mass of the living at 2:00, median | 494 | 578 |
+| Mass 800: share / median time | 90% / 1:57 | 90% / 1:39 |
+| Mass 1600: share / median time | 80% / 2:31 | 75% / 2:38 |
 
-Медианы совпадают в пределах разброса выборки из 40: доля погибших 18% и 25% — это 7 и 10 забегов. Сравнение по медиане длительности на обычной сложности малоинформативно: больше половины забегов упирается в предел 10 минут. Поэтому сравнивались ещё доли и массы.
+The medians agree within the spread of a sample of 40: the death shares of 18% and 25% are 7 and 10 runs. Comparing by the median run length on normal says little, since more than half the runs hit the 10-minute limit; so shares and masses were compared as well.
 
-## Таблицы
+## Tables
 
-### 1. Длительность забега
+### 1. Run length
 
-| Набор | p25 | медиана | p75 | p90 | жив 0:30 | 1:00 | 2:00 | 3:00 | 5:00 | 10:00 |
+| Set | p25 | median | p75 | p90 | alive 0:30 | 1:00 | 2:00 | 3:00 | 5:00 | 10:00 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Лёгкая | 10:00 | 10:00 | 10:00 | 10:00 | 98% | 98% | 95% | 93% | 93% | 90% |
-| Обычная | 10:00 | 10:00 | 10:00 | 10:00 | 100% | 100% | 98% | 98% | 95% | 83% |
-| Обычная, повтор | 9:49 | 10:00 | 10:00 | 10:00 | 98% | 95% | 93% | 88% | 85% | 75% |
-| Жёсткая | 0:13 | 0:21 | 1:05 | 2:06 | 45% | 33% | 13% | 10% | 8% | 3% |
-| Слабый (обычная) | 1:34 | 4:28 | 10:00 | 10:00 | 100% | 85% | 65% | 55% | 50% | 43% |
-| Очень слабый (обычная) | 1:11 | 2:21 | 10:00 | 10:00 | 95% | 78% | 57% | 48% | 40% | 40% |
+| Easy | 10:00 | 10:00 | 10:00 | 10:00 | 98% | 98% | 95% | 93% | 93% | 90% |
+| Normal | 10:00 | 10:00 | 10:00 | 10:00 | 100% | 100% | 98% | 98% | 95% | 83% |
+| Normal, repeat | 9:49 | 10:00 | 10:00 | 10:00 | 98% | 95% | 93% | 88% | 85% | 75% |
+| Hard | 0:13 | 0:21 | 1:05 | 2:06 | 45% | 33% | 13% | 10% | 8% | 3% |
+| Weak (normal) | 1:34 | 4:28 | 10:00 | 10:00 | 100% | 85% | 65% | 55% | 50% | 43% |
+| Very weak (normal) | 1:11 | 2:21 | 10:00 | 10:00 | 95% | 78% | 57% | 48% | 40% | 40% |
 
-### 2. Масса по времени (среди живых: p25 / медиана / p75, в скобках число живых)
+### 2. Mass over time (among the living: p25 / median / p75, number alive in brackets)
 
-| t | Лёгкая | Обычная | Обычная, повтор | Жёсткая | Слабый (обычная) | Очень слабый (обычная) |
+| t | Easy | Normal | Normal, repeat | Hard | Weak (normal) | Very weak (normal) |
 | --- | --- | --- | --- | --- | --- | --- |
 | 0:00 | 55 / **55** / 55 (40) | 40 / **40** / 40 (40) | 40 / **40** / 40 (40) | 34 / **34** / 34 (40) | 40 / **40** / 40 (40) | 40 / **40** / 40 (40) |
 | 0:15 | 100 / **129** / 186 (40) | 86 / **106** / 142 (40) | 48 / **93** / 126 (40) | 40 / **81** / 114 (27) | 58 / **90** / 145 (40) | 53 / **77** / 105 (40) |
@@ -117,20 +118,20 @@
 | 9:45 | 2186 / **2690** / 3224 (36) | 2146 / **2621** / 3125 (33) | 1204 / **2381** / 2934 (30) | 3193 / **3193** / 3193 (1) | 1447 / **2540** / 2865 (18) | 2490 / **2985** / 3357 (16) |
 | 10:00 | 2249 / **2796** / 2970 (36) | 1974 / **2722** / 3052 (33) | 1034 / **2184** / 2751 (30) | 3001 / **3001** / 3001 (1) | 1534 / **2627** / 3238 (17) | 2475 / **2694** / 2917 (16) |
 
-### 3. Максимальная масса за забег
+### 3. Peak mass in a run
 
-| Набор | p25 | медиана | p75 | p90 |
+| Set | p25 | median | p75 | p90 |
 | --- | --- | --- | --- | --- |
-| Лёгкая | 3863 | 3975 | 4038 | 4085 |
-| Обычная | 2091 | 3832 | 3959 | 4029 |
-| Обычная, повтор | 1624 | 3784 | 3969 | 4006 |
-| Жёсткая | 63 | 111 | 292 | 723 |
-| Слабый (обычная) | 242 | 981 | 3938 | 3999 |
-| Очень слабый (обычная) | 206 | 491 | 3952 | 4009 |
+| Easy | 3863 | 3975 | 4038 | 4085 |
+| Normal | 2091 | 3832 | 3959 | 4029 |
+| Normal, repeat | 1624 | 3784 | 3969 | 4006 |
+| Hard | 63 | 111 | 292 | 723 |
+| Weak (normal) | 242 | 981 | 3938 | 3999 |
+| Very weak (normal) | 206 | 491 | 3952 | 4009 |
 
-### 4. Пороги массы: доля дошедших (медианное время достижения)
+### 4. Mass thresholds: share of runs that reached it (median time to reach)
 
-| Порог | Лёгкая | Обычная | Обычная, повтор | Жёсткая | Слабый (обычная) | Очень слабый (обычная) |
+| Threshold | Easy | Normal | Normal, repeat | Hard | Weak (normal) | Very weak (normal) |
 | --- | --- | --- | --- | --- | --- | --- |
 | 60 | 100% (0:01) | 100% (0:06) | 100% (0:06) | 78% (0:07) | 100% (0:07) | 100% (0:07) |
 | 80 | 100% (0:06) | 100% (0:10) | 100% (0:10) | 65% (0:11) | 98% (0:12) | 98% (0:13) |
@@ -145,118 +146,118 @@
 | 1600 | 90% (1:35) | 80% (2:31) | 75% (2:38) | 8% (2:08) | 48% (1:46) | 40% (1:54) |
 | 2500 | 90% (2:10) | 73% (3:01) | 63% (3:06) | 5% (2:35) | 43% (3:04) | 40% (3:07) |
 
-### 5. Особые противники
+### 5. Special enemies
 
-| Набор | Кто | есть на старте | появился за забег | первое появление: время / масса игрока | появлений в минуту | встретил (≤600 px) | первая встреча: время / масса |
+| Set | Who | on the field at start | spawned during the run | first spawn: time / player mass | spawns per minute | met (≤600 px) | first meeting: time / mass |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Лёгкая | Ёж | 100% | 5% | 4:02 / 3278.5 | 0.01 | 95% | 0:25 / 201.5 |
-| Лёгкая | Пираньи (стая) | 0% | 98% | 0:20 / 162 | 0.6 | 95% | 1:03 / 420.5 |
-| Лёгкая | Торт | 70% | 98% | 1:32 / 559 | 0.64 | 95% | 0:29 / 225.5 |
-| Обычная | Ёж | 100% | 13% | 5:01 / 1220 | 0.01 | 98% | 0:21 / 119 |
-| Обычная | Пираньи (стая) | 0% | 98% | 0:20 / 132 | 0.55 | 98% | 0:41 / 226 |
-| Обычная | Торт | 60% | 98% | 1:20 / 94 | 0.62 | 100% | 1:36 / 247 |
-| Обычная, повтор | Ёж | 100% | 10% | 5:55 / 2075.5 | 0.01 | 93% | 0:18 / 95 |
-| Обычная, повтор | Пираньи (стая) | 0% | 95% | 0:20 / 134.5 | 0.57 | 93% | 1:08 / 262 |
-| Обычная, повтор | Торт | 55% | 98% | 1:00 / 50 | 0.63 | 90% | 1:07 / 187 |
-| Жёсткая | Ёж | 100% | 0% | — / — | 0 | 48% | 0:10 / 60 |
-| Жёсткая | Пираньи (стая) | 0% | 40% | 0:20 / 119.5 | 0.58 | 25% | 0:39 / 221 |
-| Жёсткая | Торт | 78% | 38% | 0:00 / 35 | 0.62 | 25% | 0:28 / 260 |
-| Слабый (обычная) | Ёж | 100% | 3% | 5:16 / 845 | 0 | 85% | 0:24 / 125 |
-| Слабый (обычная) | Пираньи (стая) | 0% | 95% | 0:20 / 123.5 | 0.59 | 78% | 0:55 / 263 |
-| Слабый (обычная) | Торт | 68% | 83% | 1:20 / 52 | 0.55 | 80% | 0:39 / 183 |
-| Очень слабый (обычная) | Ёж | 100% | 5% | 9:16 / 3166 | 0.01 | 80% | 0:30 / 128 |
-| Очень слабый (обычная) | Пираньи (стая) | 0% | 85% | 0:22 / 113.5 | 0.6 | 68% | 0:46 / 304 |
-| Очень слабый (обычная) | Торт | 68% | 70% | 1:04 / 41 | 0.62 | 70% | 0:40 / 119.5 |
+| Easy | Hedgehog | 100% | 5% | 4:02 / 3278.5 | 0.01 | 95% | 0:25 / 201.5 |
+| Easy | Piranhas (pack) | 0% | 98% | 0:20 / 162 | 0.6 | 95% | 1:03 / 420.5 |
+| Easy | Cake | 70% | 98% | 1:32 / 559 | 0.64 | 95% | 0:29 / 225.5 |
+| Normal | Hedgehog | 100% | 13% | 5:01 / 1220 | 0.01 | 98% | 0:21 / 119 |
+| Normal | Piranhas (pack) | 0% | 98% | 0:20 / 132 | 0.55 | 98% | 0:41 / 226 |
+| Normal | Cake | 60% | 98% | 1:20 / 94 | 0.62 | 100% | 1:36 / 247 |
+| Normal, repeat | Hedgehog | 100% | 10% | 5:55 / 2075.5 | 0.01 | 93% | 0:18 / 95 |
+| Normal, repeat | Piranhas (pack) | 0% | 95% | 0:20 / 134.5 | 0.57 | 93% | 1:08 / 262 |
+| Normal, repeat | Cake | 55% | 98% | 1:00 / 50 | 0.63 | 90% | 1:07 / 187 |
+| Hard | Hedgehog | 100% | 0% | — / — | 0 | 48% | 0:10 / 60 |
+| Hard | Piranhas (pack) | 0% | 40% | 0:20 / 119.5 | 0.58 | 25% | 0:39 / 221 |
+| Hard | Cake | 78% | 38% | 0:00 / 35 | 0.62 | 25% | 0:28 / 260 |
+| Weak (normal) | Hedgehog | 100% | 3% | 5:16 / 845 | 0 | 85% | 0:24 / 125 |
+| Weak (normal) | Piranhas (pack) | 0% | 95% | 0:20 / 123.5 | 0.59 | 78% | 0:55 / 263 |
+| Weak (normal) | Cake | 68% | 83% | 1:20 / 52 | 0.55 | 80% | 0:39 / 183 |
+| Very weak (normal) | Hedgehog | 100% | 5% | 9:16 / 3166 | 0.01 | 80% | 0:30 / 128 |
+| Very weak (normal) | Piranhas (pack) | 0% | 85% | 0:22 / 113.5 | 0.6 | 68% | 0:46 / 304 |
+| Very weak (normal) | Cake | 68% | 70% | 1:04 / 41 | 0.62 | 70% | 0:40 / 119.5 |
 
-| Набор | кусал торт | кусал в вишенку | съел торт | укусов торта всего | из них в вишенку | тортов съедено |
+| Set | bit the cake | bit the cherry | ate the cake | cake bites in total | of them on the cherry | cakes eaten |
 | --- | --- | --- | --- | --- | --- | --- |
-| Лёгкая | 88% | 43% | 85% | 1020 | 41 | 89 |
-| Обычная | 80% | 30% | 68% | 572 | 22 | 50 |
-| Обычная, повтор | 75% | 40% | 65% | 640 | 43 | 56 |
-| Жёсткая | 15% | 8% | 3% | 77 | 7 | 4 |
-| Слабый (обычная) | 53% | 28% | 33% | 373 | 27 | 31 |
-| Очень слабый (обычная) | 45% | 20% | 38% | 485 | 24 | 38 |
+| Easy | 88% | 43% | 85% | 1020 | 41 | 89 |
+| Normal | 80% | 30% | 68% | 572 | 22 | 50 |
+| Normal, repeat | 75% | 40% | 65% | 640 | 43 | 56 |
+| Hard | 15% | 8% | 3% | 77 | 7 | 4 |
+| Weak (normal) | 53% | 28% | 33% | 373 | 27 | 31 |
+| Very weak (normal) | 45% | 20% | 38% | 485 | 24 | 38 |
 
-### 6. От чего умирает игрок (доля среди умерших)
+### 6. What kills the player (share of deaths)
 
-| Набор | умерло | бот | пираньи | ёж | торт | не определено | масса при смерти: медиана | съевший / игрок, медиана |
+| Set | died | bot | piranhas | hedgehog | cake | undetermined | mass at death: median | killer / player mass, median |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Лёгкая | 10% | 100% | 0% | 0% | 0% | 0% | 67 | 10.5 |
-| Обычная | 18% | 57% | 0% | 43% | 0% | 0% | 29 | 3.8 |
-| Обычная, повтор | 25% | 90% | 0% | 10% | 0% | 0% | 75 | 5.9 |
-| Жёсткая | 98% | 97% | 0% | 3% | 0% | 0% | 42 | 4.6 |
-| Слабый (обычная) | 57% | 96% | 0% | 4% | 0% | 0% | 56 | 12.7 |
-| Очень слабый (обычная) | 60% | 100% | 0% | 0% | 0% | 0% | 62 | 8.8 |
+| Easy | 10% | 100% | 0% | 0% | 0% | 0% | 67 | 10.5 |
+| Normal | 18% | 57% | 0% | 43% | 0% | 0% | 29 | 3.8 |
+| Normal, repeat | 25% | 90% | 0% | 10% | 0% | 0% | 75 | 5.9 |
+| Hard | 98% | 97% | 0% | 3% | 0% | 0% | 42 | 4.6 |
+| Weak (normal) | 57% | 96% | 0% | 4% | 0% | 0% | 56 | 12.7 |
+| Very weak (normal) | 60% | 100% | 0% | 0% | 0% | 0% | 62 | 8.8 |
 
-### 7. Укусы и съеденные целиком за забег
+### 7. Bites and whole swallows per run
 
-| Набор | укусов: p25 / медиана / p75 | съел целиком: p25 / медиана / p75 | укусов в минуту | съедено в минуту |
+| Set | bites: p25 / median / p75 | swallowed whole: p25 / median / p75 | bites per minute | swallowed per minute |
 | --- | --- | --- | --- | --- |
-| Лёгкая | 108.8 / 122.5 / 133.3 | 20.8 / 25 / 33 | 12.4 | 2.8 |
-| Обычная | 98.8 / 109 / 123.3 | 16.8 / 22.5 / 27.3 | 11.4 | 2.3 |
-| Обычная, повтор | 83.8 / 109.5 / 119.5 | 9.5 / 21.5 / 25 | 11.2 | 2.2 |
-| Жёсткая | 1 / 3 / 8.3 | 0 / 1 / 2 | 6.8 | 1.5 |
-| Слабый (обычная) | 13.8 / 45 / 121.5 | 1 / 11.5 / 22 | 11.8 | 1.8 |
-| Очень слабый (обычная) | 15.8 / 41 / 125.5 | 1 / 5.5 / 25 | 14.2 | 2.2 |
+| Easy | 108.8 / 122.5 / 133.3 | 20.8 / 25 / 33 | 12.4 | 2.8 |
+| Normal | 98.8 / 109 / 123.3 | 16.8 / 22.5 / 27.3 | 11.4 | 2.3 |
+| Normal, repeat | 83.8 / 109.5 / 119.5 | 9.5 / 21.5 / 25 | 11.2 | 2.2 |
+| Hard | 1 / 3 / 8.3 | 0 / 1 / 2 | 6.8 | 1.5 |
+| Weak (normal) | 13.8 / 45 / 121.5 | 1 / 11.5 / 22 | 11.8 | 1.8 |
+| Very weak (normal) | 15.8 / 41 / 125.5 | 1 / 5.5 / 25 | 14.2 | 2.2 |
 
 
-Пояснения к таблицам:
+Notes on the tables:
 
-- **В п. 2** число живых в скобках. Масса в поздних строках жёсткой сложности — это 1–3 забега, на неё не опираться.
-- **В п. 4** доля — от всех 40 забегов, время — медиана среди дошедших.
-- **В п. 5** «появился за забег» — новый объект после старта. Ежи почти всегда стоят с самого начала: два ежа живут на поле с запуска страницы, новые появляются, только когда кого-то съели. Пираний считают по стае: вожак плюс пятеро. Тортов и стай за забег больше одного, поэтому дан темп «в минуту».
+- **In table 2** the number alive is in brackets. The late rows on hard are 1–3 runs; do not rely on them.
+- **In table 4** the share is of all 40 runs; the time is the median among the runs that got there.
+- **In table 5** "spawned during the run" means a new object after the start. Hedgehogs are almost always there from the start: two hedgehogs live on the field from page load, and new ones appear only when one is eaten. Piranhas are counted by pack: a leader plus five. A run has more than one cake and pack, hence the "per minute" rate.
 
-### Дополнительно: кто гибнет и когда
+### In addition: who dies and when
 
-| Набор | медиана времени гибели (среди погибших) | p75 | доля забегов с максимальной массой ≥3500 | погибли после 800 / дошедших до 800 |
+| Set | median time of death (among the dead) | p75 | share of runs with peak mass ≥3500 | died after 800 / reached 800 |
 |---|---|---|---|---|
-| Лёгкая | 1:50 | 2:49 | 90% | 2 / 38 |
-| Обычная | 7:17 | 8:15 | 70% | 3 / 36 |
-| Обычная, повтор | 2:47 | 6:11 | 63% | 6 / 36 |
-| Жёсткая | 0:20 | 1:03 | 5% | 2 / 3 |
-| Слабый | 1:43 | 2:44 | 40% | 4 / 21 |
-| Очень слабый | 1:19 | 2:12 | 40% | 3 / 19 |
+| Easy | 1:50 | 2:49 | 90% | 2 / 38 |
+| Normal | 7:17 | 8:15 | 70% | 3 / 36 |
+| Normal, repeat | 2:47 | 6:11 | 63% | 6 / 36 |
+| Hard | 0:20 | 1:03 | 5% | 2 / 3 |
+| Weak | 1:43 | 2:44 | 40% | 4 / 21 |
+| Very weak | 1:19 | 2:12 | 40% | 3 / 19 |
 
-## Выводы
+## Findings
 
-1. **Набор массы.** Масса идёт ступеньками, а не по гладкой кривой. В первые 30 секунд медиана живых выходит на 90–170, на минуте — на 140–280 (на лёгкой выше: 241 и 697). Дальше половина забегов уходит в рост сотнями в минуту, вторая половина гибнет. К 3:00 у выживших медиана около 1000 (у слабых) и около 1000–2200 (у сильных). С 4:00 у всех выживших масса 2000–3000 и почти не меняется: это потолок таяния.
-2. **Решающее окно — первые две минуты.** Почти все смерти слабого игрока случаются до 2:45, при массе 40–300. Кто прошёл 800, тот почти наверняка доживает до конца.
-3. **Пороги выше 800 почти не различают игроков.** Доля дошедших до 800, 1200, 1600 и 2500 у слабых — 53, 48, 48 и 43%, у очень слабых — 48, 43, 40 и 40%. Разница между порогами задаёт только *когда* придёт событие, а не *у кого*.
-4. **Особые противники уже сейчас стоят на этапе «первая минута».** Пираньи приходят на 0:20 у всех, кто набрал больше 90. Торт часто есть с первой секунды. Ёж — постоянная декорация с первых 20–30 секунд. Для этапов их появление придётся привязать к шкале, иначе событие «пираньи» случится само раньше порога.
+1. **How mass grows.** Mass moves in steps, not along a smooth curve. In the first 30 seconds the median of the living reaches 90–170, at one minute 140–280 (higher on easy: 241 and 697). After that half the runs grow by hundreds a minute and the other half die. At 3:00 the survivors' median is about 1000 (weak players) and about 1000–2200 (strong ones). From 4:00 every survivor sits at 2000–3000 and hardly changes: that is the melting ceiling.
+2. **The deciding window is the first two minutes.** Nearly all of the weak player's deaths happen before 2:45, at a mass of 40–300. Whoever passes 800 almost certainly lives to the end.
+3. **Thresholds above 800 barely tell players apart.** The share reaching 800, 1200, 1600 and 2500 is 53, 48, 48 and 43% for the weak player and 48, 43, 40 and 40% for the very weak one. The choice between these thresholds only sets *when* an event comes, not *for whom*.
+4. **The special enemies already sit in the "first minute" stage.** Piranhas arrive at 0:20 for everyone above 90. The cake is often there from the first second. The hedgehog is permanent scenery from the first 20–30 seconds. For the stages their appearance will have to be tied to the bar, or the "piranhas" event will happen on its own before its threshold.
 
-## Рекомендация порогов
+## Recommended thresholds
 
-Ориентир — слабые наборы (живой игрок, скорее всего, где-то между «слабым» и обычным автопилотом, см. оговорки) и обычная сложность.
+The yardstick is the weak sets (a live player is most likely somewhere between "weak" and the plain autopilot, see caveats) and the normal difficulty.
 
-| Этап | Порог массы | Потолок по времени | Кто дойдёт по замеру | Когда, медиана |
+| Stage | Mass threshold | Time cap | Who gets there in the measurement | When, median |
 |---|---|---|---|---|
-| 1. Стая пираний | **150** | **0:45** | 93% слабых и 93% очень слабых (масса или дожил до 0:45); обычный автопилот 95–100%; жёсткая 45% | 0:22–0:28 по массе |
-| 2. Сладкий дождь | **600** | **2:00** | 70% слабых, 58% очень слабых (масса или дожил до 2:00); обычный автопилот 95–98%; жёсткая 20% | 1:10–1:16 у слабых, 1:27–1:33 у обычного |
-| 3. Торт-босс (финал) | **1600** | **4:00** (почти ничего не добавляет) | 48% слабых, 40% очень слабых; с потолком 4:00 — 50% и 43%; обычный автопилот 75–80%, с потолком 88–95% | 1:46–1:54 у слабых, 2:31–2:38 у обычного |
+| 1. Piranha pack | **150** | **0:45** | 93% of weak and 93% of very weak (by mass or by living to 0:45); plain autopilot 95–100%; hard 45% | 0:22–0:28 by mass |
+| 2. Sweet rain | **600** | **2:00** | 70% of weak, 58% of very weak (by mass or by living to 2:00); plain autopilot 95–98%; hard 20% | 1:10–1:16 for the weak, 1:27–1:33 for the plain autopilot |
+| 3. Cake boss (finale) | **1600** | **4:00** (adds almost nothing) | 48% of weak, 40% of very weak; with the 4:00 cap 50% and 43%; plain autopilot 75–80%, with the cap 88–95% | 1:46–1:54 for the weak, 2:31–2:38 for the plain autopilot |
 
-Почему так:
+Why:
 
-- **Первое событие на 150.** До 150 доходят 85–98% забегов во всех наборах, кроме жёсткой, медиана 0:22–0:28. Потолок 0:45 добирает тех, кто топчется на 80–140. К 0:45 у слабых живы 93–98%, так что событие увидят почти все. На жёсткой половина гибнет раньше 0:21, и никакой порог этого не исправит. Ниже 150 опускаться незачем: на 100 событие налезет на появление стаи пираний, которое и сейчас идёт на 0:20.
-- **Второе событие на 600.** Это ступенька между «пережил начало» (300) и «разогнался» (800). До неё доходят 60% слабых и 48% очень слабых, медиана 1:10–1:16; у обычного автопилота 93% к 1:27–1:33. Потолок 2:00 нужен: у слабых заметная часть живых к двум минутам ещё ниже 600 (p25 массы живых на 2:00 — 99–124), и потолок добавляет им 10 п. п. Без него они второго события не увидят.
-- **Торт-босс на 1600.** Выше 800 кривая плоская, поэтому доля дошедших почти не зависит от порога. 1600 выбран по времени: финал приходит около 2:00–2:40, когда почти все выжившие уже разогнались, но ещё не упёрлись в потолок 4000. 2500 дал бы ту же долю примерно на 3:05. Тогда между вторым событием и финалом будет больше полутора минут пустого роста.
-- **«Каждый третий забег» массой не задать.** У слабого игрока 40–48% дошедших — это доля разогнавшихся, а не следствие порога. Опуститься до трети можно только порогом выше потолка таяния (больше ~3500), но тогда финал придёт после 4–5 минуты, уже на плато. Если цель — именно треть, это решается не порогом, а тем, сколько игроков переживает первые две минуты: давлением ботов на массе 40–300 (`DIFFS.normal.hunt`, `grace`). У живого игрока доля разогнавшихся, скорее всего, ниже, чем у автопилота, так что треть может получиться сама. Проверить это можно только на живых забегах.
-- **Потолок по времени для босса.** Слабым он почти ничего не даёт: к 4:00 живы 43–50%, и почти все они уже выше 1600, потолок добавляет 2–3 п. п. (обычному автопилоту — 8–13 п. п.). Если его ставить, то 4:00, чтобы застрявший на 700–1500 игрок всё-таки увидел финал. Для первого и второго событий потолок нужен (0:45 и 2:00).
+- **First event at 150.** 85–98% of runs reach 150 in every set except hard, median 0:22–0:28. The 0:45 cap picks up those stuck at 80–140. At 0:45, 93–98% of the weak players are alive, so nearly everyone sees the event. On hard half the runs die before 0:21, and no threshold fixes that. There is no point going below 150: at 100 the event would collide with the piranha pack's appearance, which already comes at 0:20.
+- **Second event at 600.** It is the step between "survived the start" (300) and "took off" (800). 60% of the weak and 48% of the very weak reach it, median 1:10–1:16; for the plain autopilot 93% by 1:27–1:33. The 2:00 cap is needed: a noticeable part of the weak players alive at two minutes is still below 600 (p25 of the living's mass at 2:00 is 99–124), and the cap adds 10 percentage points for them. Without it they would not see the second event.
+- **Cake boss at 1600.** Above 800 the curve is flat, so the share that gets there hardly depends on the threshold. 1600 is chosen by time: the finale comes around 2:00–2:40, when almost all survivors have taken off but have not yet hit the 4000 ceiling. 2500 would give the same share at about 3:05, leaving more than a minute and a half of empty growth between the second event and the finale.
+- **"Every third run" cannot be set by mass.** For the weak player the 40–48% who get there are the share that took off, not an effect of the threshold. Getting down to a third would take a threshold above the melting ceiling (over ~3500), and then the finale would come after minute 4–5, already on the plateau. If a third is the actual goal, it is set not by a threshold but by how many players survive the first two minutes: the bots' pressure at mass 40–300 (`DIFFS.normal.hunt`, `grace`). A live player most likely takes off less often than the autopilot, so a third may come out by itself. Only live runs can check that.
+- **Time cap for the boss.** It gives the weak players almost nothing: 43–50% are alive at 4:00 and nearly all of them are already above 1600, so the cap adds 2–3 percentage points (8–13 for the plain autopilot). If set, make it 4:00, so that a player stuck at 700–1500 still sees the finale. For the first and second events a cap is needed (0:45 and 2:00).
 
-**Помещаются ли три события в типичный забег.** У разогнавшейся половины — да, с запасом: все три к ~2:30. У второй половины (50–60% забегов слабого игрока) — нет: медиана гибели 1:19–1:43. Такие игроки увидят первое событие, около половины из них — второе (с потолком 2:00), торт — почти никто. На жёсткой сложности типичный забег (0:21) не вмещает даже первое событие. Если этапы должны быть и на жёсткой, нужны другие пороги или потолок 0:15.
+**Do three events fit in a typical run?** For the half that takes off, yes, with room to spare: all three by ~2:30. For the other half (50–60% of the weak player's runs), no: median death time 1:19–1:43. Those players see the first event, about half of them the second (with the 2:00 cap), and almost none the cake. On hard a typical run (0:21) does not fit even the first event. If the stages must exist on hard too, it needs other thresholds or a 0:15 cap.
 
-## Оговорки: автопилот не живой игрок
+## Caveats: the autopilot is not a live player
 
-- **Видит всё вокруг.** `botThink` смотрит на 640 px во все стороны, мгновенно взвешивает каждую угрозу и убегает раньше, чем крупный бот повернётся. Человек видит только экран и отвлекается. Это делает автопилот живучее, поэтому доля разогнавшихся у живых, скорее всего, ниже.
-- **Поворачивает медленнее.** Тело с `ai` поворачивается на 15% медленнее (`turnRate`, множитель 0,85), это касается и игрока на автопилоте. Сдвиг в сторону более ранней гибели, но слабый.
-- **Не выходит из игры.** Живой игрок бросает забег сам, автопилот играет до смерти или 10 минут. Реальные забеги в среднем короче, поэтому потолки по времени важнее, чем кажется по таблицам.
-- **Без экрана и пальца.** Нет промахов джойстиком, нет задержки касания, рывок и язык автопилот применяет по формуле. Сдвиг в сторону быстрого роста.
-- **Слабость одним параметром.** Ослабленный автопилот хуже в решениях (реже думает, позже убегает, меньше охотится), но не в зрении. Сделать его «близоруким» можно только правкой `botThink` в игре, по условию задачи этого не делал. Это первое, чего не хватило: параметра радиуса обзора у `newAI`.
-- **Нет человеческого начала.** Перед стартом мир 5 секунд жил в меню. Живой игрок смотрит меню дольше, и тогда торт и пираньи могут оказаться на поле к старту чаще.
-- **Масштаб выборки.** 40 забегов на набор: доли известны с точностью примерно ±8 п. п., события с 3–10 случаями (смерти на лёгкой и обычной, причины смерти) — только как порядок.
+- **It sees everything around it.** `botThink` looks 640 px in every direction, weighs every threat at once and runs before a big bot has turned. A human sees only the screen and gets distracted. This makes the autopilot more durable, so live players most likely take off less often.
+- **It turns more slowly.** A body with `ai` turns 15% slower (`turnRate`, factor 0.85), and this applies to the player on autopilot too. A shift towards earlier death, but a small one.
+- **It never quits.** A live player abandons runs; the autopilot plays until death or 10 minutes. Real runs are shorter on average, so the time caps matter more than the tables suggest.
+- **No screen and no thumb.** No joystick misses, no touch latency; the autopilot uses dash and tongue by formula. A shift towards faster growth.
+- **Weakness through one parameter.** The weakened autopilot is worse at decisions (thinks less often, flees later, hunts less), but not at seeing. Making it "short-sighted" would need a change to `botThink` in the game, which the task ruled out. That is the first thing that was missing: a view-radius parameter in `newAI`.
+- **No human start.** Before the start the world lived in the menu for 5 seconds. A live player looks at the menu longer, and then the cake and piranhas may be on the field at the start more often.
+- **Sample size.** 40 runs per set: shares are known to about ±8 percentage points; events with 3–10 cases (deaths on easy and normal, causes of death) give only an order of magnitude.
 
-## Чего не удалось измерить
+## What could not be measured
 
-- **Укусы в вишенку.** Прямого счётчика нет: в `window.__kus` нет ни последнего укуса (цель, угол), ни флага `weak`. Цифры восстановлены по геометрии после кадра и, вероятно, занижены (22–43 из 570–1020 укусов торта).
-- **Причина смерти.** `killer` не отдаётся наружу. Определялась по начавшемуся глотку, что надёжно (неопределённых 0), но косвенно.
-- **Спасения от смертельного укуса** (`graceT`). Сколько раз они срабатывали, не видно: счётчика нет.
-- **Близорукий слабый игрок.** Нужен радиус обзора в `newAI`, см. оговорки.
+- **Cherry bites.** There is no direct counter: `window.__kus` has neither the last bite (target, angle) nor the `weak` flag. The figures are reconstructed from geometry after the frame and are probably low (22–43 out of 570–1020 cake bites).
+- **Cause of death.** `killer` is not exposed. It was inferred from the gulp that had just started, which is reliable (0 undetermined) but indirect.
+- **Rescues from a lethal bite** (`graceT`). How often they fired is not visible: there is no counter.
+- **A short-sighted weak player.** It needs a view radius in `newAI`, see caveats.
