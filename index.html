@@ -68,6 +68,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #admBtn{position:fixed;right:14px;bottom:214px;z-index:3;width:44px;height:44px;border-radius:50%;border:0;background:var(--cream);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.4);padding:0}
 #admBtn svg{width:24px;height:24px}
 #admBtn:focus-visible{outline:3px solid var(--lemon);outline-offset:3px}
+#fpsTag{font:700 11px/1.3 var(--font);color:rgba(255,241,220,.75);text-shadow:0 1px 0 rgba(0,0,0,.6);font-variant-numeric:tabular-nums;margin-top:2px}
 #cheatTag{font:800 12px/1.3 var(--font);color:var(--lemon);margin-top:4px;text-shadow:0 2px 0 rgba(0,0,0,.5);max-width:60vw}
 #adm .wrap{width:min(480px,100%)}
 #adm .grp{font:900 15px/1.2 var(--font);margin:14px 0 8px;color:var(--ink)}
@@ -254,7 +255,7 @@ document.getElementById('nojs').style.display = 'none';
 <div id="safe"></div>
 
 <div id="hud" class="hidden">
-  <div id="score"><div id="mass">0</div><div class="lbl">масса</div><div id="timer"></div><div id="goal"></div><div id="cheatTag"></div><div id="fx"></div><div id="feed" aria-live="polite"></div></div>
+  <div id="score"><div id="mass">0</div><div class="lbl">масса</div><div id="timer"></div><div id="goal"></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="feed" aria-live="polite"></div></div>
   <button id="pauseBtn" type="button" aria-label="Пауза" title="Пауза (Esc)"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
   <button id="dash" type="button" aria-label="Рывок с укусом"><span><b>Кусь</b><small>пробел</small></span></button>
   <button id="admBtn" type="button" aria-label="Админ-панель" title="Админ-панель (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.3l1.8-1.8"/><circle cx="12" cy="12" r="6.6"/></svg></button>
@@ -338,6 +339,7 @@ document.getElementById('nojs').style.display = 'none';
     <div class="seg3" id="sizeSeg"><button type="button" data-v="0.85">Мелкие</button><button type="button" data-v="1">Средние</button><button type="button" data-v="1.18">Крупные</button></div>
     <div class="grp">Графика</div>
     <div class="seg3" id="gfxSeg"><button type="button" data-v="auto">Авто</button><button type="button" data-v="low">Лёгкая</button><button type="button" data-v="high">Полная</button></div>
+    <div class="seg2" id="fpsSeg" role="group" aria-label="Счётчик кадров"><button type="button" data-v="0">Без счётчика кадров</button><button type="button" data-v="1">Показывать FPS</button></div>
     <button id="resume" class="btn" type="button">Продолжить</button>
     <button id="pAdmin" class="btn2" type="button">Админ-панель</button>
     <button id="pMenu" class="btn2" type="button">Выйти в меню</button>
@@ -462,7 +464,7 @@ const BOT_NAMES = [
 
 // ---------- dom & canvas ----------
 const $ = id => document.getElementById(id);
-const cvs = $('c'), ctx = cvs.getContext('2d');
+const cvs = $('c'), ctx = cvs.getContext('2d', { alpha: false }) || cvs.getContext('2d');
 const menuEl = $('menu'), overEl = $('over'), hudEl = $('hud'), massEl = $('mass'), feedEl = $('feed'), lbEl = $('lb');
 const dodgeEl = $('dodge'), hatsEl = $('hats'), recEl = $('rec');
 const dashEl = $('dash'), muteEl = $('mute'), nick = $('nick'), swEl = $('sw'), whoEl = $('who'), bestEl = $('best');
@@ -484,11 +486,11 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', resi
 
 // ---------- world state ----------
 let blobs = [], food = [], chunks = [], strands = [], gulps = [], parts = [], texts = [], respawnQ = [];
-let hitStop = 0, slowT = 0, frameNo = 0;
+let slowT = 0, frameNo = 0;
 const PUBLIC_URL = 'https://antropos17.github.io/kus-io/';
 let mode = 'free', timeLeft = 0, runActive = false, best3 = 0, prevBest3 = 0, lastFx = '';
 let run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: 0, cheated: false }; // totals for the whole run, across lives in the timed mode
-const SET = { lefty: false, bs: 1, gfx: 'auto' };
+const SET = { lefty: false, bs: 1, gfx: 'auto', fps: false };
 const DIFFS = { // start mass, how eagerly bots go for you, seconds between lucky escapes (0 = none), your speed edge, how long a bot keeps chasing
   easy: { start: 55, hunt: 0.5, grace: 7, speed: 1.12, chase: 2.5 },
   normal: { start: 40, hunt: 1, grace: 12, speed: 1.08, chase: 3.5 },
@@ -504,7 +506,7 @@ const CHEAT = { god: false, cd: false, mega: false, peace: false, magnet: false,
 try { const cs = JSON.parse(localStorage.getItem('kus.cheat') || '{}'); for (const k in CHEAT) if (k in cs) CHEAT[k] = cs[k]; } catch (e) {}
 const saveCheats = () => { try { localStorage.setItem('kus.cheat', JSON.stringify(CHEAT)); } catch (e) {} };
 const cheatsOn = () => CHEAT.god || CHEAT.cd || CHEAT.mega || CHEAT.peace || CHEAT.magnet || CHEAT.slow || CHEAT.heal || CHEAT.speed !== 1;
-const cam = { x: WORLD / 2, y: WORLD / 2, z: 0.6, shake: 0 };
+const cam = { x: WORLD / 2, y: WORLD / 2, z: 0.6, zb: 0.6, zk: 0, zv: 0, kx: 0, ky: 0, kvx: 0, kvy: 0, shake: 0, sa: null }; // zb: zoom that follows the player; zk: spring on top of it; kx, ky: spring nudge in screen pixels
 const calm = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); // no shake or flash
 const input = { sx: 0, sy: 0, dash: false, dodge: false, dashHeld: false };
 const stick = { id: -1, on: false, used: false, bx: 0, by: 0, x: 0, y: 0, vx: 1, vy: 0, mag: 0, prev: 0, moved: false };
@@ -515,47 +517,76 @@ function haptic(ms) { // a tap in the hand on every bite, where the device allow
 }
 
 // ---------- sound (synthesised, no files) ----------
-const Sfx = {
-  ac: null, out: null, noise: null, on: true, lastPop: 0,
+const Sfx = { // every sound is made on the spot. The mix is close, soft and a little wet: crisp sugar, sticky taffy, no harsh edges
+  ac: null, out: null, noise: null, on: true, lastPop: 0, lastBoing: 0, pan: 0,
   init() {
     if (this.ac) { if (this.ac.state === 'suspended') this.ac.resume().catch(() => {}); return; }
     const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
     try {
-      this.ac = new AC();
-      this.out = this.ac.createGain(); this.out.gain.value = 0.5;
-      const comp = this.ac.createDynamicsCompressor(); this.out.connect(comp); comp.connect(this.ac.destination);
-      const len = this.ac.sampleRate, buf = this.ac.createBuffer(1, len, this.ac.sampleRate), d = buf.getChannelData(0);
+      const ac = this.ac = new AC();
+      this.out = ac.createGain(); this.out.gain.value = 0.55;
+      const warm = ac.createBiquadFilter(); warm.type = 'lowpass'; warm.frequency.value = 9500; warm.Q.value = 0.3; // nothing shrill gets through
+      const comp = ac.createDynamicsCompressor(); this.out.connect(warm); warm.connect(comp); comp.connect(ac.destination);
+      const len = ac.sampleRate, buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       this.noise = buf;
-      if (this.ac.state === 'suspended') this.ac.resume().catch(() => {});
+      try { // a small soft room, so sounds sit close to the ear instead of in a void
+        const n = Math.floor(ac.sampleRate * 0.24), ir = ac.createBuffer(2, n, ac.sampleRate);
+        for (let ch = 0; ch < 2; ch++) { const q = ir.getChannelData(ch); for (let i = 0; i < n; i++) q[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3.4); }
+        const cv = ac.createConvolver(), wet = ac.createGain(); cv.buffer = ir; wet.gain.value = 0.13; warm.connect(cv); cv.connect(wet); wet.connect(comp);
+      } catch (e) {}
+      if (ac.state === 'suspended') ac.resume().catch(() => {});
     } catch (e) { this.ac = null; }
   },
   ok() { return this.ac && this.on && this.ac.state === 'running'; },
+  at(x) { this.pan = clamp(((x - cam.x) * cam.z) / (W * 0.6), -0.8, 0.8); return this; }, // where on the screen the next sound comes from
+  dest() { // left or right ear for things that happen off to the side
+    const p = this.pan; this.pan = 0;
+    if (p > -0.1 && p < 0.1 || !this.ac.createStereoPanner) return this.out;
+    const n = this.ac.createStereoPanner(); n.pan.value = p; n.connect(this.out); return n;
+  },
   env(g, t, a, peak, dur) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + dur); },
-  hiss(t, f0, f1, q, peak, dur, type = 'bandpass') {
+  hiss(t, f0, f1, q, peak, dur, type = 'bandpass', to = this.out) {
     const ac = this.ac, s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
     s.buffer = this.noise; f.type = type; f.Q.value = q;
     f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur);
-    this.env(g, t, 0.006, peak, dur); s.connect(f); f.connect(g); g.connect(this.out);
+    this.env(g, t, 0.005, peak, dur); s.connect(f); f.connect(g); g.connect(to);
     s.start(t, Math.random() * 0.8); s.stop(t + dur + 0.05);
   },
-  tone(t, type, f0, f1, peak, dur, a = 0.008) {
+  tone(t, type, f0, f1, peak, dur, a = 0.008, to = this.out) {
     const ac = this.ac, o = ac.createOscillator(), g = ac.createGain();
     o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
-    this.env(g, t, a, peak, dur); o.connect(g); g.connect(this.out); o.start(t); o.stop(t + a + dur + 0.05);
+    this.env(g, t, a, peak, dur); o.connect(g); g.connect(to); o.start(t); o.stop(t + a + dur + 0.05);
   },
-  chomp(v = 1, p = 1) { if (!this.ok()) return; const t = this.ac.currentTime; this.hiss(t, 1800 * p, 260 * p, 1.1, 0.55 * v, 0.1); this.tone(t, 'sine', 210 * p, 62 * p, 0.6 * v, 0.12); this.hiss(t + 0.05, 900 * p, 300 * p, 2.5, 0.22 * v, 0.07); },
-  hurt() { if (!this.ok()) return; const t = this.ac.currentTime; this.hiss(t, 900, 160, 1.4, 0.5, 0.16); this.tone(t, 'sine', 150, 55, 0.6, 0.18); this.tone(t + 0.02, 'square', 420, 120, 0.05, 0.08); },
-  snap(v = 1) { if (!this.ok()) return; const t = this.ac.currentTime; this.tone(t, 'triangle', 1100, 240, 0.22 * v, 0.07); this.hiss(t, 3000, 900, 0.8, 0.1 * v, 0.04, 'highpass'); },
-  gulp(v = 1) { if (!this.ok()) return; const t = this.ac.currentTime; this.tone(t, 'sine', 320, 90, 0.7 * v, 0.16, 0.01); this.tone(t + 0.12, 'sine', 260, 70, 0.5 * v, 0.14, 0.01); },
-  pop() { if (!this.ok()) return; const t = this.ac.currentTime; if (t - this.lastPop < 0.05) return; this.lastPop = t; this.tone(t, 'sine', rand(900, 1300), rand(500, 700), 0.05, 0.04, 0.003); },
-  thwip() { if (!this.ok()) return; const t = this.ac.currentTime; this.tone(t, 'triangle', 500, 1500, 0.22, 0.09); this.hiss(t, 1200, 3500, 1, 0.12, 0.08); },
+  chomp(v = 1, p = 1) { // teeth through a sugar shell into soft filling: a crack, a wet squish, a low thump, then the lips smack
+    if (!this.ok()) return; const t = this.ac.currentTime, to = this.dest(), j = rand(0.92, 1.08);
+    this.hiss(t, 5200 * j, 2600, 0.7, 0.2 * v, 0.028, 'highpass', to);
+    this.hiss(t + 0.004, 1500 * p * j, 230 * p, 1.2, 0.5 * v, 0.11, 'bandpass', to);
+    this.tone(t, 'sine', 200 * p, 58 * p, 0.55 * v, 0.13, 0.006, to);
+    this.hiss(t + 0.055, 760 * p * j, 280 * p, 2.6, 0.2 * v, 0.075, 'bandpass', to);
+  },
+  stretch(dur = 0.35, p = 1) { // taffy pulled thin: a soft rising creak under the string
+    if (!this.ok()) return; const t = this.ac.currentTime + 0.03;
+    this.tone(t, 'triangle', 150 * p, 380 * p, 0.055, dur, 0.05); this.hiss(t, 520 * p, 1500 * p, 9, 0.11, dur);
+  },
+  snap(v = 1) { if (!this.ok()) return; const t = this.ac.currentTime, to = this.dest(); this.tone(t, 'sine', rand(560, 680), 170, 0.26 * v, 0.055, 0.003, to); this.hiss(t, 3600, 1400, 0.8, 0.09 * v, 0.03, 'highpass', to); }, // the string lets go with a soft pop
+  munch() { if (!this.ok()) return; const t = this.ac.currentTime, f = rand(480, 880); this.hiss(t, f, f * 0.4, 2.2, 0.2, 0.06); this.hiss(t, 4200, 2800, 0.8, 0.06, 0.02, 'highpass'); }, // each chew is a little different
+  bloop(p = 1) { if (!this.ok()) return; const t = this.ac.currentTime; this.tone(t, 'sine', 250 * p, 120 * p, 0.2, 0.06, 0.006); this.tone(t + 0.06, 'sine', 170 * p, 420 * p, 0.2, 0.09, 0.008); }, // down the throat
+  ding(step) { // a soft bell, one note higher for every bite in a streak
+    if (!this.ok()) return; const t = this.ac.currentTime + 0.04, f = 523.25 * [1, 1.125, 1.25, 1.5, 1.667][clamp(step - 2, 0, 4)];
+    this.tone(t, 'sine', f, f, 0.14, 0.4, 0.004); this.tone(t, 'sine', f * 2.76, f * 2.76, 0.035, 0.16, 0.003); this.tone(t, 'sine', f * 5.4, f * 5.4, 0.012, 0.06, 0.002);
+  },
+  hurt() { if (!this.ok()) return; const t = this.ac.currentTime; this.hiss(t, 700, 150, 1.4, 0.45, 0.17); this.tone(t, 'sine', 140, 52, 0.6, 0.2); },
+  gulp(v = 1) { if (!this.ok()) return; const t = this.ac.currentTime, to = this.dest(); this.tone(t, 'sine', 320, 90, 0.7 * v, 0.16, 0.01, to); this.tone(t + 0.12, 'sine', 150, 300, 0.45 * v, 0.14, 0.012, to); this.hiss(t, 500, 160, 2, 0.2 * v, 0.14, 'bandpass', to); },
+  pop() { // a grain of sugar between the teeth: a tiny crisp tick, never twice the same
+    if (!this.ok()) return; const t = this.ac.currentTime; if (t - this.lastPop < 0.045) return; this.lastPop = t;
+    const f = rand(1500, 2600); this.tone(t, 'sine', f, f * 0.55, 0.05, 0.03, 0.002); this.hiss(t, rand(5000, 7500), 3500, 1.2, 0.05, 0.014, 'highpass');
+  },
+  boing(v = 1) { if (!this.ok()) return; const t = this.ac.currentTime; if (t - this.lastBoing < 0.25) return; this.lastBoing = t; const f = rand(95, 125); this.tone(t, 'sine', f * 1.5, f, 0.3 * v, 0.2, 0.01); this.tone(t + 0.09, 'sine', f * 1.2, f * 0.9, 0.12 * v, 0.16, 0.02); }, // jelly bumping into jelly
+  thwip() { if (!this.ok()) return; const t = this.ac.currentTime; this.tone(t, 'triangle', 500, 1500, 0.2, 0.09); this.hiss(t, 1200, 3500, 1, 0.11, 0.08); },
   squelch() { if (!this.ok()) return; const t = this.ac.currentTime; this.hiss(t, 700, 180, 3, 0.4, 0.14); this.tone(t, 'sine', 260, 90, 0.35, 0.12); },
-  ding(step) { if (!this.ok()) return; const t = this.ac.currentTime + 0.03, f = 660 * [1, 1.125, 1.25, 1.5, 1.667][clamp(step - 2, 0, 4)]; this.tone(t, 'triangle', f, f * 1.01, 0.13, 0.16, 0.004); this.tone(t, 'sine', f * 2, f * 2.02, 0.05, 0.1, 0.004); },
-  bloop(p = 1) { if (!this.ok()) return; const t = this.ac.currentTime; this.tone(t, 'sine', 240 * p, 470 * p, 0.2, 0.08, 0.006); },
-  munch() { if (!this.ok()) return; const t = this.ac.currentTime; this.hiss(t, 520, 220, 2, 0.16, 0.06); },
-  power() { if (!this.ok()) return; const t = this.ac.currentTime; this.tone(t, 'triangle', 520, 1040, 0.2, 0.12); this.tone(t + 0.09, 'triangle', 780, 1560, 0.16, 0.14); },
-  dash() { if (!this.ok()) return; const t = this.ac.currentTime; this.hiss(t, 300, 2200, 0.7, 0.28, 0.2); },
+  power() { if (!this.ok()) return; const t = this.ac.currentTime; this.tone(t, 'sine', 523, 523, 0.16, 0.3, 0.004); this.tone(t + 0.09, 'sine', 784, 784, 0.14, 0.34, 0.004); this.tone(t + 0.18, 'sine', 1046, 1046, 0.1, 0.4, 0.004); },
+  dash() { if (!this.ok()) return; const t = this.ac.currentTime; this.hiss(t, 260, 1700, 0.7, 0.24, 0.22); },
 };
 
 // ---------- soft body ----------
@@ -789,13 +820,14 @@ function collideAll(dt) {
       if (d >= rs) continue;
       if (d < 1e-3) { dx = rand(-1, 1); dy = rand(-1, 1); d = Math.hypot(dx, dy) || 1; }
       const nx = dx / d, ny = dy / d, overlap = rs - d, mt = A.mass + B.mass, wa = B.mass / mt, wb = A.mass / mt;
-      const push = overlap * 3.5 * dt + Math.max(0, overlap - Math.min(A.Rs, B.Rs) * 0.34) * 0.6;
+      const push = overlap * 3.5 * dt + Math.max(0, overlap - Math.min(A.Rs, B.Rs) * 0.34) * (1 - Math.exp(-dt * 55));
       A.x -= nx * push * wa; A.y -= ny * push * wa; B.x += nx * push * wb; B.y += ny * push * wb;
       const rv = (B.vx - A.vx) * nx + (B.vy - A.vy) * ny;
-      if (rv < 0) { const j2 = rv * 0.5; A.vx += nx * j2 * wa; A.vy += ny * j2 * wa; B.vx -= nx * j2 * wb; B.vy -= ny * j2 * wb; }
+      if (rv < 0) { const j2 = rv * (1 - Math.exp(-dt * 42)); A.vx += nx * j2 * wa; A.vy += ny * j2 * wa; B.vx -= nx * j2 * wb; B.vy -= ny * j2 * wb; }
       if (rv < -150 && A.biteTgt !== B && B.biteTgt !== A) { // a real bump: both bodies squash against each other, the lighter one more
         const amt = Math.min(2.4, -rv / 300) * 1.7, na = Math.atan2(ny, nx);
         if (time - A.bumpAt > 0.3) { A.bumpAt = time; jolt(A, na, -amt * wa); } if (time - B.bumpAt > 0.3) { B.bumpAt = time; jolt(B, na, -amt * wb); }
+        if ((A.isPlayer || B.isPlayer) && rv < -260) Sfx.boing(Math.min(1, -rv / 700));
       }
       const ov = rs - Math.hypot(B.x - A.x, B.y - A.y);
       if (ov > 0) contactPair(A, B, nx, ny, ov);
@@ -872,7 +904,7 @@ class Strand { // the gum string between a bitten body and the torn piece
     spawnDust(c.x, c.y, this.src.pal, 0, 0, 3);
     if (this.src.alive) { kickPoints(this.src, this.ang, this.pw, -90); jolt(this.src, this.ang, 1.1); }
     const o = this.chunk.owner; if (o.alive) { jolt(o, o.face, 1.5); o.vx -= Math.cos(o.face) * 40; o.vy -= Math.sin(o.face) * 40; }
-    if (this.chunk.owner.isPlayer || this.src.isPlayer) Sfx.snap(0.8);
+    if (this.chunk.owner.isPlayer || this.src.isPlayer) Sfx.at(c.x).snap(0.8);
   }
 }
 
@@ -1015,7 +1047,7 @@ function doBite(A, B, ang, dashBite) {
   const king = B === leader && A !== leader; if (king) gain *= 1.25; // a bite off the leader is worth more
   if (A.isPlayer) { // bites landed in quick succession pay a little extra each time
     A.combo = A.comboT > 0 ? (A.combo || 0) + 1 : 1; A.comboT = 2.6;
-    gain *= 1 + Math.min(A.combo - 1, 5) * 0.08; mission('combo', A.combo, true); hudT = 0;
+    gain *= 1 + Math.min(A.combo - 1, 5) * 0.08; mission('combo', A.combo, true);
   }
   const ch = new Chunk(A, B, bx, by, gain, chunkR, ang, wnd.w);
   chunks.push(ch); strands.push(ch.strand);
@@ -1025,12 +1057,11 @@ function doBite(A, B, ang, dashBite) {
   parts.push({ burst: true, x: bx, y: by, vx: 0, vy: 0, a: ang, r: chunkR, t: 0, T: 0.2, c: '#ffffff' });
   kickPoints(A, A.face, 1.1, -A.Rs * 2);
   const big = dashBite || intoWound || weak || king;
-  if ((A.isPlayer || B.isPlayer) && !calm) hitStop = A.isPlayer ? (big ? 0.07 : 0.045) : 0.06;
   if (big) A.wowT = 0.7;
   if (A.isPlayer) {
     const step = Math.min(A.combo, 6);
     if (!lod) { spawnDust(bx, by, B.pal, nx, ny, 3 + step); for (let i = 0; i < 2 + (big ? 2 : 0); i++) { const a = ang + rand(-0.9, 0.9), sp = rand(160, 380); parts.push({ x: bx, y: by, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: rand(4, 6.5) * clamp(chunkR / 16, 0.7, 1.8), t: 0, T: rand(0.4, 0.6), c: flesh(B.pal, 1) }); } } // fat gobs of filling
-    if (!calm && cam.tz) cam.z = Math.min(cam.z * (big ? 1.04 : 1.025), Math.max(cam.z, cam.tz * 1.1)); // the camera leans in on every bite
+    cam.zv += big ? 1.3 : 0.8; cam.sa = ang; // the camera leans in on every bite and is tugged the way the piece tears
     const ty = Math.min(by, A.y) - A.Rs * 0.9 - 26 / cam.z; // above the action, clear of the mouth
     floatText(bx, ty, '+' + Math.max(1, Math.round(gain)), ['#ffd23f', '#ffc53f', '#ffb347', '#ff9a52', '#ff8370', '#ff6fa0'][step - 1], 24 + Math.min(10, gain * 0.07) + (step - 1) * 2);
     if (intoWound) floatText(bx, ty - 28 / cam.z, 'в ранку!', '#ff8fb0', 18);
@@ -1038,12 +1069,12 @@ function doBite(A, B, ang, dashBite) {
     else if (king) floatText(bx, ty - 28 / cam.z, 'кусь лидера!', '#ffd23f', 18);
     else if (A.combo > 1 && !intoWound) floatText(bx, ty - 28 / cam.z, 'серия ×' + A.combo, '#9be15d', 18);
     mission('bites', 1); if (intoWound) mission('wound', 1); if (weak) mission('cake', 1); if (B.kind === 'hedgehog') mission('hedge', 1);
-    haptic(big ? 22 : 12); Sfx.chomp(1, clamp(1.25 - A.Rs / 400, 0.6, 1.25) * (1 + (step - 1) * 0.045)); if (step > 1) Sfx.ding(step);
+    haptic(big ? 22 : 12); Sfx.stretch(ch.holdT, clamp(1.3 - chunkR / 60, 0.7, 1.3)); Sfx.chomp(1, clamp(1.25 - A.Rs / 400, 0.6, 1.25) * (1 + (step - 1) * 0.045)); if (step > 1) Sfx.ding(step);
     cam.shake = Math.max(cam.shake, 3 + Math.min(6, chunkR * 0.12) + (big ? 2 : 0));
   } else if (B.isPlayer) {
     floatText(B.x, B.y - B.Rs - 26 / cam.z, '−' + Math.round(bite), '#ff7a9c', 22);
-    haptic(35); Sfx.hurt(); flashT = 0.32; cam.shake = Math.max(cam.shake, 6 + Math.min(10, chunkR * 0.2));
-  } else if (state === 'play') { const v = hearVol(bx, by) * 0.45; if (v > 0.04) Sfx.chomp(v, clamp(1.2 - A.Rs / 400, 0.6, 1.2)); }
+    haptic(35); Sfx.hurt(); flashT = 0.32; cam.shake = Math.max(cam.shake, 6 + Math.min(10, chunkR * 0.2)); cam.sa = ang + Math.PI;
+  } else if (state === 'play') { const v = hearVol(bx, by) * 0.45; if (v > 0.04) Sfx.at(bx).chomp(v, clamp(1.2 - A.Rs / 400, 0.6, 1.2)); }
 }
 
 function swallowWhole(A, B) {
@@ -1051,16 +1082,15 @@ function swallowWhole(A, B) {
   const gain = B.mass * 0.9;
   if (A.chunk) A.chunk.finish();
   const gp = new Gulp(A, B, gain); gulps.push(gp);
-  if ((A.isPlayer || B.isPlayer) && !calm) hitStop = 0.08;
   A.gulpT = gp.T; A.chewT = 0; A.mouthV = 10;
   spawnCrumbs(B.x, B.y, B.mass * 0.1, B.pal, Math.cos(A.face), Math.sin(A.face));
   spawnDust(B.x, B.y, B.pal, 0, 0, 14);
   A.stats.kills++; A.happyT = 1.3; A.wowT = 0.5;
   parts.push({ ring: true, x: B.x, y: B.y, vx: 0, vy: 0, r: B.Rs * 0.9, t: 0, T: 0.4, c: '#fff1dc' });
   feedKill(A, B);
-  if (A.isPlayer) { mission('kills', 1); if (B.kind === 'piranha') mission('piranha', 1); floatText(A.x, A.y - A.Rs - 30 / cam.z, 'ням! +' + Math.round(gain), '#ffd23f', 28); Sfx.gulp(1); cam.shake = Math.max(cam.shake, 7); if (!calm) { slowT = 0.3; if (cam.tz) cam.z = Math.min(cam.z * 1.06, Math.max(cam.z, cam.tz * 1.12)); } }
+  if (A.isPlayer) { mission('kills', 1); if (B.kind === 'piranha') mission('piranha', 1); floatText(A.x, A.y - A.Rs - 30 / cam.z, 'ням! +' + Math.round(gain), '#ffd23f', 28); Sfx.gulp(1); cam.shake = Math.max(cam.shake, 7); if (!calm) { slowT = 0.4; cam.zv += 1.9; } }
   else if (B.isPlayer) { Sfx.gulp(1); Sfx.hurt(); flashT = 0.5; cam.shake = 12; die(A); }
-  else if (state === 'play') { const v = hearVol(B.x, B.y) * 0.5; if (v > 0.04) Sfx.gulp(v); }
+  else if (state === 'play') { const v = hearVol(B.x, B.y) * 0.5; if (v > 0.04) Sfx.at(B.x).gulp(v); }
 }
 
 function dash(b) {
@@ -1183,7 +1213,7 @@ function updateFood(dt) {
       if (d2 < reach * reach) {
         const fx = Math.cos(b.face), fy = Math.sin(b.face);
         if (mag || dx * fx + dy * fy > 0) { // sucked toward the open mouth
-          const mx = b.x + fx * b.Rs * 0.7, my = b.y + fy * b.Rs * 0.7, vx = mx - f.x, vy = my - f.y, vl = Math.hypot(vx, vy) || 1, s = Math.min(vl, (mag ? 700 : 240) * dt);
+          const mx = b.x + fx * b.Rs * 0.7, my = b.y + fy * b.Rs * 0.7, vx = mx - f.x, vy = my - f.y, vl = Math.hypot(vx, vy) || 1, s = Math.min(vl, (mag ? 700 : 200 + 420 * Math.max(0, 1 - vl / (reach + b.Rs))) * dt);
           f.x += (vx / vl) * s; f.y += (vy / vl) * s; b.snackT = 0.18;
           break;
         }
@@ -1406,6 +1436,7 @@ const missionRows = () => M.act.map(m => {
 function renderMissions() { $('misT').textContent = nextPrize() ? 'Задания: за каждое новый узор' : 'Задания (все узоры уже открыты)'; $('misList').innerHTML = missionRows(); }
 function renderMode() { for (const b of $('modeSeg').children) b.setAttribute('aria-pressed', String(b.dataset.m === mode)); for (const b of $('diffSeg').children) b.setAttribute('aria-pressed', String(b.dataset.v === diff)); }
 function spawnPlayer(spawnT) {
+  shownMass = DIFFS[diff].start;
   const name = (nick.value || '').trim().slice(0, 14) || 'Кусака', [x, y] = safeSpawn();
   player = new Blob({ name, pal: PALS[chosen], mass: DIFFS[diff].start, x, y, isPlayer: true, spawnT, hat: chosenHat, skin: skinOpen(chosenSkin) ? chosenSkin : 'plain' });
   blobs.push(player);
@@ -1480,7 +1511,7 @@ function pickMenuTarget() {
 }
 function focusOffset() { return state !== 'menu' || debugCam ? [0, 0] : W >= 760 ? [W * 0.17, 0] : [0, -H * 0.22]; }
 function updateCamera(dt) {
-  if (debugCam) { cam.x = debugCam.x; cam.y = debugCam.y; cam.z = debugCam.z; cam.shake = 0; return; }
+  if (debugCam) { cam.x = debugCam.x; cam.y = debugCam.y; cam.z = cam.zb = debugCam.z; cam.shake = cam.kx = cam.ky = cam.kvx = cam.kvy = cam.zk = cam.zv = 0; return; }
   const vf = clamp(Math.sqrt(W * H) / 850, 0.72, 1.4); // small screens see a little wider
   let fx = cam.x, fy = cam.y, tz = cam.z, follow = 5;
   if (state === 'play' && player && player.alive) { fx = player.x; fy = player.y; tz = 1.05 * Math.pow(32 / player.Rs, 0.42) * vf; follow = 9; }
@@ -1491,17 +1522,24 @@ function updateCamera(dt) {
     if (menuTarget) { fx = menuTarget.x; fy = menuTarget.y; tz = 0.8 * vf * Math.pow(45 / menuTarget.Rs, 0.3); }
     follow = 2.5;
   }
-  tz = clamp(tz, 0.22, 1.7); cam.tz = tz;
+  tz = clamp(tz, 0.22, 1.7);
   const k = 1 - Math.exp(-dt * follow);
   cam.x += (fx - cam.x) * k; cam.y += (fy - cam.y) * k;
-  cam.z += (tz - cam.z) * (1 - Math.exp(-dt * 2.2));
-  cam.shake *= Math.exp(-dt * 9); if (cam.shake < 0.05 || calm) cam.shake = 0;
+  cam.zb += (tz - cam.zb) * (1 - Math.exp(-dt * 2.2));
+  if (cam.shake > 0 && !calm) { const a = cam.sa === null ? rand(TAU) : cam.sa, v = Math.min(cam.shake, 14) * 26; cam.kvx += Math.cos(a) * v; cam.kvy += Math.sin(a) * v; } // one push, then the spring carries it: a thump, not a rattle
+  cam.shake = 0; cam.sa = null;
+  for (let n = dt > 0.02 ? 2 : 1, h = dt / n, i = 0; i < n; i++) {
+    cam.kvx += (-cam.kx * 420 - cam.kvx * 24) * h; cam.kx += cam.kvx * h; cam.kvy += (-cam.ky * 420 - cam.kvy * 24) * h; cam.ky += cam.kvy * h;
+    cam.zv += (-cam.zk * 260 - cam.zv * 22) * h; cam.zk = clamp(cam.zk + cam.zv * h, -0.06, 0.1);
+  }
+  if (calm) cam.kx = cam.ky = cam.zk = cam.kvx = cam.kvy = cam.zv = 0;
+  cam.z = cam.zb * (1 + cam.zk);
   if (calm) flashT = 0;
 }
 
-let hudT = 0, lastDashPct = -1, lastDodgePct = -1;
+let hudT = 0, lastDashPct = -1, lastDodgePct = -1, lastLb = '', shownMass = 0, shownInt = -1;
 function bumpMass() {
-  if (!player || state !== 'play') return; massEl.textContent = Math.round(player.mass);
+  if (!player || state !== 'play') return;
   if (!calm && massEl.animate) massEl.animate([{ transform: 'scale(1.24)', color: '#ffd23f' }, { transform: 'scale(1)' }], { duration: 240, easing: 'cubic-bezier(.2,1.5,.4,1)' });
 }
 function lbRow(n, b) { return `<li class="${b.isPlayer ? 'me' : ''}"><span class="n">${n}</span><i style="background:${b.pal.base}"></i><span class="nm">${esc(b.name)}</span><span class="m">${Math.round(b.mass)}</span></li>`; }
@@ -1510,8 +1548,12 @@ function updateHUD(dt) {
   if (Math.abs(pct - lastDashPct) > 0.04 || (pct === 1 && lastDashPct !== 1)) { dashEl.style.setProperty('--p', pct.toFixed(3)); dashEl.classList.toggle('ready', pct >= 1); lastDashPct = pct; }
   const dp = player && player.alive ? (player.tongue ? 0 : clamp(1 - player.dodgeCd / (2.6 + player.Rs / 60), 0, 1)) : 1;
   if (Math.abs(dp - lastDodgePct) > 0.04 || (dp === 1 && lastDodgePct !== 1)) { dodgeEl.style.setProperty('--p', dp.toFixed(3)); dodgeEl.classList.toggle('ready', dp >= 1); lastDodgePct = dp; }
+  if (player && player.alive && state === 'play') { // the number rolls up to the new mass instead of jumping
+    shownMass += (player.mass - shownMass) * (1 - Math.exp(-dt * 9)); if (Math.abs(player.mass - shownMass) > 400) shownMass = player.mass;
+    const v = Math.round(shownMass); if (v !== shownInt) { shownInt = v; massEl.textContent = v; }
+  }
   hudT -= dt; if (hudT > 0) return; hudT = 0.25;
-  if (player && player.alive && state === 'play') { massEl.textContent = Math.round(player.mass); mission('mass', player.mass, true); mission('time', time - player.stats.t0, true); }
+  if (player && player.alive && state === 'play') { mission('mass', player.mass, true); mission('time', time - player.stats.t0, true); }
   const tl = Math.ceil(timeLeft);
   $('timer').textContent = runActive && mode === 't3' ? `осталось ${Math.floor(tl / 60)}:${String(tl % 60).padStart(2, '0')}` : '';
   $('goal').textContent = challenge && mode === 'free' && runActive ? `цель: ${challenge.c}` : '';
@@ -1535,7 +1577,7 @@ function updateHUD(dt) {
   }
   let html = top.map((b, i) => lbRow(i + 1, b)).join('');
   if (player && player.alive && !top.includes(player)) html += '<li class="gap">…</li>' + lbRow(list.indexOf(player) + 1, player);
-  lbEl.innerHTML = html;
+  if (html !== lastLb) { lbEl.innerHTML = html; lastLb = html; }
   { const br = $('board').getBoundingClientRect(); boardBottom = br.bottom; boardLeft = br.left; } btnTop = touchMode && state === 'play' ? dodgeEl.getBoundingClientRect().top : H;
 }
 
@@ -1562,6 +1604,7 @@ function update(dt) {
   for (const b of blobs) if (b.alive && b.ai) botSteer(b, dt);
   for (const b of blobs) if (b.alive) updateBlob(b, dt);
   collideAll(dt);
+  for (const b of blobs) { if (b.x < 0) b.x = 0; else if (b.x > WORLD) b.x = WORLD; if (b.y < 0) b.y = 0; else if (b.y > WORLD) b.y = WORLD; } // a shove never carries anyone off the tray
   for (const b of blobs) if (b.alive) checkBites(b, dt);
   updateFood(dt);
   updatePickups(dt);
@@ -1573,16 +1616,16 @@ function update(dt) {
   if (chunks.some(c => c.dead)) chunks = chunks.filter(c => !c.dead);
   if (strands.some(s => s.dead)) strands = strands.filter(s => !s.dead);
   if (gulps.some(g => g.dead)) gulps = gulps.filter(g => !g.dead);
-  const sub = lod ? 1 : dt > 0.025 ? 3 : 2, h = dt / sub;
+  const sub = Math.min(4, Math.max(1, Math.ceil(dt / (lod ? 0.0175 : 0.0088)))), h = dt / sub; // the jelly is stepped in equal small slices, so it wobbles the same at 30 frames a second as at 120
   const vw = (Math.max(W, H) / cam.z) * 0.75 + 400;
   for (const b of blobs) {
     if (!b.alive) continue;
     const far = Math.abs(b.x - cam.x) > vw + b.Rs || Math.abs(b.y - cam.y) > vw + b.Rs;
     if (far) { // off-screen: carry the shape along instead of simulating it
-      const dx = b.x - (b.lx ?? b.x), dy = b.y - (b.ly ?? b.y);
-      for (const q of b.pts) { q.x += dx; q.y += dy; q.vx = b.vx; q.vy = b.vy; }
+      const lx = b.lx ?? b.x, ly = b.ly ?? b.y, k = b.Rs / (b.lR || b.Rs); // and keep it the right size: a body bitten small out of sight must not arrive with its old outline
+      for (const q of b.pts) { q.x = b.x + (q.x - lx) * k; q.y = b.y + (q.y - ly) * k; q.vx = b.vx; q.vy = b.vy; }
     } else { computeTargets(b); for (let i = 0; i < sub; i++) stepPoints(b, h); }
-    b.lx = b.x; b.ly = b.y;
+    b.lx = b.x; b.ly = b.y; b.lR = b.Rs;
   }
   updateParts(dt);
   if (blobs.some(b => !b.alive)) blobs = blobs.filter(b => b.alive);
@@ -1634,9 +1677,17 @@ function drawTray(gx0, gy0, gx1, gy1, z, ox, oy) { // the chocolate tray under e
   ctx.setTransform(DPR * z, 0, 0, DPR * z, DPR * ox, DPR * oy);
 }
 function buildPath(b) {
-  const pts = b.pts, N = pts.length, path = new Path2D(), a = pts[N - 1], c0 = pts[0];
-  path.moveTo((a.x + c0.x) * 0.5, (a.y + c0.y) * 0.5);
-  for (let i = 0; i < N; i++) { const p = pts[i], q = pts[i + 1 < N ? i + 1 : 0]; path.quadraticCurveTo(p.x, p.y, (p.x + q.x) * 0.5, (p.y + q.y) * 0.5); }
+  const pts = b.pts, N = pts.length, path = new Path2D(), rz = b.Rs * cam.z;
+  const st = rz < 40 ? Math.max(1, Math.round(N / Math.max(14, rz))) : 1; // small on screen: every 2nd or 3rd point draws the same curve
+  if (st > 1) {
+    const M = Math.floor(N / st), a = pts[(M - 1) * st], c0 = pts[0];
+    path.moveTo((a.x + c0.x) * 0.5, (a.y + c0.y) * 0.5);
+    for (let i = 0; i < M; i++) { const p = pts[i * st], q = pts[i + 1 < M ? (i + 1) * st : 0]; path.quadraticCurveTo(p.x, p.y, (p.x + q.x) * 0.5, (p.y + q.y) * 0.5); }
+  } else {
+    const a = pts[N - 1], c0 = pts[0];
+    path.moveTo((a.x + c0.x) * 0.5, (a.y + c0.y) * 0.5);
+    for (let i = 0; i < N; i++) { const p = pts[i], q = pts[i + 1 < N ? i + 1 : 0]; path.quadraticCurveTo(p.x, p.y, (p.x + q.x) * 0.5, (p.y + q.y) * 0.5); }
+  }
   path.closePath();
   b.path = path;
 }
@@ -1719,6 +1770,7 @@ function mouthGeo(b) { // the mouth in the face's own frame: x runs forward to t
   const W = R * (0.33 + 0.09 * Math.min(1, open)) * (1 + clamp(-b.mouthV * 0.004, -0.05, 0.13)), uc = R * lerp(0.07, -0.06, clamp((open - 0.55) / 0.6, 0, 1)) * Math.min(1, open * 4);
   return { f: b.face + b.fw, R, open, xc, H, W, uc, sw: b.puff * W * 0.15 * Math.min(1, open * 3), path: null }; // sw: the jaw slides sideways as it chews
 }
+const SHUT = new Path2D();
 function mouthPath(g) { // top lip is a shallow curve, the jaw drops in a deep U
   const m = new Path2D(); m.moveTo(g.xc, -g.W); m.quadraticCurveTo(g.xc + g.uc, 0, g.xc, g.W);
   m.bezierCurveTo(g.xc + g.H * 1.3333, g.W * 0.92 + g.sw, g.xc + g.H * 1.3333, -g.W * 0.92 + g.sw, g.xc, -g.W); m.closePath();
@@ -1886,7 +1938,7 @@ function drawFace(b) {
     ctx.fill();
   }
   if (R * cam.z > 8) {
-    const g = mouthGeo(b); g.path = mouthPath(g); b._g = g; b._gf = frameNo;
+    const g = mouthGeo(b); g.path = g.H < g.R * 0.03 ? SHUT : mouthPath(g); b._g = g; b._gf = frameNo; // a shut mouth needs no outline
     drawMouthBack(b, g);
     if (!b._food) drawMouthFront(b, g);
   }
@@ -1996,7 +2048,7 @@ function drawBlob(b) {
   else { const g = ctx.createRadialGradient(b.x - R * 0.36, b.y - R * 0.44, R * 0.06, b.x, b.y, R * 1.12); g.addColorStop(0, pal.light); g.addColorStop(0.52, pal.base); g.addColorStop(1, pal.dark); ctx.fillStyle = g; }
   ctx.fill(path);
   const detail = R * z > (lod ? 15 : 9);
-  if (!lod && R * z > 18) { // translucent jelly core: a softer inner body lit from inside
+  if (!lod && R * z > 30) { // translucent jelly core: a softer inner body lit from inside
     const pts = b.pts, N = pts.length, cx = b.x + R * 0.05, cy = b.y + R * 0.08, core = new Path2D();
     for (let i = 0; i <= N; i++) { const q = pts[i % N], x = cx + (q.x - b.x) * 0.72, y = cy + (q.y - b.y) * 0.72; i ? core.lineTo(x, y) : core.moveTo(x, y); }
     const cg = ctx.createRadialGradient(cx + R * 0.1, cy + R * 0.12, R * 0.05, cx, cy, R * 0.8); cg.addColorStop(0, pal.glow); cg.addColorStop(1, pal.glow0);
@@ -2136,12 +2188,11 @@ function drawStick() {
 }
 function render() {
   ensurePattern();
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  ctx.fillStyle = '#0f0806'; ctx.fillRect(0, 0, W, H);
-  const z = cam.z, sh = cam.shake, [fo, go] = focusOffset();
-  const ox = W / 2 + fo - cam.x * z + (sh ? rand(-sh, sh) : 0), oy = H / 2 + go - cam.y * z + (sh ? rand(-sh, sh) : 0);
-  ctx.setTransform(DPR * z, 0, 0, DPR * z, DPR * ox, DPR * oy);
+  const z = cam.z, [fo, go] = focusOffset();
+  const ox = W / 2 + fo - cam.x * z + cam.kx, oy = H / 2 + go - cam.y * z + cam.ky;
   const x0 = -ox / z, y0 = -oy / z, x1 = (W - ox) / z, y1 = (H - oy) / z;
+  if (x0 < 2 || y0 < 2 || x1 > WORLD - 2 || y1 > WORLD - 2) { ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.fillStyle = '#0f0806'; ctx.fillRect(0, 0, W, H); } // the tray covers the whole screen away from the edges: no need to paint under it
+  ctx.setTransform(DPR * z, 0, 0, DPR * z, DPR * ox, DPR * oy);
   const gx0 = Math.max(0, x0), gy0 = Math.max(0, y0), gx1 = Math.min(WORLD, x1), gy1 = Math.min(WORLD, y1);
   if (gx1 > gx0 && gy1 > gy0) drawTray(gx0, gy0, gx1, gy1, z, ox, oy);
   if (x0 < 40 || y0 < 40 || x1 > WORLD - 40 || y1 > WORLD - 40) { // piped icing around the tray
@@ -2363,6 +2414,7 @@ function applySet() {
   for (const b of $('handSeg').children) b.setAttribute('aria-pressed', String((b.dataset.v === '1') === SET.lefty));
   for (const b of $('sizeSeg').children) b.setAttribute('aria-pressed', String(+b.dataset.v === SET.bs));
   for (const b of $('gfxSeg').children) b.setAttribute('aria-pressed', String(b.dataset.v === SET.gfx));
+  for (const b of $('fpsSeg').children) b.setAttribute('aria-pressed', String((b.dataset.v === '1') === SET.fps)); if (!SET.fps) $('fpsTag').textContent = '';
   if (SET.gfx === 'low') { lod = 2; quality = 0.75; probe = null; resize(); } else if (SET.gfx === 'high') { lod = 0; quality = 1; probe = null; resize(); } // 'auto' leaves it to adapt()
   try { localStorage.setItem('kus.set', JSON.stringify(SET)); } catch (e) {}
 }
@@ -2379,6 +2431,7 @@ $('toMenu').addEventListener('click', toMenu);
 $('handSeg').addEventListener('click', e => { const t = e.target.closest('button'); if (!t) return; SET.lefty = t.dataset.v === '1'; applySet(); });
 $('sizeSeg').addEventListener('click', e => { const t = e.target.closest('button'); if (!t) return; SET.bs = +t.dataset.v; applySet(); });
 $('gfxSeg').addEventListener('click', e => { const t = e.target.closest('button'); if (!t) return; SET.gfx = t.dataset.v; if (SET.gfx === 'auto') { lod = 0; quality = 1; resize(); } applySet(); });
+$('fpsSeg').addEventListener('click', e => { const t = e.target.closest('button'); if (!t) return; SET.fps = t.dataset.v === '1'; applySet(); });
 $('diffSeg').addEventListener('click', e => { const t = e.target.closest('button'); if (!t) return; diff = t.dataset.v; renderMode(); });
 $('modeSeg').addEventListener('click', e => { const t = e.target.closest('button'); if (!t) return; mode = t.dataset.m; renderMode(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) { saveM(); openPause(); } }); // switching apps must not get you eaten
@@ -2397,41 +2450,53 @@ $('chalBtn').addEventListener('click', () => { // a link that carries your score
 // ---------- loop & boot ----------
 let last = 0, booted = false;
 let perfAcc = 0, perfN = 0, goodWins = 0, lod = 0; // lod 0 = full detail, 1 = lighter, 2 = bare
-let probe = null, lastUpAt = -99, upOffUntil = -99, workAcc = 0;
+let probe = null, lastUpAt = -99, upOffUntil = -99, workAcc = 0, lastResAt = -99;
 const stepOff = { res: -99, lod: -99 }; // game time until which a kind of step is not tried again
 function adapt(raw) { // keep the frame rate: try a smaller picture or less detail, keep whichever step actually helps
   if (SET.gfx !== 'auto' || raw > 0.1 || document.hidden) return;
   perfAcc += raw; perfN++;
   if (perfN < 45) return;
   const avg = perfAcc / perfN, work = workAcc / perfN; perfAcc = 0; perfN = 0; workAcc = 0; // seconds between frames; ms of our own script per frame
+  const tight = work > fp * 620; // our own script fills most of a frame: frames are about to drop even if none has yet
   if (probe) { // did the last step buy anything? If not, undo it: the display itself is capped (iPhone low power mode) or the cause is elsewhere
     const pr = probe; probe = null;
-    if (avg > pr.prev * 0.9) { if (pr.kind === 'res') { quality = pr.q; resize(); } else lod = pr.l; stepOff[pr.kind] = time + 45; return; }
+    if ((pr.byWork ? work : avg) > pr.prev * 0.9) { if (pr.kind === 'res') { quality = pr.q; resize(); } else lod = pr.l; stepOff[pr.kind] = time + 45; return; }
   }
-  if (avg > 0.021) {
-    goodWins = 0; if (time - lastUpAt < 3) upOffUntil = time + 30; // the last step up was too much: stay put for a while
-    const canLod = lod < 2 && time > stepOff.lod, canRes = quality > 0.5 && time > stepOff.res;
-    for (const k of work > 9 ? ['lod', 'res'] : ['res', 'lod']) {
-      if (k === 'lod' && canLod) { probe = { kind: 'lod', prev: avg, l: lod }; lod++; break; }
-      if (k === 'res' && canRes) { probe = { kind: 'res', prev: avg, q: quality }; quality = Math.max(0.5, quality * 0.8); resize(); break; }
+  if (avg > 0.021 || tight) {
+    const byWork = avg <= 0.021, prev = byWork ? work : avg; // judge the step by whatever called for it
+    goodWins = 0; if (time - lastUpAt < 4) upOffUntil = time + 90; // the last step up was too much: stay put for a while
+    const canLod = lod < 2 && time > stepOff.lod, canRes = quality > 0.5 && time > stepOff.res && (state !== 'play' || time - lastResAt > 12); // a new canvas size is a hitch of its own
+    for (const k of byWork ? ['lod'] : work > 9 ? ['lod', 'res'] : ['res', 'lod']) { // less detail saves script time, a smaller picture saves drawing time
+      if (k === 'lod' && canLod) { probe = { kind: 'lod', prev, byWork, l: lod }; lod++; break; }
+      if (k === 'res' && canRes) { probe = { kind: 'res', prev, byWork, q: quality }; quality = Math.max(0.5, quality * 0.8); resize(); lastResAt = time; break; }
     }
-  } else if (avg < 0.0135) {
-    if (++goodWins >= 4 && time > upOffUntil) {
+  } else if (avg < fp * 1.12 && work < Math.min(5, fp * 300)) { // every frame on time and most of it idle: there is room for more detail
+    if (++goodWins >= 10 && time > upOffUntil) {
       goodWins = 0;
-      if (quality < 1) { quality = Math.min(1, quality * 1.12); resize(); lastUpAt = time; }
-      else if (lod > 0) { lod--; lastUpAt = time; }
+      if (lod > 0) { lod--; lastUpAt = time; }
+      else if (quality < 1 && state !== 'play') { quality = Math.min(1, quality * 1.12); resize(); lastUpAt = time; } // sharper picture only between rounds
     }
   } else goodWins = 0;
 }
+let fpsN = 0, fpsT = 0, fpsW = 0, fpsMax = 0;
+const tick = new Float32Array(15).fill(1 / 60), tickS = new Float32Array(15); let tickI = 0, fp = 1 / 60;
 function frame(now) {
-  let dt = (now - last) / 1000; last = now;
-  adapt(dt);
-  if (!(dt > 0)) dt = 1 / 60; if (dt > 0.05) dt = 0.05;
+  const raw = (now - last) / 1000; last = now;
+  adapt(raw);
+  // a steady clock. The display ticks at a fixed rate while timers jitter around it (Safari rounds to whole milliseconds), so each frame
+  // is snapped to a whole number of display ticks: bodies and camera then move by even steps instead of shivering
+  let dt = raw > 0 ? raw : fp;
+  if (raw > 0.002 && raw < 0.1) { tick[tickI] = raw; tickI = (tickI + 1) % 15; tickS.set(tick); tickS.sort(); fp = tickS[4]; } // the usual short frame is one display tick
+  const n = Math.round(dt / fp); if (n >= 1 && n <= 3 && Math.abs(dt - n * fp) < fp * 0.3) dt = n * fp;
+  if (dt > 0.05) dt = 0.05;
   const w0 = performance.now();
-  if (hitStop > 0) hitStop -= dt; // a few frozen frames sell the crunch
-  else if (!paused) { let sc = CHEAT.slow ? 0.45 : 1; if (slowT > 0) { slowT -= dt; sc *= 0.4; } update(dt * sc); }
+  if (!paused) { let sc = CHEAT.slow ? 0.45 : 1; if (slowT > 0) { slowT -= dt; sc *= 1 - 0.32 * Math.sin((Math.PI * Math.max(0, slowT)) / 0.4); } update(dt * sc); } // swallowing someone whole: time dips and flows back, never stops
   render();
-  workAcc += performance.now() - w0;
+  const wk = performance.now() - w0; workAcc += wk;
+  if (SET.fps) { // frames a second, the worst gap between two frames, our own work per frame, detail level
+    fpsN++; fpsT += raw; fpsW += wk; if (raw > fpsMax) fpsMax = raw;
+    if (fpsT >= 0.5) { $('fpsTag').textContent = `${Math.round(fpsN / fpsT)} fps · худший ${Math.round(fpsMax * 1000)} мс · работа ${(fpsW / fpsN).toFixed(1)} мс · деталь ${2 - lod}/${Math.round(quality * 100)}%`; fpsN = 0; fpsT = 0; fpsW = 0; fpsMax = 0; }
+  }
   requestAnimationFrame(frame);
 }
 function start(data) {
@@ -2450,7 +2515,7 @@ function start(data) {
   try {
     best3 = parseInt(localStorage.getItem('kus.best3'), 10) || 0;
     if (localStorage.getItem('kus.mode') === 't3') mode = 't3';
-    const st = JSON.parse(localStorage.getItem('kus.set') || '{}'); if (st.lefty === true) SET.lefty = true; if (st.gfx === 'low' || st.gfx === 'high') SET.gfx = st.gfx;
+    const st = JSON.parse(localStorage.getItem('kus.set') || '{}'); if (st.lefty === true) SET.lefty = true; if (st.gfx === 'low' || st.gfx === 'high') SET.gfx = st.gfx; SET.fps = st.fps === true;
     const dv = localStorage.getItem('kus.diff'); if (DIFFS[dv]) diff = dv;
     const sn = JSON.parse(localStorage.getItem('kus.seen') || '{}'); if (sn && typeof sn === 'object') seen = sn; if ([0.85, 1, 1.18].includes(st.bs)) SET.bs = st.bs;
     const m = JSON.parse(localStorage.getItem('kus.m') || 'null');
@@ -2469,6 +2534,7 @@ function start(data) {
   requestAnimationFrame(frame);
 }
 window.__kus = {
+  Sfx, get cam() { return cam; }, get fp() { return fp; },
   get state() { return state; }, get player() { return player; }, get blobs() { return blobs; }, get strands() { return strands; }, get chunks() { return chunks; },
   spawnBot, startGame, newAI, CHEAT, update, render, pause(v) { paused = !!v; }, step(n = 1) { for (let i = 0; i < n; i++) update(1 / 60); render(); },
   setCam(c) { debugCam = c; }, setDiff(v) { diff = v; renderMode(); }, get leader() { return leader; }, get lod() { return lod; }, setLod(v) { lod = v; stepOff.lod = 1e9; upOffUntil = 1e9; }, get quality() { return quality; }, spawnSpecial, M, get pickups() { return pickups; }, setMode(m) { mode = m; renderMode(); }, get run() { return run; }, get timeLeft() { return timeLeft; }, setTimeLeft(v) { timeLeft = v; }, stick, get touch() { return touchMode; }, place(b, x, y, face) { b.x = x; b.y = y; b.vx = b.vy = 0; if (face !== undefined) b.face = face; b.tx = x; b.ty = y; b.resetPoints(); },
