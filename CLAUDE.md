@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # КУСЬ.io
 
 Браузерная игра в духе agar.io: мягкие конфеты откусывают друг от друга куски, раненый продолжает есть. Canvas 2D, без библиотек, без сервера. Играют с ПК и с телефона (iPhone обязан работать).
@@ -12,8 +16,11 @@ npm install        один раз: prettier и playwright-core
 npm run build      собрать index.html из src/
 npm test           собрать и прогнать тесты в headless Chrome (нужен установленный Chrome)
 npm run format     prettier по src/js, tools, tests
-node tests/run.mjs soak    только тесты, в названии которых есть "soak"
+node tests/run.mjs soak    только тесты, в названии которых есть "soak" (без сборки: сначала npm run build)
+npm run check      выйти с ошибкой, если index.html не совпадает с src/
 ```
+
+Тесты берут установленный Chrome (`channel: chrome`); другой бинарник: `CHROME=/путь/к/chrome`.
 
 Выкладка: `npm test`, закоммитить `src/` вместе с собранным `index.html`, `git push`. Pages обновляется за минуту.
 
@@ -23,7 +30,7 @@ node tests/run.mjs soak    только тесты, в названии кото
 
 ## Устройство
 
-`tools/build.mjs` вставляет `src/style.css` и все `src/js/*.js` по порядку имён в шаблон `src/index.html`. Фрагменты JS попадают в ОДИН блок `{ ... }`, поэтому:
+`tools/build.mjs` вставляет `src/style.css` и все `src/js/*.js` по порядку имён в шаблон `src/index.html` на места меток `/*__CSS__*/` и `/*__JS__*/` (каждая ровно один раз). Фрагменты JS попадают в ОДИН блок `{ ... }`, поэтому:
 
 - все `const`/`let`/функции верхнего уровня общие для всех файлов, импортов нет;
 - порядок файлов важен: `const`/`let` из более позднего файла нельзя трогать на верхнем уровне более раннего (TDZ). Внутри функций можно;
