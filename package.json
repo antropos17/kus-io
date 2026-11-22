@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "КУСЬ.io: agar-like browser game where soft candies bite pieces off each other",
+  "description": "КУСЬ.io (Kus.io): an agar.io-like browser game where soft candies bite pieces off each other",
   "scripts": {
     "build": "node tools/build.mjs",
     "check": "node tools/build.mjs --check",
     "og": "node tools/build.mjs && node tools/og.mjs",
+    "shots": "node tools/build.mjs && node tools/shots.mjs",
     "test": "node tools/build.mjs && node tests/run.mjs",
     "format": "prettier --write src/js tools tests"
   },

@@ -1,22 +1,106 @@
 # КУСЬ.io
 
-Игра в духе agar.io: мягкие конфеты откусывают друг от друга куски. Раненый продолжает есть, ранки затягиваются.
+A browser game in the spirit of agar.io where soft candies bite pieces off each other instead of swallowing each other whole. «Кусь» is the Russian sound of a bite.
 
-Играть: https://antropos17.github.io/kus-io/
+![A strawberry candy bites a piece off a big blueberry one; the piece hangs between its teeth on a stretched strand](docs/media/hero.png)
 
-## Управление
+### [Play in the browser](https://antropos17.github.io/kus-io/)
 
-- ПК: мышь ведёт, пробел или клик кусает рывком, Shift или правый клик выбрасывает язык, Esc ставит паузу.
-- Телефон: палец в любом месте экрана ведёт, кнопки «Кусь» и «Язык».
+Works on a PC and on a phone, nothing to install. The game's interface is in Russian.
 
-## Разработка
+## What kind of game it is
 
-Нужны Node.js и установленный Chrome.
+You are a soft candy on a chocolate tray with bot candies of every size. Your mouth is the only part that bites, so the best way in is from behind. A bite does not swallow the other candy: it tears off a piece, the piece stretches on a sticky strand between your teeth, you chew it, and its mass becomes yours.
+
+The bitten candy stays in the game. It is left with a wound that heals over time. A fresh wound slows it down and sheds crumbs, and a bite into a fresh wound tears off a third more. A candy small enough that one bite would finish it is swallowed whole.
+
+On the tray there are sprinkles to eat and bonuses: speed, a shield and a magnet. A sticky tongue pulls prey to your mouth.
+
+<p align="center"><img src="docs/media/bite.png" width="560" alt="A short loop of a bite: the snap, the piece on its strand, chewing"></p>
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/media/phone-play.png" width="250" alt="Playing on a phone: the joystick under the thumb on the left, the bite and tongue buttons on the right, the leaderboard and the minimap at the top">
+  <img src="docs/media/phone-menu.png" width="250" alt="The short menu of a first visit: logo, one line about the game, name, flavour and the Play button">
+  <img src="docs/media/phone-daily.png" width="250" alt="The end of a candy-of-the-day run: mass, bites, candies eaten whole, sugar earned and a pick of three candies">
+</p>
+<p align="center"><sub>Phone: playing, the first-visit menu, the end of a candy-of-the-day run</sub></p>
+
+![The game on a PC at 1280×720 with the leaderboard in the top right corner and the minimap in the bottom right](docs/media/desktop.png)
+
+Special rivals:
+
+<p align="center">
+  <img src="docs/media/hedgehog.png" width="260" alt="A candy bites a hedgehog from behind and gets the spines">
+  <img src="docs/media/piranha.png" width="260" alt="A pack of piranhas nibbles at the back of a big candy">
+  <img src="docs/media/cake.png" width="260" alt="A candy bites the cherry on the back of a cake">
+</p>
+
+- The hedgehog has spines on its back: a bite from behind pricks you, bite it in the face.
+- Piranhas come in packs and go for big candies.
+- The cake is huge and does not hunt. Its crust is thick, the cherry on its back is the soft spot.
+
+## Controls
+
+**PC**
+
+- Mouse: where the mouth looks.
+- Space or left click: a dash with a stronger bite, «Кусь» (bite).
+- Shift or right click: the sticky tongue, «Язык» (tongue), pulls prey to the mouth.
+- Esc or P: pause. M: sound on and off.
+
+**Phone**
+
+- Move a finger anywhere on the screen: a joystick appears under it.
+- «Кусь» (bite): the dash with a stronger bite, can be held.
+- «Язык» (tongue): the sticky tongue.
+- In the pause menu the buttons can go on the right or on the left, in three sizes.
+
+## Modes
+
+- «Свободная игра» (free play): no time limit, play until you are eaten.
+- «3 минуты на счёт» (3 minutes for score): a timed run, the best result is kept.
+- «Конфета дня» (candy of the day): a three-minute run on normal difficulty with a twist that comes from the date and is the same for everyone that day, such as twice as many hedgehogs, piranha packs from the first seconds or a cake on the tray from the start. The game keeps your best of the day and how many days in a row you have played. After a run you can send a friend a challenge link with your score; a link from an earlier day says that candy is over.
+
+There are three difficulties: «Лёгкая» (easy), «Обычная» (normal) and «Жёсткая» (hard).
+
+Between runs:
+
+- Sugar is earned for bites and for eating in a run without cheats. At the end of a run you pick one of three candies with a sugar bonus inside.
+- Sugar buys patterns for your candy in the menu; missions unlock patterns too.
+- Hats are unlocked by your best mass.
+- The first visit gets a short menu (name, flavour, «Играть», play), and the first run starts with an easy snack in front of you.
+
+## Under the hood
+
+- The whole game is one HTML file with no external scripts (only web fonts are loaded). It is built from the sources in `src/` and can be opened straight from disk.
+- Canvas 2D and plain JavaScript: no libraries, no framework, no server. All rivals are bots that run in the page.
+- Soft bodies: every candy is a ring of points that springs back to its shape, dents on contact and wobbles like jelly.
+- All sound is synthesized with the Web Audio API while the game runs; there are no audio files.
+- The graphics tune themselves: when frames start to drop, the game lowers the detail and then the resolution, and raises them again when there is room.
+- Movement does not depend on the frame rate, and the system "reduce motion" setting turns off flashes and camera kicks.
+
+## Development
+
+You need Node.js and an installed Chrome.
 
 ```
 npm install
-npm run build   # собирает index.html из src/
-npm test        # сборка и тесты в headless Chrome
+npm run build   # build index.html from src/
+npm test        # build, then run the tests in headless Chrome
+npm run check   # fail if index.html does not match src/
+npm run og      # rebuild og.png, the link preview picture
+npm run shots   # rebuild the screenshots in docs/media/
 ```
 
-`index.html` в корне собирается из `src/` и коммитится вместе с исходниками: его раздаёт GitHub Pages. Править нужно `src/`. Устройство проекта описано в `CLAUDE.md`.
+`index.html` in the root is generated from `src/` and committed together with the sources, because GitHub Pages serves it. Edit `src/`, then run `npm run build`.
+
+`npm test` runs 17 tests through `playwright-core`: startup on PC and phone, the phone buttons staying inside the screen, the bite rules, the first-visit menu, sugar and the shop, the candy of the day and its challenge links, settings, every sound effect, and three simulated minutes of the autopilot on ragged frames. The tests do not see the picture or hear the sound, and the game has not been tested automatically on a real iPhone.
+
+How the code is organised is described in [`CLAUDE.md`](CLAUDE.md).
+
+## Not there yet
+
+- Multiplayer. All rivals are bots; playing against people would need a server.
+- A Telegram Mini App.
