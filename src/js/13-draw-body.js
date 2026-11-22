@@ -432,7 +432,7 @@ function drawTexts(ox, oy, z) {
   ctx.globalAlpha = 1;
 }
 function drawMinimap(x0, y0, x1, y1) {
-  if (state === 'menu' && W < 760) return;
+  if ((state === 'menu' && W < 760) || debugCam) return; // a staged shot (og.png) has no HUD
   const small = Math.min(W, H) < 600,
     S = small ? (touchMode ? 84 : 92) : 132,
     pad = 14,

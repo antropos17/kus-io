@@ -188,13 +188,14 @@ function start(data) {
   }
   if (challenge) {
     const t = dailyOf(todayKey());
-    $('chal').textContent = !challenge.d
-      ? `${challenge.n} набрал ${challenge.c}. Побей в свободной игре!`
+    // parts in .lx drop out on a phone held sideways, where the line must stay one row
+    $('chal').innerHTML = !challenge.d
+      ? `${esc(challenge.n)} набрал ${challenge.c}. Побей в свободной игре!`
       : chalToday()
-        ? `${challenge.n} набрал ${challenge.c} в конфете дня «${t.name}». Побей сегодня`
+        ? `${esc(challenge.n)} набрал ${challenge.c} в конфете дня «${t.name}». Побей сегодня`
         : challenge.d > t.key
-          ? `Это вызов на конфету за ${keyText(challenge.d)}, у тебя она ещё не началась. Сегодня «${t.name}», сыграй её`
-          : `Это ${challenge.d === prevKey(t.key) ? 'вчерашняя конфета' : `конфета за ${keyText(challenge.d)}`}, она уже закончилась. Сегодня новая: «${t.name}», сыграй её`;
+          ? `Это вызов на конфету за ${keyText(challenge.d)}<span class="lx">, у тебя она ещё не началась</span>. Сегодня «${t.name}»<span class="lx">, сыграй её</span>`
+          : `Это ${challenge.d === prevKey(t.key) ? 'вчерашняя конфета' : `конфета за ${keyText(challenge.d)}`}, она уже закончилась. Сегодня<span class="lx"> новая</span>: «${t.name}»<span class="lx">, сыграй её</span>`;
     $('chal').classList.remove('hidden');
     mode = challenge.d ? 'daily' : 'free';
   }

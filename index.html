@@ -242,6 +242,8 @@ body.touch #pauseBtn:before,body.touch #mute:before{content:"";position:absolute
 body.touch #pauseBtn,body.touch #mute{background:rgba(255,241,220,.82);box-shadow:none}
 body.touch:not(.playing) #mute{left:calc(14px + env(safe-area-inset-left,0px))}
 body.touch #feed div{background:rgba(20,11,8,.55);color:var(--cream);box-shadow:none;border-radius:12px;max-width:calc(100vw - 206px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))}
+body.touch #goal{max-width:calc(100vw - 206px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))} /* wraps left of the table, like the feed */
+body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))} /* the first run: hints stop short of the player in the middle */
 @media (max-width:700px){body.touch #board{width:min(150px,42vw)}}
 @media (max-height:520px) and (min-width:701px){ /* phone held sideways: the menu must fit without scrolling */
   .ov{padding:8px max(4vw,16px)}
@@ -249,7 +251,9 @@ body.touch #feed div{background:rgba(20,11,8,.55);color:var(--cream);box-shadow:
   .card{padding:12px 18px;max-height:calc(100vh - 16px);max-height:calc(100svh - 16px)}
   .top{display:flex;align-items:center;gap:14px}
   .logo{font-size:36px;margin:0}
-  .tag,.help,#rec,.pl,#mis,#chal,#dif{display:none}
+  .tag,.help,#rec,.pl,#mis,#dif{display:none}
+  #chal{margin:0 0 4px;padding:4px 10px;font-size:12px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} /* a friend's link still says why you are here, in one row */
+  #chal .lx{display:none}
   .seg2,.seg3{margin-bottom:6px}
   .seg2 button,.seg3 button{min-height:34px;padding:4px 8px}
   #modeSeg{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -2924,6 +2928,7 @@ function tutorPrey() {
   const P = player,
     b = spawnBot(14),
     d = P.Rs + b.Rs + 85; // ambling 24 around this, it comes no closer than 61: the bite hint waits for the player to move in
+  P.face = 0; // to the right: the hint plaques stack on the left, the snack must not hide under them
   b.x = b.hx = clamp(P.x + Math.cos(P.face) * d, 100, WORLD - 100);
   b.y = b.hy = clamp(P.y + Math.sin(P.face) * d, 100, WORLD - 100);
   b.face = P.face; // its back to the player
@@ -3111,7 +3116,9 @@ function addFeed(html, ms) {
   const d = document.createElement('div');
   d.innerHTML = html;
   feedEl.prepend(d);
-  while (feedEl.children.length > 4) feedEl.lastElementChild.remove();
+  // a newcomer's first seconds keep to two plaques, so the field in front of the player stays clear
+  const cap = tutor || (run && run.dayNote) ? 2 : 4;
+  while (feedEl.children.length > cap) feedEl.lastElementChild.remove();
   setTimeout(() => {
     d.style.opacity = '0';
     setTimeout(() => d.remove(), 500);
@@ -3120,6 +3127,7 @@ function addFeed(html, ms) {
 function feedKill(A, B) {
   if (A.isPlayer) addFeed(`Ты съедаешь <b>${esc(B.acc)}</b> целиком`);
   else if (
+    !tutor && // the first run's lesson is not pushed out by other candies' meals
     !B.isPlayer &&
     state === 'play' &&
     player &&
@@ -3356,8 +3364,16 @@ function startGame() {
     if (!tutor) addFeed('<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты'); // the first run tells this after the first bite
   } else if (tutor) addFeed('Веди мышью: пасть смотрит на курсор');
   else addFeed('<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты');
-  if (day) addFeed(`<b>${run.rule.name}</b>: ${run.rule.note.charAt(0).toLowerCase() + run.rule.note.slice(1)}`, 6500);
+  if (day) {
+    if (tutor)
+      run.dayNote = true; // a newcomer learns to steer and bite first, the twist is told after that
+    else dayFeed();
+  }
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+}
+function dayFeed() {
+  run.dayNote = false;
+  addFeed(`<b>${run.rule.name}</b>: ${run.rule.note.charAt(0).toLowerCase() + run.rule.note.slice(1)}`, 6500);
 }
 function tally() {
   const st = player.stats;
@@ -3691,13 +3707,20 @@ function updateHUD(dt) {
             : 'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Клик</b>: рывок с укусом',
         );
     }
-    for (const b of blobs) {
-      if (!b.kind || !b.alive || seen[b.kind] || Math.abs(b.x - player.x) > view + b.Rs || Math.abs(b.y - player.y) > view + b.Rs) continue;
-      if (b.kind === 'hedgehog') hint('hedgehog', '<b>Ёж</b>: со спины колется. Кусай его в морду');
-      else if (b.kind === 'cake') hint('cake', '<b>Торт</b>: корка твёрдая. Кусай в вишенку на спине');
-      else hint('piranha', '<b>Пираньи</b>: мелкие, но нападают стаей. Глотай по одной');
+    if (run.dayNote && !tutor) {
+      let live = 0;
+      for (const d of feedEl.children) if (d.style.opacity !== '0') live++;
+      if (live < 2) dayFeed();
     }
-    if (!seen.pickup)
+    if (!tutor)
+      // the first run's lesson goes first, these wait until it is over
+      for (const b of blobs) {
+        if (!b.kind || !b.alive || seen[b.kind] || Math.abs(b.x - player.x) > view + b.Rs || Math.abs(b.y - player.y) > view + b.Rs) continue;
+        if (b.kind === 'hedgehog') hint('hedgehog', '<b>Ёж</b>: со спины колется. Кусай его в морду');
+        else if (b.kind === 'cake') hint('cake', '<b>Торт</b>: корка твёрдая. Кусай в вишенку на спине');
+        else hint('piranha', '<b>Пираньи</b>: мелкие, но нападают стаей. Глотай по одной');
+      }
+    if (!seen.pickup && !tutor)
       for (const q of pickups)
         if (Math.abs(q.x - player.x) < view && Math.abs(q.y - player.y) < view) {
           hint('pickup', '<b>Бонус</b>: наедь на него, чтобы подобрать');
@@ -5188,7 +5211,7 @@ function drawTexts(ox, oy, z) {
   ctx.globalAlpha = 1;
 }
 function drawMinimap(x0, y0, x1, y1) {
-  if (state === 'menu' && W < 760) return;
+  if ((state === 'menu' && W < 760) || debugCam) return; // a staged shot (og.png) has no HUD
   const small = Math.min(W, H) < 600,
     S = small ? (touchMode ? 84 : 92) : 132,
     pad = 14,
@@ -6254,13 +6277,14 @@ function start(data) {
   }
   if (challenge) {
     const t = dailyOf(todayKey());
-    $('chal').textContent = !challenge.d
-      ? `${challenge.n} набрал ${challenge.c}. Побей в свободной игре!`
+    // parts in .lx drop out on a phone held sideways, where the line must stay one row
+    $('chal').innerHTML = !challenge.d
+      ? `${esc(challenge.n)} набрал ${challenge.c}. Побей в свободной игре!`
       : chalToday()
-        ? `${challenge.n} набрал ${challenge.c} в конфете дня «${t.name}». Побей сегодня`
+        ? `${esc(challenge.n)} набрал ${challenge.c} в конфете дня «${t.name}». Побей сегодня`
         : challenge.d > t.key
-          ? `Это вызов на конфету за ${keyText(challenge.d)}, у тебя она ещё не началась. Сегодня «${t.name}», сыграй её`
-          : `Это ${challenge.d === prevKey(t.key) ? 'вчерашняя конфета' : `конфета за ${keyText(challenge.d)}`}, она уже закончилась. Сегодня новая: «${t.name}», сыграй её`;
+          ? `Это вызов на конфету за ${keyText(challenge.d)}<span class="lx">, у тебя она ещё не началась</span>. Сегодня «${t.name}»<span class="lx">, сыграй её</span>`
+          : `Это ${challenge.d === prevKey(t.key) ? 'вчерашняя конфета' : `конфета за ${keyText(challenge.d)}`}, она уже закончилась. Сегодня<span class="lx"> новая</span>: «${t.name}»<span class="lx">, сыграй её</span>`;
     $('chal').classList.remove('hidden');
     mode = challenge.d ? 'daily' : 'free';
   }

@@ -367,6 +367,85 @@ test('daily: a challenge link opens the same candy, an old one says so', async (
   assert(!b.goal.includes('побей') && b.res === '', `an old challenge must not set a target: "${b.goal}" / "${b.res}"`);
 });
 
+// A phone opened from a friend's link on a fixed date (25 Nov 2026: «Двойная посыпка», the longest twist name).
+async function linkPhone(width, height, q, returning) {
+  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.addInitScript((ret) => {
+    const t = new Date(2026, 10, 25, 12).getTime();
+    Date.now = () => t;
+    if (ret && localStorage.getItem('kus.best') === null) localStorage.setItem('kus.best', '40');
+  }, returning);
+  await page.goto(URL + q);
+  await page.waitForTimeout(600);
+  return { page, errors, close: () => ctx.close() };
+}
+
+test('daily: the HUD goal line stays clear of the table on phones', async () => {
+  for (const [w, h] of [
+    [360, 640],
+    [844, 390],
+  ])
+    for (const q of [`?c=9999&n=${encodeURIComponent('Сеня')}&d=20261125`, `?c=9999&n=${encodeURIComponent('Сеня')}`]) {
+      const g = await linkPhone(w, h, q, true);
+      const r = await g.page.evaluate(() => {
+        const k = window.__kus;
+        k.pause(true);
+        k.startGame();
+        k.player.spawnT = 0;
+        k.update(1 / 60);
+        for (let i = 0; i < 2; i++) k.update(0.3);
+        const a = document.getElementById('goal').getBoundingClientRect(),
+          b = document.getElementById('board').getBoundingClientRect();
+        return {
+          text: document.getElementById('goal').textContent,
+          gr: a.right,
+          gt: a.top,
+          gb: a.bottom,
+          bl: b.left,
+          bt: b.top,
+          bb: b.bottom,
+          sw: document.getElementById('goal').scrollWidth,
+          cw: document.getElementById('goal').clientWidth,
+        };
+      });
+      assert(g.errors.length === 0, g.errors.join(' | '));
+      assert(r.text.includes('9999'), `${w}x${h} ${q}: goal "${r.text}"`);
+      const hit = r.gr > r.bl && r.gb > r.bt && r.gt < r.bb;
+      assert(!hit && r.sw <= r.cw + 1, `${w}x${h} ${q}: goal "${r.text}" ends at ${Math.round(r.gr)}, table starts at ${Math.round(r.bl)}`);
+      await g.close();
+    }
+});
+
+test('daily: a challenge link says why at 844x390, and the menu still fits', async () => {
+  const name = encodeURIComponent('Длинноеимяпочт'); // 14 letters, the most a name can have
+  for (const returning of [false, true])
+    for (const d of [20261125, 20261124, 20261030, 20261230]) {
+      const g = await linkPhone(844, 390, `?c=99999&n=${name}&d=${d}`, returning);
+      const r = await g.page.evaluate(() => {
+        const c = document.querySelector('#menu .card'),
+          e = document.getElementById('chal'),
+          b = e.getBoundingClientRect();
+        return {
+          over: c.scrollHeight - c.clientHeight,
+          h: b.height,
+          sw: e.scrollWidth,
+          cw: e.clientWidth,
+          text: e.innerText,
+          bottom: c.getBoundingClientRect().bottom,
+        };
+      });
+      const tag = `${returning ? 'returning' : 'first visit'}, d=${d}`;
+      assert(g.errors.length === 0, g.errors.join(' | '));
+      assert(r.h > 0 && r.h < 30, `${tag}: challenge line is ${r.h}px high ("${r.text}")`);
+      assert(r.sw <= r.cw + 1, `${tag}: challenge line cut off: "${r.text}"`);
+      assert(r.over <= 1 && r.bottom <= 390, `${tag}: menu scrolls by ${r.over}px, card ends at ${r.bottom}`);
+      await g.close();
+    }
+});
+
 test('settings: difficulty and graphics apply and are remembered', async () => {
   const g = await open({ play: false, returning: true });
   const mass = {};
