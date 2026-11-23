@@ -102,6 +102,10 @@ dashEl.addEventListener('click', (e) => {
 }); // keyboard activation
 addEventListener('keydown', (e) => {
   Sfx.init();
+  if (albumOpen()) {
+    if (e.key === 'Escape') closeAlbum();
+    return;
+  }
   if (e.key === 'Escape' || (e.code === 'KeyP' && !(e.target && e.target.tagName === 'INPUT'))) {
     if (!admEl.classList.contains('hidden')) closeAdmin();
     else if (!pauseEl.classList.contains('hidden')) closePause();

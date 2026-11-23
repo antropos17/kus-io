@@ -1,7 +1,7 @@
 // ---------- dom & canvas ----------
 const $ = (id) => document.getElementById(id);
-const cvs = $('c'),
-  ctx = cvs.getContext('2d', { alpha: false }) || cvs.getContext('2d');
+const cvs = $('c');
+let ctx = cvs.getContext('2d', { alpha: false }) || cvs.getContext('2d'); // let: the album borrows the drawing code for its stickers
 const menuEl = $('menu'),
   overEl = $('over'),
   hudEl = $('hud'),

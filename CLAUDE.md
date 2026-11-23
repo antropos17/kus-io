@@ -55,6 +55,7 @@ Sound takes are made outside the repository with earshot (https://github.com/Leo
 | `07-bites` | `Strand` (the stretchy strand), `Chunk` (a bitten piece), `Gulp`, `checkBites`, `doBite`, `swallowWhole`, the dash, the tongue |
 | `08-food-particles` | sprinkles, crumbs, bonuses, particles, floating text |
 | `09-bots` | bot AI, spawning, hedgehog, piranhas, cake, `population` |
+| `10-album` | the album of eaten bots: `STICKERS`, rows `ALBUM_ROWS`, `pickBotName` (how often each name comes onto the field), `albumEat` (called from `swallowWhole`), the end-of-run line, the album page and `paintSticker` (the game's own drawing code on a stand-in candy) |
 | `10-daily` | "Конфета дня" (candy of the day, mode `daily`): the twist of the day `DAILY` by the local date (`dailyOf`), `day` — the twist in force, the best of the day and the days-in-a-row streak (`dailySave`) |
 | `10-flow` | missions and patterns, start and end of a run, the 3-minute mode, `updateCamera`, `updateHUD`, the main `update` |
 | `11-draw-world` | the tray, `buildPath` (body outline), sprinkles, strands, wounds |
@@ -71,7 +72,7 @@ A bite step by step (`checkBites`): wind-up → snap → `doBite` → the piece 
 
 `window.__kus` in `17-boot` gives the tests the state and functions (`player`, `blobs`, `update`, `render`, `place`, `spawnBot`, `spawnSpecial`, `Sfx`, `cam`, `CHEAT`, `pause`, `setLod`). The easiest way to test a new mechanic is through it.
 
-Saves in `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.best`, `kus.best3`, `kus.mode`, `kus.diff`, `kus.set`, `kus.m` (missions and unlocked patterns), `kus.seen` (hints already shown), `kus.cheat`, `kus.lbmin`, `kus.daily` (candy of the day: date `d` like 20261123, best of the day `best`, days in a row `streak`, longest streak `top`).
+Saves in `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.best`, `kus.best3`, `kus.mode`, `kus.diff`, `kus.set`, `kus.m` (missions and unlocked patterns), `kus.seen` (hints already shown), `kus.cheat`, `kus.lbmin`, `kus.daily` (candy of the day: date `d` like 20261123, best of the day `best`, days in a row `streak`, longest streak `top`), `kus.album` (album: `c` — times each sticker was swallowed whole, `r` — ids of rows already paid).
 
 ## Decisions that must not be broken
 
@@ -83,6 +84,13 @@ Saves in `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.be
 - The difficulty `DIFFS`, the rescue from a lethal bite (`graceT`) and the allowances for a small player in `09-bots` keep a newcomer alive. Check the balance with the autopilot (`player.ai = newAI()`), not by eye.
 - The page stays one file with no external scripts. No syntax or CSS newer than what iOS 15 Safari has (`inset`, for example, has already been replaced).
 - The ES5 script embedded at the start of `<body>` shows errors on screen. Do not touch it and do not move it to modern syntax.
+
+## The album
+
+A sticker opens when the player swallows a bot whole in a run without cheats; a full row pays `ROW_SUGAR` sugar once. Each bot name has a fixed look in `BOT_NAMES` (flavour, pattern, hat), so the sticker matches the candy on the field. A row's tier in `ALBUM_ROWS` sets how often its names come onto the field (`TIER_W`); measure a change with `node tools/album-curve.mjs 30 normal` (and `weak`), not by eye.
+
+- A new ordinary sticker: add the name to `BOT_NAMES` with its look and to one row in `ALBUM_ROWS`. Rows hold five stickers.
+- A special enemy (hedgehog, piranha, cake): push an entry to `STICKERS` after the loop, for example `{ id: 'hedgehog', name: 'Ёж', row: 'special', tier: 0, take: (B) => B.kind === 'hedgehog', look: { pal: PAL_HEDGE, kind: 'hedgehog' } }`, and add a row `['special', '…', 0, ['Ёж', …]]` whose names are the entries' `name`. `paintSticker` dresses the stand-in in `look`, so `kind` brings its own drawing. Names of special rows are not given to ordinary bots: leave them out of `BOT_NAMES`. The `id` is the save key: never rename one.
 
 ## Performance
 

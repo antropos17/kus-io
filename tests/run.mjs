@@ -259,6 +259,151 @@ test('sugar: none for a run with cheats', async () => {
   await g.close();
 });
 
+// Album: a sticker for every named bot swallowed whole in a clean run.
+// eat(name): a small bot of that name is put in front of a big player's mouth and swallowed the way the game does it.
+const EAT = `const eat = (name) => { const S = k.spawnBot(20); S.name = name; S.ai = null; S.spawnT = 0; P.mass = 400;
+    for (let i = 0; i < 20; i++) k.update(1/60);
+    k.place(P, 2000, 2500, 0); k.place(S, 2000 + P.Rs + S.Rs - 4, 2500, 0); P.biteCd = 0; const k0 = P.stats.kills;
+    for (let i = 0; i < 120 && P.stats.kills === k0; i++) { P.tx = S.x; P.ty = S.y; k.update(1/60); }
+    for (let i = 0; i < 10; i++) k.update(1/60);
+    return P.stats.kills - k0; };`;
+
+test('album: a bot swallowed whole opens its sticker, a repeat only counts, the end screen says so', async () => {
+  const g = await open({ play: false });
+  const r = await g.page.evaluate(`(() => { const k0 = window.__kus; k0.pause(true); k0.setMode('t3'); k0.startGame(); ${QUIET} ${EAT}
+    const out = {}, feed = () => document.getElementById('feed').textContent;
+    out.ate1 = eat('Зефирка'); out.c1 = k.album.c['Зефирка']; out.feed1 = feed(); out.new1 = (k.run.stk || []).slice();
+    document.getElementById('feed').innerHTML = '';
+    out.ate2 = eat('Зефирка'); out.c2 = k.album.c['Зефирка']; out.feed2 = feed(); out.new2 = (k.run.stk || []).slice();
+    out.count = k.albumCount(); out.saved = JSON.parse(localStorage.getItem('kus.album')).c['Зефирка'];
+    out.btn = document.getElementById('albumBtn').textContent;
+    k.setTimeLeft(0.001); for (let i = 0; i < 90; i++) k.update(1/60);
+    out.line = document.getElementById('stk').textContent;
+    return out; })()`);
+  assert(r.ate1 === 1 && r.c1 === 1, `the first swallow must open the sticker: ate ${r.ate1}, count ${r.c1}`);
+  assert(r.feed1.includes('Новая наклейка: Зефирка'), `no plaque in the feed: "${r.feed1}"`);
+  assert(r.ate2 === 1 && r.c2 === 2 && r.saved === 2, `a repeat must count: ${r.c2}, saved ${r.saved}`);
+  assert(!r.feed2.includes('Новая наклейка') && r.new2.length === 1, `a repeat must not be new again: "${r.feed2}", ${r.new2}`);
+  assert(r.count === 1 && r.btn.includes('1 / 30'), `album count ${r.count}, menu button "${r.btn}"`);
+  assert(r.line.includes('Новая наклейка: Зефирка') && r.line.includes('1 из 30'), `end screen line: "${r.line}"`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('album: no sticker with cheats; a full row pays sugar once', async () => {
+  const g = await open({ play: false });
+  const r = await g.page.evaluate(`(() => { const k0 = window.__kus; k0.setSugar(0); k0.pause(true); k0.setMode('t3'); k0.startGame(); ${QUIET} ${EAT}
+    const out = {};
+    k.CHEAT.god = true; k.update(1/60);
+    out.cheatAte = eat('Безе'); out.cheat = k.album.c['Безе'] || 0;
+    k.CHEAT.god = false; k.toMenu(); return out; })()`);
+  Object.assign(
+    r,
+    await g.page.evaluate(`(() => { const k0 = window.__kus; k0.setMode('t3'); k0.startGame(); ${QUIET} ${EAT}
+    const out = {};
+    for (const n of ['Зефирка', 'Суфле', 'Безе', 'Мусс']) k.album.c[n] = 1;
+    out.ate = eat('Пастила'); out.sugar1 = k.sugar; out.rows = k.album.r.slice();
+    out.feed = document.getElementById('feed').textContent;
+    out.ate2 = eat('Пастила'); out.sugar2 = k.sugar;
+    out.saved = JSON.parse(localStorage.getItem('kus.album')).r;
+    return out; })()`),
+  );
+  assert(r.cheatAte === 1 && r.cheat === 0, `a sticker opened with cheats on (ate ${r.cheatAte}, count ${r.cheat})`);
+  assert(r.ate === 1 && r.sugar1 === 100 && r.rows.join() === 'airy', `a full row must pay 100 once: sugar ${r.sugar1}, rows ${r.rows}`);
+  assert(r.feed.includes('собран'), `no plaque for the row: "${r.feed}"`);
+  assert(r.ate2 === 1 && r.sugar2 === 100, `the row paid twice: ${r.sugar2}`);
+  assert(r.saved.join() === 'airy', `paid rows not saved: ${r.saved}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('album: the end screen with new stickers and a full row still fits phones without scrolling', async () => {
+  for (const [w, h] of [
+    [360, 640],
+    [844, 390],
+  ]) {
+    const g = await open({ width: w, height: h, touch: true, dpr: 2, play: false, returning: true });
+    const r = await g.page.evaluate(() => {
+      const k = window.__kus;
+      for (const n of ['Мармеладка', 'Желешка', 'Жвачка', 'Тянучка']) k.album.c[n] = 1;
+      k.pause(true);
+      k.setMode('t3');
+      k.startGame();
+      k.player.spawnT = 0;
+      for (let i = 0; i < 12; i++) k.mission('bites', 1);
+      for (const n of ['Зефирка', 'Суфле', 'Безе', 'Мусс', 'Бабл-гам']) k.albumEat({ name: n });
+      k.setTimeLeft(0.001);
+      for (let i = 0; i < 90; i++) k.update(1 / 60);
+      const c = document.querySelector('#over .card');
+      return {
+        line: document.getElementById('stk').textContent,
+        shown: document.getElementById('stk').offsetHeight > 0,
+        over: c.scrollHeight - c.clientHeight,
+      };
+    });
+    assert(
+      r.shown && r.line.includes('Ряд «Тягучие» собран') && r.line.includes('9 из 30'),
+      `${w}x${h}: sticker line "${r.line}" (shown ${r.shown})`,
+    );
+    assert(r.over <= 1, `${w}x${h}: the end screen scrolls by ${r.over}px with "${r.line}"`);
+    assert(g.errors.length === 0, g.errors.join(' | '));
+    await g.close();
+  }
+});
+
+test('album: the page opens and closes, fits phones, stickers are big enough to tap', async () => {
+  for (const [w, h] of [
+    [360, 640],
+    [844, 390],
+  ]) {
+    const g = await open({ width: w, height: h, touch: true, dpr: 2, play: false, returning: true });
+    const row = await g.page.evaluate(() => document.querySelector('.bankRow').getBoundingClientRect().height);
+    await g.page.tap('#albumBtn');
+    await g.page.waitForTimeout(150);
+    const r = await g.page.evaluate(() => {
+      const c = document.querySelector('#album .card').getBoundingClientRect(),
+        st = [...document.querySelectorAll('#album .st')].map((b) => b.getBoundingClientRect());
+      const t0 = performance.now();
+      window.__kus.closeAlbum();
+      window.__kus.openAlbum();
+      return {
+        open: !document.getElementById('album').classList.contains('hidden'),
+        top: c.top,
+        bottom: c.bottom,
+        left: c.left,
+        right: c.right,
+        n: st.length,
+        minW: Math.min(...st.map((b) => b.width)),
+        minH: Math.min(...st.map((b) => b.height)),
+        reopen: performance.now() - t0,
+        page: document.scrollingElement.scrollTop,
+      };
+    });
+    const tag = `${w}x${h}`;
+    assert(r.open && r.n === 30, `${tag}: album open ${r.open}, ${r.n} stickers`);
+    assert(r.top >= 0 && r.left >= 0 && r.bottom <= h && r.right <= w && r.page === 0, `${tag}: the page leaves the screen ${JSON.stringify(r)}`);
+    assert(r.minW >= 44 && r.minH >= 44, `${tag}: a sticker is ${r.minW}x${r.minH}, less than 44px`);
+    assert(r.reopen < 50, `${tag}: reopening took ${r.reopen.toFixed(1)} ms`);
+    assert(row <= 48, `${tag}: the sugar line with the album button is ${row}px high`);
+    await g.page.keyboard.press('Escape');
+    await g.page.waitForTimeout(80);
+    const esc = await g.page.evaluate(() => document.getElementById('album').classList.contains('hidden'));
+    await g.page.tap('#albumBtn');
+    await g.page.waitForTimeout(80);
+    await g.page.tap('#albumX');
+    await g.page.waitForTimeout(80);
+    const x = await g.page.evaluate(() => ({ hidden: document.getElementById('album').classList.contains('hidden'), state: window.__kus.state }));
+    assert(esc, `${tag}: Esc did not close the album`);
+    assert(x.hidden && x.state === 'menu', `${tag}: the close button did not close the album (${JSON.stringify(x)})`);
+    assert(g.errors.length === 0, g.errors.join(' | '));
+    await g.close();
+  }
+  const f = await open({ width: 360, height: 640, touch: true, dpr: 2, play: false });
+  const first = await f.page.evaluate(() => document.getElementById('albumBtn').offsetHeight);
+  assert(first === 0, 'the album button must wait until the first run is over');
+  await f.close();
+});
+
 // Candy of the day: the clock is pinned through Date.now, which is all the game reads the date from.
 const DAY = `const k = window.__kus;
   const at = (key, h = 12) => { const t = new Date(Math.floor(key / 10000), (Math.floor(key / 100) % 100) - 1, key % 100, h, 30).getTime(); Date.now = () => t; };

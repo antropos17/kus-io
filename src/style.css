@@ -96,6 +96,34 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #sugar{display:inline-block;transform-origin:0 50%;margin-top:4px;font:900 14px/1 var(--font);color:var(--ink);background:var(--lemon);padding:4px 9px;border-radius:99px;font-variant-numeric:tabular-nums}
 #sugar:empty{display:none}
 #bank{margin:8px 0 0;font:800 14px/1.3 var(--font);color:#7a5a49;font-variant-numeric:tabular-nums}
+.bankRow{display:flex;align-items:center;gap:10px;margin:8px 0 0}
+.bankRow #bank{margin:0;flex:1 1 auto}
+#albumBtn{display:flex;align-items:center;gap:6px;width:auto;flex:none;margin:0;min-height:44px;padding:8px 14px;border-radius:999px;font-size:14px}
+#albumBtn b{font-weight:900;color:var(--berry2);font-variant-numeric:tabular-nums}
+#stk{display:flex;gap:8px;margin-top:6px;color:var(--ink);white-space:nowrap}
+#stk span{overflow:hidden;text-overflow:ellipsis;min-width:0}
+#stk b{flex:none;font-weight:900;color:var(--berry2);font-variant-numeric:tabular-nums}
+#stk:empty{display:none}
+#album .wrap{width:min(520px,100%)}
+@media (max-width:420px){#album .card{padding-left:12px;padding-right:12px}#album .ag{gap:4px}.st .sn{font-size:10.5px}}
+#albumRows{display:grid;gap:12px}
+.arow .ah{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 6px;font:900 15px/1.2 var(--font);color:var(--ink)}
+.arow .ah span{font:800 13px/1.2 var(--font);color:#7a5a49;font-variant-numeric:tabular-nums;white-space:nowrap}
+.arow.done .ah span{color:#2c7d41}
+.ag{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.st{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:44px;padding:6px 1px 5px;border:2px solid #ead2b9;border-radius:14px;background:#fff;color:var(--ink);cursor:pointer;font:inherit}
+.st canvas{display:block;width:100%;max-width:56px;height:auto}
+.st .sn{max-width:100%;font:800 11px/1.15 var(--font);letter-spacing:-.01em;text-align:center;-webkit-hyphens:manual;hyphens:manual}
+#albumN{font-size:.55em;color:#7a5a49;font-variant-numeric:tabular-nums;white-space:nowrap}
+.st i{position:absolute;right:2px;top:2px;padding:2px 5px;border-radius:99px;background:var(--lemon);color:var(--ink);font:900 11px/1 var(--font);font-style:normal;font-variant-numeric:tabular-nums}
+.st i:empty{display:none}
+.st.no{background:#f6e6d3;border-style:dashed;border-color:#d9bea3}
+.st.no canvas{filter:brightness(0);opacity:.2}
+.st.no .sn{color:#8a6a58}
+.arow.done .st{border-color:#9fd3a9}
+.st:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
+#albumCap{position:sticky;bottom:-22px;margin:0;padding:10px 0 4px;background:var(--cream);color:var(--ink)}
+#albumCap:empty{display:none}
 #skins button{position:relative}
 #skins .pz{position:absolute;left:50%;bottom:0;transform:translateX(-50%);font:900 10px/1 var(--font);padding:2px 5px;border-radius:99px;background:#ead2b9;color:var(--ink);white-space:nowrap;pointer-events:none;font-variant-numeric:tabular-nums}
 #skins .pz.can{background:var(--lemon)}
@@ -114,7 +142,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #chestRow button.open{background:#f0dcc6;color:#7a5a49}
 #chestRow button.got{background:var(--berry);color:#fff}
 #near{margin-top:6px}
-@media (max-height:760px){#over .card.paid.chal #near{display:none}#over .card.paid #overMis{display:none}#over .card.paid .stats{margin-bottom:6px}#over .card.paid .best{margin-top:6px}}
+@media (max-height:760px){#over .card.paid.stk #near,#over .card.paid.chal #stk{display:none}#over .card.paid.chal #near{display:none}#over .card.paid #overMis{display:none}#over .card.paid .stats{margin-bottom:6px}#over .card.paid .best{margin-top:6px}}
 #near:empty{display:none}
 #modeSeg [data-m=daily]{grid-column:1/-1;grid-row:1;display:flex;align-items:baseline;justify-content:center;gap:0 8px;flex-wrap:wrap}
 #modeSeg [data-m=daily] small{font:700 13px/1.2 var(--font);color:#7a5a49}
@@ -227,7 +255,9 @@ body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))}
   #modeSeg [data-m=daily]{grid-column:3;grid-row:auto;display:block}
   #modeSeg [data-m=daily] small{display:block;font-size:12px}
   #overMis{display:none}
-  #bank{margin:0 40px 0 0;flex:0 1 13em;font-size:13px;line-height:1.2}
+  .bankRow{margin:0 40px 0 0;flex:0 1 auto;gap:8px}
+  #bank{flex:0 1 6em;font-size:13px;line-height:1.2}
+  #albumBtn{min-height:38px;padding:6px 12px}
   #sweet{margin-bottom:4px;padding:6px 10px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:center}
   .sw1 b{font-size:20px}
   .sw1 span:not(#sweetBank){display:none}
