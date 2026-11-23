@@ -179,6 +179,24 @@ test('streak, jelly wobble and swallowing whole', async () => {
   await g.close();
 });
 
+// A shove into the corner must stop at the wall's rim: past it, the next frame's wall snapped the body back in one jump.
+test('pinned in a corner: a shoved body stays at the rim and does not jump', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET}
+    const B = k.spawnBot(2000), S = k.spawnBot(300); for (const b of [B, S]) { b.ai = null; b.spawnT = 0; }
+    for (let i = 0; i < 30; i++) k.update(1/60);
+    k.place(P, 3000, 3000, 0); k.place(S, S.Rs * 0.85, S.Rs * 0.85, 0); k.place(B, S.Rs + B.Rs * 0.8, S.Rs + B.Rs * 0.8, 0);
+    let jump = 0, rim = 9; const m = () => Math.min(S.x, S.y) / S.Rs;
+    for (let i = 0; i < 120; i++) { const x = S.x, y = S.y; B.tx = B.ty = 0; S.tx = S.ty = 0; B.biteCd = S.biteCd = 9;
+      k.update(i % 3 ? 1/120 : 0.05); jump = Math.max(jump, Math.hypot(S.x - x, S.y - y)); rim = Math.min(rim, m()); }
+    return { jump, rim, alive: S.alive }; })()`);
+  assert(r.alive, 'the pinned body died');
+  assert(r.jump < 3, `the pinned body jittered ${r.jump.toFixed(1)} px in one frame`);
+  assert(r.rim > 0.84, `the pinned body was pushed into the wall to ${r.rim.toFixed(2)} of its radius`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 test('sugar: earned in a clean run, paid at the end, one chest pick, two-tap shop', async () => {
   const g = await open({ play: false });
   const r = await g.page.evaluate(() => {
