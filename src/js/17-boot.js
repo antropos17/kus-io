@@ -283,6 +283,7 @@ window.__kus = {
   albumCount,
   STICKERS,
   ALBUM_ROWS,
+  NEED,
   openAlbum,
   closeAlbum,
   mission,

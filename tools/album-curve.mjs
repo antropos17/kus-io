@@ -4,8 +4,9 @@
 //     limit  game seconds per run; a run ends at the player's first death or at the limit
 //     weak   the autopilot made worse, the same knobs as tools/mass-curve.mjs
 //   OUT=file.json saves every run and the summary. PAR=4 runs that many pages at once.
-// Each run records the names of the ordinary bots the player swallowed whole. The album over 1, 10, 30 and 60 runs in a row
-// is then built from random sequences of the measured runs (drawn with replacement), so 30 runs measured give a 60-run curve.
+// Each run records the names of the ordinary bots the player swallowed whole. The album over 1, 3, 5, 10, 30 and 60 runs in a row
+// is then built from random sequences of the measured runs (drawn with replacement), so 30 runs measured give a 60-run curve;
+// a sticker counts once its name has been swallowed NEED times over the sequence (see 10-album).
 // Time moves by hand in 1/60 s steps with the game paused, so a busy machine changes only how long it takes.
 // Needs a fresh `npm run build`. Uses the installed Chrome (CHROME=/path overrides it).
 import { chromium } from 'playwright-core';
@@ -99,6 +100,9 @@ async function oneRun() {
       r.kills = P.stats.kills;
       r.twins = +(r.twins / Math.max(1, twinN)).toFixed(2);
       r.album = k.album ? k.albumCount() : null; // after the album exists: what the game itself counted
+      // how many swallows each name needs before its sticker opens (NEED by tier); 1 for all on builds without it
+      r.need = {};
+      if (k.NEED) for (const s of k.STICKERS) r.need[s.name] = k.NEED[s.tier];
       return r;
     },
     { LIMIT, WEAK, WEAK_MUL },
@@ -141,14 +145,16 @@ sum.distinctPerRun = qs(rows.map((r) => new Set(r.names).size));
 sum.twinsOnField = qs(rows.map((r) => r.twins)); // bots sharing a name with another bot on the field, averaged over the run
 sum.album = {};
 const SEQ = 400;
-for (const n of [1, 10, 30, 60]) {
+const need = Object.assign({}, ...rows.map((r) => r.need || {}));
+for (const n of [1, 3, 5, 10, 30, 60]) {
   const got = [];
   let full = 0;
   for (let s = 0; s < SEQ; s++) {
-    const have = new Set();
-    for (let i = 0; i < n; i++) for (const nm of rows[Math.floor(Math.random() * rows.length)].names) have.add(nm);
-    got.push(have.size);
-    if (have.size >= allNames.size) full++;
+    const c = {};
+    for (let i = 0; i < n; i++) for (const nm of rows[Math.floor(Math.random() * rows.length)].names) c[nm] = (c[nm] || 0) + 1;
+    const have = Object.keys(c).filter((nm) => c[nm] >= (need[nm] || 1)).length; // a sticker opens on its NEED-th swallow
+    got.push(have);
+    if (have >= allNames.size) full++;
   }
   sum.album[n] = { ...qs(got), full: +(full / SEQ).toFixed(2) };
 }

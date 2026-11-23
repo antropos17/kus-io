@@ -308,6 +308,43 @@ test('album: a bot swallowed whole opens its sticker, a repeat only counts, the 
   await g.close();
 });
 
+test('album: a rarer sticker opens on its NEED-th swallow, shows its progress, and old saves keep what they had', async () => {
+  const g = await open({ play: false });
+  const r = await g.page.evaluate(`(() => { const k0 = window.__kus; k0.pause(true); k0.setMode('t3'); k0.startGame(); ${QUIET} ${EAT}
+    const out = { need: k.NEED[k.STICKERS.find((s) => s.id === 'Пудинг').tier] }, feed = () => document.getElementById('feed').textContent;
+    const tag = () => document.querySelector('#album .st[data-id="Пудинг"]');
+    out.ate1 = eat('Пудинг'); out.count1 = k.albumCount(); out.feed1 = feed(); document.getElementById('feed').innerHTML = '';
+    out.ate2 = eat('Пудинг'); out.count2 = k.albumCount();
+    k.openAlbum(); out.badge = tag().lastChild.textContent; out.locked = tag().classList.contains('no'); k.closeAlbum();
+    for (let n = 2; n < out.need; n++) eat('Пудинг');
+    out.countN = k.albumCount(); out.feedN = feed(); out.new = (k.run.stk || []).slice();
+    k.openAlbum(); out.badgeN = tag().lastChild.textContent; out.lockedN = tag().classList.contains('no'); k.closeAlbum();
+    return out; })()`);
+  assert(r.need === 3, `a tier-1 sticker should need 3 swallows, NEED says ${r.need}`);
+  assert(
+    r.ate1 === 1 && r.count1 === 0 && r.feed1.includes('Пудинг»: 1 из 3'),
+    `the first swallow must only count: album ${r.count1}, feed "${r.feed1}"`,
+  );
+  assert(r.ate2 === 1 && r.count2 === 0 && r.locked && r.badge === '2 из 3', `after two: album ${r.count2}, locked ${r.locked}, badge "${r.badge}"`);
+  assert(r.countN === 1 && r.feedN.includes('Новая наклейка: Пудинг') && r.new.join() === 'Пудинг', `the third must open it: ${JSON.stringify(r)}`);
+  assert(!r.lockedN && r.badgeN === '×3', `an opened sticker shows its count: locked ${r.lockedN}, badge "${r.badgeN}"`);
+  // a save from before NEED: a rare sticker eaten once stays open, also after the next load
+  const old = await g.page.evaluate(() => {
+    localStorage.setItem('kus.album', JSON.stringify({ c: { Пудинг: 1, Зефирка: 1, Халва: 2 }, r: [] }));
+    localStorage.removeItem('kus.albumOld');
+  });
+  await g.page.reload();
+  await g.page.waitForTimeout(400);
+  const a = await g.page.evaluate(() => window.__kus.albumCount());
+  await g.page.reload();
+  await g.page.waitForTimeout(400);
+  const b = await g.page.evaluate(() => ({ n: window.__kus.albumCount(), old: JSON.parse(localStorage.getItem('kus.albumOld')).sort().join() }));
+  assert(old === undefined && a === 3 && b.n === 3, `an old save lost stickers: ${a} then ${b.n}`);
+  assert(b.old === 'Пудинг,Халва', `kus.albumOld must hold only the rare ones opened the old way: ${b.old}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 test('album: no sticker with cheats; a full row pays sugar once', async () => {
   const g = await open({ play: false });
   const r = await g.page.evaluate(`(() => { const k0 = window.__kus; k0.setSugar(0); k0.pause(true); k0.setMode('t3'); k0.startGame(); ${QUIET} ${EAT}
