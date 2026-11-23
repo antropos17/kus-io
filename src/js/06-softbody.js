@@ -95,6 +95,7 @@ class Blob {
     );
   }
   turnRate() {
+    if (this.boss) return this.spinT > 0 ? this.boss.spin : this.boss.turn; // the big cake turns slowly, but whirls round when its cherry is bitten
     return 8 * Math.pow(Math.max(this.Rs, 8) / 25, -0.5) * (this.ai ? 0.85 : 1);
   }
   buildPoints(N) {

@@ -96,6 +96,7 @@ document.addEventListener('visibilitychange', () => {
   }
 }); // switching apps must not get you eaten
 $('chalBtn').addEventListener('click', () => {
+  if (run.won) return shareWin();
   // a link that carries your score: the friend sees it as the target
   const score = Math.round(run.max),
     name = (nick.value || '').trim().slice(0, 14) || 'Кусака';
@@ -124,3 +125,24 @@ $('chalBtn').addEventListener('click', () => {
     pick();
   }
 });
+function shareWin() {
+  // the win screen's «Поделиться»: the clear time and a link to the game
+  const base = /^https?:$/.test(location.protocol) && !/claude|anthropic/i.test(location.hostname) ? location.origin + location.pathname : PUBLIC_URL,
+    text = `Я съел Большой Торт в КУСЬ.io за ${mmss(run.won.secs)}. Сможешь быстрее?`,
+    box = $('chalLink');
+  box.value = base;
+  try {
+    if (navigator.share) {
+      navigator.share({ title: 'КУСЬ.io', text, url: base }).catch(() => {});
+      return;
+    }
+    navigator.clipboard.writeText(text + ' ' + base).then(
+      () => {
+        $('chalBtn').textContent = 'Скопировано';
+      },
+      () => box.classList.remove('hidden'),
+    );
+  } catch (e) {
+    box.classList.remove('hidden');
+  }
+}

@@ -39,7 +39,7 @@ Special rivals:
 
 - The hedgehog has spines on its back: a bite from behind pricks you, bite it in the face.
 - Piranhas come in packs and go for big candies.
-- The cake is huge and does not hunt. Its crust is thick, the cherry on its back is the soft spot.
+- The cake is huge and does not hunt. Its crust is thick, the cherry on its back is the soft spot. In free play it comes only as the Big Cake boss.
 
 ## Controls
 
@@ -59,7 +59,7 @@ Special rivals:
 
 ## Modes
 
-- «Свободная игра» (free play): no time limit, play until you are eaten.
+- «Свободная игра» (free play): no time limit, and the run has stages. A line under your mass shows the next event and how much mass is left to it. At mass 150 (or by 0:45 at the latest) a piranha pack comes for you; at 600 (or by 2:00) a sweet rain of sprinkles and bonuses falls around you for 15 seconds; at 1600 the Big Cake, «Большой Торт», comes after you. It is a boss only you can bite: its crust is hard, it keeps its mouth turned to you and bites, then turns away for a few seconds, and that is the moment for the cherry on its back. A cherry bite makes it whirl round; at two thirds and one third it calls a piranha escort. Eat it and the run ends with a win screen, your clear time and your best time. «Вторая смена» (second shift) carries on with the same mass and place and a fresh score: the events come round by timers, faster, and each lap's cake is tougher. In free play there is no other cake and no other piranha packs. Design and measurements: [docs/stages.md](docs/stages.md).
 - «3 минуты на счёт» (3 minutes for score): a timed run, the best result is kept.
 - «Конфета дня» (candy of the day): a three-minute run on normal difficulty with a twist that comes from the date and is the same for everyone that day, such as twice as many hedgehogs, piranha packs from the first seconds or a cake on the tray from the start. The game keeps your best of the day and how many days in a row you have played. After a run you can send a friend a challenge link with your score; a link from an earlier day says that candy is over.
 

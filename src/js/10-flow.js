@@ -222,6 +222,7 @@ function spawnPlayer(spawnT) {
   input.dashHeld = false;
 }
 function startGame() {
+  if (state === 'won') return secondShift(); // the win screen's main button carries on
   if (state === 'play' || (state === 'dead' && overEl.classList.contains('hidden'))) return;
   Sfx.init();
   const name = (nick.value || '').trim().slice(0, 14) || 'Кусака';
@@ -243,6 +244,7 @@ function startGame() {
   timeLeft = timed() ? 180 : 0;
   day = null;
   if (mode === 'daily') startDaily();
+  stageStart();
   spawnPlayer(4);
   tutor = newcomer ? { prey: tutorPrey() } : null;
   document.body.classList.add('playing');
@@ -337,6 +339,11 @@ function toMenu() {
     player.alive = false;
     finishRun();
   }
+  if (state === 'won' && player) {
+    player.alive = false;
+    spawnDust(player.x, player.y, player.pal, 0, 0, 12);
+  } // the run was paid out when the cake fell
+  stageStop();
   state = 'menu';
   paused = false;
   runActive = false;
@@ -363,14 +370,19 @@ function showOver() {
     daily = mode === 'daily' && run.rule,
     secs = Math.max(0, Math.round(time - run.t0)),
     score = Math.round(run.max);
-  $('overT').textContent = t3 ? 'Время вышло' : 'Тебя доели';
-  whoEl.innerHTML = daily
-    ? `Конфета дня «${esc(run.rule.name)}»`
-    : t3
-      ? 'Три минуты позади. В зачёт идёт самая большая масса.'
-      : killer
-        ? `Последний кусь: <b>${esc(killer.name)}</b>`
-        : 'Тебя растащили по кусочкам';
+  const won = run.won,
+    shift = run.lap ? `Смена ${run.lap + 1}. ` : '';
+  $('overT').innerHTML = won ? `Победа!<small> Торт за ${mmss(won.secs)}</small>` : t3 ? 'Время вышло' : 'Тебя доели'; // the clear time joins the title where the line under it is hidden
+  whoEl.innerHTML = won
+    ? `${won.lap ? `Смена ${won.lap + 1}: т` : 'Т'}орт за <b>${mmss(won.secs)}</b>`
+    : (shift ? esc(shift) : '') +
+      (daily
+        ? `Конфета дня «${esc(run.rule.name)}»`
+        : t3
+          ? 'Три минуты позади. В зачёт идёт самая большая масса.'
+          : killer
+            ? `Последний кусь: <b>${esc(killer.name)}</b>`
+            : 'Тебя растащили по кусочкам');
   $('sMax').textContent = score;
   $('sBites').textContent = run.bites;
   $('sKills').textContent = run.kills;
@@ -393,6 +405,12 @@ function showOver() {
           ? `Новый рекорд на 3 минуты: ${best3}`
           : `Рекорд на 3 минуты: ${best3}`
         : (best > prevBest ? `Новый рекорд: ${best}` : `Рекорд: ${best}`) + (fresh.length ? `. Открыта шапка: ${fresh.join(', ')}` : '');
+  if (won && !run.cheated)
+    bestEl.textContent = won.lap
+      ? `Время второй смены не идёт в рекорд. Лучшее прохождение: ${mmss(clearRec.best)}`
+      : `${won.rec ? 'Новый рекорд' : 'Рекорд'} прохождения: ${mmss(clearRec.best)}. Побед: ${clearRec.wins}`;
+  else if (won) bestEl.textContent = 'С читами победа и рекорд не засчитаны';
+  $('again').textContent = won ? (won.lap ? `Смена ${won.lap + 2}` : 'Вторая смена') : 'Ещё кусь';
   $('chalRes').textContent =
     !challenge || (t3 && !(daily && challenge.d === run.day)) || (!t3 && challenge.d) || run.cheated
       ? ''
@@ -403,7 +421,7 @@ function showOver() {
           : `Вызов от игрока ${challenge.n}: ${challenge.c}. Твой результат: ${score}.`;
   overEl.querySelector('.card').classList.toggle('chal', !!$('chalRes').textContent); // on short screens the challenge line takes the "so close" line's place
   $('chalBtn').classList.toggle('hidden', (t3 && !daily) || run.cheated || score < 1);
-  $('chalBtn').textContent = daily ? 'Поделиться' : 'Бросить вызов другу';
+  $('chalBtn').textContent = daily || won ? 'Поделиться' : 'Бросить вызов другу';
   $('chalLink').classList.add('hidden');
   overEl.classList.remove('hidden');
   hudEl.classList.add('hidden');
@@ -441,7 +459,7 @@ function updateCamera(dt) {
     fy = cam.y,
     tz = cam.z,
     follow = 5;
-  if (state === 'play' && player && player.alive) {
+  if ((state === 'play' || state === 'won') && player && player.alive) {
     fx = player.x;
     fy = player.y;
     tz = 1.05 * Math.pow(32 / player.Rs, 0.42) * vf;
@@ -547,6 +565,7 @@ function updateHUD(dt) {
       : challenge && !challenge.d && mode === 'free'
         ? `цель: ${challenge.c}`
         : '';
+  renderStage();
   let fx = '';
   if (player && player.alive)
     for (const [k, prop] of [
@@ -668,7 +687,7 @@ function update(dt) {
     if (b.y < 0) b.y = 0;
     else if (b.y > WORLD) b.y = WORLD;
   } // a shove never carries anyone off the tray
-  for (const b of blobs) if (b.alive) checkBites(b, dt);
+  for (const b of blobs) if (b.alive && !b.safe) checkBites(b, dt);
   updateFood(dt);
   updatePickups(dt);
   for (const b of blobs) b.pulls.length = 0;
@@ -707,6 +726,7 @@ function update(dt) {
   updateParts(dt);
   if (blobs.some((b) => !b.alive)) blobs = blobs.filter((b) => b.alive);
   population();
+  stageUpdate(dt);
   if (runActive && timed()) {
     timeLeft -= dt;
     if (timeLeft <= 0) {

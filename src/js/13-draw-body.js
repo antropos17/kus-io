@@ -390,7 +390,7 @@ function drawName(b) {
   if (sr < (lod ? 16 : 10) && !b.isPlayer) return;
   const fs = clamp(sr * 0.3, 11, 17) / z,
     y = b.y - b.Rs * (b.hat !== 'none' && sr >= 8 ? 1.55 : 1.04) - 6 / z;
-  const L = labelFor(b.name, b.isPlayer),
+  const L = labelFor(b.name, b.isPlayer || !!b.boss),
     k = fs / 34;
   if (b === leader) {
     // gold star for the sweetest one
