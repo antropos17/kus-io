@@ -74,7 +74,7 @@ document.getElementById('nojs').style.display = 'none';
     <h1 class="logo">КУСЬ<span>.io</span></h1>
     <p class="tag">Откусывай куски от других конфет и расти.<span class="later"> Тебя тоже будут кусать: ранки затянутся, а есть можно дальше.</span></p>
     <input id="nick" maxlength="14" placeholder="Твоё имя" autocomplete="off" spellcheck="false" aria-label="Имя">
-    <p id="bank" class="later" aria-live="polite"></p>
+    <div class="bankRow later"><p id="bank" aria-live="polite"></p><button id="albumBtn" class="btn2" type="button"></button></div>
     </div>
     <p id="chal" class="hidden"></p>
     <div class="pk later" id="dif"><span class="pl">Сложность</span><div class="seg3" id="diffSeg" role="group" aria-label="Сложность"><button type="button" data-v="easy">Лёгкая</button><button type="button" data-v="normal">Обычная</button><button type="button" data-v="hard">Жёсткая</button></div></div>
@@ -132,7 +132,17 @@ document.getElementById('nojs').style.display = 'none';
     <input id="chalLink" class="hidden" readonly aria-label="Ссылка-вызов">
     <p id="chalRes"></p>
     <p class="best" id="best"></p>
+    <p class="best" id="stk"></p>
     <p class="best" id="near"></p>
+  </div></div>
+</div>
+
+<div id="album" class="ov center hidden" role="dialog" aria-label="Альбом">
+  <div class="wrap"><button class="x" id="albumX" type="button" aria-label="Закрыть" title="Закрыть (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
+    <h2 class="dead">Альбом <span id="albumN"></span></h2>
+    <p class="tag" id="albumSub"></p>
+    <div id="albumRows"></div>
+    <p class="best" id="albumCap" aria-live="polite"></p>
   </div></div>
 </div>
 

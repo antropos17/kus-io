@@ -70,6 +70,7 @@ Between runs:
 - Sugar is earned for bites and for eating in a run without cheats. At the end of a run you pick one of three candies with a sugar bonus inside.
 - Sugar buys patterns for your candy in the menu; missions unlock patterns too.
 - Hats are unlocked by your best mass.
+- The album: swallow a candy whole and its sticker is yours. Thirty named candies in six rows, some much rarer than others; a full row pays sugar once.
 - The first visit gets a short menu (name, flavour, «Играть», play), and the first run starts with an easy snack in front of you.
 
 ## Under the hood

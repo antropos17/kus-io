@@ -129,6 +129,34 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #sugar{display:inline-block;transform-origin:0 50%;margin-top:4px;font:900 14px/1 var(--font);color:var(--ink);background:var(--lemon);padding:4px 9px;border-radius:99px;font-variant-numeric:tabular-nums}
 #sugar:empty{display:none}
 #bank{margin:8px 0 0;font:800 14px/1.3 var(--font);color:#7a5a49;font-variant-numeric:tabular-nums}
+.bankRow{display:flex;align-items:center;gap:10px;margin:8px 0 0}
+.bankRow #bank{margin:0;flex:1 1 auto}
+#albumBtn{display:flex;align-items:center;gap:6px;width:auto;flex:none;margin:0;min-height:44px;padding:8px 14px;border-radius:999px;font-size:14px}
+#albumBtn b{font-weight:900;color:var(--berry2);font-variant-numeric:tabular-nums}
+#stk{display:flex;gap:8px;margin-top:6px;color:var(--ink);white-space:nowrap}
+#stk span{overflow:hidden;text-overflow:ellipsis;min-width:0}
+#stk b{flex:none;font-weight:900;color:var(--berry2);font-variant-numeric:tabular-nums}
+#stk:empty{display:none}
+#album .wrap{width:min(520px,100%)}
+@media (max-width:420px){#album .card{padding-left:12px;padding-right:12px}#album .ag{gap:4px}.st .sn{font-size:10.5px}}
+#albumRows{display:grid;gap:12px}
+.arow .ah{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 6px;font:900 15px/1.2 var(--font);color:var(--ink)}
+.arow .ah span{font:800 13px/1.2 var(--font);color:#7a5a49;font-variant-numeric:tabular-nums;white-space:nowrap}
+.arow.done .ah span{color:#2c7d41}
+.ag{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.st{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:44px;padding:6px 1px 5px;border:2px solid #ead2b9;border-radius:14px;background:#fff;color:var(--ink);cursor:pointer;font:inherit}
+.st canvas{display:block;width:100%;max-width:56px;height:auto}
+.st .sn{max-width:100%;font:800 11px/1.15 var(--font);letter-spacing:-.01em;text-align:center;-webkit-hyphens:manual;hyphens:manual}
+#albumN{font-size:.55em;color:#7a5a49;font-variant-numeric:tabular-nums;white-space:nowrap}
+.st i{position:absolute;right:2px;top:2px;padding:2px 5px;border-radius:99px;background:var(--lemon);color:var(--ink);font:900 11px/1 var(--font);font-style:normal;font-variant-numeric:tabular-nums}
+.st i:empty{display:none}
+.st.no{background:#f6e6d3;border-style:dashed;border-color:#d9bea3}
+.st.no canvas{filter:brightness(0);opacity:.2}
+.st.no .sn{color:#8a6a58}
+.arow.done .st{border-color:#9fd3a9}
+.st:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
+#albumCap{position:sticky;bottom:-22px;margin:0;padding:10px 0 4px;background:var(--cream);color:var(--ink)}
+#albumCap:empty{display:none}
 #skins button{position:relative}
 #skins .pz{position:absolute;left:50%;bottom:0;transform:translateX(-50%);font:900 10px/1 var(--font);padding:2px 5px;border-radius:99px;background:#ead2b9;color:var(--ink);white-space:nowrap;pointer-events:none;font-variant-numeric:tabular-nums}
 #skins .pz.can{background:var(--lemon)}
@@ -147,7 +175,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #chestRow button.open{background:#f0dcc6;color:#7a5a49}
 #chestRow button.got{background:var(--berry);color:#fff}
 #near{margin-top:6px}
-@media (max-height:760px){#over .card.paid.chal #near{display:none}#over .card.paid #overMis{display:none}#over .card.paid .stats{margin-bottom:6px}#over .card.paid .best{margin-top:6px}}
+@media (max-height:760px){#over .card.paid.stk #near,#over .card.paid.chal #stk{display:none}#over .card.paid.chal #near{display:none}#over .card.paid #overMis{display:none}#over .card.paid .stats{margin-bottom:6px}#over .card.paid .best{margin-top:6px}}
 #near:empty{display:none}
 #modeSeg [data-m=daily]{grid-column:1/-1;grid-row:1;display:flex;align-items:baseline;justify-content:center;gap:0 8px;flex-wrap:wrap}
 #modeSeg [data-m=daily] small{font:700 13px/1.2 var(--font);color:#7a5a49}
@@ -260,7 +288,9 @@ body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))}
   #modeSeg [data-m=daily]{grid-column:3;grid-row:auto;display:block}
   #modeSeg [data-m=daily] small{display:block;font-size:12px}
   #overMis{display:none}
-  #bank{margin:0 40px 0 0;flex:0 1 13em;font-size:13px;line-height:1.2}
+  .bankRow{margin:0 40px 0 0;flex:0 1 auto;gap:8px}
+  #bank{flex:0 1 6em;font-size:13px;line-height:1.2}
+  #albumBtn{min-height:38px;padding:6px 12px}
   #sweet{margin-bottom:4px;padding:6px 10px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:center}
   .sw1 b{font-size:20px}
   .sw1 span:not(#sweetBank){display:none}
@@ -346,7 +376,7 @@ document.getElementById('nojs').style.display = 'none';
     <h1 class="logo">КУСЬ<span>.io</span></h1>
     <p class="tag">Откусывай куски от других конфет и расти.<span class="later"> Тебя тоже будут кусать: ранки затянутся, а есть можно дальше.</span></p>
     <input id="nick" maxlength="14" placeholder="Твоё имя" autocomplete="off" spellcheck="false" aria-label="Имя">
-    <p id="bank" class="later" aria-live="polite"></p>
+    <div class="bankRow later"><p id="bank" aria-live="polite"></p><button id="albumBtn" class="btn2" type="button"></button></div>
     </div>
     <p id="chal" class="hidden"></p>
     <div class="pk later" id="dif"><span class="pl">Сложность</span><div class="seg3" id="diffSeg" role="group" aria-label="Сложность"><button type="button" data-v="easy">Лёгкая</button><button type="button" data-v="normal">Обычная</button><button type="button" data-v="hard">Жёсткая</button></div></div>
@@ -404,7 +434,17 @@ document.getElementById('nojs').style.display = 'none';
     <input id="chalLink" class="hidden" readonly aria-label="Ссылка-вызов">
     <p id="chalRes"></p>
     <p class="best" id="best"></p>
+    <p class="best" id="stk"></p>
     <p class="best" id="near"></p>
+  </div></div>
+</div>
+
+<div id="album" class="ov center hidden" role="dialog" aria-label="Альбом">
+  <div class="wrap"><button class="x" id="albumX" type="button" aria-label="Закрыть" title="Закрыть (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
+    <h2 class="dead">Альбом <span id="albumN"></span></h2>
+    <p class="tag" id="albumSub"></p>
+    <div id="albumRows"></div>
+    <p class="best" id="albumCap" aria-live="polite"></p>
   </div></div>
 </div>
 
@@ -760,43 +800,44 @@ function drawSkin(b) {
 }
 const SPRINKLES_C = ['#ff5d8f', '#ffd23f', '#3fb8ff', '#6fd13c', '#b57bff', '#ff8a2a'];
 const SPRINKLES = ['#ff5d8f', '#ffd23f', '#7ad7ff', '#9be15d', '#c49bff', '#fff6e8', '#ff9a3d', '#4fe3c1'];
+// name, accusative, then a fixed look so the album sticker is recognised on the field: flavour (index in FLAVORS), pattern, hat
 const BOT_NAMES = [
-  ['Зефирка', 'Зефирку'],
-  ['Суфле', 'Суфле'],
-  ['Мармеладка', 'Мармеладку'],
-  ['Жвачка', 'Жвачку'],
-  ['Пастила', 'Пастилу'],
-  ['Желешка', 'Желешку'],
-  ['Тянучка', 'Тянучку'],
-  ['Ириска', 'Ириску'],
-  ['Безе', 'Безе'],
-  ['Пахлава', 'Пахлаву'],
-  ['Шекербура', 'Шекербуру'],
-  ['Мочи', 'Мочи'],
-  ['Пудинг', 'Пудинга'],
-  ['Пончик', 'Пончика'],
-  ['Халва', 'Халву'],
-  ['Карамелька', 'Карамельку'],
-  ['Нуга', 'Нугу'],
-  ['Чак-чак', 'Чак-чака'],
-  ['Лукум', 'Лукума'],
-  ['Бадамбура', 'Бадамбуру'],
-  ['Мусс', 'Мусса'],
-  ['Щербет', 'Щербета'],
-  ['Кисель', 'Киселя'],
-  ['Ватрушка', 'Ватрушку'],
-  ['Чавкин', 'Чавкина'],
-  ['Нямка', 'Нямку'],
-  ['Хрумка', 'Хрумку'],
-  ['Бабл-гам', 'Бабл-гама'],
-  ['Гогал', 'Гогала'],
-  ['Медовик', 'Медовика'],
+  ['Зефирка', 'Зефирку', 7, 'plain', 'bow'],
+  ['Суфле', 'Суфле', 6, 'bubbles', 'none'],
+  ['Мармеладка', 'Мармеладку', 1, 'dots', 'none'],
+  ['Жвачка', 'Жвачку', 7, 'hearts', 'none'],
+  ['Пастила', 'Пастилу', 0, 'stripes', 'none'],
+  ['Желешка', 'Желешку', 5, 'zigzag', 'none'],
+  ['Тянучка', 'Тянучку', 2, 'swirl', 'none'],
+  ['Ириска', 'Ириску', 0, 'zigzag', 'none'],
+  ['Безе', 'Безе', 8, 'swirl', 'none'],
+  ['Пахлава', 'Пахлаву', 6, 'waffle', 'none'],
+  ['Шекербура', 'Шекербуру', 2, 'zigzag', 'none'],
+  ['Мочи', 'Мочи', 5, 'plain', 'none'],
+  ['Пудинг', 'Пудинга', 9, 'plain', 'chef'],
+  ['Пончик', 'Пончика', 0, 'glaze', 'none'],
+  ['Халва', 'Халву', 6, 'cow', 'none'],
+  ['Карамелька', 'Карамельку', 5, 'stars', 'none'],
+  ['Нуга', 'Нугу', 4, 'waffle', 'none'],
+  ['Чак-чак', 'Чак-чака', 2, 'dots', 'crown'],
+  ['Лукум', 'Лукума', 7, 'glaze', 'none'],
+  ['Бадамбура', 'Бадамбуру', 9, 'stars', 'none'],
+  ['Мусс', 'Мусса', 4, 'galaxy', 'none'],
+  ['Щербет', 'Щербета', 3, 'stripes', 'none'],
+  ['Кисель', 'Киселя', 4, 'bubbles', 'none'],
+  ['Ватрушка', 'Ватрушку', 6, 'stars', 'none'],
+  ['Чавкин', 'Чавкина', 9, 'tiger', 'horns'],
+  ['Нямка', 'Нямку', 3, 'hearts', 'none'],
+  ['Хрумка', 'Хрумку', 1, 'tiger', 'none'],
+  ['Бабл-гам', 'Бабл-гама', 8, 'rainbow', 'none'],
+  ['Гогал', 'Гогала', 1, 'plain', 'chef'],
+  ['Медовик', 'Медовика', 2, 'stripes', 'none'],
 ];
 
 // ---------- dom & canvas ----------
 const $ = (id) => document.getElementById(id);
-const cvs = $('c'),
-  ctx = cvs.getContext('2d', { alpha: false }) || cvs.getContext('2d');
+const cvs = $('c');
+let ctx = cvs.getContext('2d', { alpha: false }) || cvs.getContext('2d'); // let: the album borrows the drawing code for its stickers
 const menuEl = $('menu'),
   overEl = $('over'),
   hudEl = $('hud'),
@@ -2491,6 +2532,7 @@ function swallowWhole(A, B) {
   feedKill(A, B);
   if (A.isPlayer) {
     mission('kills', 1);
+    albumEat(B);
     if (B.kind === 'piranha') mission('piranha', 1);
     floatText(A.x, A.y - A.Rs - 30 / cam.z, 'ням! +' + Math.round(gain), '#ffd23f', 28);
     Sfx.gulp(1);
@@ -3083,21 +3125,19 @@ function safeSpawn() {
   return bestXY;
 }
 function spawnBot(mass) {
-  const used = new Set(blobs.map((b) => b.name)),
-    free = BOT_NAMES.filter((n) => !used.has(n[0]));
-  const nm = free.length ? free[randi(free.length)] : BOT_NAMES[randi(BOT_NAMES.length)];
+  const nm = pickBotName(mass); // each name keeps its own look, the album sticker shows the same candy
   const [x, y] = findSpawn(massToR(mass) + 220, true);
   const b = new Blob({
     name: nm[0],
     acc: nm[1],
-    pal: PALS[randi(PALS.length)],
+    pal: PALS[nm[2]],
     mass,
     x,
     y,
     ai: newAI(),
     spawnT: 1.2,
-    hat: Math.random() < 0.3 ? HATS[1 + randi(HATS.length - 1)].id : 'none',
-    skin: Math.random() < 0.5 ? SKINS[1 + randi(SKINS.length - 1)][0] : 'plain',
+    hat: nm[4],
+    skin: nm[3],
   });
   blobs.push(b);
   return b;
@@ -3186,6 +3226,251 @@ function population() {
       spawnBot(randomBotMass());
     }
 }
+
+// ---------- album of eaten candies ----------
+// One sticker per named bot. It opens when the player swallows that bot whole in a clean run; repeats are counted.
+// A full row pays sugar once. Nothing else pays: no second currency, no packs.
+//
+// A sticker is { id, name, row, take(victim), look }. id is the save key, take() says whether swallowing this victim earns it,
+// look is what paintSticker() dresses a stand-in candy in: { pal, skin, hat, kind }. Ordinary bots are made from BOT_NAMES below;
+// a special enemy gets its own entry with its own take() and look (kind draws spikes, the cake and so on) in a row of its own.
+const ROW_SUGAR = 100; // sugar for a full row, once
+const ALBUM_ROWS = [
+  // id (save key), title, how often its names come onto the field (see pickBotName), the names
+  ['airy', 'Воздушные', 0, ['Зефирка', 'Суфле', 'Безе', 'Мусс', 'Пастила']],
+  ['chewy', 'Тягучие', 0, ['Мармеладка', 'Желешка', 'Жвачка', 'Тянучка', 'Бабл-гам']],
+  ['home', 'С кухни', 1, ['Пудинг', 'Пончик', 'Ватрушка', 'Медовик', 'Кисель']],
+  ['rascal', 'Шалуны', 1, ['Чавкин', 'Нямка', 'Хрумка', 'Ириска', 'Карамелька']],
+  ['east', 'Восточные', 2, ['Халва', 'Лукум', 'Чак-чак', 'Нуга', 'Мочи']],
+  ['baku', 'Из Баку', 3, ['Пахлава', 'Шекербура', 'Бадамбура', 'Гогал', 'Щербет']],
+];
+// How often a name comes onto the field, per tier: the weight of one name when a bot spawns.
+// Tier 3 names come only on big spawns (BIG_MASS and up), which are a few at the start and about one respawn in twenty.
+// A name already on the field weighs ON_FIELD times less, so the field is varied but common candies can meet their twin.
+const TIER_W = [1, 0.1, 0.05, 0.6],
+  BIG_MASS = 150,
+  ON_FIELD = 0.6;
+const STICKERS = [];
+for (const [rid, , tier, names] of ALBUM_ROWS)
+  for (const nm of names) {
+    const n = BOT_NAMES.find((x) => x[0] === nm);
+    STICKERS.push({
+      id: nm,
+      name: nm,
+      row: rid,
+      tier,
+      take: (B) => !B.kind && B.name === nm,
+      look: { pal: PALS[n[2]], skin: n[3], hat: n[4], kind: null },
+    });
+  }
+
+// Which name a newly spawned bot gets: a weighted pick, see TIER_W.
+const nameTier = {};
+for (const s of STICKERS) nameTier[s.name] = s.tier;
+function pickBotName(mass) {
+  const on = new Set();
+  for (const b of blobs) if (b.alive) on.add(b.name);
+  let tot = 0;
+  const w = (n) => {
+    const t = nameTier[n[0]] || 0;
+    return t === 3 && mass < BIG_MASS ? 0 : TIER_W[t] * (on.has(n[0]) ? ON_FIELD : 1);
+  };
+  for (const n of BOT_NAMES) tot += w(n);
+  let r = Math.random() * tot;
+  for (const n of BOT_NAMES) if ((r -= w(n)) < 0) return n;
+  return BOT_NAMES[0];
+}
+
+// saved as kus.album: { c: { sticker id: times eaten }, r: [ids of rows already paid] }
+const album = { c: {}, r: [] };
+try {
+  const a = JSON.parse(localStorage.getItem('kus.album') || 'null');
+  if (a && typeof a.c === 'object' && a.c) for (const k in a.c) if (STICKERS.some((s) => s.id === k) && a.c[k] > 0) album.c[k] = Math.floor(a.c[k]);
+  if (a && Array.isArray(a.r)) album.r = a.r.filter((x) => ALBUM_ROWS.some((r) => r[0] === x));
+} catch (e) {}
+function saveAlbum() {
+  try {
+    localStorage.setItem('kus.album', JSON.stringify(album));
+  } catch (e) {}
+}
+const albumCount = () => STICKERS.filter((s) => album.c[s.id] > 0).length;
+const rowOf = (rid) => ALBUM_ROWS.find((r) => r[0] === rid);
+const rowMissing = (rid) => STICKERS.filter((s) => s.row === rid && !(album.c[s.id] > 0));
+
+function albumEat(B) {
+  // the player has swallowed B whole
+  if (!runActive || !player || player.cheated) return;
+  const s = STICKERS.find((x) => x.take(B));
+  if (!s) return;
+  const n = album.c[s.id] || 0;
+  album.c[s.id] = n + 1;
+  if (!n) {
+    if (!run.stk) run.stk = [];
+    run.stk.push(s.name);
+    addFeed(`Новая наклейка: <b>${esc(s.name)}</b>`, 4200);
+    if (!rowMissing(s.row).length && !album.r.includes(s.row)) {
+      album.r.push(s.row);
+      sugar += ROW_SUGAR;
+      saveSugar();
+      run.rowDone = rowOf(s.row)[1];
+      addFeed(`Ряд «${esc(run.rowDone)}» собран: <b>+${ROW_SUGAR} сахара</b>`, 5000);
+      Sfx.power();
+      haptic(25);
+    }
+    renderAlbumBtn();
+    if (albumBuilt) albumDirty = true;
+  }
+  saveAlbum();
+}
+
+// ---------- the end-of-run line and the "so close" hint ----------
+function albumLine() {
+  // one row: what is new (cut short with an ellipsis if it is long) and the total, which always shows
+  const got = run.stk || [];
+  if (!got.length || run.cheated) return null;
+  const names = got.join(', ');
+  return [
+    run.rowDone
+      ? `Ряд «${run.rowDone}» собран, +${ROW_SUGAR} сахара. Новые: ${names}`
+      : `${got.length > 1 ? 'Новые наклейки' : 'Новая наклейка'}: ${names}`,
+    `${albumCount()} из ${STICKERS.length}`,
+  ];
+}
+function renderAlbumLine() {
+  const t = albumLine(),
+    el = $('stk');
+  el.textContent = '';
+  if (t) {
+    const a = document.createElement('span'),
+      n = document.createElement('b');
+    a.textContent = t[0];
+    n.textContent = t[1];
+    el.append(a, n);
+    el.title = t[0] + ' · ' + t[1];
+  }
+  overEl.querySelector('.card').classList.toggle('stk', !!t); // on short screens it takes the "so close" line's place
+}
+function albumNear() {
+  // a row short of one or two stickers is a goal worth naming
+  let best = null;
+  for (const [rid, title] of ALBUM_ROWS) {
+    if (album.r.includes(rid)) continue;
+    const miss = rowMissing(rid);
+    if (miss.length && miss.length <= 2 && (!best || miss.length < best[1].length)) best = [title, miss];
+  }
+  return best ? `До ряда «${best[0]}» не хватает: ${best[1].map((s) => s.name).join(', ')}` : '';
+}
+
+// ---------- stickers: the game's own drawing code on a stand-in candy, painted once into a small canvas ----------
+function paintSticker(cv, s) {
+  const g = cv.getContext('2d'),
+    k = cv.width / 104,
+    keep = [ctx, cam.z, lod, state];
+  const b = new Blob({ name: s.name, pal: s.look.pal, mass: 40, x: 0, y: 0, hat: s.look.hat, skin: s.look.skin, kind: s.look.kind });
+  b.face = Math.PI / 2; // looking at us: eyes either side, mouth below, hat on top
+  b.tx = b.x;
+  b.ty = b.y;
+  b.mouth = 0.3;
+  const sc = (k * 36) / b.Rs;
+  g.setTransform(sc, 0, 0, sc, 52 * k, 60 * k);
+  g.clearRect(-200, -200, 400, 400);
+  ctx = g;
+  cam.z = 1;
+  lod = 0;
+  state = 'album'; // no red or green rim, that is for live rivals
+  try {
+    buildPath(b);
+    drawBlob(b);
+  } finally {
+    [ctx, cam.z, lod, state] = keep;
+  }
+}
+
+// ---------- the album page ----------
+const SHY = {
+  Мармеладка: 'Марме­ладка',
+  Карамелька: 'Кара­мелька',
+  Шекербура: 'Шекер­бура',
+  Бадамбура: 'Бадам­бура',
+  Ватрушка: 'Ват­рушка',
+  Желешка: 'Же­лешка',
+  Тянучка: 'Тя­нучка',
+  Медовик: 'Медо­вик',
+  Пастила: 'Пас­тила',
+}; // where a long name may break under a small sticker
+const albumEl = $('album'),
+  albumBtn = $('albumBtn');
+let albumBuilt = false,
+  albumDirty = false;
+function renderAlbumBtn() {
+  albumBtn.innerHTML = `Альбом <b>${albumCount()} / ${STICKERS.length}</b>`;
+}
+function buildAlbum() {
+  // the grid and its stickers are made once; later openings only update who is collected
+  const dpr = Math.min(3, Math.max(1, window.devicePixelRatio || 1)),
+    px = Math.round(52 * dpr);
+  $('albumRows').innerHTML = ALBUM_ROWS.map(
+    ([rid, title]) =>
+      `<section class="arow" data-r="${rid}"><div class="ah"><b>${title}</b><span></span></div><div class="ag">${STICKERS.filter((s) => s.row === rid)
+        .map(
+          (s) =>
+            `<button type="button" class="st" data-id="${esc(s.id)}"><canvas width="${px}" height="${px}"></canvas><span class="sn">${esc(SHY[s.name] || s.name)}</span><i></i></button>`,
+        )
+        .join('')}</div></section>`,
+  ).join('');
+  for (const btn of $('albumRows').querySelectorAll('.st'))
+    paintSticker(
+      btn.firstChild,
+      STICKERS.find((s) => s.id === btn.dataset.id),
+    );
+  albumBuilt = true;
+  albumDirty = true;
+}
+function fillAlbum() {
+  const n = albumCount();
+  $('albumN').textContent = `${n} / ${STICKERS.length}`;
+  $('albumSub').textContent = `Проглоти конфету целиком, и её наклейка твоя. За полный ряд ${ROW_SUGAR} сахара`;
+  for (const sec of $('albumRows').children) {
+    const rid = sec.dataset.r,
+      have = STICKERS.filter((s) => s.row === rid && album.c[s.id] > 0).length,
+      all = STICKERS.filter((s) => s.row === rid).length,
+      done = album.r.includes(rid);
+    sec.classList.toggle('done', done);
+    sec.querySelector('.ah span').textContent = done ? `собран, +${ROW_SUGAR} сахара` : `${have} / ${all}`;
+    for (const btn of sec.querySelectorAll('.st')) {
+      const c = album.c[btn.dataset.id] || 0,
+        nm = btn.dataset.id;
+      btn.classList.toggle('no', !c);
+      btn.lastChild.textContent = c > 1 ? '×' + c : '';
+      btn.setAttribute('aria-label', c ? `${nm}: съедено ${c}` : `${nm}: ещё не съедено`);
+    }
+  }
+  albumDirty = false;
+}
+function openAlbum() {
+  if (!albumBuilt) buildAlbum();
+  if (albumDirty) fillAlbum();
+  $('albumCap').textContent = '';
+  albumEl.classList.remove('hidden');
+  setTimeout(() => $('albumX').focus({ preventScroll: true }), 30);
+}
+function closeAlbum() {
+  albumEl.classList.add('hidden');
+  albumBtn.focus({ preventScroll: true });
+}
+const albumOpen = () => !albumEl.classList.contains('hidden');
+albumBtn.addEventListener('click', openAlbum);
+$('albumX').addEventListener('click', closeAlbum);
+$('albumRows').addEventListener('click', (e) => {
+  const t = e.target.closest('.st');
+  if (!t) return;
+  const s = STICKERS.find((x) => x.id === t.dataset.id),
+    c = album.c[s.id] || 0;
+  $('albumCap').textContent = c
+    ? `${s.name}: съедено целиком ${c} ${c % 10 === 1 && c % 100 !== 11 ? 'раз' : c % 10 >= 2 && c % 10 <= 4 && (c % 100 < 12 || c % 100 > 14) ? 'раза' : 'раз'}`
+    : `${s.name}: ещё не съедено. Ищи на поле и проглоти целиком`;
+});
+renderAlbumBtn();
 
 // ---------- candy of the day ----------
 // One three-minute run a day with a twist that is the same for everyone on that date. The twist comes from the local date alone, no server.
@@ -3420,8 +3705,10 @@ function nearText(m, score) {
     const h = HATS.find((x) => x.need > best);
     if (m === 'free' && h) out.push(`До шапки «${h.name}» ещё ${h.need - best} массы`);
   }
+  const al = run.cheated ? '' : albumNear();
+  if (al) out.splice(1, 0, al); // a row one or two stickers short comes right after the record
   const s = cheapestSkin();
-  if (s) out.push(sugar >= s.price ? `Сахара хватает на узор «${s.name}», он в меню` : `До узора «${s.name}» ещё ${s.price - sugar} сахара`);
+  if (s && !al) out.push(sugar >= s.price ? `Сахара хватает на узор «${s.name}», он в меню` : `До узора «${s.name}» ещё ${s.price - sugar} сахара`);
   return out.slice(0, 2).join('. ');
 }
 function renderSweet(m, score) {
@@ -3665,6 +3952,7 @@ function showOver() {
   $('sTimeL').textContent = t3 ? 'раз тебя съели' : 'время в игре';
   $('overMis').innerHTML = missionRows();
   renderSweet(mode, score);
+  renderAlbumLine();
   const fresh = HATS.filter((h) => h.need > prevBest && h.need <= best).map((h) => h.name);
   const streak = daily ? dailyStreak(run.day) : 0;
   bestEl.textContent = run.cheated
@@ -5730,6 +6018,10 @@ dashEl.addEventListener('click', (e) => {
 }); // keyboard activation
 addEventListener('keydown', (e) => {
   Sfx.init();
+  if (albumOpen()) {
+    if (e.key === 'Escape') closeAlbum();
+    return;
+  }
   if (e.key === 'Escape' || (e.code === 'KeyP' && !(e.target && e.target.tagName === 'INPUT'))) {
     if (!admEl.classList.contains('hidden')) closeAdmin();
     else if (!pauseEl.classList.contains('hidden')) closePause();
@@ -6546,6 +6838,13 @@ window.__kus = {
   },
   spawnSpecial,
   M,
+  album,
+  albumEat,
+  albumCount,
+  STICKERS,
+  ALBUM_ROWS,
+  openAlbum,
+  closeAlbum,
   mission,
   get sugar() {
     return sugar;

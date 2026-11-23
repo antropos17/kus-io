@@ -133,8 +133,10 @@ function nearText(m, score) {
     const h = HATS.find((x) => x.need > best);
     if (m === 'free' && h) out.push(`До шапки «${h.name}» ещё ${h.need - best} массы`);
   }
+  const al = run.cheated ? '' : albumNear();
+  if (al) out.splice(1, 0, al); // a row one or two stickers short comes right after the record
   const s = cheapestSkin();
-  if (s) out.push(sugar >= s.price ? `Сахара хватает на узор «${s.name}», он в меню` : `До узора «${s.name}» ещё ${s.price - sugar} сахара`);
+  if (s && !al) out.push(sugar >= s.price ? `Сахара хватает на узор «${s.name}», он в меню` : `До узора «${s.name}» ещё ${s.price - sugar} сахара`);
   return out.slice(0, 2).join('. ');
 }
 function renderSweet(m, score) {
@@ -378,6 +380,7 @@ function showOver() {
   $('sTimeL').textContent = t3 ? 'раз тебя съели' : 'время в игре';
   $('overMis').innerHTML = missionRows();
   renderSweet(mode, score);
+  renderAlbumLine();
   const fresh = HATS.filter((h) => h.need > prevBest && h.need <= best).map((h) => h.name);
   const streak = daily ? dailyStreak(run.day) : 0;
   bestEl.textContent = run.cheated

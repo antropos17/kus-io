@@ -278,6 +278,13 @@ window.__kus = {
   },
   spawnSpecial,
   M,
+  album,
+  albumEat,
+  albumCount,
+  STICKERS,
+  ALBUM_ROWS,
+  openAlbum,
+  closeAlbum,
   mission,
   get sugar() {
     return sugar;

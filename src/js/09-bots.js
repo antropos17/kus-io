@@ -250,21 +250,19 @@ function safeSpawn() {
   return bestXY;
 }
 function spawnBot(mass) {
-  const used = new Set(blobs.map((b) => b.name)),
-    free = BOT_NAMES.filter((n) => !used.has(n[0]));
-  const nm = free.length ? free[randi(free.length)] : BOT_NAMES[randi(BOT_NAMES.length)];
+  const nm = pickBotName(mass); // each name keeps its own look, the album sticker shows the same candy
   const [x, y] = findSpawn(massToR(mass) + 220, true);
   const b = new Blob({
     name: nm[0],
     acc: nm[1],
-    pal: PALS[randi(PALS.length)],
+    pal: PALS[nm[2]],
     mass,
     x,
     y,
     ai: newAI(),
     spawnT: 1.2,
-    hat: Math.random() < 0.3 ? HATS[1 + randi(HATS.length - 1)].id : 'none',
-    skin: Math.random() < 0.5 ? SKINS[1 + randi(SKINS.length - 1)][0] : 'plain',
+    hat: nm[4],
+    skin: nm[3],
   });
   blobs.push(b);
   return b;

@@ -558,6 +558,7 @@ function swallowWhole(A, B) {
   feedKill(A, B);
   if (A.isPlayer) {
     mission('kills', 1);
+    albumEat(B);
     if (B.kind === 'piranha') mission('piranha', 1);
     floatText(A.x, A.y - A.Rs - 30 / cam.z, 'ням! +' + Math.round(gain), '#ffd23f', 28);
     Sfx.gulp(1);
