@@ -4300,10 +4300,9 @@ function update(dt) {
   for (const b of blobs) if (b.alive) updateBlob(b, dt);
   collideAll(dt);
   for (const b of blobs) {
-    if (b.x < 0) b.x = 0;
-    else if (b.x > WORLD) b.x = WORLD;
-    if (b.y < 0) b.y = 0;
-    else if (b.y > WORLD) b.y = WORLD;
+    const m = b.Rs * 0.85; // the same rim as in updateBlob: past it, next frame's wall would snap the body back in one jump
+    b.x = clamp(b.x, m, WORLD - m);
+    b.y = clamp(b.y, m, WORLD - m);
   } // a shove never carries anyone off the tray
   for (const b of blobs) if (b.alive && !b.safe) checkBites(b, dt);
   updateFood(dt);
