@@ -55,13 +55,30 @@ function announce(html, big) {
   haptic(25);
   hudT = 0;
 }
+// a free place on a ring round the player: nothing may appear inside another body, or the contact would throw them apart in a frame
+function ringSpot(d, r, edge) {
+  const P = player;
+  let best = null,
+    bestGap = -1e9;
+  for (let t = 0; t < 48; t++) {
+    const a = rand(TAU),
+      dd = d + (t >> 3) * 90,
+      x = clamp(P.x + Math.cos(a) * dd, edge, WORLD - edge),
+      y = clamp(P.y + Math.sin(a) * dd, edge, WORLD - edge);
+    let gap = 1e9;
+    for (const o of blobs) if (o.alive) gap = Math.min(gap, Math.hypot(o.x - x, o.y - y) - o.Rs - r);
+    if (gap > 40) return [x, y];
+    if (gap > bestGap) {
+      bestGap = gap;
+      best = [x, y];
+    }
+  }
+  return best;
+}
 function raid(n) {
   // a pack that comes for the player: it spawns just in sensing range and rates the player above other prey
   const P = player,
-    a = rand(TAU),
-    d = P.Rs + 540;
-  const x = clamp(P.x + Math.cos(a) * d, 120, WORLD - 120),
-    y = clamp(P.y + Math.sin(a) * d, 120, WORLD - 120);
+    [x, y] = ringSpot(P.Rs + 540, 90, 120);
   const pack = spawnSpecial('piranha', n);
   for (const b of pack) {
     b.x = clamp(x + rand(-60, 60), 60, WORLD - 60);
@@ -88,15 +105,14 @@ function beginEvent(k) {
     const lap = stg.lap,
       m = Math.min(3400, BOSS.mass * (1 + 0.25 * lap)),
       R = massToR(m),
-      a = rand(TAU),
-      d = P.Rs + R + 520;
+      [x, y] = ringSpot(P.Rs + R + 520, R, R + 60);
     const b = new Blob({
       name: lap ? `${BOSS.name} ${lap + 1}` : BOSS.name,
       acc: BOSS.name,
       pal: PAL_CAKE,
       mass: m,
-      x: clamp(P.x + Math.cos(a) * d, R + 60, WORLD - R - 60),
-      y: clamp(P.y + Math.sin(a) * d, R + 60, WORLD - R - 60),
+      x,
+      y,
       ai: newAI(),
       spawnT: 1.5,
       kind: 'cake',

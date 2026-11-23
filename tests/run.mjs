@@ -546,8 +546,12 @@ test('stages: beating the boss ends the run with a record, not with cheats; the 
     const G = k.spawnBot(3000); G.spawnT = 0; G.ai = null; k.player.mass = 20;
     k.place(G, 2600, 2600, 0); k.place(k.player, 2600 + G.Rs + k.player.Rs - 6, 2600, 0);
     const Q = k.player;
-    run(3, () => { G.biteCd = Math.min(G.biteCd, 0); Q.graceT = 99; G.tx = Q.alive ? Q.x : G.x; G.ty = Q.alive ? Q.y : G.y; }); // no lucky escape this time
-    out.shiftOver = [document.getElementById('overT').textContent, document.getElementById('who').textContent];
+    // no lucky escape: wait for the death itself (a bot's bite usually lands in a fraction of a second, rarely in several),
+    // and read the card only once it is shown (1.1 s after the death): a hidden card keeps the text of the win
+    for (let f = 0; Q.alive && f < 20 * 60; f++) { G.biteCd = Math.min(G.biteCd, 0); Q.graceT = 99; G.tx = Q.x; G.ty = Q.y; k.update(1 / 60); }
+    const card = document.getElementById('over');
+    for (let f = 0; card.classList.contains('hidden') && f < 5 * 60; f++) k.update(1 / 60);
+    out.shiftOver = [k.state, document.getElementById('overT').textContent, document.getElementById('who').textContent];
     k.toMenu(); k.setMode('free');
     beat(true); out.cheatState = k.state; out.cheatClear = JSON.parse(localStorage.getItem('kus.clear')); out.cheatBest = document.getElementById('best').textContent;
     return out; })()`);
@@ -563,7 +567,10 @@ test('stages: beating the boss ends the run with a record, not with cheats; the 
   const s = r.shift;
   assert(s.state === 'play' && s.same && s.mass && s.place < 30 && s.lap === 1, `second shift: ${JSON.stringify(s)}`);
   assert(s.bites === 0 && s.sugar === 0 && s.line.startsWith('смена 2'), `the second shift must count afresh: ${JSON.stringify(s)}`);
-  assert(r.shiftOver[0] === 'Тебя доели' && r.shiftOver[1].startsWith('Смена 2'), `second-shift death screen: ${r.shiftOver}`);
+  assert(
+    r.shiftOver[0] === 'dead' && r.shiftOver[1] === 'Тебя доели' && r.shiftOver[2].startsWith('Смена 2'),
+    `second-shift death screen: ${r.shiftOver}`,
+  );
   assert(
     r.cheatState === 'won' && r.cheatClear.wins === 2 && r.cheatBest.includes('С читами'),
     `a cheated win counted: ${JSON.stringify(r.cheatClear)}, "${r.cheatBest}"`,
