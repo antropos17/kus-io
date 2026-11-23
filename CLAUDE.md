@@ -73,8 +73,7 @@ A bite step by step (`checkBites`): wind-up → snap → `doBite` → the piece 
 
 `window.__kus` in `17-boot` gives the tests the state and functions (`player`, `blobs`, `update`, `render`, `place`, `spawnBot`, `spawnSpecial`, `Sfx`, `cam`, `CHEAT`, `pause`, `setLod`). The easiest way to test a new mechanic is through it.
 
-Saves in `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.best`, `kus.best3`, `kus.mode`, `kus.diff`, `kus.set`, `kus.m` (missions and unlocked patterns), `kus.seen` (hints already shown), `kus.cheat`, `kus.lbmin`, `kus.daily` (candy of the day: date `d` like 20261123, best of the day `best`, days in a row `streak`, longest streak `top`), `kus.album` (album: `c` — times each sticker was swallowed whole, `r` — ids of rows already paid).
-Saves in `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.best`, `kus.best3`, `kus.mode`, `kus.diff`, `kus.set`, `kus.m` (missions and unlocked patterns), `kus.seen` (hints already shown), `kus.cheat`, `kus.lbmin`, `kus.daily` (candy of the day: date `d` like 20261123, best of the day `best`, days in a row `streak`, longest streak `top`), `kus.clear` (free-play wins: the fastest first-shift clear `best` in seconds, the number of clears `wins`).
+Saves in `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.best`, `kus.best3`, `kus.mode`, `kus.diff`, `kus.set`, `kus.m` (missions and unlocked patterns), `kus.seen` (hints already shown), `kus.cheat`, `kus.lbmin`, `kus.daily` (candy of the day: date `d` like 20261123, best of the day `best`, days in a row `streak`, longest streak `top`), `kus.album` (album: `c` — times each sticker was swallowed whole, `r` — ids of rows already paid), `kus.clear` (free-play wins: the fastest first-shift clear `best` in seconds, the number of clears `wins`).
 
 ## Decisions that must not be broken
 
