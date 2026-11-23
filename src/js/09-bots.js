@@ -31,6 +31,10 @@ function botThink(b) {
     }
     return;
   } // the cake just strolls
+  if (ai.boss) {
+    ai.mode = 'boss';
+    return;
+  } // the big cake only ever goes for the player
   let fx = 0,
     fy = 0,
     danger = 0,
@@ -60,7 +64,8 @@ function botThink(b) {
         if (lethal && sd < 70 && facing > 0.4) lethalNear = true;
       }
     }
-    if (o.spawnT > 0 || (o.isPlayer && CHEAT.peace) || o.kind === 'hedgehog' || o.pShield > 0) continue; // nobody hunts spines or shields
+    if (o.spawnT > 0 || (o.isPlayer && CHEAT.peace) || o.kind === 'hedgehog' || o.pShield > 0 || o.safe) continue; // nobody hunts spines or shields
+    if (o.boss && !b.isPlayer) continue; // the big cake is the player's to beat
     if (b.kind === 'piranha' && (o.kind === 'piranha' || (o.isPlayer && o.mass < 90))) continue;
     const gain = lethalFor(o.mass, myBite) ? o.mass * 0.9 : myBite * 0.84;
     const risk = bigger ? clamp(facing + 0.2, 0, 1) * (lethal ? 1.6 : 0.6) : 0;
@@ -68,6 +73,8 @@ function botThink(b) {
     if (bigger && facing < -0.2) s *= ai.piranha ? 2.1 : 1.2; // nibble the back of a giant
     s *= 1 + Math.min(0.8, woundLoad(o) * 1.5);
     if (b.kind === 'piranha') s *= o.mass > b.mass * 3 ? 2.2 : 0.3; // the pack goes for big game
+    if (ai.raid && o.isPlayer) s *= 3; // a stage's raid came for the player
+    if (o.boss) s *= BOSS.lure; // the autopilot knows the cake is the goal, as a player does
     if (o.isPlayer) {
       if (ai.ignoreT > 0) continue;
       s *= (diff !== 'hard' && o.mass < 120 ? 0.4 : 0.85) * DIFFS[diff].hunt;
@@ -139,6 +146,23 @@ function botSteer(b, dt) {
     const a = time * 0.8 + b.phase;
     b.tx = b.hx + Math.cos(a) * 24;
     b.ty = b.hy + Math.sin(a) * 24;
+    return;
+  }
+  if (ai.mode === 'boss') {
+    // crawl after the player face first, so the cherry on the back stays away from them
+    const P = player;
+    if (P && P.alive && !P.safe && state === 'play') {
+      const dx = P.x - b.x,
+        dy = P.y - b.y,
+        d = Math.hypot(dx, dy) || 1,
+        near = d - P.Rs - b.Rs < 700; // close by it only creeps and turns, so the player can work round to its back
+      const s = ai.away ? -0.25 : 0.25; // turning away creeps a little away too
+      b.tx = near || ai.away ? b.x + (dx / d) * b.Rs * s : P.x;
+      b.ty = near || ai.away ? b.y + (dy / d) * b.Rs * s : P.y;
+    } else {
+      b.tx = ai.wx;
+      b.ty = ai.wy;
+    }
     return;
   }
   if (b.kind === 'piranha' && ai.lead) {
@@ -284,7 +308,7 @@ function tutorPrey() {
   b.resetPoints();
   return b;
 }
-function spawnSpecial(kind) {
+function spawnSpecial(kind, n) {
   const made = [];
   if (kind === 'hedgehog') {
     const [x, y] = findSpawn(320, true),
@@ -300,7 +324,7 @@ function spawnSpecial(kind) {
   } else {
     const [x, y] = findSpawn(420, true);
     let lead = null;
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < (n || 6); i++) {
       const b = new Blob({
         name: 'Пиранья',
         acc: 'Пиранью',
@@ -337,10 +361,16 @@ function population() {
       else if (b.kind === 'piranha') pir++;
     }
     if (hed < (day === 'hedge' ? 4 : 2)) spawnSpecial('hedgehog');
-    if (cake) cakeAt = time + (day === 'cake' ? 8 : 35);
-    else if (time > cakeAt) spawnSpecial('cake');
-    if (pir) pirAt = time + (day === 'piranha' ? 20 : 40);
-    else if (time > pirAt && (day === 'piranha' || state !== 'play' || !player || !player.alive || player.mass > 90)) spawnSpecial('piranha');
+    if (stagesOn()) {
+      cakeAt = time + 35;
+      pirAt = time + 40;
+    } // a free run brings its piranhas and its cake as stages (10-stages)
+    else {
+      if (cake) cakeAt = time + (day === 'cake' ? 8 : 35);
+      else if (time > cakeAt) spawnSpecial('cake');
+      if (pir) pirAt = time + (day === 'piranha' ? 20 : 40);
+      else if (time > pirAt && (day === 'piranha' || state !== 'play' || !player || !player.alive || player.mass > 90)) spawnSpecial('piranha');
+    }
   }
   let n = respawnQ.length;
   for (const b of blobs) if (b.ai && !b.kind) n++;

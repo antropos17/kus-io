@@ -103,7 +103,7 @@ function frame(now) {
     let sc = CHEAT.slow ? 0.45 : 1;
     if (slowT > 0) {
       slowT -= dt;
-      sc *= 1 - 0.32 * Math.sin((Math.PI * Math.max(0, slowT)) / 0.4);
+      sc *= 1 - slowDip * Math.sin((Math.PI * Math.max(0, slowT)) / slowLen);
     }
     update(dt * sc);
   } // swallowing someone whole: time dips and flows back, never stops
@@ -294,6 +294,9 @@ window.__kus = {
     renderBank();
     renderSkins();
   },
+  get food() {
+    return food;
+  },
   get pickups() {
     return pickups;
   },
@@ -302,6 +305,16 @@ window.__kus = {
     renderMode();
   },
   toMenu,
+  stages: {
+    get stg() {
+      return stg;
+    },
+    get clear() {
+      return clearRec;
+    },
+    STAGE,
+    BOSS,
+  },
   daily: {
     force(id) {
       dayForce = id;

@@ -6,6 +6,8 @@
 //     weak   the same autopilot made clearly worse (slower reactions, less fear, less hunger), see WEAK_MUL below;
 //            weaker is a second, harsher step of the same knobs
 //   OUT=file.json saves every run and the summary. Progress goes to stderr, the summary to stdout.
+// Stages (pages that have them): when each event began, whether the Big Cake was beaten, the fight and the clear time.
+//   A run that beats the cake ends there, as the game ends it with the win screen.
 // Time moves by hand in 1/60 s steps with the game paused, so a busy machine changes only how long it takes, not the result.
 // Needs a fresh `npm run build`. Uses the installed Chrome (CHROME=/path overrides it).
 import { chromium } from 'playwright-core';
@@ -79,6 +81,9 @@ async function oneRun() {
         cakeBites: 0,
         cherryBites: 0,
         cakeEaten: 0,
+        ev: {}, // stage event -> first time it began (s)
+        won: null, // run second the Big Cake fell
+        fight: null, // seconds from the cake's arrival to the win
         bites: 0,
         kills: 0,
       };
@@ -91,6 +96,14 @@ async function oneRun() {
         for (const b of k.blobs) if (b.kind === 'cake' && b.alive) cakesBefore.push(b);
         k.update(dt);
         const t = f / 60;
+        const S = k.stages && k.stages.stg;
+        if (S && S.cur && r.ev[S.cur.k] === undefined) r.ev[S.cur.k] = +t.toFixed(1);
+        if (k.state === 'won') {
+          r.won = +t.toFixed(1);
+          r.fight = +(t - r.ev.boss).toFixed(1);
+          r.t = r.won;
+          break;
+        }
         for (const b of k.blobs) {
           if (!known.has(b.id)) {
             known.add(b.id);
@@ -139,7 +152,8 @@ async function oneRun() {
               const d = Math.hypot(o.x - P.x, o.y - P.y);
               if (d < bd) ((bd = d), (best = o));
             }
-          r.cause = best ? best.kind || 'bot' : 'unknown';
+          r.cause = best ? (best.boss ? 'boss' : best.kind || 'bot') : 'unknown';
+          if (r.ev.boss !== undefined) r.diedInFight = true;
           r.killerMass = best ? Math.round(best.mass) : null;
           break;
         }
@@ -241,7 +255,7 @@ sum.cake = {
 };
 const dead = rows.filter((r) => r.died);
 sum.death = { died: share(dead.length) };
-for (const c of ['bot', 'piranha', 'hedgehog', 'cake', 'unknown'])
+for (const c of ['bot', 'piranha', 'hedgehog', 'cake', 'boss', 'unknown'])
   sum.death[c] = dead.length ? +(dead.filter((r) => r.cause === c).length / dead.length).toFixed(3) : 0;
 sum.death.massAtDeath = qs(dead.map((r) => r.massAtDeath));
 sum.death.killerToPlayer = q(
@@ -260,6 +274,24 @@ sum.actions = {
     0.5,
   ),
 };
+// stages: the share of runs that saw each event and when; the fight against the Big Cake among the runs where it came
+sum.stages = {};
+for (const e of ['pir', 'rain', 'boss']) {
+  const a = rows.filter((r) => r.ev && r.ev[e] !== undefined).map((r) => r.ev[e]);
+  sum.stages[e] = { share: share(a.length), medT: q(a, 0.5), p25T: q(a, 0.25), p75T: q(a, 0.75) };
+}
+{
+  const met = rows.filter((r) => r.ev && r.ev.boss !== undefined),
+    won = met.filter((r) => r.won !== null);
+  sum.stages.fight = {
+    met: met.length,
+    wonShareOfMet: met.length ? +(won.length / met.length).toFixed(3) : null,
+    diedInFightShareOfMet: met.length ? +(met.filter((r) => r.diedInFight).length / met.length).toFixed(3) : null,
+    unfinishedAtLimit: met.filter((r) => r.won === null && !r.died).length,
+    fightT: qs(won.map((r) => r.fight)),
+    clearT: qs(won.map((r) => r.won)),
+  };
+}
 sum.wallSeconds = Math.round((Date.now() - t0) / 1000);
 console.log(JSON.stringify(sum, null, 1));
 if (process.env.OUT) writeFileSync(process.env.OUT, JSON.stringify({ sum, rows }, null, 1));

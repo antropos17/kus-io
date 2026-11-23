@@ -260,7 +260,9 @@ function biteScan(b) {
     gap = 1e9,
     ang = 0;
   for (const o of blobs) {
-    if (o === b || !o.alive || o.spawnT > 0 || o.dodgeT > 0 || (b.ai && o.isPlayer && CHEAT.peace)) continue;
+    if (o === b || !o.alive || o.spawnT > 0 || o.dodgeT > 0 || o.safe || (b.ai && o.isPlayer && CHEAT.peace)) continue;
+    if ((o.boss && !b.isPlayer) || (b.boss && !o.isPlayer)) continue; // the big cake is the player's fight alone, and it bites only the player
+    if (b.ai && b.ai.raid && o.kind === 'piranha') continue; // a raiding pack crowds round the player and must not eat itself
     const dx = mx - o.x,
       dy = my - o.y,
       lim = o.Rs + mR + 60 + b.Rs * 0.6;
@@ -398,7 +400,8 @@ function doBite(A, B, ang, dashBite) {
   if (A.chunk) A.chunk.finish();
   if (B.kind === 'cake') {
     weak = Math.abs(angDiff(ang, B.face + Math.PI)) < 0.55;
-    bite *= weak ? 2 : 0.4;
+    bite *= weak ? 2 : B.boss ? B.boss.crust : 0.4;
+    if (weak && B.boss) B.spinT = BOSS.spinT;
   } // thick crust everywhere but the cherry
   for (const w of B.wounds)
     if (w.d * w.heal > 0.08 && Math.abs(angDiff(ang, w.a)) < w.w * 1.1) {
@@ -406,7 +409,8 @@ function doBite(A, B, ang, dashBite) {
       break;
     }
   if (intoWound) bite *= 1.3;
-  A.biteCd = 0.27 + Math.min(0.3, A.Rs / 1000);
+  A.biteCd = A.boss ? BOSS.biteCd : 0.27 + Math.min(0.3, A.Rs / 1000);
+  if (A.boss) bite *= BOSS.bite; // its bite is slow and lighter than its size, a warning more than a kill
   A.chewT = 0;
   A.mouthV = -34;
   A.stats.bites++;
@@ -556,6 +560,7 @@ function swallowWhole(A, B) {
   A.wowT = 0.5;
   parts.push({ ring: true, x: B.x, y: B.y, vx: 0, vy: 0, r: B.Rs * 0.9, t: 0, T: 0.4, c: '#fff1dc' });
   feedKill(A, B);
+  if (B.boss) bossDown(A);
   if (A.isPlayer) {
     mission('kills', 1);
     albumEat(B);
@@ -563,8 +568,9 @@ function swallowWhole(A, B) {
     floatText(A.x, A.y - A.Rs - 30 / cam.z, 'ням! +' + Math.round(gain), '#ffd23f', 28);
     Sfx.gulp(1);
     cam.shake = Math.max(cam.shake, 7);
-    if (!calm) {
-      slowT = 0.4;
+    if (!calm && !B.boss) {
+      slowT = slowLen = 0.4;
+      slowDip = 0.32;
       cam.zv += 1.9;
     }
   } else if (B.isPlayer) {
@@ -650,7 +656,7 @@ function updateTongue(b, dt) {
       }
     }
     for (const o of blobs) {
-      if (o === b || !o.alive || o.spawnT > 0 || (b.ai && o.isPlayer && CHEAT.peace)) continue;
+      if (o === b || !o.alive || o.spawnT > 0 || o.safe || (b.ai && o.isPlayer && CHEAT.peace)) continue;
       const dx = T.tx - o.x,
         dy = T.ty - o.y,
         a = Math.atan2(dy, dx);

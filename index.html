@@ -105,6 +105,8 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #pauseBtn:focus-visible{outline:3px solid var(--lemon);outline-offset:3px}
 #timer{font:900 20px/1.15 var(--font);color:var(--lemon);text-shadow:0 2px 0 rgba(0,0,0,.5);font-variant-numeric:tabular-nums}
 #goal{font:800 13px/1.3 var(--font);color:#e9c9ad;text-shadow:0 2px 0 rgba(0,0,0,.5)}
+#stage{--p:0;display:table;min-width:112px;padding-bottom:6px;margin-top:2px;font:800 13px/1.3 var(--font);color:#ffe9a8;text-shadow:0 2px 0 rgba(0,0,0,.5);background:linear-gradient(#ffd23f,#ffd23f) 0 100%/calc(var(--p) * 100%) 3px no-repeat,linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,.35)) 0 100%/100% 3px no-repeat}
+#stage:empty{display:none}
 #fx{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
 #fx span{font:800 13px/1 var(--font);padding:4px 9px;border-radius:99px;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
 .mi{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;align-items:baseline;margin:0 0 8px;font:700 13px/1.25 var(--font);color:#5e3f30}
@@ -126,6 +128,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #chalRes{margin:10px 0 0;font:800 14px/1.3 var(--font);color:var(--ink)}
 #chalLink{display:block;width:100%;margin-top:8px;font:700 13px var(--font);padding:9px 10px;border:2px solid #ead2b9;border-radius:10px;background:#fff;color:var(--ink);-webkit-user-select:text;user-select:text}
 #overMis{margin:0 0 14px}
+#overT small{display:none}
 #sugar{display:inline-block;transform-origin:0 50%;margin-top:4px;font:900 14px/1 var(--font);color:var(--ink);background:var(--lemon);padding:4px 9px;border-radius:99px;font-variant-numeric:tabular-nums}
 #sugar:empty{display:none}
 #bank{margin:8px 0 0;font:800 14px/1.3 var(--font);color:#7a5a49;font-variant-numeric:tabular-nums}
@@ -270,7 +273,7 @@ body.touch #pauseBtn:before,body.touch #mute:before{content:"";position:absolute
 body.touch #pauseBtn,body.touch #mute{background:rgba(255,241,220,.82);box-shadow:none}
 body.touch:not(.playing) #mute{left:calc(14px + env(safe-area-inset-left,0px))}
 body.touch #feed div{background:rgba(20,11,8,.55);color:var(--cream);box-shadow:none;border-radius:12px;max-width:calc(100vw - 206px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))}
-body.touch #goal{max-width:calc(100vw - 206px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))} /* wraps left of the table, like the feed */
+body.touch #goal,body.touch #stage{max-width:calc(100vw - 206px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))} /* wraps left of the table, like the feed */
 body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))} /* the first run: hints stop short of the player in the middle */
 @media (max-width:700px){body.touch #board{width:min(150px,42vw)}}
 @media (max-height:520px) and (min-width:701px){ /* phone held sideways: the menu must fit without scrolling */
@@ -298,6 +301,7 @@ body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))}
   #chestRow{grid-column:1/-1}
   #chestRow button{min-height:34px;font-size:16px}
   #over .card.paid .tag{display:none}
+  #overT small{display:inline;font-size:20px}
   #over .card.paid .stats{margin-bottom:8px}
   #over .card.paid .best{margin-top:3px;font-size:13px}
   #over .card.paid .btn2{margin-top:5px;padding:8px}
@@ -358,7 +362,7 @@ document.getElementById('nojs').style.display = 'none';
 <div id="safe"></div>
 
 <div id="hud" class="hidden">
-  <div id="score"><div id="mass">0</div><div class="lbl">масса</div><div id="sugar"></div><div id="timer"></div><div id="goal"></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="feed" aria-live="polite"></div></div>
+  <div id="score"><div id="mass">0</div><div class="lbl">масса</div><div id="sugar"></div><div id="timer"></div><div id="goal"></div><div id="stage"></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="feed" aria-live="polite"></div></div>
   <button id="pauseBtn" type="button" aria-label="Пауза" title="Пауза (Esc)"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
   <button id="dash" type="button" aria-label="Рывок с укусом"><span><b>Кусь</b><small>пробел</small></span></button>
   <button id="dodge" type="button" aria-label="Язык-присоска"><span><b>Язык</b><small>shift</small></span></button>
@@ -896,6 +900,8 @@ let blobs = [],
   texts = [],
   respawnQ = [];
 let slowT = 0,
+  slowLen = 0.4, // how long the current slow-down arc lasts and how deep it dips
+  slowDip = 0.32,
   frameNo = 0;
 const PUBLIC_URL = 'https://antropos17.github.io/kus-io/';
 let mode = 'free',
@@ -1474,6 +1480,7 @@ class Blob {
     );
   }
   turnRate() {
+    if (this.boss) return this.spinT > 0 ? this.boss.spin : this.boss.turn; // the big cake turns slowly, but whirls round when its cherry is bitten
     return 8 * Math.pow(Math.max(this.Rs, 8) / 25, -0.5) * (this.ai ? 0.85 : 1);
   }
   buildPoints(N) {
@@ -2234,7 +2241,9 @@ function biteScan(b) {
     gap = 1e9,
     ang = 0;
   for (const o of blobs) {
-    if (o === b || !o.alive || o.spawnT > 0 || o.dodgeT > 0 || (b.ai && o.isPlayer && CHEAT.peace)) continue;
+    if (o === b || !o.alive || o.spawnT > 0 || o.dodgeT > 0 || o.safe || (b.ai && o.isPlayer && CHEAT.peace)) continue;
+    if ((o.boss && !b.isPlayer) || (b.boss && !o.isPlayer)) continue; // the big cake is the player's fight alone, and it bites only the player
+    if (b.ai && b.ai.raid && o.kind === 'piranha') continue; // a raiding pack crowds round the player and must not eat itself
     const dx = mx - o.x,
       dy = my - o.y,
       lim = o.Rs + mR + 60 + b.Rs * 0.6;
@@ -2372,7 +2381,8 @@ function doBite(A, B, ang, dashBite) {
   if (A.chunk) A.chunk.finish();
   if (B.kind === 'cake') {
     weak = Math.abs(angDiff(ang, B.face + Math.PI)) < 0.55;
-    bite *= weak ? 2 : 0.4;
+    bite *= weak ? 2 : B.boss ? B.boss.crust : 0.4;
+    if (weak && B.boss) B.spinT = BOSS.spinT;
   } // thick crust everywhere but the cherry
   for (const w of B.wounds)
     if (w.d * w.heal > 0.08 && Math.abs(angDiff(ang, w.a)) < w.w * 1.1) {
@@ -2380,7 +2390,8 @@ function doBite(A, B, ang, dashBite) {
       break;
     }
   if (intoWound) bite *= 1.3;
-  A.biteCd = 0.27 + Math.min(0.3, A.Rs / 1000);
+  A.biteCd = A.boss ? BOSS.biteCd : 0.27 + Math.min(0.3, A.Rs / 1000);
+  if (A.boss) bite *= BOSS.bite; // its bite is slow and lighter than its size, a warning more than a kill
   A.chewT = 0;
   A.mouthV = -34;
   A.stats.bites++;
@@ -2530,6 +2541,7 @@ function swallowWhole(A, B) {
   A.wowT = 0.5;
   parts.push({ ring: true, x: B.x, y: B.y, vx: 0, vy: 0, r: B.Rs * 0.9, t: 0, T: 0.4, c: '#fff1dc' });
   feedKill(A, B);
+  if (B.boss) bossDown(A);
   if (A.isPlayer) {
     mission('kills', 1);
     albumEat(B);
@@ -2537,8 +2549,9 @@ function swallowWhole(A, B) {
     floatText(A.x, A.y - A.Rs - 30 / cam.z, 'ням! +' + Math.round(gain), '#ffd23f', 28);
     Sfx.gulp(1);
     cam.shake = Math.max(cam.shake, 7);
-    if (!calm) {
-      slowT = 0.4;
+    if (!calm && !B.boss) {
+      slowT = slowLen = 0.4;
+      slowDip = 0.32;
       cam.zv += 1.9;
     }
   } else if (B.isPlayer) {
@@ -2624,7 +2637,7 @@ function updateTongue(b, dt) {
       }
     }
     for (const o of blobs) {
-      if (o === b || !o.alive || o.spawnT > 0 || (b.ai && o.isPlayer && CHEAT.peace)) continue;
+      if (o === b || !o.alive || o.spawnT > 0 || o.safe || (b.ai && o.isPlayer && CHEAT.peace)) continue;
       const dx = T.tx - o.x,
         dy = T.ty - o.y,
         a = Math.atan2(dy, dx);
@@ -2906,6 +2919,10 @@ function botThink(b) {
     }
     return;
   } // the cake just strolls
+  if (ai.boss) {
+    ai.mode = 'boss';
+    return;
+  } // the big cake only ever goes for the player
   let fx = 0,
     fy = 0,
     danger = 0,
@@ -2935,7 +2952,8 @@ function botThink(b) {
         if (lethal && sd < 70 && facing > 0.4) lethalNear = true;
       }
     }
-    if (o.spawnT > 0 || (o.isPlayer && CHEAT.peace) || o.kind === 'hedgehog' || o.pShield > 0) continue; // nobody hunts spines or shields
+    if (o.spawnT > 0 || (o.isPlayer && CHEAT.peace) || o.kind === 'hedgehog' || o.pShield > 0 || o.safe) continue; // nobody hunts spines or shields
+    if (o.boss && !b.isPlayer) continue; // the big cake is the player's to beat
     if (b.kind === 'piranha' && (o.kind === 'piranha' || (o.isPlayer && o.mass < 90))) continue;
     const gain = lethalFor(o.mass, myBite) ? o.mass * 0.9 : myBite * 0.84;
     const risk = bigger ? clamp(facing + 0.2, 0, 1) * (lethal ? 1.6 : 0.6) : 0;
@@ -2943,6 +2961,8 @@ function botThink(b) {
     if (bigger && facing < -0.2) s *= ai.piranha ? 2.1 : 1.2; // nibble the back of a giant
     s *= 1 + Math.min(0.8, woundLoad(o) * 1.5);
     if (b.kind === 'piranha') s *= o.mass > b.mass * 3 ? 2.2 : 0.3; // the pack goes for big game
+    if (ai.raid && o.isPlayer) s *= 3; // a stage's raid came for the player
+    if (o.boss) s *= BOSS.lure; // the autopilot knows the cake is the goal, as a player does
     if (o.isPlayer) {
       if (ai.ignoreT > 0) continue;
       s *= (diff !== 'hard' && o.mass < 120 ? 0.4 : 0.85) * DIFFS[diff].hunt;
@@ -3014,6 +3034,23 @@ function botSteer(b, dt) {
     const a = time * 0.8 + b.phase;
     b.tx = b.hx + Math.cos(a) * 24;
     b.ty = b.hy + Math.sin(a) * 24;
+    return;
+  }
+  if (ai.mode === 'boss') {
+    // crawl after the player face first, so the cherry on the back stays away from them
+    const P = player;
+    if (P && P.alive && !P.safe && state === 'play') {
+      const dx = P.x - b.x,
+        dy = P.y - b.y,
+        d = Math.hypot(dx, dy) || 1,
+        near = d - P.Rs - b.Rs < 700; // close by it only creeps and turns, so the player can work round to its back
+      const s = ai.away ? -0.25 : 0.25; // turning away creeps a little away too
+      b.tx = near || ai.away ? b.x + (dx / d) * b.Rs * s : P.x;
+      b.ty = near || ai.away ? b.y + (dy / d) * b.Rs * s : P.y;
+    } else {
+      b.tx = ai.wx;
+      b.ty = ai.wy;
+    }
     return;
   }
   if (b.kind === 'piranha' && ai.lead) {
@@ -3159,7 +3196,7 @@ function tutorPrey() {
   b.resetPoints();
   return b;
 }
-function spawnSpecial(kind) {
+function spawnSpecial(kind, n) {
   const made = [];
   if (kind === 'hedgehog') {
     const [x, y] = findSpawn(320, true),
@@ -3175,7 +3212,7 @@ function spawnSpecial(kind) {
   } else {
     const [x, y] = findSpawn(420, true);
     let lead = null;
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < (n || 6); i++) {
       const b = new Blob({
         name: 'Пиранья',
         acc: 'Пиранью',
@@ -3212,10 +3249,16 @@ function population() {
       else if (b.kind === 'piranha') pir++;
     }
     if (hed < (day === 'hedge' ? 4 : 2)) spawnSpecial('hedgehog');
-    if (cake) cakeAt = time + (day === 'cake' ? 8 : 35);
-    else if (time > cakeAt) spawnSpecial('cake');
-    if (pir) pirAt = time + (day === 'piranha' ? 20 : 40);
-    else if (time > pirAt && (day === 'piranha' || state !== 'play' || !player || !player.alive || player.mass > 90)) spawnSpecial('piranha');
+    if (stagesOn()) {
+      cakeAt = time + 35;
+      pirAt = time + 40;
+    } // a free run brings its piranhas and its cake as stages (10-stages)
+    else {
+      if (cake) cakeAt = time + (day === 'cake' ? 8 : 35);
+      else if (time > cakeAt) spawnSpecial('cake');
+      if (pir) pirAt = time + (day === 'piranha' ? 20 : 40);
+      else if (time > pirAt && (day === 'piranha' || state !== 'play' || !player || !player.alive || player.mass > 90)) spawnSpecial('piranha');
+    }
   }
   let n = respawnQ.length;
   for (const b of blobs) if (b.ai && !b.kind) n++;
@@ -3796,6 +3839,7 @@ function spawnPlayer(spawnT) {
   input.dashHeld = false;
 }
 function startGame() {
+  if (state === 'won') return secondShift(); // the win screen's main button carries on
   if (state === 'play' || (state === 'dead' && overEl.classList.contains('hidden'))) return;
   Sfx.init();
   const name = (nick.value || '').trim().slice(0, 14) || 'Кусака';
@@ -3817,6 +3861,7 @@ function startGame() {
   timeLeft = timed() ? 180 : 0;
   day = null;
   if (mode === 'daily') startDaily();
+  stageStart();
   spawnPlayer(4);
   tutor = newcomer ? { prey: tutorPrey() } : null;
   document.body.classList.add('playing');
@@ -3911,6 +3956,11 @@ function toMenu() {
     player.alive = false;
     finishRun();
   }
+  if (state === 'won' && player) {
+    player.alive = false;
+    spawnDust(player.x, player.y, player.pal, 0, 0, 12);
+  } // the run was paid out when the cake fell
+  stageStop();
   state = 'menu';
   paused = false;
   runActive = false;
@@ -3937,14 +3987,19 @@ function showOver() {
     daily = mode === 'daily' && run.rule,
     secs = Math.max(0, Math.round(time - run.t0)),
     score = Math.round(run.max);
-  $('overT').textContent = t3 ? 'Время вышло' : 'Тебя доели';
-  whoEl.innerHTML = daily
-    ? `Конфета дня «${esc(run.rule.name)}»`
-    : t3
-      ? 'Три минуты позади. В зачёт идёт самая большая масса.'
-      : killer
-        ? `Последний кусь: <b>${esc(killer.name)}</b>`
-        : 'Тебя растащили по кусочкам';
+  const won = run.won,
+    shift = run.lap ? `Смена ${run.lap + 1}. ` : '';
+  $('overT').innerHTML = won ? `Победа!<small> Торт за ${mmss(won.secs)}</small>` : t3 ? 'Время вышло' : 'Тебя доели'; // the clear time joins the title where the line under it is hidden
+  whoEl.innerHTML = won
+    ? `${won.lap ? `Смена ${won.lap + 1}: т` : 'Т'}орт за <b>${mmss(won.secs)}</b>`
+    : (shift ? esc(shift) : '') +
+      (daily
+        ? `Конфета дня «${esc(run.rule.name)}»`
+        : t3
+          ? 'Три минуты позади. В зачёт идёт самая большая масса.'
+          : killer
+            ? `Последний кусь: <b>${esc(killer.name)}</b>`
+            : 'Тебя растащили по кусочкам');
   $('sMax').textContent = score;
   $('sBites').textContent = run.bites;
   $('sKills').textContent = run.kills;
@@ -3968,6 +4023,12 @@ function showOver() {
           ? `Новый рекорд на 3 минуты: ${best3}`
           : `Рекорд на 3 минуты: ${best3}`
         : (best > prevBest ? `Новый рекорд: ${best}` : `Рекорд: ${best}`) + (fresh.length ? `. Открыта шапка: ${fresh.join(', ')}` : '');
+  if (won && !run.cheated)
+    bestEl.textContent = won.lap
+      ? `Время второй смены не идёт в рекорд. Лучшее прохождение: ${mmss(clearRec.best)}`
+      : `${won.rec ? 'Новый рекорд' : 'Рекорд'} прохождения: ${mmss(clearRec.best)}. Побед: ${clearRec.wins}`;
+  else if (won) bestEl.textContent = 'С читами победа и рекорд не засчитаны';
+  $('again').textContent = won ? (won.lap ? `Смена ${won.lap + 2}` : 'Вторая смена') : 'Ещё кусь';
   $('chalRes').textContent =
     !challenge || (t3 && !(daily && challenge.d === run.day)) || (!t3 && challenge.d) || run.cheated
       ? ''
@@ -3978,7 +4039,7 @@ function showOver() {
           : `Вызов от игрока ${challenge.n}: ${challenge.c}. Твой результат: ${score}.`;
   overEl.querySelector('.card').classList.toggle('chal', !!$('chalRes').textContent); // on short screens the challenge line takes the "so close" line's place
   $('chalBtn').classList.toggle('hidden', (t3 && !daily) || run.cheated || score < 1);
-  $('chalBtn').textContent = daily ? 'Поделиться' : 'Бросить вызов другу';
+  $('chalBtn').textContent = daily || won ? 'Поделиться' : 'Бросить вызов другу';
   $('chalLink').classList.add('hidden');
   overEl.classList.remove('hidden');
   hudEl.classList.add('hidden');
@@ -4016,7 +4077,7 @@ function updateCamera(dt) {
     fy = cam.y,
     tz = cam.z,
     follow = 5;
-  if (state === 'play' && player && player.alive) {
+  if ((state === 'play' || state === 'won') && player && player.alive) {
     fx = player.x;
     fy = player.y;
     tz = 1.05 * Math.pow(32 / player.Rs, 0.42) * vf;
@@ -4122,6 +4183,7 @@ function updateHUD(dt) {
       : challenge && !challenge.d && mode === 'free'
         ? `цель: ${challenge.c}`
         : '';
+  renderStage();
   let fx = '';
   if (player && player.alive)
     for (const [k, prop] of [
@@ -4243,7 +4305,7 @@ function update(dt) {
     if (b.y < 0) b.y = 0;
     else if (b.y > WORLD) b.y = WORLD;
   } // a shove never carries anyone off the tray
-  for (const b of blobs) if (b.alive) checkBites(b, dt);
+  for (const b of blobs) if (b.alive && !b.safe) checkBites(b, dt);
   updateFood(dt);
   updatePickups(dt);
   for (const b of blobs) b.pulls.length = 0;
@@ -4282,6 +4344,7 @@ function update(dt) {
   updateParts(dt);
   if (blobs.some((b) => !b.alive)) blobs = blobs.filter((b) => b.alive);
   population();
+  stageUpdate(dt);
   if (runActive && timed()) {
     timeLeft -= dt;
     if (timeLeft <= 0) {
@@ -4301,6 +4364,324 @@ function update(dt) {
   }
   updateCamera(dt);
   updateHUD(dt);
+}
+
+// ---------- run stages (free play only) ----------
+// A free run has an arc: a piranha raid, a sweet rain, then the Big Cake. Beating the cake ends the run with a win screen;
+// «Вторая смена» (second shift) carries on from the same spot, the events come round again by timers and each lap's cake is tougher.
+// The timed modes (t3, daily) and the world behind the menu keep the old free-roaming cake and piranhas.
+const STAGE = {
+  pir: { mass: 150, by: 45, name: 'пираний' }, // the player's mass that starts it, or the run second it starts by anyway
+  rain: { mass: 600, by: 120, name: 'сладкого дождя', T: 15 },
+  boss: { mass: 1600, name: 'Большого Торта' }, // no time ceiling
+  gap: 8, // seconds of quiet after an event before the next one may start
+  lap: { pir: 20, rain: 25, boss: 30 }, // second shift and later: seconds after the previous event ends
+};
+const STAGE_KEYS = ['pir', 'rain', 'boss'];
+// the boss: a big cake with a hard crust; its only soft spot is the cherry on its back. It takes turns: «face» seconds turning its
+// mouth to the player and biting, then «back» seconds slowly turning away, the window for the cherry. A cherry bite makes it whirl
+// round (spin rad/s for spinT s) and start facing again. Its bites take mass from the player but do not make it bigger.
+const BOSS = {
+  mass: 2400,
+  crust: 0.3,
+  turn: 1.2,
+  spin: 4.5,
+  spinT: 0.7,
+  bite: 1,
+  biteCd: 1.2,
+  face: 5,
+  back: 4.5,
+  lure: 4,
+  sugar: 75,
+  name: 'Большой Торт',
+};
+let stg = null; // { lap, i: next event, cur: the event under way, t0: segment start, endT: when the last event ended, winT, wonMass }
+let clearRec = { best: 0, wins: 0 }; // kus.clear: the fastest first-shift clear in seconds and the number of clears
+try {
+  const v = JSON.parse(localStorage.getItem('kus.clear') || 'null');
+  if (v && v.wins > 0) clearRec = { best: +v.best || 0, wins: v.wins | 0 };
+} catch (e) {}
+const stagesOn = () => mode === 'free' && (runActive || state === 'won'); // the ordinary cake and packs stay off the free run's field
+const mmss = (s) => ((s = Math.round(s)), `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`);
+
+function clearSpecials(all) {
+  // ordinary cakes and packs leave the tray; all = the boss too
+  for (const b of blobs) if ((b.kind === 'cake' && (all || !b.boss)) || b.kind === 'piranha') b.alive = false;
+}
+function stageStart() {
+  stg = mode === 'free' ? { lap: 0, i: 0, cur: null, t0: time, endT: time, winT: 0, wonMass: 0 } : null;
+  if (stg) clearSpecials(true);
+}
+function stageStop() {
+  if (stg) for (const b of blobs) if (b.boss) b.alive = false;
+  stg = null;
+}
+function announce(html, big) {
+  addFeed(html, 5200);
+  if (player && player.alive) floatText(player.x, player.y - player.Rs - 60 / cam.z, big, '#ffd23f', 30);
+  Sfx.power();
+  haptic(25);
+  hudT = 0;
+}
+// a free place on a ring round the player: nothing may appear inside another body, or the contact would throw them apart in a frame
+function ringSpot(d, r, edge) {
+  const P = player;
+  let best = null,
+    bestGap = -1e9;
+  for (let t = 0; t < 48; t++) {
+    const a = rand(TAU),
+      dd = d + (t >> 3) * 90,
+      x = clamp(P.x + Math.cos(a) * dd, edge, WORLD - edge),
+      y = clamp(P.y + Math.sin(a) * dd, edge, WORLD - edge);
+    let gap = 1e9;
+    for (const o of blobs) if (o.alive) gap = Math.min(gap, Math.hypot(o.x - x, o.y - y) - o.Rs - r);
+    if (gap > 40) return [x, y];
+    if (gap > bestGap) {
+      bestGap = gap;
+      best = [x, y];
+    }
+  }
+  return best;
+}
+function raid(n) {
+  // a pack that comes for the player: it spawns just in sensing range and rates the player above other prey
+  const P = player,
+    [x, y] = ringSpot(P.Rs + 540, 90, 120);
+  const pack = spawnSpecial('piranha', n);
+  for (const b of pack) {
+    b.x = clamp(x + rand(-60, 60), 60, WORLD - 60);
+    b.y = clamp(y + rand(-60, 60), 60, WORLD - 60);
+    b.ai.raid = true;
+    b.resetPoints();
+  }
+  return pack;
+}
+// a newcomer who is still small when the raid comes by the clock meets a smaller pack; piranhas never hunt a player under 90 anyway
+const raidSize = (m) => (m < 100 ? 3 : m < 150 ? 4 : 6) + stg.lap * 2;
+function beginEvent(k) {
+  const P = player,
+    c = { k, t: 0 };
+  if (k === 'pir') {
+    c.pack = raid(raidSize(P.mass));
+    announce('<b>Пираньи!</b> Стая плывёт к тебе. Глотай их по одной', 'Пираньи!');
+  } else if (k === 'rain') {
+    c.n = 0;
+    c.acc = 0;
+    c.picks = 0;
+    announce('<b>Сладкий дождь!</b> Вокруг сыплется посыпка и бонусы', 'Сладкий дождь!');
+  } else {
+    const lap = stg.lap,
+      m = Math.min(3400, BOSS.mass * (1 + 0.25 * lap)),
+      R = massToR(m),
+      [x, y] = ringSpot(P.Rs + R + 520, R, R + 60);
+    const b = new Blob({
+      name: lap ? `${BOSS.name} ${lap + 1}` : BOSS.name,
+      acc: BOSS.name,
+      pal: PAL_CAKE,
+      mass: m,
+      x,
+      y,
+      ai: newAI(),
+      spawnT: 1.5,
+      kind: 'cake',
+    });
+    b.boss = { turn: BOSS.turn * (1 + 0.25 * lap), spin: BOSS.spin * (1 + 0.15 * lap), crust: BOSS.crust * Math.pow(0.85, lap) };
+    b.spinT = 0;
+    b.ai.boss = true;
+    b.ai.away = false; // turning its back right now
+    b.face = Math.atan2(P.y - b.y, P.x - b.x);
+    blobs.push(b);
+    c.b = b;
+    c.m0 = m;
+    c.esc = 0;
+    c.phT = BOSS.face;
+    announce(`<b>${esc(b.name)}</b> идёт за тобой. Корка твёрдая, кусай вишенку на спине`, 'Большой Торт!');
+  }
+  stg.cur = c;
+}
+function endEvent() {
+  const c = stg.cur;
+  if (c.k === 'pir') for (const b of c.pack) if (b.ai) b.ai.raid = false; // survivors become an ordinary pack
+  stg.cur = null;
+  stg.i = (stg.i + 1) % STAGE_KEYS.length;
+  stg.endT = time;
+}
+function rainStep(c, dt) {
+  // dense sprinkles and a few bonuses around the player; fewer on a lighter detail level
+  const P = player,
+    rate = lod ? (lod > 1 ? 6 : 10) : 15,
+    cap = lod ? (lod > 1 ? 80 : 140) : 210,
+    view = (Math.max(W, H) / cam.z) * 0.5;
+  c.acc += rate * dt;
+  for (; c.acc >= 1; c.acc--) {
+    if (c.n >= cap) break;
+    c.n++;
+    const a = rand(TAU),
+      r = rand(P.Rs + 50, Math.max(P.Rs + 120, view * 0.75)),
+      x = clamp(P.x + Math.cos(a) * r, 30, WORLD - 30),
+      y = clamp(P.y + Math.sin(a) * r, 30, WORLD - 30);
+    food.push({ kind: 0, x, y, m: 1.5, c: randi(SPRINKLES.length), ai: randi(8), sz: rand(3, 5.5) * 1.86 * 1.25 });
+    sprinkleCount++;
+    if (!lod && c.n % 4 === 0) parts.push({ ring: true, x, y, vx: 0, vy: 0, r: 7, t: 0, T: 0.3, c: '#fff1dc' });
+  }
+  if (c.picks < 3 && c.t > 1 + c.picks * 5) {
+    c.picks++;
+    const a = rand(TAU),
+      r = rand(P.Rs + 140, P.Rs + 420);
+    pickups.push({
+      type: ['speed', 'shield', 'magnet'][randi(3)],
+      x: clamp(P.x + Math.cos(a) * r, 220, WORLD - 220),
+      y: clamp(P.y + Math.sin(a) * r, 220, WORLD - 220),
+      t: 0,
+    });
+  }
+}
+function bossDown(A) {
+  // the player swallowed the boss: time slows in an arc, then the win screen
+  if (!stg || !A.isPlayer) return;
+  stg.cur = null;
+  stg.winT = 1.4;
+  A.safe = true; // nobody bites the winner while the screen comes up
+  floatText(A.x, A.y - A.Rs - 70 / cam.z, 'Торт съеден!', '#ffd23f', 34);
+  Sfx.ding(6);
+  if (!calm) {
+    slowT = slowLen = 1.3;
+    slowDip = 0.55;
+  }
+}
+function stageUpdate(dt) {
+  if (!stg || mode !== 'free' || state !== 'play' || !runActive || !player || !player.alive) return;
+  if (stg.winT > 0) {
+    stg.winT -= dt;
+    if (stg.winT <= 0) stageWin();
+    return;
+  }
+  const P = player,
+    c = stg.cur;
+  if (c) {
+    c.t += dt;
+    if (c.k === 'pir') {
+      if (!c.pack.some((b) => b.alive) || c.t > 30) endEvent();
+    } else if (c.k === 'rain') {
+      rainStep(c, dt);
+      if (c.t >= STAGE.rain.T) endEvent();
+    } else {
+      const b = c.b;
+      if (!b.alive)
+        endEvent(); // gone some other way: no win
+      else if (b.ai) {
+        b.spinT -= dt;
+        if (b.mass > c.m0) b.mass = c.m0;
+        if (b.spinT > 0 && b.ai.away) {
+          b.ai.away = false; // bitten in the cherry: face the biter again
+          c.phT = BOSS.face + stg.lap;
+        }
+        if ((c.phT -= dt) <= 0) {
+          b.ai.away = !b.ai.away;
+          c.phT = b.ai.away ? Math.max(2, BOSS.back - 0.5 * stg.lap) : BOSS.face + stg.lap;
+        }
+        // the retinue: a piranha pack at two thirds and at one third of the cake
+        if (c.esc < 2 && b.mass < c.m0 * (c.esc ? 0.34 : 0.67)) {
+          c.esc++;
+          raid(4 + stg.lap * 2);
+          addFeed('<b>Свита торта</b>: пираньи!', 3600);
+          Sfx.power();
+        }
+      }
+    }
+    return;
+  }
+  const k = STAGE_KEYS[stg.i],
+    since = time - stg.endT;
+  if (stg.i && since < STAGE.gap) return;
+  const go = stg.lap ? since >= STAGE.lap[k] : P.stats.maxMass >= STAGE[k].mass || (STAGE[k].by && time - stg.t0 >= STAGE[k].by); // the peak counts: big ones melt a little every frame
+  if (go) beginEvent(k);
+}
+function stageLine() {
+  // the HUD line under the mass: the next event and how close it is, or the event under way; [text, progress 0..1]
+  if (!stg || mode !== 'free' || !runActive || !player) return ['', -1];
+  const c = stg.cur,
+    lap = stg.lap ? `смена ${stg.lap + 1} · ` : '';
+  if (stg.winT > 0) return ['Торт съеден!', 1];
+  if (c) {
+    if (c.k === 'pir') {
+      const n = c.pack.filter((b) => b.alive).length;
+      return [`${lap}пираньи здесь: ${n}`, 1 - c.t / 30];
+    }
+    if (c.k === 'rain') return [`${lap}сладкий дождь ${Math.ceil(STAGE.rain.T - c.t)} с`, 1 - c.t / STAGE.rain.T];
+    const p = clamp(c.b.mass / c.m0, 0, 1);
+    return [`${lap}торт: ${Math.round(p * 100)}%`, p];
+  }
+  const k = STAGE_KEYS[stg.i],
+    s = STAGE[k];
+  if (stg.lap) {
+    const left = Math.max(0, Math.max(STAGE.lap[k], stg.i ? STAGE.gap : 0) - (time - stg.endT));
+    return [`${lap}${k === 'boss' ? 'торт' : k === 'pir' ? 'пираньи' : 'дождь'} через ${Math.ceil(left)} с`, 1 - left / STAGE.lap[k]];
+  }
+  const m = player.stats.maxMass,
+    p = Math.max(m / s.mass, s.by ? (time - stg.t0) / s.by : 0);
+  return [`до ${s.name} ${Math.max(1, Math.ceil(s.mass - m))}`, clamp(p, 0, 1)];
+}
+let lastStage = '';
+function renderStage() {
+  const [t, p] = stageLine(),
+    el = $('stage'),
+    key = t + '|' + (p < 0 ? -1 : Math.round(p * 40));
+  if (key === lastStage) return;
+  lastStage = key;
+  el.textContent = t;
+  el.style.setProperty('--p', p < 0 ? '0' : p.toFixed(3));
+}
+function stageWin() {
+  const P = player,
+    secs = time - run.t0,
+    first = stg.lap === 0;
+  earn(BOSS.sugar); // once for each cake beaten; finishRun pays it only for a clean run
+  tally();
+  run.won = { secs, lap: stg.lap, rec: false };
+  if (!run.cheated && first) {
+    run.won.rec = !clearRec.best || secs < clearRec.best;
+    if (run.won.rec) clearRec.best = Math.round(secs * 10) / 10;
+    clearRec.wins++;
+    try {
+      localStorage.setItem('kus.clear', JSON.stringify(clearRec));
+    } catch (e) {}
+  }
+  finishRun();
+  state = 'won';
+  stg.wonMass = P.mass;
+  stick.id = -1;
+  stick.on = false;
+  input.dashHeld = false;
+  showOver();
+}
+function secondShift() {
+  // the same candy, mass and place; a fresh score and sugar count, the events by timers and faster
+  const P = player;
+  rollMissions();
+  saveM();
+  run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0, lap: stg.lap + 1 };
+  shownSugar = -1;
+  sugarEl.textContent = '';
+  runActive = true;
+  state = 'play';
+  P.safe = false;
+  P.mass = stg.wonMass;
+  P.spawnT = 1.5;
+  P.stats = { bites: 0, kills: 0, maxMass: P.mass, t0: time };
+  stg.lap++;
+  stg.i = 0;
+  stg.cur = null;
+  stg.endT = time;
+  stg.t0 = time;
+  clearSpecials(false);
+  document.body.classList.add('playing');
+  overEl.classList.add('hidden');
+  hudEl.classList.remove('hidden');
+  feedEl.innerHTML = '';
+  hudT = 0;
+  addFeed(`<b>Смена ${stg.lap + 1}</b>: пираньи, дождь и торт по кругу, быстрее. Торт сильнее`, 5200);
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 }
 
 // ---------- drawing: tray, food, strands, wounds ----------
@@ -5636,7 +6017,7 @@ function drawName(b) {
   if (sr < (lod ? 16 : 10) && !b.isPlayer) return;
   const fs = clamp(sr * 0.3, 11, 17) / z,
     y = b.y - b.Rs * (b.hat !== 'none' && sr >= 8 ? 1.55 : 1.04) - 6 / z;
-  const L = labelFor(b.name, b.isPlayer),
+  const L = labelFor(b.name, b.isPlayer || !!b.boss),
     k = fs / 34;
   if (b === leader) {
     // gold star for the sweetest one
@@ -6529,6 +6910,7 @@ document.addEventListener('visibilitychange', () => {
   }
 }); // switching apps must not get you eaten
 $('chalBtn').addEventListener('click', () => {
+  if (run.won) return shareWin();
   // a link that carries your score: the friend sees it as the target
   const score = Math.round(run.max),
     name = (nick.value || '').trim().slice(0, 14) || 'Кусака';
@@ -6557,6 +6939,27 @@ $('chalBtn').addEventListener('click', () => {
     pick();
   }
 });
+function shareWin() {
+  // the win screen's «Поделиться»: the clear time and a link to the game
+  const base = /^https?:$/.test(location.protocol) && !/claude|anthropic/i.test(location.hostname) ? location.origin + location.pathname : PUBLIC_URL,
+    text = `Я съел Большой Торт в КУСЬ.io за ${mmss(run.won.secs)}. Сможешь быстрее?`,
+    box = $('chalLink');
+  box.value = base;
+  try {
+    if (navigator.share) {
+      navigator.share({ title: 'КУСЬ.io', text, url: base }).catch(() => {});
+      return;
+    }
+    navigator.clipboard.writeText(text + ' ' + base).then(
+      () => {
+        $('chalBtn').textContent = 'Скопировано';
+      },
+      () => box.classList.remove('hidden'),
+    );
+  } catch (e) {
+    box.classList.remove('hidden');
+  }
+}
 
 // ---------- loop & boot ----------
 let last = 0,
@@ -6663,7 +7066,7 @@ function frame(now) {
     let sc = CHEAT.slow ? 0.45 : 1;
     if (slowT > 0) {
       slowT -= dt;
-      sc *= 1 - 0.32 * Math.sin((Math.PI * Math.max(0, slowT)) / 0.4);
+      sc *= 1 - slowDip * Math.sin((Math.PI * Math.max(0, slowT)) / slowLen);
     }
     update(dt * sc);
   } // swallowing someone whole: time dips and flows back, never stops
@@ -6854,6 +7257,9 @@ window.__kus = {
     renderBank();
     renderSkins();
   },
+  get food() {
+    return food;
+  },
   get pickups() {
     return pickups;
   },
@@ -6862,6 +7268,16 @@ window.__kus = {
     renderMode();
   },
   toMenu,
+  stages: {
+    get stg() {
+      return stg;
+    },
+    get clear() {
+      return clearRec;
+    },
+    STAGE,
+    BOSS,
+  },
   daily: {
     force(id) {
       dayForce = id;

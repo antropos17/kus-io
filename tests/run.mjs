@@ -591,6 +591,199 @@ test('daily: a challenge link says why at 844x390, and the menu still fits', asy
     }
 });
 
+// Run stages in free play: a piranha raid, a sweet rain, the Big Cake, the win screen and the second shift.
+const STG = `const k = window.__kus, S = () => k.stages.stg;
+  const free = () => { k.pause(true); k.setMode('free'); if (k.state !== 'menu') k.toMenu(); k.startGame(); const P = k.player; P.spawnT = 0;
+    for (const key in k.CHEAT) k.CHEAT[key] = key === 'speed' ? 1 : false;
+    for (const b of k.blobs) if (b !== P) { b.x = 300 + Math.random() * 300; b.y = 3700; b.resetPoints(); } return P; };
+  const run = (sec, fn) => { for (let i = 0; i < sec * 60; i++) { if (fn) fn(); k.update(1 / 60); } };
+  const kinds = (kd) => k.blobs.filter((b) => b.alive && b.kind === kd && !b.boss).length;`;
+
+test('stages: free play has no cake or piranhas before the events, which come on the thresholds and by the time ceilings', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(`(() => { ${STG} const out = {};
+    k.pause(true); k.spawnSpecial('cake'); k.spawnSpecial('piranha'); out.menuCake = kinds('cake') > 0;
+    let P = free(); k.update(1 / 60); out.atStart = kinds('cake') + kinds('piranha');
+    let pirT = null, rainT = null, cakeSeen = 0, pirBefore = 0;
+    for (let f = 1; f <= 130 * 60; f++) {
+      P.mass = 60; P.pShield = 5; k.update(1 / 60); const c = S().cur;
+      if (!c && kinds('piranha') && pirT === null) pirBefore++;
+      if (kinds('cake')) cakeSeen++;
+      if (c && c.k === 'pir' && pirT === null) { pirT = f / 60; out.pack = c.pack.length; for (const b of c.pack) b.alive = false; }
+      if (c && c.k === 'rain' && rainT === null) rainT = f / 60;
+    }
+    out.pirT = pirT; out.rainT = rainT; out.cakeSeen = cakeSeen; out.pirBefore = pirBefore;
+    P = free(); P.mass = 150; run(0.1); out.pirAt150 = S().cur && S().cur.k; out.bigPack = S().cur.pack.length;
+    for (const b of S().cur.pack) b.alive = false; run(0.1); out.after = S().cur;
+    const pin = (m) => () => { P.mass = m; P.tx = P.x; P.ty = P.y; };
+    run(5, pin(605)); out.gap = S().cur; run(3.2, pin(605)); out.rainAt600 = S().cur && S().cur.k;
+    run(11.5, pin(605)); out.rainFood = S().cur.n; out.lod = k.lod; out.picks = S().cur.picks; run(4, pin(605)); out.rainOver = S().cur;
+    run(8.2, pin(1605)); const c = S().cur; out.boss = !!(c && c.k === 'boss' && c.b.boss && c.b.mass > 1500 * 1.5);
+    k.update(0.3); out.line = document.getElementById('stage').textContent;
+    run(2, pin(1605)); out.bossCur = S().cur && S().cur.k; out.next = S().i;
+    return out; })()`);
+  assert(r.menuCake, 'the world behind the menu lost its cake');
+  assert(r.atStart === 0, `a free run starts with ${r.atStart} cakes and piranhas on the field`);
+  assert(r.pirBefore === 0 && r.cakeSeen === 0, `piranhas before the event: ${r.pirBefore} frames, an ordinary cake: ${r.cakeSeen} frames`);
+  assert(r.pirT > 44.9 && r.pirT < 45.2, `the raid must come by 0:45 at mass 60, came at ${r.pirT}`);
+  assert(r.pack === 3, `a small player meets a pack of ${r.pack}, expected 3`);
+  assert(r.rainT > 119.9 && r.rainT < 120.2, `the rain must come by 2:00, came at ${r.rainT}`);
+  assert(r.pirAt150 === 'pir' && r.bigPack === 6, `mass 150 must start the raid (${r.pirAt150}, pack ${r.bigPack})`);
+  assert(
+    r.after === null && r.gap === null && r.rainAt600 === 'rain',
+    `the rain must wait the 8 s gap, then come at 600 (${JSON.stringify([r.after, r.gap, r.rainAt600])})`,
+  );
+  assert(
+    r.rainFood > 60 && r.rainFood <= 300 && r.picks === 3 && r.rainOver === null,
+    `the rain dropped ${r.rainFood} sprinkles and ${r.picks} bonuses and must end after 15 s (lod ${r.lod})`,
+  );
+  assert(r.boss, 'mass 1600 must bring the big cake');
+  assert(/торт: \d+%/.test(r.line), `HUD during the fight: "${r.line}"`);
+  assert(r.bossCur === 'boss' && r.next === 2, 'no new event may start while the boss is on the field');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('stages: bots cannot bite or swallow the boss, and it bites only the player', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(`(() => { ${STG}
+    const P = free(); k.place(P, 600, 600, 0); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1);
+    const B = S().cur.b; B.spawnT = 0; k.place(B, 2000, 2000, 0); B.ai = null; const m0 = B.mass;
+    const bots = [k.spawnBot(3000), k.spawnBot(200)]; let bit = 0;
+    for (const o of bots) { o.spawnT = 0; o.ai = null; }
+    for (let i = 0; i < 4 * 60; i++) {
+      // one bot presses its mouth to the cherry, the other sits right in front of the cake's mouth
+      k.place(bots[0], B.x - B.Rs - bots[0].Rs + 6, B.y, 0); k.place(bots[1], B.x + B.Rs + bots[1].Rs - 6, B.y, Math.PI);
+      for (const o of bots) { o.biteCd = Math.min(o.biteCd, 0); bit += o.stats.bites; o.stats.bites = 0; }
+      k.place(B, 2000, 2000, 0); B.biteCd = Math.min(B.biteCd, 0); k.update(1 / 60);
+    }
+    return { alive: B.alive, lost: m0 - B.mass, bit, bossBites: B.stats.bites, small: bots[1].alive && bots[1].mass > 150 }; })()`);
+  assert(r.alive && r.lost < 5 && r.bit === 0, `bots bit the boss ${r.bit} times, it lost ${r.lost}`);
+  assert(r.bossBites === 0 && r.small, 'the boss bit a bot');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('stages: beating the boss ends the run with a record, not with cheats; the second shift keeps mass and place', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(`(() => { ${STG}
+    const beat = (cheat) => { const P = free(); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1); if (!S().cur) throw new Error('no boss');
+      const B = S().cur.b; B.spawnT = 0; B.ai = null;
+      if (cheat) k.CHEAT.heal = true;
+      B.mass = 60; k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
+      while (k.state === 'play' && f++ < 400) { P.tx = B.x; P.ty = B.y; B.tx = B.x; B.ty = B.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); }
+      k.CHEAT.heal = false; return { P, f }; };
+    const out = {};
+    let { P, f } = beat(false);
+    out.state = k.state; out.frames = f; out.title = document.getElementById('overT').textContent; out.who = document.getElementById('who').textContent;
+    out.best = document.getElementById('best').textContent; out.again = document.getElementById('again').textContent;
+    out.share = document.getElementById('chalBtn').textContent; out.clear = JSON.parse(localStorage.getItem('kus.clear'));
+    out.got = k.run.got; out.over = !document.getElementById('over').classList.contains('hidden');
+    const wm = k.stages.stg.wonMass, x = P.x, y = P.y; run(3); out.safe = P.alive && P.safe;
+    document.getElementById('again').click();
+    out.shift = { state: k.state, same: k.player === P, mass: Math.abs(P.mass - wm) < 0.01, place: Math.round(Math.hypot(P.x - x, P.y - y)),
+      lap: k.stages.stg.lap, bites: k.run.bites, sugar: k.run.sugar };
+    k.update(1 / 60); k.update(0.3); out.shift.line = document.getElementById('stage').textContent;
+    P.alive = false; k.update(1 / 60); // a death in the second shift is an ordinary end of a run
+    k.toMenu(); out.menuState = k.state;
+    k.setMode('free'); beat(false); document.getElementById('again').click(); k.player.spawnT = 0;
+    // die for real: swallowed by a giant
+    const G = k.spawnBot(3000); G.spawnT = 0; G.ai = null; k.player.mass = 20;
+    k.place(G, 2600, 2600, 0); k.place(k.player, 2600 + G.Rs + k.player.Rs - 6, 2600, 0);
+    const Q = k.player;
+    // no lucky escape: wait for the death itself (a bot's bite usually lands in a fraction of a second, rarely in several),
+    // and read the card only once it is shown (1.1 s after the death): a hidden card keeps the text of the win
+    for (let f = 0; Q.alive && f < 20 * 60; f++) { G.biteCd = Math.min(G.biteCd, 0); Q.graceT = 99; G.tx = Q.x; G.ty = Q.y; k.update(1 / 60); }
+    const card = document.getElementById('over');
+    for (let f = 0; card.classList.contains('hidden') && f < 5 * 60; f++) k.update(1 / 60);
+    out.shiftOver = [k.state, document.getElementById('overT').textContent, document.getElementById('who').textContent];
+    k.toMenu(); k.setMode('free');
+    beat(true); out.cheatState = k.state; out.cheatClear = JSON.parse(localStorage.getItem('kus.clear')); out.cheatBest = document.getElementById('best').textContent;
+    return out; })()`);
+  assert(r.state === 'won' && r.over && r.title.startsWith('Победа!'), `state ${r.state} after ${r.frames} frames, title "${r.title}"`);
+  assert(/^Торт за \d:\d\d$/.test(r.who), `win line "${r.who}"`);
+  assert(
+    r.clear && r.clear.wins === 1 && r.clear.best > 0 && r.best.startsWith('Новый рекорд прохождения'),
+    `kus.clear ${JSON.stringify(r.clear)}, "${r.best}"`,
+  );
+  assert(r.again === 'Вторая смена' && r.share === 'Поделиться', `buttons "${r.again}", "${r.share}"`);
+  assert(r.got >= 75, `a win must pay the boss sugar, paid ${r.got}`);
+  assert(r.safe, 'the winner must be safe behind the win screen');
+  const s = r.shift;
+  assert(s.state === 'play' && s.same && s.mass && s.place < 30 && s.lap === 1, `second shift: ${JSON.stringify(s)}`);
+  assert(s.bites === 0 && s.sugar === 0 && s.line.startsWith('смена 2'), `the second shift must count afresh: ${JSON.stringify(s)}`);
+  assert(
+    r.shiftOver[0] === 'dead' && r.shiftOver[1] === 'Тебя доели' && r.shiftOver[2].startsWith('Смена 2'),
+    `second-shift death screen: ${r.shiftOver}`,
+  );
+  assert(
+    r.cheatState === 'won' && r.cheatClear.wins === 2 && r.cheatBest.includes('С читами'),
+    `a cheated win counted: ${JSON.stringify(r.cheatClear)}, "${r.cheatBest}"`,
+  );
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('stages: the 3-minute mode and the candy of the day keep their cake and piranhas', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(`(() => { ${STG} const out = {};
+    for (const m of ['t3', 'daily']) {
+      if (m === 'daily') k.daily.force('cake');
+      k.setMode(m); if (k.state !== 'menu') k.toMenu(); k.startGame(); const P = k.player; P.spawnT = 0; P.ai = null;
+      let cake = 0, pir = 0;
+      for (let i = 0; i < 70 * 60; i++) { P.mass = 200; P.tx = P.x; P.ty = P.y; k.update(1 / 60); if (kinds('cake')) cake++; if (kinds('piranha')) pir++; }
+      out[m] = { stg: k.stages.stg, cake, pir, line: document.getElementById('stage').textContent };
+    }
+    return out; })()`);
+  for (const m of ['t3', 'daily']) {
+    const x = r[m];
+    assert(x.stg === null && x.line === '', `${m}: stages are on (${x.line})`);
+    assert(x.cake > 0 && x.pir > 0, `${m}: cake ${x.cake} frames, piranhas ${x.pir} frames in 70 s`);
+  }
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('stages: the HUD stage line stays clear of the table on phones, next to a challenge goal', async () => {
+  for (const [w, h] of [
+    [360, 640],
+    [844, 390],
+  ]) {
+    const g = await linkPhone(w, h, `?c=9999&n=${encodeURIComponent('Сеня')}`, true);
+    const r = await g.page.evaluate(() => {
+      const k = window.__kus,
+        out = [];
+      k.pause(true);
+      k.setMode('free');
+      k.startGame();
+      k.player.spawnT = 0;
+      const box = (id) => document.getElementById(id).getBoundingClientRect();
+      for (const m of [60, 1000, 1700]) {
+        if (m === 1700) k.stages.stg.i = 2;
+        k.player.mass = m;
+        k.update(1 / 60);
+        k.update(0.3);
+        const a = box('stage'),
+          b = box('board'),
+          e = document.getElementById('stage');
+        out.push({
+          text: e.textContent,
+          hit: a.right > b.left && a.bottom > b.top && a.top < b.bottom,
+          cut: e.scrollWidth > e.clientWidth + 1,
+          goal: document.getElementById('goal').textContent,
+        });
+      }
+      return out;
+    });
+    for (const x of r) {
+      assert(x.text && x.goal.includes('9999'), `${w}x${h}: stage "${x.text}", goal "${x.goal}"`);
+      assert(!x.hit && !x.cut, `${w}x${h}: stage line "${x.text}" runs under the table or is cut`);
+    }
+    assert(g.errors.length === 0, g.errors.join(' | '));
+    await g.close();
+  }
+});
+
 test('settings: difficulty and graphics apply and are remembered', async () => {
   const g = await open({ play: false, returning: true });
   const mass = {};

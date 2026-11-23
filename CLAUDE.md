@@ -57,6 +57,7 @@ Sound takes are made outside the repository with earshot (https://github.com/Leo
 | `09-bots` | bot AI, spawning, hedgehog, piranhas, cake, `population` |
 | `10-album` | the album of eaten bots: `STICKERS`, rows `ALBUM_ROWS`, `pickBotName` (how often each name comes onto the field), `albumEat` (called from `swallowWhole`), the end-of-run line, the album page and `paintSticker` (the game's own drawing code on a stand-in candy) |
 | `10-daily` | "Конфета дня" (candy of the day, mode `daily`): the twist of the day `DAILY` by the local date (`dailyOf`), `day` — the twist in force, the best of the day and the days-in-a-row streak (`dailySave`) |
+| `10-stages` | the stages of a free run (`STAGE`, `stg`): piranha raid, sweet rain, the Big Cake boss (`BOSS`, `b.boss`), the win (`stageWin`, `kus.clear`) and the second shift (`secondShift`); `stagesOn()` keeps the ordinary cake and packs off a free run; `renderStage` fills the HUD line `#stage` |
 | `10-flow` | missions and patterns, start and end of a run, the 3-minute mode, `updateCamera`, `updateHUD`, the main `update` |
 | `11-draw-world` | the tray, `buildPath` (body outline), sprinkles, strands, wounds |
 | `12-draw-face` | mouth (`mouthGeo`, `drawMouthBack`, `drawMouthFront`), eyes, tongue, hats |
@@ -73,6 +74,7 @@ A bite step by step (`checkBites`): wind-up → snap → `doBite` → the piece 
 `window.__kus` in `17-boot` gives the tests the state and functions (`player`, `blobs`, `update`, `render`, `place`, `spawnBot`, `spawnSpecial`, `Sfx`, `cam`, `CHEAT`, `pause`, `setLod`). The easiest way to test a new mechanic is through it.
 
 Saves in `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.best`, `kus.best3`, `kus.mode`, `kus.diff`, `kus.set`, `kus.m` (missions and unlocked patterns), `kus.seen` (hints already shown), `kus.cheat`, `kus.lbmin`, `kus.daily` (candy of the day: date `d` like 20261123, best of the day `best`, days in a row `streak`, longest streak `top`), `kus.album` (album: `c` — times each sticker was swallowed whole, `r` — ids of rows already paid).
+Saves in `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.best`, `kus.best3`, `kus.mode`, `kus.diff`, `kus.set`, `kus.m` (missions and unlocked patterns), `kus.seen` (hints already shown), `kus.cheat`, `kus.lbmin`, `kus.daily` (candy of the day: date `d` like 20261123, best of the day `best`, days in a row `streak`, longest streak `top`), `kus.clear` (free-play wins: the fastest first-shift clear `best` in seconds, the number of clears `wins`).
 
 ## Decisions that must not be broken
 
@@ -82,6 +84,8 @@ Saves in `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.be
 - `calm` (the system setting "reduce motion") turns off flashes, camera kicks and the slow-down.
 - Phone: the joystick appears under the finger anywhere on the screen, buttons «Кусь» (bite) and «Язык» (tongue), everything fits in 360×640 and in landscape 844×390. After interface changes look at both sizes.
 - The difficulty `DIFFS`, the rescue from a lethal bite (`graceT`) and the allowances for a small player in `09-bots` keep a newcomer alive. Check the balance with the autopilot (`player.ai = newAI()`), not by eye.
+- Stages are for free play only. In `t3`, `daily` and the world behind the menu the cake and the piranha packs come as before (`population` in `09-bots`); in a free run the piranhas come only as stage raids and the cake only as the boss. Thresholds are the player's peak mass of the life (150, 600, 1600) with time ceilings for the first two (0:45, 2:00); nothing new starts while the boss is on the field.
+- The boss is the player's alone: bots neither bite it nor hunt it, and it bites only the player (`biteScan`, `botThink`). A win is a slow-down arc (`slowT`, `slowLen`, `slowDip`), never a freeze, and with cheats it does not count.
 - The page stays one file with no external scripts. No syntax or CSS newer than what iOS 15 Safari has (`inset`, for example, has already been replaced).
 - The ES5 script embedded at the start of `<body>` shows errors on screen. Do not touch it and do not move it to modern syntax.
 
