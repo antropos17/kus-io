@@ -9,16 +9,16 @@ const ROW_SUGAR = 100; // sugar for a full row, once
 const ALBUM_ROWS = [
   // id (save key), title, how often its names come onto the field (see pickBotName), the names
   ['airy', 'Воздушные', 0, ['Зефирка', 'Суфле', 'Безе', 'Мусс', 'Пастила']],
-  ['chewy', 'Тягучие', 0, ['Мармеладка', 'Желешка', 'Жвачка', 'Тянучка', 'Бабл-гам']],
+  ['chewy', 'Тягучие', 1, ['Мармеладка', 'Желешка', 'Жвачка', 'Тянучка', 'Бабл-гам']],
   ['home', 'С кухни', 1, ['Пудинг', 'Пончик', 'Ватрушка', 'Медовик', 'Кисель']],
-  ['rascal', 'Шалуны', 1, ['Чавкин', 'Нямка', 'Хрумка', 'Ириска', 'Карамелька']],
+  ['rascal', 'Шалуны', 2, ['Чавкин', 'Нямка', 'Хрумка', 'Ириска', 'Карамелька']],
   ['east', 'Восточные', 2, ['Халва', 'Лукум', 'Чак-чак', 'Нуга', 'Мочи']],
   ['baku', 'Из Баку', 3, ['Пахлава', 'Шекербура', 'Бадамбура', 'Гогал', 'Щербет']],
 ];
 // How often a name comes onto the field, per tier: the weight of one name when a bot spawns.
 // Tier 3 names come only on big spawns (BIG_MASS and up), which are a few at the start and about one respawn in twenty.
 // A name already on the field weighs ON_FIELD times less, so the field is varied but common candies can meet their twin.
-const TIER_W = [1, 0.1, 0.05, 0.6],
+const TIER_W = [1, 0.02, 0.008, 0.3],
   BIG_MASS = 150,
   ON_FIELD = 0.6;
 const STICKERS = [];
