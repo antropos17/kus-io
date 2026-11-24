@@ -277,6 +277,7 @@ window.__kus = {
     return quality;
   },
   spawnSpecial,
+  mouthGeo,
   M,
   album,
   albumEat,
@@ -353,7 +354,7 @@ window.__kus = {
     b.x = x;
     b.y = y;
     b.vx = b.vy = 0;
-    if (face !== undefined) b.face = face;
+    if (face !== undefined) b.face = b.fa = face;
     b.tx = x;
     b.ty = y;
     b.resetPoints();

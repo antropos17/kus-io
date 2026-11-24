@@ -1,15 +1,17 @@
 // ---------- drawing: mouth, face, tongue, hat ----------
 function mouthGeo(b) {
-  // the mouth in the face's own frame: x runs forward to the chin, y across the face
+  // the mouth in the face's own frame: x runs forward to the chin, y across the face. It sits on the front rim:
+  // the jaw reaches the outline and the top lip falls back from it as the mouth opens, so food goes straight in
   const R = b.Rs,
+    f = b.fa + b.fw,
     open = clamp(b.mouth, 0, 1.2),
-    [px, py] = b.contourAt(b.face);
-  const front = clamp(Math.hypot(px - b.x, py - b.y) / R, 0.72, 1.6); // how far the muzzle really reaches right now
-  const xc = R * (0.33 + 0.32 * (front - 1)),
-    H = Math.max(0, R * (front - 0.15) - xc) * (open / 1.2);
+    [px, py] = b.contourAt(f);
+  const rim = clamp(Math.hypot(px - b.x, py - b.y) / R, 0.72, 1.6) * R, // how far the muzzle really reaches right now
+    H = R * 0.44 * Math.sqrt(open / 1.2), // a little opening already shows: the lips sit on the outline and need the room
+    xc = rim - R * 0.03 - Math.max(H, R * 0.17); // shut, the lips keep a strip of skin between them and the outline
   const W = R * (0.33 + 0.09 * Math.min(1, open)) * (1 + clamp(-b.mouthV * 0.004, -0.05, 0.13)),
     uc = R * lerp(0.07, -0.06, clamp((open - 0.55) / 0.6, 0, 1)) * Math.min(1, open * 4);
-  return { f: b.face + b.fw, R, open, xc, H, W, uc, sw: b.puff * W * 0.15 * Math.min(1, open * 3), path: null }; // sw: the jaw slides sideways as it chews
+  return { f, R, open, xc, H, W, uc, sw: b.puff * W * 0.15 * Math.min(1, open * 3), path: null }; // sw: the jaw slides sideways as it chews
 }
 const SHUT = new Path2D();
 function mouthPath(g) {
@@ -78,11 +80,12 @@ function drawMouthBack(b, g) {
       ctx.fill();
     }
     if (grin) {
-      // toothy grin
-      const gp = new Path2D();
-      gp.moveTo(xc, -w);
-      gp.quadraticCurveTo(xc + sm * 0.5, 0, xc, w);
-      gp.quadraticCurveTo(xc + sm * 2.2, 0, xc, -w);
+      // toothy grin, set back from the rim by its own bulge
+      const gx = xc - sm * 0.6,
+        gp = new Path2D();
+      gp.moveTo(gx, -w);
+      gp.quadraticCurveTo(gx + sm * 0.5, 0, gx, w);
+      gp.quadraticCurveTo(gx + sm * 2.2, 0, gx, -w);
       gp.closePath();
       ctx.fillStyle = '#fffaf2';
       ctx.fill(gp);
@@ -91,8 +94,8 @@ function drawMouthBack(b, g) {
         ctx.lineWidth = Math.max(0.5 / z, R * 0.012);
         ctx.beginPath();
         for (const k of [-0.5, 0, 0.5]) {
-          ctx.moveTo(xc + sm * 0.3, k * w);
-          ctx.lineTo(xc + sm * 0.95, k * w);
+          ctx.moveTo(gx + sm * 0.3, k * w);
+          ctx.lineTo(gx + sm * 0.95, k * w);
         }
         ctx.stroke();
       }
@@ -376,7 +379,7 @@ function drawFace(b) {
   const R = b.Rs;
   b._g = null;
   if (R * cam.z < 7) return;
-  const f = b.face + b.fw,
+  const f = b.fa + b.fw,
     fx = Math.cos(f),
     fy = Math.sin(f),
     px = -fy,
@@ -391,9 +394,9 @@ function drawFace(b) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   for (const sg of [-1, 1]) {
-    const ea = f + sg * 1.36,
-      ex = b.x + Math.cos(ea) * R * 0.56,
-      ey = b.y + Math.sin(ea) * R * 0.56;
+    const ea = f + sg * 1.15,
+      ex = b.x + Math.cos(ea) * R * 0.52,
+      ey = b.y + Math.sin(ea) * R * 0.52;
     if (b.hurtT > 0) {
       // squeezed > < eyes
       const s = er * 0.8;
@@ -477,9 +480,9 @@ function drawFace(b) {
     ctx.fillStyle = 'rgba(255,175,195,0.42)';
     ctx.beginPath();
     for (const sg of [-1, 1]) {
-      const a = f + sg * 0.98,
-        cx = b.x + Math.cos(a) * R * 0.66,
-        cy = b.y + Math.sin(a) * R * 0.66;
+      const a = f + sg * 0.78,
+        cx = b.x + Math.cos(a) * R * 0.7,
+        cy = b.y + Math.sin(a) * R * 0.7;
       ctx.moveTo(cx + R * 0.11, cy);
       ctx.ellipse(cx, cy, R * 0.11, R * 0.075, a + Math.PI / 2, 0, TAU);
     }

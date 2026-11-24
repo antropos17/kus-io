@@ -122,12 +122,13 @@ function updateFood(dt) {
         break;
       }
       if (d2 < reach * reach) {
-        const fx = Math.cos(b.face),
-          fy = Math.sin(b.face);
+        const fx = Math.cos(b.fa),
+          fy = Math.sin(b.fa);
         if (mag || dx * fx + dy * fy > 0) {
-          // sucked toward the open mouth
-          const mx = b.x + fx * b.Rs * 0.7,
-            my = b.y + fy * b.Rs * 0.7,
+          // sucked toward the open mouth on the rim: a bit off to the side swings round in front of the lips first
+          const md = b.Rs * (0.7 + 0.5 * clamp(Math.abs(dy * fx - dx * fy) / b.Rs - 0.3, 0, 1)),
+            mx = b.x + fx * md,
+            my = b.y + fy * md,
             vx = mx - f.x,
             vy = my - f.y,
             vl = Math.hypot(vx, vy) || 1,

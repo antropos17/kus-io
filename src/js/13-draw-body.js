@@ -89,7 +89,7 @@ function drawSpikes(b) {
   ctx.beginPath();
   for (let i = 0; i < N; i += step) {
     const q = pts[i];
-    if (Math.abs(angDiff(q.a, b.face)) < 1.0) continue;
+    if (Math.abs(angDiff(q.a, b.fa)) < 1.0) continue;
     const a = pts[(i - hs + N) % N],
       c = pts[(i + hs) % N],
       k = 0.26 + 0.08 * hash1(i * 3.3);
@@ -105,7 +105,7 @@ function drawCake(b) {
   // a cake seen from above: piped cream round the rim and a cherry on its back, the one soft spot
   const R = b.Rs,
     z = cam.z,
-    f = b.face;
+    f = b.fa;
   ctx.strokeStyle = 'rgba(190,120,70,0.35)';
   ctx.lineWidth = R * 0.035;
   ctx.beginPath();
