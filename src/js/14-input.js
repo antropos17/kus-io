@@ -150,6 +150,7 @@ function renderHats() {
     return `<button type="button" role="radio" aria-checked="${h.id === chosenHat}" data-h="${h.id}"${lock ? ' disabled' : ''}>${h.name}${lock ? ` <small>с ${h.need}</small>` : ''}</button>`;
   }).join('');
   recEl.textContent = best ? `Рекорд: ${best}` : 'Шапки открываются за рекорд по массе';
+  renderSecs();
 }
 hatsEl.addEventListener('click', (e) => {
   const t = e.target.closest('button');
@@ -183,6 +184,7 @@ function renderSkins() {
       why = lock ? `: за задание или за ${price} сахара` : '';
     return `<button type="button" role="radio" aria-checked="${id === chosenSkin}" aria-label="${name}${why}" title="${name}${why}" data-s="${id}"${lock ? ' class="lock"' : ''}><canvas width="92" height="92"></canvas>${tag}</button>`;
   }).join('');
+  renderSecs();
   const pal = PALS[chosen];
   for (const btn of skinsEl.children) {
     // a little candy in the chosen flavour wearing each pattern
@@ -267,6 +269,7 @@ skinsEl.addEventListener('click', (e) => {
   chosenSkin = id;
   if (wasAsk) renderSkins();
   else for (const b of skinsEl.children) b.setAttribute('aria-checked', String(b.dataset.s === chosenSkin));
+  renderSecs();
 });
 function renderSwatches() {
   swEl.innerHTML = PALS.map(
@@ -296,3 +299,43 @@ function menuFade() {
 menuCard.addEventListener('scroll', menuFade, { passive: true });
 addEventListener('resize', menuFade);
 requestAnimationFrame(menuFade);
+
+// ---------- menu sections ----------
+// Each head says what is chosen inside, so a folded menu still shows the whole setup. One section is open at a time.
+const secsEl = menuEl.querySelector('.secs');
+secsEl.addEventListener('click', (e) => {
+  const h = e.target.closest('.sh');
+  if (!h) return;
+  const sec = h.parentNode,
+    open = !sec.classList.contains('open');
+  for (const s of secsEl.children) {
+    s.classList.toggle('open', open && s === sec);
+    s.firstElementChild.setAttribute('aria-expanded', String(open && s === sec));
+  }
+  if (open) {
+    // bring the opened section into view above the Play block; sideways the sections scroll on their own
+    const box = getComputedStyle(secsEl).overflowY === 'auto' ? secsEl : menuCard,
+      top = box.getBoundingClientRect().top,
+      bottom = box === menuCard ? menuGo.getBoundingClientRect().top : box.getBoundingClientRect().bottom,
+      r = sec.getBoundingClientRect();
+    if (r.bottom > bottom) box.scrollTop += Math.min(r.bottom - bottom + 8, r.top - top - 8);
+  }
+  menuFade();
+});
+const pressedText = (id) => {
+  const b = $(id).querySelector('[aria-pressed=true]');
+  return b ? b.textContent : '';
+};
+function renderSecs() {
+  const pal = PALS[chosen],
+    skin = SKINS.find((k) => k[0] === chosenSkin),
+    hat = HATS.find((h) => h.id === chosenHat),
+    look = [pal.name, skin && skin[1], hat && hat.id !== 'none' && hat.name].filter(Boolean).join(' · ');
+  $('sumLook').innerHTML = `<i style="background:${pal.base}"></i>${look}`;
+  $('sumMode').textContent =
+    `${{ free: 'Свободная', t3: '3 минуты', daily: 'Конфета дня' }[mode]} · ${mode === 'daily' ? 'Обычная' : pressedText('diffSeg')}`;
+  const mis = $('misList').children,
+    done = $('misList').querySelectorAll('.mi.ok').length;
+  $('sumMis').textContent = mis.length ? `готово ${done} из ${mis.length}` : '';
+  $('sumSet').textContent = `графика: ${pressedText('gfxSeg').toLowerCase()}`;
+}

@@ -72,19 +72,28 @@ document.getElementById('nojs').style.display = 'none';
   <div class="wrap"><div class="card">
     <div class="top">
     <h1 class="logo">КУСЬ<span>.io</span></h1>
-    <p class="tag">Откусывай куски от других конфет и расти.<span class="later"> Тебя тоже будут кусать: ранки затянутся, а есть можно дальше.</span></p>
+    <p class="tag">Откусывай куски от других конфет и расти.</p>
     <input id="nick" maxlength="14" placeholder="Твоё имя" autocomplete="off" spellcheck="false" aria-label="Имя">
     <div class="bankRow later"><p id="bank" aria-live="polite"></p><button id="albumBtn" class="btn2" type="button"></button></div>
     </div>
     <p id="chal" class="hidden"></p>
-    <div class="pk later" id="dif"><span class="pl">Сложность</span><div class="seg3" id="diffSeg" role="group" aria-label="Сложность"><button type="button" data-v="easy">Лёгкая</button><button type="button" data-v="normal">Обычная</button><button type="button" data-v="hard">Жёсткая</button></div></div>
-    <div class="pk"><span class="pl">Вкус</span><div id="sw" class="pr" role="radiogroup" aria-label="Вкус"></div></div>
-    <div class="pk later"><span class="pl">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор"></div></div>
-    <div class="pk later"><span class="pl">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка"></div></div>
-    <div class="pk later" id="mis"><span class="pl" id="misT">Задания</span><div id="misList"></div></div>
-    <div class="go"><div class="seg2 later" id="modeSeg" role="group" aria-label="Режим"><button type="button" data-m="free">Свободная игра</button><button type="button" data-m="t3">3 минуты на счёт</button><button type="button" data-m="daily">Конфета дня</button></div><button id="play" class="btn" type="button">Играть</button></div>
-    <p class="best later" id="rec"></p>
-    <ul class="help later">
+    <div class="secs"><!-- folding sections: the head says what is chosen, one opens at a time -->
+      <section class="sec later" id="secMode"><button class="sh" type="button" aria-expanded="false" aria-controls="secModeB"><span class="sk">Режим</span><span class="sv" id="sumMode"></span></button><div class="sb" id="secModeB">
+        <div class="pk"><div class="seg2" id="modeSeg" role="group" aria-label="Режим"><button type="button" data-m="free">Свободная игра</button><button type="button" data-m="t3">3 минуты на счёт</button><button type="button" data-m="daily">Конфета дня</button></div></div>
+        <div class="pk" id="dif"><span class="pl">Сложность</span><div class="segN" id="diffSeg" role="group" aria-label="Сложность"><button type="button" data-v="easy">Лёгкая</button><button type="button" data-v="normal">Обычная</button><button type="button" data-v="hard">Жёсткая</button></div></div>
+      </div></section>
+      <section class="sec" id="secLook"><button class="sh" type="button" aria-expanded="false" aria-controls="secLookB"><span class="sk">Конфета</span><span class="sv" id="sumLook"></span></button><div class="sb" id="secLookB">
+        <div class="pk"><span class="pl">Вкус</span><div id="sw" class="pr" role="radiogroup" aria-label="Вкус"></div></div>
+        <div class="pk later"><span class="pl">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор"></div></div>
+        <div class="pk later"><span class="pl">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка"></div></div>
+        <p class="best later" id="rec"></p>
+      </div></section>
+      <section class="sec later" id="secMis"><button class="sh" type="button" aria-expanded="false" aria-controls="secMisB"><span class="sk">Задания</span><span class="sv" id="sumMis"></span></button><div class="sb" id="secMisB">
+        <div class="pk" id="mis"><span class="pl" id="misT">Задания</span><div id="misList"></div></div>
+      </div></section>
+      <section class="sec later" id="secSet"><button class="sh" type="button" aria-expanded="false" aria-controls="secSetB"><span class="sk">Настройки</span><span class="sv" id="sumSet"></span></button><div class="sb" id="secSetB"></div></section>
+      <section class="sec later" id="secHelp"><button class="sh" type="button" aria-expanded="false" aria-controls="secHelpB"><span class="sk">Как играть</span><span class="sv">управление и советы</span></button><div class="sb" id="secHelpB">
+    <ul class="help">
       <li class="kb"><span><b>Мышь</b>: куда смотрит пасть</span></li>
       <li class="kb"><span><b>Пробел, клик или «Кусь»</b>: рывок с укусом посильнее</span></li>
       <li class="kb"><span><b>Shift, правый клик или «Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
@@ -92,11 +101,15 @@ document.getElementById('nojs').style.display = 'none';
       <li class="tc"><span><b>«Кусь»</b>: рывок с укусом посильнее, можно держать</span></li>
       <li class="tc"><span><b>«Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
       <li><span>Кусает только пасть, так что заходи со спины</span></li>
+      <li><span>Тебя тоже будут кусать: ранки затянутся, а есть можно дальше</span></li>
       <li><span>На поле лежат бонусы: скорость, щит и магнит</span></li>
       <li><span>Ёж колется со спины, кусай его в морду. Торт кусай в вишенку</span></li>
       <li><span>Свежие ранки замедляют и сыплют крошками, добивай подранков</span></li>
       <li><span>Укус в свежую ранку отрывает на треть больше</span></li>
     </ul>
+      </div></section>
+    </div>
+    <div class="go"><button id="play" class="btn" type="button">Играть</button></div>
   </div></div>
 </div>
 
@@ -149,13 +162,15 @@ document.getElementById('nojs').style.display = 'none';
 <div id="pause" class="ov center hidden" role="dialog" aria-label="Пауза">
   <div class="wrap"><button class="x" id="pauseX" type="button" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
     <h2 class="dead">Пауза</h2>
-    <div class="grp">Кнопки на экране</div>
-    <div class="seg2" id="handSeg"><button type="button" data-v="0">Справа</button><button type="button" data-v="1">Слева</button></div>
-    <div class="grp">Размер кнопок</div>
-    <div class="seg3" id="sizeSeg"><button type="button" data-v="0.85">Мелкие</button><button type="button" data-v="1">Средние</button><button type="button" data-v="1.18">Крупные</button></div>
+    <div id="setBox"><!-- moves into the menu's settings section while the menu is open -->
+    <div class="grp tch">Кнопки на экране</div>
+    <div class="seg2 tch" id="handSeg"><button type="button" data-v="0">Справа</button><button type="button" data-v="1">Слева</button></div>
+    <div class="grp tch">Размер кнопок</div>
+    <div class="seg3 tch" id="sizeSeg"><button type="button" data-v="0.85">Мелкие</button><button type="button" data-v="1">Средние</button><button type="button" data-v="1.18">Крупные</button></div>
     <div class="grp">Графика</div>
     <div class="seg3" id="gfxSeg"><button type="button" data-v="auto">Авто</button><button type="button" data-v="low">Лёгкая</button><button type="button" data-v="high">Полная</button></div>
     <div class="seg2" id="fpsSeg" role="group" aria-label="Счётчик кадров"><button type="button" data-v="0">Без счётчика кадров</button><button type="button" data-v="1">Показывать FPS</button></div>
+    </div>
     <button id="resume" class="btn" type="button">Продолжить</button>
     <button id="pAdmin" class="btn2" type="button">Админ-панель</button>
     <button id="pMenu" class="btn2" type="button">Выйти в меню</button>

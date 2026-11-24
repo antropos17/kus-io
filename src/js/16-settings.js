@@ -22,10 +22,18 @@ function applySet() {
   try {
     localStorage.setItem('kus.set', JSON.stringify(SET));
   } catch (e) {}
+  renderSecs();
+}
+const setBox = $('setBox');
+function setHome(inMenu) {
+  // one set of settings: in the menu's section while the menu is up, on the pause card during a run
+  if (inMenu) $('secSetB').appendChild(setBox);
+  else pauseEl.querySelector('.card').insertBefore(setBox, $('resume'));
 }
 function openPause() {
   if (state !== 'play' || !player || !player.alive || paused) return;
   paused = true;
+  setHome(false);
   pauseEl.classList.remove('hidden');
   saveM();
   setTimeout(() => $('resume').focus({ preventScroll: true }), 30);

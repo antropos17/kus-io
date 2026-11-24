@@ -199,6 +199,7 @@ function start(data) {
     $('chal').classList.remove('hidden');
     mode = challenge.d ? 'daily' : 'free';
   }
+  setHome(true);
   renderSwatches();
   renderSkins();
   renderHats();
