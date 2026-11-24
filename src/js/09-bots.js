@@ -327,6 +327,7 @@ function smartInit(ai) {
   ai.pack = null;
   ai.slot = 0;
 }
+const fresh = (o) => o.isPlayer && time - o.stats.t0 < 20; // the first 20 seconds of a player's life: hunted less, never tongued
 function busyOf(o, b) {
   // biting, chewing, tongue out, or chasing someone else: its mind is elsewhere for a moment
   return !!(
@@ -338,10 +339,14 @@ function busyOf(o, b) {
     (o.ai && o.ai.mode === 'hunt' && o.ai.prey && o.ai.prey !== b)
   );
 }
-function strikeOf(o, lethal) {
-  // how far o can reach right now: the mouth, a lunge when its dash is ready, a bit of tongue when that would be lethal
+function strikeOf(o, lethal, facing) {
+  // how far o can reach right now: the mouth, plus a lunge when its dash is ready and a bit of tongue when that would be lethal,
+  // both only as far as its mouth points this way
+  const aim = clamp((facing + 0.2) / 0.8, 0, 1);
   return (
-    o.Rs * 0.45 + 20 + (o.dashCd <= 0 ? 110 + o.Rs * 0.5 : 0) + (lethal && o.dodgeCd <= 0 && !o.tongue ? Math.min(170 + o.Rs * 1.3, 460) * 0.25 : 0)
+    o.Rs * 0.45 +
+    20 +
+    aim * ((o.dashCd <= 0 ? 110 + o.Rs * 0.5 : 0) + (lethal && o.dodgeCd <= 0 && !o.tongue ? Math.min(170 + o.Rs * 1.3, 460) * 0.25 : 0))
   );
 }
 function botThinkSmart(b, S) {
@@ -383,10 +388,10 @@ function botThinkSmart(b, S) {
       // a real threat, not a glance: how far it reaches now, how fast it closes in, whether its mouth is on me.
       // A big one turning round far away is no reason to run.
       const lethal = lethalFor(b.mass, biteOf(o.mass, o.dashCd <= 0)),
-        strike = strikeOf(o, lethal),
+        strike = strikeOf(o, lethal, facing),
         eff = sd - Math.max(0, (b.vx - o.vx) * ux + (b.vy - o.vy) * uy) * 0.5;
-      if (eff < strike + 130) {
-        let w = (1 - clamp((eff - strike) / 130, 0, 1)) * (lethal ? 2.4 : 0.8) * ai.fear * ai.tf * (0.35 + 0.65 * clamp(facing + 0.3, 0, 1));
+      if (eff < strike + 90) {
+        let w = (1 - clamp((eff - strike) / 90, 0, 1)) * (lethal ? 2.4 : 0.8) * ai.fear * ai.tf * (0.2 + 0.8 * clamp(facing + 0.3, 0, 1));
         if (busyOf(o, b)) w *= 0.6; // its mouth is full for a moment
         if (o === T) w *= 0.45; // a pack gives nerve
         if (sneaking && o === ai.prey && facing < 0.25) w = 0; // creeping up on its back on purpose
@@ -415,7 +420,7 @@ function botThinkSmart(b, S) {
     let s = (gain / (Math.max(0, sd) + 70)) * ai.aggro * ai.ta;
     s *= 1 + Math.min(0.8 * ai.tw, woundLoad(o) * 1.5 * ai.tw);
     if (ai.trait === 'bully' && o.mass < b.mass * 0.5) s *= 1.3; // picks on the small ones
-    if (o.isPlayer) s *= 0.85 * DIFFS[diff].hunt;
+    if (o.isPlayer) s *= 0.85 * DIFFS[diff].hunt * (fresh(o) ? DIFFS[diff].ai.fresh : 1); // a life just begun gets a few seconds to find its feet
     if (o === leader) s *= 1.25;
     if (ai.mode === 'hunt' && o === ai.prey) s *= 1.3; // sticks to its choice for a while
     if (s > preyS) {
@@ -537,7 +542,7 @@ function lunge(b, o, dt, rate) {
 }
 function smartTongue(b, o, d, dx, dy, dt, S) {
   // the tongue when it pays: the prey is past a lunge but within reach, and the reel-in ends at this mouth
-  if (b.dodgeCd > 0 || b.tongue) return false;
+  if (b.dodgeCd > 0 || b.tongue || fresh(o)) return false;
   const g = d - o.Rs - b.Rs;
   if (g < 35 || g > Math.min(170 + b.Rs * 1.3, 460) * 0.85 || o.mass < b.mass * 0.05) return false;
   if (b.dashCd <= 0 && g < 110 + b.Rs * 0.4) return false; // a lunge does it better
