@@ -161,6 +161,26 @@ test('menu: sections and Play fit the screen, nothing overlaps, targets are 44px
       assert(o.open.length === 1 && o.open[0] === id, `${tag}: open sections ${o.open}, expected only ${id}`);
       assert(o.play, `${tag}: Play left the screen with ${id} open`);
       assert(o.first, `${tag}: ${id} opened out of sight`);
+      if (id === 'secMode') {
+        const d = await g.page.evaluate(() =>
+          [...document.querySelectorAll('#diffSeg button')].map((e) => {
+            const b = e.getBoundingClientRect();
+            return {
+              v: e.dataset.v,
+              ok: b.left >= 0 && b.right <= innerWidth && b.width >= 44 && b.height >= 44,
+              clip: e.scrollWidth > e.clientWidth + 1,
+              sw: e.scrollWidth,
+              cw: e.clientWidth,
+              w: Math.round(b.width),
+              h: Math.round(b.height),
+              top: Math.round(b.top),
+            };
+          }),
+        );
+        assert(d.length === 4, `${tag}: ${d.length} difficulty buttons, expected 4`);
+        assert(new Set(d.map((x) => x.top)).size === 1, `${tag}: the difficulty buttons do not share one row`);
+        for (const x of d) assert(x.ok && !x.clip, `${tag}: difficulty ${x.v} is off the screen, small or clipped ${JSON.stringify(x)}`);
+      }
     }
     await g.page.click('#secHelp .sh');
     assert(!(await g.page.evaluate(() => document.querySelector('#menu .sec.open'))), `${tag}: a second tap must fold the section`);
@@ -933,22 +953,133 @@ test('stages: the HUD stage line stays clear of the table on phones, next to a c
   }
 });
 
+// smarter bots: a scene with the player and a few bots, everything else parked far away
+const BOTS = `const k = window.__kus, P = k.player; k.pause(true);
+  for (const key in k.CHEAT) k.CHEAT[key] = key === 'speed' ? 1 : false;
+  for (const b of k.blobs) if (b !== P) { b.x = 300 + Math.random() * 300; b.y = 3700; b.resetPoints(); }
+  P.spawnT = 0; P.ai = null;
+  const bot = (m, x, y, face) => { const b = k.spawnBot(m); b.spawnT = 0; k.place(b, x, y, face); b.ai.think = 0; return b; };
+  const run = (s, each) => { for (let i = 0; i < s * 60; i++) { if (each) each(i); k.update(1 / 60); } };
+  const clear = (keep) => { for (const o of k.blobs) if (o !== P && keep.indexOf(o) < 0 && Math.hypot(o.x - 2000, o.y - 2000) < 900) o.alive = false; }; // the live field keeps sending bots in`;
+
+test('bots: a bot does not run from a far player who only turns to it, but runs from a near one', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${BOTS}
+    const out = {};
+    for (const d of ['hard', 'extreme']) {
+      k.setDiff(d); P.mass = 60; k.place(P, 2000, 2000, 0); P.dashCd = 0;
+      const b = bot(20, 2000 + P.Rs + 25 + 330, 2000, Math.PI); let fled = 0;
+      run(1.5, () => { clear([b]); k.place(P, 2000, 2000, 0); k.place(b, 2000 + P.Rs + 25 + 330, 2000, Math.PI); if (b.ai.mode === 'flee') fled++; });
+      const far = fled; fled = 0;
+      k.place(b, 2000 + P.Rs + b.Rs + 70, 2000, Math.PI); b.ai.think = 0;
+      run(0.6, () => { clear([b]); k.place(P, 2000, 2000, 0); P.dashCd = 0; if (b.ai.mode === 'flee') fled++; });
+      out[d] = { far, near: fled }; b.alive = false;
+    }
+    return out; })()`);
+  for (const d in r) assert(r[d].far === 0 && r[d].near > 0, `${d}: fled ${r[d].far} frames from a far glance, ${r[d].near} from a near threat`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('bots: on extreme a bot uses its tongue on prey in reach', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${BOTS}
+    k.setDiff('extreme'); k.place(P, 3500, 400, 0); let n = 0;
+    for (let t = 0; t < 6 && !n; t++) {
+      const h = bot(120, 2000, 2000, 0), p = bot(15, 2000 + 61 + 22 + 190, 2000, 0), t0 = k.botStat.tongue;
+      run(3, () => { p.vx = p.vy = 0; p.x = 2000 + 61 + 22 + 190; p.y = 2000; });
+      n = k.botStat.tongue - t0; h.alive = p.alive = false;
+    }
+    return n; })()`);
+  assert(r > 0, 'no tongue at prey in reach');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('bots: a small bot bites the back of a busy big player and backs off', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${BOTS}
+    // botStat.sneak counts every bot on the field, so this bot's own bite is told by its back-off timer, set only by that bite;
+    // bots that wander in are removed, or they bite the player and chase this bot away
+    k.setDiff('extreme'); P.mass = 400; let bit = 0, away = 0, b = null;
+    for (let t = 0; t < 16 && !bit; t++) {
+      if (b) b.alive = false;
+      b = bot(30, 2000 - P.Rs - 140, 2000, 0);
+      run(6, () => { k.place(P, 2000, 2000, 0); P.chewT = 1; P.biteCd = 1; clear([b]); if (b.ai.retT > 0) bit = 1; if (bit && b.ai.mode === 'flee') away++; });
+    }
+    return { bites: bit, away }; })()`);
+  assert(r.bites > 0, 'no bite on the back of a busy big one');
+  assert(r.away > 0, 'the small bot did not back off after its bite');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('bots: a pack gathers on a big one, goes in from several sides and breaks up', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${BOTS}
+    k.setDiff('extreme'); const t0 = k.botStat.packs; let formed = 0, size = 0, ended = 0;
+    for (let t = 0; t < 4 && k.botStat.packs === t0; t++) {
+      // members may still run off from a giant that turns their way, so try a few fresh groups
+      for (const b of k.blobs) if (b !== P && b.ai) b.alive = false;
+      P.mass = 500; k.place(P, 2000, 2000, 0); P.pShield = 99;
+      const four = [0, 1, 2, 3].map((i) => bot(70, 2000 + Math.cos(i * 1.6) * 420, 2000 + Math.sin(i * 1.6) * 420, 0));
+      run(1, () => { clear(four); k.place(P, 2000, 2000, 0); });
+      P.pShield = 0;
+      run(20, () => { clear(four); k.place(P, 2000, 2000, 0); P.biteCd = 1; if (k.packs.length) { formed = 1; size = Math.max(size, k.packs[0].m.length); } else if (formed) ended = 1; });
+    }
+    return { formed, size, went: k.botStat.packs - t0, ended }; })()`);
+  assert(r.formed && r.size >= 2 && r.size <= 4, `pack ${JSON.stringify(r)}`);
+  assert(r.went > 0, 'the pack never went in');
+  assert(r.ended, 'the pack never broke up');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('bots: easy and normal keep the old script, no traits, packs, sneaks or licks', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${BOTS}
+    const s0 = JSON.stringify(k.botStat), out = {};
+    for (const d of ['easy', 'normal']) {
+      k.setDiff(d); P.mass = 300; k.place(P, 2000, 2000, 0);
+      for (let i = 0; i < 4; i++) bot(40, 2000 + Math.cos(i * 1.6) * 350, 2000 + Math.sin(i * 1.6) * 350, 0);
+      run(8, () => k.place(P, 2000, 2000, 0));
+      out[d] = k.blobs.filter((b) => b.ai && b.ai.trait).length + k.packs.length;
+    }
+    return { out, same: JSON.stringify(k.botStat) === s0 }; })()`);
+  assert(r.same && r.out.easy === 0 && r.out.normal === 0, JSON.stringify(r));
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 test('settings: difficulty and graphics apply and are remembered', async () => {
   const g = await open({ play: false, returning: true });
   const mass = {};
-  for (const d of ['easy', 'hard', 'normal']) {
+  for (const d of ['easy', 'hard', 'extreme', 'normal']) {
     if (!(await g.page.isVisible('#diffSeg'))) await g.page.click('#secMode .sh'); // difficulty lives in the folded Mode section
     await g.page.click(`#diffSeg button[data-v=${d}]`);
     await g.page.click('#play');
+    // read it on the first frames: hard and extreme start only 2 apart, and a sprinkle eaten later would blur that
+    mass[d] = await g.page.evaluate(
+      () =>
+        new Promise((res) =>
+          (function f() {
+            const k = window.__kus;
+            if (k.state === 'play' && k.player) res(k.player.mass);
+            else requestAnimationFrame(f);
+          })(),
+        ),
+    );
     await g.page.waitForTimeout(120);
-    mass[d] = await g.page.evaluate(() => window.__kus.player.mass);
     assert((await g.page.evaluate(() => localStorage.getItem('kus.diff'))) === d, 'difficulty not saved');
     await g.page.keyboard.press('Escape');
     await g.page.waitForTimeout(120);
     await g.page.click('#pMenu');
     await g.page.waitForTimeout(120);
   }
-  assert(mass.easy > mass.normal && mass.normal > mass.hard, `start mass must fall with difficulty: ${JSON.stringify(mass)}`);
+  assert(
+    mass.easy > mass.normal && mass.normal > mass.hard && mass.hard > mass.extreme,
+    `start mass must fall with difficulty: ${JSON.stringify(mass)}`,
+  );
   await g.page.click('#play');
   await g.page.waitForTimeout(150);
   await g.page.keyboard.press('Escape');
@@ -964,6 +1095,7 @@ test('settings: difficulty and graphics apply and are remembered', async () => {
 test('sound: every effect plays without throwing', async () => {
   const g = await open();
   const r = await g.page.evaluate(async () => {
+    window.__kus.pause(true); // the live game's own bites would play takes in the waits below and be counted
     const S = window.__kus.Sfx,
       bad = [];
     const calls = [

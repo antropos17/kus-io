@@ -222,6 +222,10 @@ function start(data) {
 window.__kus = {
   Sfx,
   SFX_DATA,
+  botStat, // what the smarter bots of hard and extreme have done (09-bots)
+  get packs() {
+    return packs;
+  },
   get cam() {
     return cam;
   },
