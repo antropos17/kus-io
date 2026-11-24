@@ -77,13 +77,19 @@ function streakShout(c) {
   const fs = H < 500 ? 12 + l * 2.2 : touchMode ? 13 + l * 2.6 : 14 + l * 4;
   d.style.fontSize = fs + 'px';
   d.style.setProperty('--r', rand(-4, 4).toFixed(1) + 'deg');
-  // keep the whole word on screen and clear of the table even at the peak of its pop (scale 1.3)
+  // keep the whole word on screen and clear of the table even at the peak of its pop (scale 1.3).
+  // When the table leaves too little room beside it, the word drops below the table instead of
+  // shrinking, so a long streak never gets a smaller word than a short one.
   const sr = streakEl.getBoundingClientRect(),
     x0 = sr.left + d.offsetLeft,
-    y0 = sr.top + d.offsetTop - d.offsetHeight,
-    edge = y0 < boardBottom && boardLeft > x0 ? boardLeft : W,
-    room = edge - x0 - 12,
-    need = d.offsetWidth * 1.3 + 6;
+    need = d.offsetWidth * 1.3 + 6,
+    h = d.offsetHeight * 0.65, // half its height at the peak of the pop: the word is centred on its top
+    level = sr.top + d.offsetTop - h < boardBottom && boardLeft > x0;
+  let room = (level ? boardLeft : W) - x0 - 12;
+  if (level && need > room) {
+    d.style.top = Math.ceil(boardBottom - sr.top + h + 6) + 'px';
+    room = W - x0 - 12;
+  }
   if (need > room) d.style.fontSize = ((fs * room) / need).toFixed(1) + 'px';
 }
 // every frame from updateHUD: the fuse burns down, and a lapsed streak goes out
@@ -95,33 +101,37 @@ function streakTick() {
       streakK = k;
       streakEl.style.setProperty('--k', k);
     }
-    return;
+  } else if (streakShown) {
+    if (live) hudBit(streakEl, 'burnt', `серия ×${streakShown} сгорела`, 1250);
+    streakShown = 0;
+    streakEl.className = live ? 'out' : '';
+    vigEl.classList.remove('hot');
   }
-  if (!streakShown) return;
-  if (live) hudBit(streakEl, 'burnt', `серия ×${streakShown} сгорела`, 1250);
-  streakShown = 0;
-  streakEl.className = live ? 'out' : '';
-  vigEl.classList.remove('hot');
+  // milestones count any mass, sprinkles and bonuses too
+  while (live && markI < MASS_MARKS.length && player.mass >= MASS_MARKS[markI]) {
+    hudBit($('hud'), 'milestone', `Масса ${MASS_MARKS[markI]}!`, 1850);
+    markI++;
+  }
 }
 
 // mass went in: "+N" flies off the counter, bigger and brighter for bigger pieces (from bumpMass)
 function gainPop(n, whole) {
   n = Math.round(n);
   if (n < 1) return 1;
-  const t = whole ? 4 : n >= 60 ? 3 : n >= 20 ? 2 : 1;
-  const d = hudBit(scoreEl, 'plus t' + t, '+' + n, 1050);
+  // the tier is the piece next to the candy before it, so a big candy's every bite does not glow
+  const rel = n / Math.max(1, player.mass - n),
+    t = whole ? 4 : rel >= 0.3 ? 3 : rel >= 0.1 ? 2 : 1;
+  const stack = scoreEl.querySelectorAll('.plus').length, // pops in quick succession step down instead of piling up
+    d = hudBit(scoreEl, 'plus t' + t, '+' + n, 1050);
   // beside the digits on a PC; on a phone the pause and sound buttons sit there, so beside the sugar instead
   const r = document.createRange();
   r.selectNodeContents(massEl);
   const mw = r.getBoundingClientRect().width,
     side = touchMode && sugarEl.offsetWidth > 0;
   d.style.left = (side ? sugarEl.offsetLeft + sugarEl.offsetWidth : mw) + 8 + 'px';
-  if (side) d.style.top = sugarEl.offsetTop + sugarEl.offsetHeight / 2 - d.offsetHeight / 2 + 'px';
+  // beside the sugar the fuse is just below, so that stack climbs; at the digits it steps down
+  d.style.top = (side ? sugarEl.offsetTop + sugarEl.offsetHeight / 2 - d.offsetHeight / 2 - (stack % 3) * 10 : 2 + (stack % 3) * 12) + 'px';
   if (t >= 3) hudSparks(scoreEl, mw / 2, 18, t === 4 ? '#ffd23f' : '#ff7a9c', t === 4 ? 16 : 9, t === 4 ? 70 : 45);
-  while (markI < MASS_MARKS.length && player.mass >= MASS_MARKS[markI]) {
-    hudBit($('hud'), 'milestone', `Масса ${MASS_MARKS[markI]}!`, 1850);
-    markI++;
-  }
   return t;
 }
 // a new life starts counting the milestones from its own mass

@@ -263,27 +263,33 @@ test('streak fuse: heats up step by step, the shout stays on screen, "+N" pops, 
       P.mass = 120; for (let i = 0; i < 40; i++) k.update(1/60);
       const V = k.spawnBot(900); V.ai = null; V.spawnT = 0; for (let i = 0; i < 30; i++) k.update(1/60);
       P.combo = 0; P.comboT = 0;
-      const el = document.getElementById('streak');
+      // the gap from the fuse slot to the lines under it (the sugar pill above may appear on the first bite, that is older)
+      const el = document.getElementById('streak'), below = () => document.getElementById('timer').getBoundingClientRect().top - el.getBoundingClientRect().top;
+      out.below0 = below();
       let last = P.stats.bites;
       for (let n = 0; n < 8; n++) { k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; P.biteCd = 0; let f = 0;
         while (f < 90 && P.stats.bites === last) { P.tx = V.x; P.ty = V.y; V.tx = V.x; V.ty = V.y; V.biteCd = 9; k.update(1/60); f++; }
         last = P.stats.bites;
         const s = el.querySelector('.shout'), sr = s && s.getBoundingClientRect(), er = el.getBoundingClientRect(),
           b = document.getElementById('board').getBoundingClientRect(),
-          // the table is the limit when the word is level with it, the screen edge otherwise
-          w = s && er.top + s.offsetTop - s.offsetHeight < b.bottom && b.left > sr.left ? b.left : innerWidth;
-        out.steps.push({ combo: P.combo, cls: el.className, x: el.querySelector('b').textContent,
-          word: s ? s.textContent : '', right: s ? sr.left + s.offsetWidth * 1.3 : 0, w }); }
+          // the table is the limit when the word, at the peak of its pop, is level with it; the screen edge otherwise
+          w = s && sr.top + sr.height / 2 - s.offsetHeight * 0.65 < b.bottom && b.left > sr.left ? b.left : innerWidth;
+        out.steps.push({ combo: P.combo, cls: el.className, x: el.querySelector('b').textContent, below: below(),
+          word: s ? s.textContent : '', right: s ? sr.left + s.offsetWidth * 1.3 : 0, w, fs: s ? parseFloat(s.style.fontSize) : 0 }); }
       for (let i = 0; i < 60; i++) k.update(1/60);
       out.plus = document.querySelectorAll('#score .plus').length;
       k.place(V, 3500, 3500, 0); // out of reach, so the streak can only lapse
       for (let i = 0; i < 200; i++) { P.tx = P.x; P.ty = P.y; k.update(1/60); }
-      out.after = el.className; out.burnt = !!el.querySelector('.burnt'); return out; })()`);
+      out.after = el.className; out.burnt = !!el.querySelector('.burnt'); out.below1 = below(); return out; })()`);
     const tag = `${opt.width || 1200}x${opt.height || 720}`;
     for (const s of r.steps.slice(1)) {
       assert(s.cls === 'on lv' + Math.min(s.combo, 6) && s.x === '×' + s.combo, `${tag}: streak ×${s.combo} shows "${s.cls}" "${s.x}"`);
       assert(s.word && s.right <= s.w, `${tag}: shout "${s.word}" at ×${s.combo} reaches ${s.right.toFixed(0)} of ${s.w}`);
+      // a longer streak never gets a smaller word than ×2 does
+      assert(s.fs >= r.steps[1].fs - 0.5, `${tag}: shout "${s.word}" at ×${s.combo} is ${s.fs}px, smaller than ×2 (${r.steps[1].fs}px)`);
+      assert(s.below === r.below0, `${tag}: the lines under the fuse moved from ${r.below0} to ${s.below} at ×${s.combo}`);
     }
+    assert(r.below1 === r.below0, `${tag}: the lines under the fuse moved from ${r.below0} to ${r.below1} after the streak went out`);
     assert(r.steps.length === 8 && r.steps[7].combo === 8, `${tag}: the streak should reach ×8, got ${r.steps.map((s) => s.combo)}`);
     assert(r.plus > 0, `${tag}: no "+N" off the mass counter`);
     assert(r.after === 'out' && r.burnt, `${tag}: a lapsed streak must go out, got "${r.after}"`);

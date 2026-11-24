@@ -100,34 +100,34 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #sugar{display:inline-block;transform-origin:0 50%;margin-top:4px;font:900 14px/1 var(--font);color:var(--ink);background:var(--lemon);padding:4px 9px;border-radius:99px;font-variant-numeric:tabular-nums}
 #sugar:empty{display:none}
 /* the streak fuse: a glossy candy tube that burns down over the streak window (--k from 1 to 0) */
-#streak{--k:1;--c:#9be15d;--g:rgba(155,225,93,0);--hd:#3f8f1f;--n:0;position:relative;display:none;margin-top:8px}
-#streak.on,#streak.out{display:block}
-#streak.out .sbar{display:none}
+#streak{--k:1;--c:#9be15d;--g:rgba(155,225,93,0);--hd:#3f8f1f;--n:0;position:relative;margin-top:8px;visibility:hidden} /* the slot is always there, so the lines below never jump */
+#streak.on,#streak.out{visibility:visible}
+#streak.out .sbar{visibility:hidden}
 #streak.lv3{--c:#ffd23f;--g:rgba(255,210,63,.45);--hd:#c27a00;--n:1}
 #streak.lv4{--c:#ff9a3c;--g:rgba(255,154,60,.6);--hd:#c94a06;--n:2}
 #streak.lv5{--c:#ff5a3c;--g:rgba(255,90,60,.75);--hd:#a8141c;--n:3}
 #streak.lv6{--c:#ff3c3c;--g:rgba(255,120,40,.95);--hd:#ff3c1a;--n:4}
-.sbar{position:relative;width:190px;height:22px;border-radius:99px;background:linear-gradient(#1a0c07,#2c1710);border:2px solid rgba(255,241,220,.28);box-shadow:inset 0 3px 5px rgba(0,0,0,.65),0 2px 0 rgba(0,0,0,.45),0 0 calc(var(--n) * 7px) var(--g)}
+.sbar{--bw:186px;position:relative;width:190px;height:22px;border-radius:99px;background:linear-gradient(#1a0c07,#2c1710);border:2px solid rgba(255,241,220,.28);box-shadow:inset 0 3px 5px rgba(0,0,0,.65),0 2px 0 rgba(0,0,0,.45),0 0 calc(var(--n) * 7px) var(--g)}
 .sfill{position:absolute;left:0;top:0;bottom:0;width:100%;border-radius:99px;transform-origin:0 50%;transform:scaleX(var(--k));box-shadow:inset 0 -2px 0 rgba(0,0,0,.18);background:linear-gradient(rgba(255,255,255,.6),rgba(255,255,255,.08) 42%,rgba(0,0,0,0) 55%,rgba(0,0,0,.25)),repeating-linear-gradient(-45deg,rgba(255,255,255,.26) 0 5px,rgba(255,255,255,0) 5px 10px),var(--c);background-size:auto,14.14px 14.14px,auto;animation:sStripes .5s linear infinite}
 @keyframes sStripes{to{background-position:0 0,14.14px 0,0 0}}
 .lv6 .sfill{background:linear-gradient(rgba(255,255,255,.6),rgba(255,255,255,.08) 42%,rgba(0,0,0,0) 55%,rgba(0,0,0,.25)),repeating-linear-gradient(-45deg,rgba(255,255,255,.26) 0 5px,rgba(255,255,255,0) 5px 10px),linear-gradient(90deg,#ff2d2d,#ff7a1a,#ffd23f,#ff7a1a,#ff2d2d);background-size:auto,14.14px 14.14px,200% 100%;animation:sLava .5s linear infinite}
 @keyframes sLava{to{background-position:0 0,14.14px 0,-200% 0}}
-.stip{position:absolute;top:50%;left:calc(var(--k) * 100% - 7px);width:14px;height:14px;margin-top:-7px;border-radius:50%;background:radial-gradient(circle,#fff 0 25%,#fff3b0 40%,var(--c) 70%,rgba(255,255,255,0) 72%);box-shadow:0 0 8px 3px var(--c),0 0 16px 6px var(--g);animation:sTip .12s linear infinite alternate}
+.stip{position:absolute;top:50%;left:-7px;translate:calc(var(--k) * var(--bw)) 0;width:14px;height:14px;margin-top:-7px;border-radius:50%;background:radial-gradient(circle,#fff 0 25%,#fff3b0 40%,var(--c) 70%,rgba(255,255,255,0) 72%);box-shadow:0 0 8px 3px var(--c),0 0 16px 6px var(--g);animation:sTip .12s linear infinite alternate}
 @keyframes sTip{to{transform:scale(1.25)}}
-.stxt{position:absolute;left:10px;top:50%;transform:translateY(-50%);font:900 13px/1 var(--font);letter-spacing:.04em;text-transform:uppercase;color:#2a120a;text-shadow:0 1px 0 rgba(255,255,255,.55);white-space:nowrap}
+.stxt{position:absolute;left:10px;top:50%;transform:translateY(-50%);font:900 13px/1 var(--font);letter-spacing:.04em;text-transform:uppercase;color:var(--cream);text-shadow:0 1px 0 #2a120a,1px 0 0 #2a120a,-1px 0 0 #2a120a,0 -1px 0 #2a120a,0 2px 0 #2a120a;white-space:nowrap} /* readable on the fill and on the burnt-out tube */
 .stxt b{display:inline-block;transform-origin:50% 60%}
 .stxt b.punch{animation:sPunch .32s cubic-bezier(.2,1.6,.4,1)}
 @keyframes sPunch{from{transform:scale(1.7)}to{transform:none}}
 /* flames over the fuse: none at ×2 and ×3, two at ×4, four at ×5, six at ×6 and up */
-.fl{display:none;position:absolute;bottom:50%;width:12px;height:18px;margin-left:-6px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;pointer-events:none;background:radial-gradient(ellipse at 50% 75%,#ffe27a,#ff8a1a 45%,#ff3a1a 70%,rgba(255,40,20,0) 72%);animation:sFlame .65s ease-out infinite}
+.fl{display:none;position:absolute;bottom:50%;width:12px;height:18px;margin-left:-6px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;left:0;pointer-events:none;background:radial-gradient(ellipse at 50% 75%,#ffe27a,#ff8a1a 45%,#ff3a1a 70%,rgba(255,40,20,0) 72%);animation:sFlame .65s ease-out infinite}
 .fl::after{content:"";position:absolute;left:3px;right:3px;bottom:1px;height:55%;border-radius:inherit;background:radial-gradient(ellipse at 50% 70%,#fff,#fff6c8 45%,rgba(255,240,180,0) 75%)}
 .lv4 .fl:nth-of-type(-n+2),.lv5 .fl:nth-of-type(-n+4),.lv6 .fl{display:block}
-.fl:nth-of-type(1){left:calc(var(--k) * 88%)}
-.fl:nth-of-type(2){left:calc(var(--k) * 42%);animation-delay:-.3s}
-.fl:nth-of-type(3){left:calc(var(--k) * 66%);animation-delay:-.15s}
-.fl:nth-of-type(4){left:calc(var(--k) * 18%);animation-delay:-.45s}
-.fl:nth-of-type(5){left:calc(var(--k) * 54%);animation-delay:-.55s}
-.fl:nth-of-type(6){left:calc(var(--k) * 30%);animation-delay:-.08s}
+.fl:nth-of-type(1){translate:calc(var(--k) * var(--bw) * .88) 0}
+.fl:nth-of-type(2){translate:calc(var(--k) * var(--bw) * .42) 0;animation-delay:-.3s}
+.fl:nth-of-type(3){translate:calc(var(--k) * var(--bw) * .66) 0;animation-delay:-.15s}
+.fl:nth-of-type(4){translate:calc(var(--k) * var(--bw) * .18) 0;animation-delay:-.45s}
+.fl:nth-of-type(5){translate:calc(var(--k) * var(--bw) * .54) 0;animation-delay:-.55s}
+.fl:nth-of-type(6){translate:calc(var(--k) * var(--bw) * .3) 0;animation-delay:-.08s}
 @keyframes sFlame{from{opacity:.95;transform:translate(0,0) scale(1)}to{opacity:0;transform:translate(2px,-30px) scale(.3)}}
 .shock{position:absolute;right:0;top:50%;width:20px;height:20px;margin-top:-10px;border-radius:50%;border:4px solid #ffd23f;pointer-events:none;animation:sShock .6s ease-out forwards}
 @keyframes sShock{to{transform:scale(7);opacity:0;border-width:1px}}
@@ -154,10 +154,11 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 .milestone{position:fixed;left:50%;top:calc(18% + env(safe-area-inset-top,0px));z-index:3;white-space:nowrap;pointer-events:none;font:900 20px/1 var(--font);color:var(--ink);padding:8px 16px;border-radius:99px;background:linear-gradient(#fff3a8,#ffd23f 55%,#f0a800);border:2px solid #3a1208;box-shadow:0 3px 0 #3a1208,0 0 0 4px rgba(255,210,63,.25),0 6px 10px rgba(0,0,0,.4);animation:sMile 1.8s cubic-bezier(.2,1.4,.4,1) forwards}
 @keyframes sMile{0%{opacity:0;transform:translateX(-50%) scale(.3) rotate(-8deg)}12%{opacity:1;transform:translateX(-50%) scale(1.15) rotate(3deg)}22%{transform:translateX(-50%) scale(1) rotate(0)}85%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-10px)}}
 /* the edges of the screen glow while a ×6 streak burns */
-#vig.hot{box-shadow:inset 0 0 70px 14px rgba(255,90,30,.5);animation:sVig 1s ease-in-out infinite alternate}
-@keyframes sVig{to{box-shadow:inset 0 0 90px 22px rgba(255,140,30,.55)}}
+#vig::after{content:"";position:absolute;left:0;top:0;right:0;bottom:0;box-shadow:inset 0 0 80px 18px rgba(255,110,30,.55);opacity:0;transition:opacity .3s} /* drawn once, only its opacity moves */
+#vig.hot::after{opacity:1;animation:sVig 1s ease-in-out infinite alternate}
+@keyframes sVig{from{opacity:.6}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){
-  .sfill,.lv6 .sfill,.stip,#vig.hot{animation:none}
+  .sfill,.lv6 .sfill,.stip,#vig.hot::after{animation:none}
   .fl,.lv4 .fl:nth-of-type(-n+2),.lv5 .fl:nth-of-type(-n+4),.lv6 .fl{display:none}
   .shout,.shout.wob,.plus,.milestone{animation:sCalm 1.1s ease forwards}
   .shout{transform:translateY(-50%) rotate(0)}
@@ -338,7 +339,7 @@ body.touch #feed div{background:rgba(20,11,8,.55);color:var(--cream);box-shadow:
 body.touch #goal,body.touch #stage{max-width:calc(100vw - 206px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px))} /* wraps left of the table, like the feed */
 body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))} /* the first run: hints stop short of the player in the middle */
 @media (max-width:700px){body.touch #board{width:min(150px,42vw)}}
-body.touch .sbar{width:150px;height:20px}
+body.touch .sbar{--bw:146px;width:150px;height:20px}
 body.touch .stxt{font-size:12px}
 body.touch .shout{left:0;top:38px} /* a phone has no room beside the bar: the word comes under it */
 @media (max-height:520px) and (min-width:701px){ /* phone held sideways: the menu must fit without scrolling */
