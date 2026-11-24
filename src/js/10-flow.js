@@ -177,11 +177,13 @@ $('chestRow').addEventListener('click', (e) => {
 function renderMissions() {
   $('misT').textContent = nextPrize() ? 'Задания: за каждое новый узор' : 'Задания (все узоры уже открыты)';
   $('misList').innerHTML = missionRows();
+  renderSecs();
 }
 function renderMode() {
   for (const b of $('modeSeg').children) b.setAttribute('aria-pressed', String(b.dataset.m === mode));
   for (const b of $('diffSeg').children) b.setAttribute('aria-pressed', String(b.dataset.v === diff));
   renderDaily();
+  renderSecs();
 }
 const timed = () => mode === 't3' || mode === 'daily';
 let diffPick = null; // the difficulty chosen in the menu while the candy of the day plays on normal
@@ -359,6 +361,7 @@ function toMenu() {
   $('pause').classList.add('hidden');
   hudEl.classList.add('hidden');
   menuEl.classList.remove('hidden');
+  setHome(true);
   renderSkins();
   renderHats();
   renderMissions();

@@ -62,9 +62,9 @@ Sound takes are made outside the repository with earshot (https://github.com/Leo
 | `11-draw-world` | the tray, `buildPath` (body outline), sprinkles, strands, wounds |
 | `12-draw-face` | mouth (`mouthGeo`, `drawMouthBack`, `drawMouthFront`), eyes, tongue, hats |
 | `13-draw-body` | bodies, pieces, labels, minimap, `render` |
-| `14-input` | mouse, keyboard, joystick and buttons on phones, choosing flavour, pattern and hat in the menu |
+| `14-input` | mouse, keyboard, joystick and buttons on phones, choosing flavour, pattern and hat in the menu, the folding menu sections (`renderSecs` writes what each head shows) |
 | `15-admin` | the admin panel with cheats |
-| `16-settings` | pause, settings, the challenge link |
+| `16-settings` | pause, settings (one set, moved by `setHome` between the menu section and the pause card), the challenge link |
 | `17-boot` | `adapt` (automatic graphics tuning), `frame`, startup, `window.__kus` |
 
 A frame: `frame` → `update(dt)` (bots, bodies, collisions, bites, food, rings of points, camera, HUD) → `render()`.

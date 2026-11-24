@@ -79,7 +79,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #dodge:active span{transform:scale(.93)}
 #dodge:focus-visible{outline:3px solid var(--lemon);outline-offset:3px}
 #hats{gap:6px}
-#hats button{font:800 14px/1 var(--font);padding:8px 12px;min-height:40px;border-radius:999px;border:2px solid #ead2b9;background:#fff;color:var(--ink);cursor:pointer}
+#hats button{font:800 14px/1 var(--font);padding:8px 12px;min-height:44px;border-radius:999px;border:2px solid #ead2b9;background:#fff;color:var(--ink);cursor:pointer}
 #hats button[aria-checked=true]{border-color:var(--ink);background:#ffe3ea}
 #hats button:disabled{background:transparent;border-style:dashed;border-color:#c9ab92;color:#6b4a3a;cursor:not-allowed}
 #hats small{color:var(--muted);font-weight:700}
@@ -115,14 +115,13 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 .mi .mb i{display:block;height:100%;border-radius:99px;background:var(--berry)}
 .mi.ok .mb i{background:#3fae5a}
 .mi.ok .mt{color:#2c7d41}
-.seg2,.seg3{display:grid;gap:6px;margin:0 0 8px}
+.seg2,.seg3,.segN{display:grid;gap:6px;margin:0 0 8px}
 .seg2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .seg3{grid-template-columns:repeat(3,minmax(0,1fr))}
-#dif .seg3{margin:0}
-#dif .seg3 button{min-height:36px;padding:4px 8px}
-.seg2 button,.seg3 button{font:800 14px/1.2 var(--font);min-height:40px;border-radius:12px;border:2px solid #ead2b9;background:#fff;color:var(--ink);cursor:pointer;padding:6px 8px}
-.seg2 button[aria-pressed=true],.seg3 button[aria-pressed=true]{border-color:var(--ink);background:#ffe3ea}
-.seg2 button:focus-visible,.seg3 button:focus-visible,.btn2:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
+.segN{grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)} /* any number of levels share one row */
+.seg2 button,.seg3 button,.segN button{font:800 14px/1.2 var(--font);min-height:44px;border-radius:12px;border:2px solid #ead2b9;background:#fff;color:var(--ink);cursor:pointer;padding:6px 8px}
+.seg2 button[aria-pressed=true],.seg3 button[aria-pressed=true],.segN button[aria-pressed=true]{border-color:var(--ink);background:#ffe3ea}
+.seg2 button:focus-visible,.seg3 button:focus-visible,.segN button:focus-visible,.btn2:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
 .btn2{display:block;width:100%;margin-top:10px;font:800 15px/1.1 var(--font);color:var(--ink);background:#fff;border:2px solid #ead2b9;border-radius:14px;padding:12px;cursor:pointer}
 #chal{margin:10px 0 0;padding:9px 12px;border-radius:12px;background:#ffe3ea;font:700 14px/1.3 var(--font);color:var(--ink)}
 #chalRes{margin:10px 0 0;font:800 14px/1.3 var(--font);color:var(--ink)}
@@ -180,9 +179,9 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #near{margin-top:6px}
 @media (max-height:760px){#over .card.paid.stk #near,#over .card.paid.chal #stk{display:none}#over .card.paid.chal #near{display:none}#over .card.paid #overMis{display:none}#over .card.paid .stats{margin-bottom:6px}#over .card.paid .best{margin-top:6px}}
 #near:empty{display:none}
-#modeSeg [data-m=daily]{grid-column:1/-1;grid-row:1;display:flex;align-items:baseline;justify-content:center;gap:0 8px;flex-wrap:wrap}
+#modeSeg [data-m=daily]{grid-column:1/-1;grid-row:1;display:flex;align-items:baseline;align-content:center;justify-content:center;gap:0 8px;flex-wrap:wrap}
 #modeSeg [data-m=daily] small{font:700 13px/1.2 var(--font);color:#7a5a49}
-#dif.fixed .seg3{opacity:.45;pointer-events:none}
+#dif.fixed .segN{opacity:.45;pointer-events:none}
 #dif.fixed .pl::after{content:': в конфете дня обычная'}
 .row2{display:flex;gap:8px}
 .row2 .btn2{flex:1 1 0;min-width:0}
@@ -213,11 +212,40 @@ h2.dead{margin:0;font:900 clamp(32px,6vw,42px)/1.05 var(--font);letter-spacing:-
 .pk{margin:12px 0 0}
 .pl{display:block;font:800 13px/1.2 var(--font);color:#7a5a49;margin:0 0 6px}
 .pr{display:flex;flex-wrap:wrap;gap:8px}
-.go{position:sticky;bottom:0;z-index:1;margin-top:6px;padding:12px 0 8px;background:linear-gradient(rgba(255,241,220,0),var(--cream) 12px)} /* the button stays in reach however long the menu gets */
+.go{position:sticky;bottom:0;z-index:1;margin-top:8px;padding:12px 0 8px;background:linear-gradient(rgba(255,241,220,0),var(--cream) 12px)} /* the button stays in reach however long the menu gets */
 .go::before{content:'';position:absolute;left:-6px;right:-6px;bottom:100%;height:56px;background:linear-gradient(rgba(255,241,220,0),var(--cream) 70%);pointer-events:none;opacity:0;transition:opacity .15s} /* while the block covers a row, fade that row out instead of slicing it */
 .go.stuck{background:var(--cream);box-shadow:-6px 0 0 var(--cream),6px 0 0 var(--cream)}
 .go.stuck::before{opacity:1}
 body.first .later{display:none} /* first visit: only what the first tap needs, the rest arrives after the first run */
+body:not(.first) #menu .tag{display:none} /* the one line about the game is for the first visit */
+/* menu sections: a head that says what is chosen, one section open at a time */
+.secs{display:grid;align-content:start;gap:8px;margin-top:14px}
+.sec{background:#fff;border:2px solid #ead2b9;border-radius:18px}
+.sec.open{box-shadow:inset 0 -3px 0 #f0dcc6}
+.sh{position:relative;display:flex;align-items:center;gap:10px;width:100%;min-height:52px;margin:0;padding:8px 44px 8px 14px;border:0;border-radius:16px;background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.sh::after{content:"";position:absolute;right:19px;top:50%;width:8px;height:8px;margin-top:-7px;border-right:3px solid var(--muted);border-bottom:3px solid var(--muted);border-radius:1px;transform:rotate(45deg);transition:transform .18s}
+.sec.open .sh::after{margin-top:-2px;transform:rotate(-135deg)}
+.sh:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
+.sk{flex:none;font:900 17px/1.2 var(--font)}
+.sv{flex:1 1 auto;overflow:hidden;font:700 13px/1.3 var(--font);color:#7a5a49;text-align:right;text-overflow:ellipsis;white-space:nowrap}
+.sv i{display:inline-block;width:12px;height:12px;margin-right:5px;border-radius:50%;vertical-align:-1px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.2)}
+.sb{display:none;padding:0 14px 14px}
+.sec.open .sb{display:block;animation:secIn .2s ease-out}
+@keyframes secIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.sec.open .sb{animation:none}.sh::after{transition:none}}
+.sb>.pk:first-child{margin-top:2px}
+.sb .seg2,.sb .segN{margin:0}
+.sb .help{margin:2px 0 0}
+#rec{margin:12px 0 0}
+#menu .grp{font:800 13px/1.2 var(--font);color:#7a5a49;margin:12px 0 6px}
+#menu .grp:first-child{margin-top:2px}
+#menu #fpsSeg{margin:8px 0 0}
+body:not(.touch) #menu .tch{display:none} /* thumb-button settings mean nothing with a mouse */
+body:not(.touch) #menu #gfxSeg{margin-bottom:0}
+body:not(.touch) #menu .tch+.grp{margin-top:2px}
+body.first .secs{margin-top:12px}
+body.first #secLook .sh{display:none} /* first visit: the flavour row stands open, no head to fold it */
+body.first #secLook .sb{display:block;padding-top:12px;animation:none}
 #skins button{width:50px;height:50px;border-radius:50%;border:3px solid transparent;padding:0;background:none;cursor:pointer;transition:transform .1s}
 #skins canvas{display:block;width:100%;height:100%;border-radius:50%}
 #skins button[aria-checked=true]{border-color:var(--ink);transform:scale(1.08)}
@@ -228,7 +256,7 @@ body.first .later{display:none} /* first visit: only what the first tap needs, t
   .pr>*{flex:none}
 }
 #sw{gap:7px}
-#sw button{width:34px;height:34px;border-radius:50%;border:3px solid transparent;cursor:pointer;padding:0;box-shadow:inset 0 -5px 0 rgba(0,0,0,.2),inset 0 3px 0 rgba(255,255,255,.35);transition:transform .1s}
+#sw button{width:44px;height:44px;border-radius:50%;border:3px solid transparent;cursor:pointer;padding:0;box-shadow:inset 0 -5px 0 rgba(0,0,0,.2),inset 0 3px 0 rgba(255,255,255,.35);transition:transform .1s}
 #sw button[aria-checked=true]{border-color:var(--ink);transform:scale(1.1)}
 #sw button:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
 .btn{display:block;width:100%;font:900 22px/1 var(--font);color:#3a0d1c;background:var(--berry);border:0;border-radius:16px;padding:16px;cursor:pointer;box-shadow:0 6px 0 var(--berry2);transition:transform .08s,box-shadow .08s}
@@ -280,20 +308,18 @@ body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))}
   .ov{padding:8px max(4vw,16px)}
   .wrap{width:min(560px,100%)}
   .card{padding:12px 18px;max-height:calc(100vh - 16px);max-height:calc(100svh - 16px)}
-  .top{display:flex;align-items:center;gap:14px}
   .logo{font-size:36px;margin:0}
-  .tag,.help,#rec,.pl,#mis,#dif{display:none}
-  #chal{margin:0 0 4px;padding:4px 10px;font-size:12px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} /* a friend's link still says why you are here, in one row */
+  .tag{display:none}
+  #chal{grid-area:chal;margin:0 40px 8px 0;padding:4px 10px;font-size:12px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} /* a friend's link still says why you are here, in one row */
   #chal .lx{display:none}
   .seg2,.seg3{margin-bottom:6px}
-  .seg2 button,.seg3 button{min-height:34px;padding:4px 8px}
   #modeSeg{grid-template-columns:repeat(3,minmax(0,1fr))}
   #modeSeg [data-m=daily]{grid-column:3;grid-row:auto;display:block}
   #modeSeg [data-m=daily] small{display:block;font-size:12px}
   #overMis{display:none}
-  .bankRow{margin:0 40px 0 0;flex:0 1 auto;gap:8px}
+  .bankRow{margin:8px 0 0;gap:8px}
   #bank{flex:0 1 6em;font-size:13px;line-height:1.2}
-  #albumBtn{min-height:38px;padding:6px 12px}
+  #albumBtn{padding:6px 12px}
   #sweet{margin-bottom:4px;padding:6px 10px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:center}
   .sw1 b{font-size:20px}
   .sw1 span:not(#sweetBank){display:none}
@@ -307,15 +333,20 @@ body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))}
   #over .card.paid .btn2{margin-top:5px;padding:8px}
   #over .card.paid #chalRes{margin-top:5px}
   .btn2{margin-top:6px;padding:9px}
-  #nick{flex:1;width:auto;padding:9px 12px;font-size:16px}
-  body.first .top{flex-wrap:wrap;row-gap:10px} /* first visit has room for the one line about the game, the name goes below it */
-  body.first .top .tag{display:block;flex:1 1 12em;margin:0 44px 0 0;font-size:15px}
-  body.first #nick{flex:1 1 100%}
+  #nick{min-height:44px;padding:9px 12px;font-size:16px}
+  body.first #menu .tag{display:block;margin:4px 0 10px;font-size:15px}
   .pk{margin-top:8px}
-  #sw button{width:34px;height:34px}
-  #skins button{width:40px;height:40px}
-  #hats button{min-height:36px;padding:6px 11px}
-  .go{margin-top:0;padding:10px 0 2px}
+  #skins button{width:44px;height:44px}
+  /* two columns: the sections scroll on the left, name and Play stay on the right under the bitten corner */
+  #menu .wrap{width:min(660px,100%)}
+  #menu .card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,13.5em);grid-template-rows:auto auto minmax(0,1fr);grid-template-areas:"chal chal" "secs top" "secs go";column-gap:16px;overflow:hidden;height:calc(100vh - 16px);height:calc(100svh - 16px)}
+  body.first #menu .card{height:auto}
+  #menu .top{grid-area:top}
+  .secs{grid-area:secs;min-height:0;margin:0;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:0 0 2px}
+  body.first .secs{margin:0}
+  .go,.go.stuck{grid-area:go;position:static;align-self:end;margin:0;padding:10px 0 2px;background:none;box-shadow:none}
+  .go::before{display:none}
+  body.touch #menu.ov{padding-left:calc(64px + env(safe-area-inset-left,0px))} /* clear of the sound button in the top-left corner */
   #play{padding:12px}
   #over .tag,#adm .tag,#pause .tag{display:block;margin:6px 0 8px}
   #over .dead{font-size:28px}
@@ -328,6 +359,10 @@ body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))}
   .ov.center{align-items:center}
   .card{padding:20px 18px 16px;border-radius:24px;max-height:calc(100vh - 24px);max-height:calc(100svh - 24px)}
   .help{font-size:13px;gap:4px;margin-top:12px}
+  .secs{gap:6px}
+  .sh{min-height:48px}
+  body.touch #menu.ov{padding-top:calc(56px + env(safe-area-inset-top,0px))} /* the card stays below the sound button */
+  body.touch #menu .card{max-height:calc(100vh - 68px - env(safe-area-inset-top,0px));max-height:calc(100svh - 68px - env(safe-area-inset-top,0px))}
   #board{width:min(168px,46vw);padding:8px 10px 6px;border-radius:14px}
   #lb{font-size:13px}
   #mass{font-size:28px}
@@ -378,19 +413,28 @@ document.getElementById('nojs').style.display = 'none';
   <div class="wrap"><div class="card">
     <div class="top">
     <h1 class="logo">КУСЬ<span>.io</span></h1>
-    <p class="tag">Откусывай куски от других конфет и расти.<span class="later"> Тебя тоже будут кусать: ранки затянутся, а есть можно дальше.</span></p>
+    <p class="tag">Откусывай куски от других конфет и расти.</p>
     <input id="nick" maxlength="14" placeholder="Твоё имя" autocomplete="off" spellcheck="false" aria-label="Имя">
     <div class="bankRow later"><p id="bank" aria-live="polite"></p><button id="albumBtn" class="btn2" type="button"></button></div>
     </div>
     <p id="chal" class="hidden"></p>
-    <div class="pk later" id="dif"><span class="pl">Сложность</span><div class="seg3" id="diffSeg" role="group" aria-label="Сложность"><button type="button" data-v="easy">Лёгкая</button><button type="button" data-v="normal">Обычная</button><button type="button" data-v="hard">Жёсткая</button></div></div>
-    <div class="pk"><span class="pl">Вкус</span><div id="sw" class="pr" role="radiogroup" aria-label="Вкус"></div></div>
-    <div class="pk later"><span class="pl">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор"></div></div>
-    <div class="pk later"><span class="pl">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка"></div></div>
-    <div class="pk later" id="mis"><span class="pl" id="misT">Задания</span><div id="misList"></div></div>
-    <div class="go"><div class="seg2 later" id="modeSeg" role="group" aria-label="Режим"><button type="button" data-m="free">Свободная игра</button><button type="button" data-m="t3">3 минуты на счёт</button><button type="button" data-m="daily">Конфета дня</button></div><button id="play" class="btn" type="button">Играть</button></div>
-    <p class="best later" id="rec"></p>
-    <ul class="help later">
+    <div class="secs"><!-- folding sections: the head says what is chosen, one opens at a time -->
+      <section class="sec later" id="secMode"><button class="sh" type="button" aria-expanded="false" aria-controls="secModeB"><span class="sk">Режим</span><span class="sv" id="sumMode"></span></button><div class="sb" id="secModeB">
+        <div class="pk"><div class="seg2" id="modeSeg" role="group" aria-label="Режим"><button type="button" data-m="free">Свободная игра</button><button type="button" data-m="t3">3 минуты на счёт</button><button type="button" data-m="daily">Конфета дня</button></div></div>
+        <div class="pk" id="dif"><span class="pl">Сложность</span><div class="segN" id="diffSeg" role="group" aria-label="Сложность"><button type="button" data-v="easy">Лёгкая</button><button type="button" data-v="normal">Обычная</button><button type="button" data-v="hard">Жёсткая</button></div></div>
+      </div></section>
+      <section class="sec" id="secLook"><button class="sh" type="button" aria-expanded="false" aria-controls="secLookB"><span class="sk">Конфета</span><span class="sv" id="sumLook"></span></button><div class="sb" id="secLookB">
+        <div class="pk"><span class="pl">Вкус</span><div id="sw" class="pr" role="radiogroup" aria-label="Вкус"></div></div>
+        <div class="pk later"><span class="pl">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор"></div></div>
+        <div class="pk later"><span class="pl">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка"></div></div>
+        <p class="best later" id="rec"></p>
+      </div></section>
+      <section class="sec later" id="secMis"><button class="sh" type="button" aria-expanded="false" aria-controls="secMisB"><span class="sk">Задания</span><span class="sv" id="sumMis"></span></button><div class="sb" id="secMisB">
+        <div class="pk" id="mis"><span class="pl" id="misT">Задания</span><div id="misList"></div></div>
+      </div></section>
+      <section class="sec later" id="secSet"><button class="sh" type="button" aria-expanded="false" aria-controls="secSetB"><span class="sk">Настройки</span><span class="sv" id="sumSet"></span></button><div class="sb" id="secSetB"></div></section>
+      <section class="sec later" id="secHelp"><button class="sh" type="button" aria-expanded="false" aria-controls="secHelpB"><span class="sk">Как играть</span><span class="sv">управление и советы</span></button><div class="sb" id="secHelpB">
+    <ul class="help">
       <li class="kb"><span><b>Мышь</b>: куда смотрит пасть</span></li>
       <li class="kb"><span><b>Пробел, клик или «Кусь»</b>: рывок с укусом посильнее</span></li>
       <li class="kb"><span><b>Shift, правый клик или «Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
@@ -398,11 +442,15 @@ document.getElementById('nojs').style.display = 'none';
       <li class="tc"><span><b>«Кусь»</b>: рывок с укусом посильнее, можно держать</span></li>
       <li class="tc"><span><b>«Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
       <li><span>Кусает только пасть, так что заходи со спины</span></li>
+      <li><span>Тебя тоже будут кусать: ранки затянутся, а есть можно дальше</span></li>
       <li><span>На поле лежат бонусы: скорость, щит и магнит</span></li>
       <li><span>Ёж колется со спины, кусай его в морду. Торт кусай в вишенку</span></li>
       <li><span>Свежие ранки замедляют и сыплют крошками, добивай подранков</span></li>
       <li><span>Укус в свежую ранку отрывает на треть больше</span></li>
     </ul>
+      </div></section>
+    </div>
+    <div class="go"><button id="play" class="btn" type="button">Играть</button></div>
   </div></div>
 </div>
 
@@ -455,13 +503,15 @@ document.getElementById('nojs').style.display = 'none';
 <div id="pause" class="ov center hidden" role="dialog" aria-label="Пауза">
   <div class="wrap"><button class="x" id="pauseX" type="button" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
     <h2 class="dead">Пауза</h2>
-    <div class="grp">Кнопки на экране</div>
-    <div class="seg2" id="handSeg"><button type="button" data-v="0">Справа</button><button type="button" data-v="1">Слева</button></div>
-    <div class="grp">Размер кнопок</div>
-    <div class="seg3" id="sizeSeg"><button type="button" data-v="0.85">Мелкие</button><button type="button" data-v="1">Средние</button><button type="button" data-v="1.18">Крупные</button></div>
+    <div id="setBox"><!-- moves into the menu's settings section while the menu is open -->
+    <div class="grp tch">Кнопки на экране</div>
+    <div class="seg2 tch" id="handSeg"><button type="button" data-v="0">Справа</button><button type="button" data-v="1">Слева</button></div>
+    <div class="grp tch">Размер кнопок</div>
+    <div class="seg3 tch" id="sizeSeg"><button type="button" data-v="0.85">Мелкие</button><button type="button" data-v="1">Средние</button><button type="button" data-v="1.18">Крупные</button></div>
     <div class="grp">Графика</div>
     <div class="seg3" id="gfxSeg"><button type="button" data-v="auto">Авто</button><button type="button" data-v="low">Лёгкая</button><button type="button" data-v="high">Полная</button></div>
     <div class="seg2" id="fpsSeg" role="group" aria-label="Счётчик кадров"><button type="button" data-v="0">Без счётчика кадров</button><button type="button" data-v="1">Показывать FPS</button></div>
+    </div>
     <button id="resume" class="btn" type="button">Продолжить</button>
     <button id="pAdmin" class="btn2" type="button">Админ-панель</button>
     <button id="pMenu" class="btn2" type="button">Выйти в меню</button>
@@ -3816,11 +3866,13 @@ $('chestRow').addEventListener('click', (e) => {
 function renderMissions() {
   $('misT').textContent = nextPrize() ? 'Задания: за каждое новый узор' : 'Задания (все узоры уже открыты)';
   $('misList').innerHTML = missionRows();
+  renderSecs();
 }
 function renderMode() {
   for (const b of $('modeSeg').children) b.setAttribute('aria-pressed', String(b.dataset.m === mode));
   for (const b of $('diffSeg').children) b.setAttribute('aria-pressed', String(b.dataset.v === diff));
   renderDaily();
+  renderSecs();
 }
 const timed = () => mode === 't3' || mode === 'daily';
 let diffPick = null; // the difficulty chosen in the menu while the candy of the day plays on normal
@@ -3998,6 +4050,7 @@ function toMenu() {
   $('pause').classList.add('hidden');
   hudEl.classList.add('hidden');
   menuEl.classList.remove('hidden');
+  setHome(true);
   renderSkins();
   renderHats();
   renderMissions();
@@ -6473,6 +6526,7 @@ function renderHats() {
     return `<button type="button" role="radio" aria-checked="${h.id === chosenHat}" data-h="${h.id}"${lock ? ' disabled' : ''}>${h.name}${lock ? ` <small>с ${h.need}</small>` : ''}</button>`;
   }).join('');
   recEl.textContent = best ? `Рекорд: ${best}` : 'Шапки открываются за рекорд по массе';
+  renderSecs();
 }
 hatsEl.addEventListener('click', (e) => {
   const t = e.target.closest('button');
@@ -6506,6 +6560,7 @@ function renderSkins() {
       why = lock ? `: за задание или за ${price} сахара` : '';
     return `<button type="button" role="radio" aria-checked="${id === chosenSkin}" aria-label="${name}${why}" title="${name}${why}" data-s="${id}"${lock ? ' class="lock"' : ''}><canvas width="92" height="92"></canvas>${tag}</button>`;
   }).join('');
+  renderSecs();
   const pal = PALS[chosen];
   for (const btn of skinsEl.children) {
     // a little candy in the chosen flavour wearing each pattern
@@ -6590,6 +6645,7 @@ skinsEl.addEventListener('click', (e) => {
   chosenSkin = id;
   if (wasAsk) renderSkins();
   else for (const b of skinsEl.children) b.setAttribute('aria-checked', String(b.dataset.s === chosenSkin));
+  renderSecs();
 });
 function renderSwatches() {
   swEl.innerHTML = PALS.map(
@@ -6619,6 +6675,46 @@ function menuFade() {
 menuCard.addEventListener('scroll', menuFade, { passive: true });
 addEventListener('resize', menuFade);
 requestAnimationFrame(menuFade);
+
+// ---------- menu sections ----------
+// Each head says what is chosen inside, so a folded menu still shows the whole setup. One section is open at a time.
+const secsEl = menuEl.querySelector('.secs');
+secsEl.addEventListener('click', (e) => {
+  const h = e.target.closest('.sh');
+  if (!h) return;
+  const sec = h.parentNode,
+    open = !sec.classList.contains('open');
+  for (const s of secsEl.children) {
+    s.classList.toggle('open', open && s === sec);
+    s.firstElementChild.setAttribute('aria-expanded', String(open && s === sec));
+  }
+  if (open) {
+    // bring the opened section into view above the Play block; sideways the sections scroll on their own
+    const box = getComputedStyle(secsEl).overflowY === 'auto' ? secsEl : menuCard,
+      top = box.getBoundingClientRect().top,
+      bottom = box === menuCard ? menuGo.getBoundingClientRect().top : box.getBoundingClientRect().bottom,
+      r = sec.getBoundingClientRect();
+    if (r.bottom > bottom) box.scrollTop += Math.min(r.bottom - bottom + 8, r.top - top - 8);
+  }
+  menuFade();
+});
+const pressedText = (id) => {
+  const b = $(id).querySelector('[aria-pressed=true]');
+  return b ? b.textContent : '';
+};
+function renderSecs() {
+  const pal = PALS[chosen],
+    skin = SKINS.find((k) => k[0] === chosenSkin),
+    hat = HATS.find((h) => h.id === chosenHat),
+    look = [pal.name, skin && skin[1], hat && hat.id !== 'none' && hat.name].filter(Boolean).join(' · ');
+  $('sumLook').innerHTML = `<i style="background:${pal.base}"></i>${look}`;
+  $('sumMode').textContent =
+    `${{ free: 'Свободная', t3: '3 минуты', daily: 'Конфета дня' }[mode]} · ${mode === 'daily' ? 'Обычная' : pressedText('diffSeg')}`;
+  const mis = $('misList').children,
+    done = $('misList').querySelectorAll('.mi.ok').length;
+  $('sumMis').textContent = mis.length ? `готово ${done} из ${mis.length}` : '';
+  $('sumSet').textContent = `графика: ${pressedText('gfxSeg').toLowerCase()}`;
+}
 
 // ---------- admin panel ----------
 const admEl = $('adm'),
@@ -6862,10 +6958,18 @@ function applySet() {
   try {
     localStorage.setItem('kus.set', JSON.stringify(SET));
   } catch (e) {}
+  renderSecs();
+}
+const setBox = $('setBox');
+function setHome(inMenu) {
+  // one set of settings: in the menu's section while the menu is up, on the pause card during a run
+  if (inMenu) $('secSetB').appendChild(setBox);
+  else pauseEl.querySelector('.card').insertBefore(setBox, $('resume'));
 }
 function openPause() {
   if (state !== 'play' || !player || !player.alive || paused) return;
   paused = true;
+  setHome(false);
   pauseEl.classList.remove('hidden');
   saveM();
   setTimeout(() => $('resume').focus({ preventScroll: true }), 30);
@@ -7188,6 +7292,7 @@ function start(data) {
     $('chal').classList.remove('hidden');
     mode = challenge.d ? 'daily' : 'free';
   }
+  setHome(true);
   renderSwatches();
   renderSkins();
   renderHats();
