@@ -122,8 +122,9 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 .seg2 button,.seg3 button,.segN button{font:800 14px/1.2 var(--font);min-height:44px;border-radius:12px;border:2px solid #ead2b9;background:#fff;color:var(--ink);cursor:pointer;padding:6px 8px}
 .seg2 button[aria-pressed=true],.seg3 button[aria-pressed=true],.segN button[aria-pressed=true]{border-color:var(--ink);background:#ffe3ea}
 .seg2 button:focus-visible,.seg3 button:focus-visible,.segN button:focus-visible,.btn2:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
-#dif .segN{gap:4px}
-#dif .segN button{padding:6px 0;font-size:13px} /* four levels fit one row at 360px */
+#dif .segN{gap:4px;grid-auto-columns:auto} /* columns follow label length, spare width is shared */
+#dif .segN button{padding:6px 4px;font-size:12px} /* four levels fit one row at 360px with air around each label */
+@media (min-width:380px){#dif .segN button{font-size:13px}}
 .btn2{display:block;width:100%;margin-top:10px;font:800 15px/1.1 var(--font);color:var(--ink);background:#fff;border:2px solid #ead2b9;border-radius:14px;padding:12px;cursor:pointer}
 #chal{margin:10px 0 0;padding:9px 12px;border-radius:12px;background:#ffe3ea;font:700 14px/1.3 var(--font);color:var(--ink)}
 #chalRes{margin:10px 0 0;font:800 14px/1.3 var(--font);color:var(--ink)}
