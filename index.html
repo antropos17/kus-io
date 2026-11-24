@@ -118,8 +118,8 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 .seg2,.seg3{display:grid;gap:6px;margin:0 0 8px}
 .seg2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .seg3{grid-template-columns:repeat(3,minmax(0,1fr))}
-#dif .seg3{margin:0}
-#dif .seg3 button{min-height:36px;padding:4px 8px}
+#dif .seg3{margin:0;grid-template-columns:repeat(4,minmax(0,1fr))} /* four levels in one row */
+#dif .seg3 button{min-height:36px;padding:4px 2px;font-size:13px}
 .seg2 button,.seg3 button{font:800 14px/1.2 var(--font);min-height:40px;border-radius:12px;border:2px solid #ead2b9;background:#fff;color:var(--ink);cursor:pointer;padding:6px 8px}
 .seg2 button[aria-pressed=true],.seg3 button[aria-pressed=true]{border-color:var(--ink);background:#ffe3ea}
 .seg2 button:focus-visible,.seg3 button:focus-visible,.btn2:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
@@ -383,7 +383,7 @@ document.getElementById('nojs').style.display = 'none';
     <div class="bankRow later"><p id="bank" aria-live="polite"></p><button id="albumBtn" class="btn2" type="button"></button></div>
     </div>
     <p id="chal" class="hidden"></p>
-    <div class="pk later" id="dif"><span class="pl">Сложность</span><div class="seg3" id="diffSeg" role="group" aria-label="Сложность"><button type="button" data-v="easy">Лёгкая</button><button type="button" data-v="normal">Обычная</button><button type="button" data-v="hard">Жёсткая</button></div></div>
+    <div class="pk later" id="dif"><span class="pl">Сложность</span><div class="seg3" id="diffSeg" role="group" aria-label="Сложность"><button type="button" data-v="easy">Лёгкая</button><button type="button" data-v="normal">Обычная</button><button type="button" data-v="hard">Жёсткая</button><button type="button" data-v="extreme">Экстрим</button></div></div>
     <div class="pk"><span class="pl">Вкус</span><div id="sw" class="pr" role="radiogroup" aria-label="Вкус"></div></div>
     <div class="pk later"><span class="pl">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор"></div></div>
     <div class="pk later"><span class="pl">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка"></div></div>
@@ -917,7 +917,26 @@ const DIFFS = {
   // start mass, how eagerly bots go for you, seconds between lucky escapes (0 = none), your speed edge, how long a bot keeps chasing
   easy: { start: 55, hunt: 0.5, grace: 7, speed: 1.12, chase: 2.5 },
   normal: { start: 40, hunt: 1, grace: 12, speed: 1.08, chase: 3.5 },
-  hard: { start: 34, hunt: 1.9, grace: 0, speed: 1.02, chase: 7 },
+  // ai: the smarter bots (09-bots); easy and normal have none and keep the old script.
+  // react: seconds between decisions (random in this range); feint: side-steps, jukes and lunges; tongue: how keenly it is used;
+  // sneak: small bots biting the back of a busy big one; pack: most bots in one pack, packs: packs at once, packCd: seconds between packs;
+  // shy: the player's mass below which no pack or sneak goes for them (the allowance a small player keeps)
+  hard: {
+    start: 34,
+    hunt: 1.9,
+    grace: 0,
+    speed: 1.02,
+    chase: 7,
+    ai: { react: [0.16, 0.34], feint: 0.45, tongue: 0.6, sneak: 0.5, pack: 3, packs: 1, packCd: 16, shy: 110 },
+  },
+  extreme: {
+    start: 32,
+    hunt: 2.2,
+    grace: 0,
+    speed: 1,
+    chase: 9,
+    ai: { react: [0.08, 0.24], feint: 1, tongue: 1, sneak: 1, pack: 4, packs: 2, packCd: 8, shy: 70 },
+  },
 };
 let diff = 'normal',
   leader = null,
@@ -2923,6 +2942,8 @@ function botThink(b) {
     ai.mode = 'boss';
     return;
   } // the big cake only ever goes for the player
+  const S = smartOf(b);
+  if (S) return botThinkSmart(b, S); // hard and extreme: the smarter bots below
   let fx = 0,
     fy = 0,
     danger = 0,
@@ -2965,7 +2986,7 @@ function botThink(b) {
     if (o.boss) s *= BOSS.lure; // the autopilot knows the cake is the goal, as a player does
     if (o.isPlayer) {
       if (ai.ignoreT > 0) continue;
-      s *= (diff !== 'hard' && o.mass < 120 ? 0.4 : 0.85) * DIFFS[diff].hunt;
+      s *= (!DIFFS[diff].ai && o.mass < 120 ? 0.4 : 0.85) * DIFFS[diff].hunt;
     }
     if (o === leader) s *= 1.25; // everyone wants a piece of the sweetest one
     if (s > preyS) {
@@ -2978,6 +2999,31 @@ function botThink(b) {
   else if (b.x > WORLD - m) fx -= (1 - (WORLD - b.x) / m) * 1.2;
   if (b.y < m) fy += (1 - b.y / m) * 1.2;
   else if (b.y > WORLD - m) fy -= (1 - (WORLD - b.y) / m) * 1.2;
+  const ff = botFood(b),
+    fd = foodD;
+  const foodS = ff ? 1 / (Math.sqrt(Math.max(0, fd)) + 70) : 0;
+  if (danger > 0.3) {
+    const l = Math.hypot(fx, fy) || 1;
+    ai.mode = 'flee';
+    ai.fx = fx / l;
+    ai.fy = fy / l;
+    ai.fleeDash = lethalNear && Math.random() < 0.6;
+  } else if (prey && preyS > foodS * 0.9) {
+    ai.mode = 'hunt';
+    ai.prey = prey;
+  } else if (ff) {
+    ai.mode = 'food';
+    ai.food = ff;
+  } else {
+    ai.mode = 'wander';
+    if (Math.hypot(ai.wx - b.x, ai.wy - b.y) < 250) {
+      ai.wx = rand(300, WORLD - 300);
+      ai.wy = rand(300, WORLD - 300);
+    }
+  }
+}
+let foodD = 0; // the score distance of the last botFood pick
+function botFood(b) {
   let fd = 1e12,
     ff = null;
   for (const f of food) {
@@ -3000,33 +3046,19 @@ function botThink(b) {
       ff = f;
     }
   } // bonuses are worth a detour
-  const foodS = ff ? 1 / (Math.sqrt(Math.max(0, fd)) + 70) : 0;
-  if (danger > 0.3) {
-    const l = Math.hypot(fx, fy) || 1;
-    ai.mode = 'flee';
-    ai.fx = fx / l;
-    ai.fy = fy / l;
-    ai.fleeDash = lethalNear && Math.random() < 0.6;
-  } else if (prey && preyS > foodS * 0.9) {
-    ai.mode = 'hunt';
-    ai.prey = prey;
-  } else if (ff) {
-    ai.mode = 'food';
-    ai.food = ff;
-  } else {
-    ai.mode = 'wander';
-    if (Math.hypot(ai.wx - b.x, ai.wy - b.y) < 250) {
-      ai.wx = rand(300, WORLD - 300);
-      ai.wy = rand(300, WORLD - 300);
-    }
-  }
+  foodD = fd;
+  return ff;
 }
 function botSteer(b, dt) {
-  const ai = b.ai;
+  const ai = b.ai,
+    S = smartOf(b),
+    sm = S && ai.trait; // a smart bot that has already thought once
+  if (time >= packAt) packTick();
   ai.think -= dt;
   if (ai.mode !== 'hunt') ai.ignoreT = (ai.ignoreT || 0) - dt;
+  if (sm) smartTimers(b, dt, S);
   if (ai.think <= 0) {
-    ai.think = ai.react + rand(0.08);
+    ai.think = S ? rand(S.react[0], S.react[1]) : ai.react + rand(0.08); // a smart bot's reaction time differs every time
     botThink(b);
   }
   if (b.tame) {
@@ -3069,18 +3101,38 @@ function botSteer(b, dt) {
     }
   }
   if (ai.mode === 'flee') {
-    b.tx = b.x + ai.fx * 400;
-    b.ty = b.y + ai.fy * 400;
+    let fx = ai.fx,
+      fy = ai.fy;
+    if (sm) {
+      if (Math.random() < dt * 1.6 * S.feint) ai.juke = -ai.juke; // zig and zag, not a straight line to read
+      const j = 0.4 * S.feint * ai.juke,
+        c = Math.cos(j),
+        sn = Math.sin(j),
+        x = fx * c - fy * sn;
+      fy = fx * sn + fy * c;
+      fx = x;
+    }
+    b.tx = b.x + fx * 400;
+    b.ty = b.y + fy * 400;
     if (ai.fleeDash && b.dashCd <= 0 && Math.cos(angDiff(Math.atan2(ai.fy, ai.fx), b.face)) > 0.8) {
       dash(b);
       ai.fleeDash = false;
     }
+  } else if (sm && ai.mode === 'sneak' && ai.prey && ai.prey.alive) {
+    const o = ai.prey,
+      da = flank(b, o, o.face + Math.PI, o.Rs * 0.3);
+    if (da < 0.5 && da > -0.5) lunge(b, o, dt, 3);
+  } else if (sm && ai.mode === 'pack' && ai.pack) {
+    const P = ai.pack,
+      T = P.tgt;
+    flank(b, T, T.face + Math.PI + ai.slot, P.go ? T.Rs * 0.3 : T.Rs + b.Rs + 110);
+    if (P.go) lunge(b, T, dt, 3);
   } else if (ai.mode === 'hunt' && ai.prey && ai.prey.alive) {
     const o = ai.prey;
     ai.ignoreT = (ai.ignoreT || 0) - dt;
     if (o.isPlayer) {
       ai.chase = (ai.chase || 0) + dt;
-      if (ai.chase > DIFFS[diff].chase) {
+      if (ai.chase > DIFFS[diff].chase * (sm && ai.trait === 'hunter' ? 1.4 : 1)) {
         ai.chase = 0;
         ai.ignoreT = 5;
         ai.think = 0;
@@ -3097,20 +3149,38 @@ function botSteer(b, dt) {
     const dx = tx - b.x,
       dy = ty - b.y,
       d = Math.hypot(dx, dy);
+    if (sm) {
+      const g = d - o.Rs - b.Rs;
+      if (ai.feintT < -0.8 && g > 50 && g < 300 && Math.random() < dt * 0.8 * S.feint) {
+        ai.feintT = rand(0.25, 0.5);
+        ai.feintS = Math.random() < 0.5 ? -1 : 1;
+      }
+      if (ai.feintT > 0) {
+        // a step aside, as if it gave up, then back in with a lunge
+        const k = ((o.Rs + b.Rs + 90) * ai.feintS) / (d || 1);
+        b.tx = tx - dy * k;
+        b.ty = ty + dx * k;
+      }
+    }
     if (
       b.dashCd <= 0 &&
       d - o.Rs * 0.5 - b.Rs < 120 + b.Rs * 0.4 &&
       Math.cos(angDiff(Math.atan2(dy, dx), b.face)) > 0.92 &&
-      Math.random() < dt * 2 * ai.aggro
+      Math.random() < dt * (sm && ai.feintT > -0.35 && ai.feintT <= 0 ? 9 : 2) * ai.aggro
     )
       dash(b);
-    else if (
+    else if (sm) {
+      if (smartTongue(b, o, d, dx, dy, dt, S)) {
+        fireTongue(b);
+        botStat.tongue++;
+      }
+    } else if (
       b.dodgeCd <= 0 &&
       !b.tongue &&
       d - o.Rs - b.Rs < Math.min(150 + b.Rs * 1.1, 420) &&
       o.mass > b.mass * 0.08 &&
       b.mass < 350 &&
-      !(o.isPlayer && o.mass < 120 && diff !== 'hard') &&
+      !(o.isPlayer && o.mass < 120 && !DIFFS[diff].ai) &&
       d - o.Rs - b.Rs > 40 &&
       Math.cos(angDiff(Math.atan2(dy, dx), b.face)) > 0.95 &&
       Math.random() < dt * 1.2 * ai.aggro
@@ -3119,10 +3189,342 @@ function botSteer(b, dt) {
   } else if (ai.mode === 'food' && ai.food) {
     b.tx = ai.food.x;
     b.ty = ai.food.y;
+    if (sm && b.dodgeCd <= 0 && !b.tongue && ai.food.m > 0 && Math.random() < dt * 0.4 * S.tongue) {
+      // lick up a sweet bit a little too far away, and whatever lies on the way
+      const dx = ai.food.x - b.x,
+        dy = ai.food.y - b.y,
+        d = Math.hypot(dx, dy) - b.Rs;
+      if (d > 90 && d < Math.min(170 + b.Rs * 1.3, 460) * 0.8 && Math.cos(angDiff(Math.atan2(dy, dx), b.face)) > 0.95) {
+        fireTongue(b);
+        botStat.lick++;
+      }
+    }
   } else {
     b.tx = ai.wx;
     b.ty = ai.wy;
   }
+}
+// ---------- smarter bots (hard and extreme) ----------
+// Only ordinary bots in a run get them (DIFFS[diff].ai); the autopilot, the specials, the boss and the world behind the menu keep the old script.
+const TRAITS = ['coward', 'bully', 'hunter', 'scav'],
+  SLOTS = [0, 1.3, -1.3, 2.4]; // where pack members close in, in radians from the target's back
+const botStat = { tongue: 0, lick: 0, sneak: 0, packs: 0 }; // counts for the tests and the balance runs: tongue at prey, tongue at sweets, bites on a back, packs that went in
+let packs = [],
+  packAt = 0, // next pack check
+  packNext = 0; // no new pack before this
+const packTmp = [];
+function smartOf(b) {
+  const S = DIFFS[diff].ai;
+  return S && !b.isPlayer && !b.kind && !b.tame && state !== 'menu' ? S : null;
+}
+function smartInit(ai) {
+  const t = TRAITS[randi(4)];
+  ai.trait = t; // coward, bully, hunter, scavenger
+  ai.tf = t === 'coward' ? 1.35 : t === 'bully' ? 0.75 : 1; // fear
+  ai.ta = t === 'bully' ? 1.25 : t === 'coward' ? 0.8 : t === 'hunter' ? 1.15 : 1; // hunger for prey
+  ai.ts = t === 'scav' ? 1.5 : t === 'coward' ? 0.4 : t === 'bully' ? 0.7 : 1; // nerve to bite a big one's back
+  ai.tt = t === 'hunter' ? 1.4 : 1; // tongue
+  ai.tw = t === 'scav' ? 2.2 : 1; // the pull of a wounded one
+  ai.sneakCd = rand(2, 5);
+  ai.sneakT = 0;
+  ai.retT = 0;
+  ai.feintT = -1;
+  ai.feintS = 1;
+  ai.juke = 1;
+  ai.pack = null;
+  ai.slot = 0;
+}
+function busyOf(o, b) {
+  // biting, chewing, tongue out, or chasing someone else: its mind is elsewhere for a moment
+  return !!(
+    o.bite ||
+    (o.chunk && !o.chunk.dead) ||
+    o.chewT > 0 ||
+    o.gulpT > 0 ||
+    o.tongue ||
+    (o.ai && o.ai.mode === 'hunt' && o.ai.prey && o.ai.prey !== b)
+  );
+}
+function strikeOf(o, lethal) {
+  // how far o can reach right now: the mouth, a lunge when its dash is ready, a bit of tongue when that would be lethal
+  return (
+    o.Rs * 0.45 + 20 + (o.dashCd <= 0 ? 110 + o.Rs * 0.5 : 0) + (lethal && o.dodgeCd <= 0 && !o.tongue ? Math.min(170 + o.Rs * 1.3, 460) * 0.25 : 0)
+  );
+}
+function botThinkSmart(b, S) {
+  const ai = b.ai,
+    myBite = biteOf(b.mass, false);
+  if (!ai.trait) smartInit(ai);
+  if (ai.pack && (!ai.pack.tgt.alive || packs.indexOf(ai.pack) < 0)) ai.pack = null;
+  const P = ai.pack,
+    T = P ? P.tgt : null,
+    sneaking = ai.mode === 'sneak' && ai.sneakT > 0 && ai.prey && ai.prey.alive;
+  let fx = 0,
+    fy = 0,
+    gx = 0,
+    gy = 0,
+    danger = 0,
+    lethalNear = false,
+    prey = null,
+    preyS = 0,
+    sneak = null,
+    sneakS = 0,
+    sneakOk = false;
+  for (const o of blobs) {
+    if (o === b || !o.alive) continue;
+    const dx = o.x - b.x,
+      dy = o.y - b.y;
+    if (dx > 1000 || dx < -1000 || dy > 1000 || dy < -1000) continue;
+    const cd = Math.hypot(dx, dy) || 1,
+      sd = cd - o.Rs - b.Rs;
+    if (sd > 640) continue;
+    const ux = dx / cd,
+      uy = dy / cd,
+      facing = -(Math.cos(o.face) * ux + Math.sin(o.face) * uy);
+    const bigger = o.mass > b.mass * 1.1;
+    if (!bigger && !o.isPlayer && !o.kind && sd < 500) {
+      gx += ux / (sd + 150);
+      gy += uy / (sd + 150);
+    } // its own kind: a crowd to run to
+    if (bigger && o.spawnT <= 0) {
+      // a real threat, not a glance: how far it reaches now, how fast it closes in, whether its mouth is on me.
+      // A big one turning round far away is no reason to run.
+      const lethal = lethalFor(b.mass, biteOf(o.mass, o.dashCd <= 0)),
+        strike = strikeOf(o, lethal),
+        eff = sd - Math.max(0, (b.vx - o.vx) * ux + (b.vy - o.vy) * uy) * 0.5;
+      if (eff < strike + 130) {
+        let w = (1 - clamp((eff - strike) / 130, 0, 1)) * (lethal ? 2.4 : 0.8) * ai.fear * ai.tf * (0.35 + 0.65 * clamp(facing + 0.3, 0, 1));
+        if (busyOf(o, b)) w *= 0.6; // its mouth is full for a moment
+        if (o === T) w *= 0.45; // a pack gives nerve
+        if (sneaking && o === ai.prey && facing < 0.25) w = 0; // creeping up on its back on purpose
+        fx -= ux * w;
+        fy -= uy * w;
+        if (w > danger) danger = w;
+        if (lethal && eff < strike && facing > 0.3) lethalNear = true;
+      }
+    }
+    if (o.spawnT > 0 || (o.isPlayer && CHEAT.peace) || o.kind === 'hedgehog' || o.pShield > 0 || o.safe || o.boss) continue; // nobody hunts spines, shields or the boss
+    if (bigger) {
+      // the small one's gamble: the back of a big one whose mind is elsewhere
+      const back = facing < -0.15 && (facing < -0.6 || busyOf(o, b));
+      if (sneaking && o === ai.prey) sneakOk = back || facing < 0.25;
+      if (back && o.mass > b.mass * 1.4 && sd < 280 && !(o.isPlayer && o.mass < S.shy)) {
+        const s = (myBite / (Math.max(0, sd) + 60)) * ai.ts;
+        if (s > sneakS) {
+          sneakS = s;
+          sneak = o;
+        }
+      }
+      continue;
+    }
+    if (o.isPlayer && ai.ignoreT > 0) continue;
+    const gain = lethalFor(o.mass, myBite) ? o.mass * 0.9 : myBite * 0.84;
+    let s = (gain / (Math.max(0, sd) + 70)) * ai.aggro * ai.ta;
+    s *= 1 + Math.min(0.8 * ai.tw, woundLoad(o) * 1.5 * ai.tw);
+    if (ai.trait === 'bully' && o.mass < b.mass * 0.5) s *= 1.3; // picks on the small ones
+    if (o.isPlayer) s *= 0.85 * DIFFS[diff].hunt;
+    if (o === leader) s *= 1.25;
+    if (ai.mode === 'hunt' && o === ai.prey) s *= 1.3; // sticks to its choice for a while
+    if (s > preyS) {
+      preyS = s;
+      prey = o;
+    }
+  }
+  const m = 200 + b.Rs;
+  if (b.x < m) fx += (1 - b.x / m) * 1.2;
+  else if (b.x > WORLD - m) fx -= (1 - (WORLD - b.x) / m) * 1.2;
+  if (b.y < m) fy += (1 - b.y / m) * 1.2;
+  else if (b.y > WORLD - m) fy -= (1 - (WORLD - b.y) / m) * 1.2;
+  if (ai.retT > 0 && ai.prey && ai.prey.alive) {
+    // after a bite on its back: away before it turns round
+    const dx = b.x - ai.prey.x,
+      dy = b.y - ai.prey.y,
+      l = Math.hypot(dx, dy) || 1;
+    fx += (dx / l) * 1.2;
+    fy += (dy / l) * 1.2;
+    danger = Math.max(danger, 0.6);
+  }
+  const ff = botFood(b),
+    foodS = ff ? 1 / (Math.sqrt(Math.max(0, foodD)) + 70) : 0;
+  if (danger > 0.3) {
+    ai.pack = null; // a pack member that runs is out of the pack
+    ai.mode = 'flee';
+    fleeDir(b, fx, fy, gx, gy);
+    ai.fleeDash = lethalNear;
+  } else if (P) ai.mode = 'pack';
+  else if (sneaking && sneakOk) ai.mode = 'sneak';
+  else if (sneak && ai.sneakCd <= 0 && sneakS > foodS * 0.6 && Math.random() < 0.6 * S.sneak * Math.min(1, ai.ts)) {
+    ai.mode = 'sneak';
+    ai.prey = sneak;
+    ai.sneakT = 3;
+    ai.bites0 = b.stats.bites;
+  } else if (prey && preyS > foodS * 0.9) {
+    ai.mode = 'hunt';
+    ai.prey = prey;
+  } else if (ff) {
+    ai.mode = 'food';
+    ai.food = ff;
+  } else {
+    ai.mode = 'wander';
+    if (Math.hypot(ai.wx - b.x, ai.wy - b.y) < 250) {
+      ai.wx = rand(300, WORLD - 300);
+      ai.wy = rand(300, WORLD - 300);
+    }
+  }
+  if (sneaking && ai.mode !== 'sneak') ai.sneakCd = rand(2, 4) / S.sneak; // gave up on it
+}
+function fleeDir(b, fx, fy, gx, gy) {
+  // away from the threats, but toward its own kind, along a wall rather than into it, and out of corners
+  const ai = b.ai,
+    l = Math.hypot(fx, fy) || 1,
+    ax = fx / l,
+    ay = fy / l,
+    gl = Math.hypot(gx, gy),
+    m = 260 + b.Rs;
+  let best = -1e9,
+    bx = ax,
+    by = ay;
+  for (let i = 0; i <= 12; i++) {
+    const a = i * (TAU / 12),
+      cx = i === 12 ? ax : Math.cos(a),
+      cy = i === 12 ? ay : Math.sin(a);
+    let s = cx * ax + cy * ay;
+    if (s < -0.2) continue; // never back toward the threat
+    if (gl > 0) s += (0.35 * (cx * gx + cy * gy)) / gl;
+    const px = b.x + cx * 380,
+      py = b.y + cy * 380;
+    if (px < m) s -= ((m - px) / m) * 1.6;
+    else if (px > WORLD - m) s -= ((px - WORLD + m) / m) * 1.6;
+    if (py < m) s -= ((m - py) / m) * 1.6;
+    else if (py > WORLD - m) s -= ((py - WORLD + m) / m) * 1.6;
+    if (s > best) {
+      best = s;
+      bx = cx;
+      by = cy;
+    }
+  }
+  ai.fx = bx;
+  ai.fy = by;
+}
+function smartTimers(b, dt, S) {
+  const ai = b.ai;
+  ai.sneakCd -= dt;
+  ai.retT -= dt;
+  ai.feintT -= dt;
+  if (ai.mode !== 'sneak') return;
+  ai.sneakT -= dt;
+  if (b.biteTgt === ai.prey && b.stats.bites > ai.bites0) {
+    // got its piece: now away, before the big one turns round
+    botStat.sneak++;
+    ai.sneakT = 0;
+    ai.retT = rand(0.7, 1.2);
+    ai.sneakCd = rand(4, 8) / S.sneak;
+    ai.think = 0;
+  } else if (ai.sneakT <= 0) ai.think = 0;
+}
+function flank(b, o, a, r) {
+  // head for the point at angle a round o, going round the outside rather than across its mouth; returns how far round is still to go
+  const rel = Math.atan2(b.y - o.y, b.x - o.x),
+    da = angDiff(rel, a);
+  if (da > 0.8 || da < -0.8) {
+    a = rel - clamp(da, -0.9, 0.9);
+    r = Math.max(r, o.Rs + b.Rs + 60);
+  }
+  b.tx = o.x + Math.cos(a) * r + o.vx * 0.2;
+  b.ty = o.y + Math.sin(a) * r + o.vy * 0.2;
+  return da;
+}
+function lunge(b, o, dt, rate) {
+  // dash in when close and lined up
+  if (b.dashCd > 0) return;
+  const dx = o.x - b.x,
+    dy = o.y - b.y,
+    d = Math.hypot(dx, dy);
+  if (d - o.Rs - b.Rs < 110 + b.Rs * 0.4 && Math.cos(angDiff(Math.atan2(dy, dx), b.face)) > 0.9 && Math.random() < dt * rate) dash(b);
+}
+function smartTongue(b, o, d, dx, dy, dt, S) {
+  // the tongue when it pays: the prey is past a lunge but within reach, and the reel-in ends at this mouth
+  if (b.dodgeCd > 0 || b.tongue) return false;
+  const g = d - o.Rs - b.Rs;
+  if (g < 35 || g > Math.min(170 + b.Rs * 1.3, 460) * 0.85 || o.mass < b.mass * 0.05) return false;
+  if (b.dashCd <= 0 && g < 110 + b.Rs * 0.4) return false; // a lunge does it better
+  if (Math.cos(angDiff(Math.atan2(dy, dx), b.face)) < 0.9) return false;
+  return Math.random() < dt * 3 * S.tongue * b.ai.tt;
+}
+function packable(m, T) {
+  if (m === T || !m.alive || !m.ai || m.isPlayer || m.kind || m.tame || m.spawnT > 0 || m.ai.pack || m.ai.mode === 'flee' || !m.ai.trait)
+    return false;
+  if (m.mass < T.mass * 0.06 || m.mass > T.mass * 0.85) return false;
+  const dx = m.x - T.x,
+    dy = m.y - T.y;
+  return dx * dx + dy * dy < 640000;
+}
+function packEnd(i) {
+  const P = packs[i];
+  for (const m of P.m)
+    if (m.ai.pack === P) {
+      m.ai.pack = null;
+      m.ai.think = 0;
+    }
+  packs.splice(i, 1);
+}
+function packTick() {
+  // a few bots gang up on one big candy and come at it from different sides; checked twice a second, not every frame
+  packAt = time + 0.5;
+  const S = DIFFS[diff].ai;
+  if (!S || state === 'menu') {
+    while (packs.length) packEnd(0);
+    return;
+  }
+  for (let i = packs.length - 1; i >= 0; i--) {
+    const P = packs[i],
+      T = P.tgt;
+    let n = 0,
+      near = 0;
+    for (const m of P.m)
+      if (m.alive && m.ai.pack === P) {
+        n++;
+        if (Math.hypot(m.x - T.x, m.y - T.y) - m.Rs - T.Rs < 240) near++;
+      }
+    if (!T.alive || T.safe || T.pShield > 0 || (T.isPlayer && (state !== 'play' || CHEAT.peace)) || n < 2 || time > P.end) {
+      packEnd(i);
+      packNext = time + S.packCd * rand(0.7, 1.3);
+    } else if (!P.go && (near >= n || time > P.goAt)) {
+      P.go = true; // all round it, or tired of waiting: in!
+      P.end = time + 4.5;
+      botStat.packs++;
+    }
+  }
+  if (time < packNext || packs.length >= S.packs) return;
+  packNext = time + 1.5; // nobody worth it: look again soon
+  let best = null,
+    bestS = 0;
+  for (const T of blobs) {
+    if (!T.alive || T.mass < 110 || T.safe || T.boss || T.spawnT > 0 || T.pShield > 0 || (T.kind && !T.isPlayer)) continue;
+    if (T.isPlayer && (T.mass < S.shy || CHEAT.peace || state !== 'play')) continue;
+    let taken = false;
+    for (const P of packs) if (P.tgt === T) taken = true;
+    if (taken) continue;
+    let n = 0;
+    for (const m of blobs) if (packable(m, T)) n++;
+    if (n < 2) continue;
+    const s = Math.min(n, S.pack) * Math.sqrt(T.mass) * (T.isPlayer ? 1.5 : 1);
+    if (s > bestS) {
+      bestS = s;
+      best = T;
+    }
+  }
+  if (!best) return;
+  packTmp.length = 0;
+  for (const m of blobs) if (packable(m, best)) packTmp.push(m);
+  packTmp.sort((p, q) => Math.hypot(p.x - best.x, p.y - best.y) - Math.hypot(q.x - best.x, q.y - best.y));
+  const P = { tgt: best, m: packTmp.slice(0, S.pack), go: false, goAt: time + 3.5, end: time + 9 };
+  P.m.forEach((m, k) => {
+    m.ai.pack = P;
+    m.ai.slot = SLOTS[k] + rand(-0.2, 0.2);
+    m.ai.think = 0;
+  });
+  packs.push(P);
 }
 function randomBotMass(first) {
   const r = Math.random();
@@ -7204,6 +7606,10 @@ function start(data) {
 window.__kus = {
   Sfx,
   SFX_DATA,
+  botStat, // what the smarter bots of hard and extreme have done (09-bots)
+  get packs() {
+    return packs;
+  },
   get cam() {
     return cam;
   },
