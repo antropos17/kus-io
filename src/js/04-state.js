@@ -29,14 +29,15 @@ const DIFFS = {
   // react: seconds between decisions (random in this range); feint: side-steps, jukes and lunges; tongue: how keenly it is used;
   // sneak: small bots biting the back of a busy big one; pack: most bots in one pack, packs: packs at once, packCd: seconds between packs;
   // shy: the player's mass below which no pack or sneak goes for them (the allowance a small player keeps)
-  // fresh: how keenly bots hunt a player in the first 20 s of a life, when no tongue goes at them either
+  // fresh: how keenly bots hunt a player in the first 20 s of a life (below 1: no tongue at them then either);
+  // save: seconds at the start of a life with rescues from a lethal bite, 5 s apart (these levels have no grace otherwise)
   hard: {
     start: 34,
     hunt: 1.9,
     grace: 0,
     speed: 1.02,
     chase: 7,
-    ai: { react: [0.16, 0.34], feint: 0.45, tongue: 0.6, sneak: 0.5, pack: 3, packs: 1, packCd: 16, shy: 110, fresh: 0.6 },
+    ai: { react: [0.16, 0.34], feint: 0.45, tongue: 0.6, sneak: 0.5, pack: 3, packs: 1, packCd: 16, shy: 110, fresh: 0.7, save: 20 },
   },
   extreme: {
     start: 32,
@@ -44,7 +45,7 @@ const DIFFS = {
     grace: 0,
     speed: 1,
     chase: 9,
-    ai: { react: [0.08, 0.24], feint: 1, tongue: 1, sneak: 1, pack: 4, packs: 2, packCd: 8, shy: 70, fresh: 0.5 },
+    ai: { react: [0.08, 0.24], feint: 1, tongue: 1, sneak: 1, pack: 4, packs: 2, packCd: 8, shy: 70, fresh: 0.6, save: 20 },
   },
 };
 let diff = 'normal',

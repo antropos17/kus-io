@@ -327,7 +327,7 @@ function smartInit(ai) {
   ai.pack = null;
   ai.slot = 0;
 }
-const fresh = (o) => o.isPlayer && time - o.stats.t0 < 20; // the first 20 seconds of a player's life: hunted less, never tongued
+const fresh = (o) => o.isPlayer && time - o.stats.t0 < 20 && DIFFS[diff].ai.fresh < 1; // the first 20 seconds of a player's life: hunted less, never tongued
 function busyOf(o, b) {
   // biting, chewing, tongue out, or chasing someone else: its mind is elsewhere for a moment
   return !!(

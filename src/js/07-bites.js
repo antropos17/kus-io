@@ -432,10 +432,11 @@ function doBite(A, B, ang, dashBite) {
     return;
   }
   let saved = false;
-  if (B.isPlayer && DIFFS[diff].grace && lethalFor(B.mass, bite) && B.graceT <= 0 && B.mass > MIN_MASS + 6) {
+  const grace = DIFFS[diff].grace || (DIFFS[diff].ai && time - B.stats.t0 < DIFFS[diff].ai.save ? 5 : 0); // hard and extreme: rescues early in a life, 5 s apart
+  if (B.isPlayer && grace && lethalFor(B.mass, bite) && B.graceT <= 0 && B.mass > MIN_MASS + 6) {
     bite = B.mass * 0.5;
     saved = true;
-    B.graceT = DIFFS[diff].grace;
+    B.graceT = grace;
   }
   if (!saved && lethalFor(B.mass, bite)) {
     swallowWhole(A, B);
