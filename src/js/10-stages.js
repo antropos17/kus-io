@@ -14,12 +14,12 @@ const STAGE_KEYS = ['pir', 'rain', 'boss'];
 // mouth to the player and biting, then «back» seconds slowly turning away, the window for the cherry. A cherry bite makes it whirl
 // round (spin rad/s for spinT s) and start facing again. Its bites take mass from the player but do not make it bigger.
 const BOSS = {
-  mass: 2400,
-  crust: 0.3,
+  mass: 1800,
+  crust: 0.5,
   turn: 1.2,
   spin: 4.5,
   spinT: 0.7,
-  bite: 1,
+  bite: 1.8,
   biteCd: 1.2,
   face: 5,
   back: 4.5,
