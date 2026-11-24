@@ -636,7 +636,7 @@ test('stages: free play has no cake or piranhas before the events, which come on
     const pin = (m) => () => { P.mass = m; P.tx = P.x; P.ty = P.y; };
     run(5, pin(605)); out.gap = S().cur; run(3.2, pin(605)); out.rainAt600 = S().cur && S().cur.k;
     run(11.5, pin(605)); out.rainFood = S().cur.n; out.lod = k.lod; out.picks = S().cur.picks; run(4, pin(605)); out.rainOver = S().cur;
-    run(8.2, pin(1605)); const c = S().cur; out.boss = !!(c && c.k === 'boss' && c.b.boss && c.b.mass > 1500 * 1.5);
+    run(8.2, pin(1605)); const c = S().cur; out.boss = !!(c && c.k === 'boss' && c.b.boss && c.b.mass > 1500 * 1.15);
     k.update(0.3); out.line = document.getElementById('stage').textContent;
     run(2, pin(1605)); out.bossCur = S().cur && S().cur.k; out.next = S().i;
     return out; })()`);

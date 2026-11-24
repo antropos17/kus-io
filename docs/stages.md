@@ -17,11 +17,11 @@ Free play (`mode === 'free'`) now has stages: a piranha raid, a sweet rain and t
 
 ## The boss fight
 
-The Big Cake («Большой Торт») is a `kind: 'cake'` blob with `b.boss` set, 2400 mass on the first lap.
+The Big Cake («Большой Торт») is a `kind: 'cake'` blob with `b.boss` set, 1800 mass on the first lap (2400 before the retune below).
 
 - **Only the player can fight it.** Bots neither bite it nor hunt it, and it bites only the player.
-- **Hard crust.** A bite on the crust takes 0.3 of a normal bite; the cherry on its back takes double, as on the ordinary cake.
-- **Face and back.** It keeps its mouth turned to the player and bites (1.0 of a normal bite, at most one bite per 1.2 s) for 5 s, then turns its back for 4.5 s and turns slowly (1.2 rad/s). The back is the moment for the cherry.
+- **Hard crust.** A bite on the crust takes 0.5 of a normal bite; the cherry on its back takes double, as on the ordinary cake.
+- **Face and back.** It keeps its mouth turned to the player and bites (1.8 of a normal bite, at most one bite per 1.2 s) for 5 s, then turns its back for 4.5 s and turns slowly (1.2 rad/s). The back is the moment for the cherry.
 - **A cherry bite makes it whirl** (4.5 rad/s for 0.7 s) back to face the player and restarts the facing phase.
 - **Escort.** At two thirds and at one third of its mass it calls a piranha raid of 4.
 - **It does not grow** from biting the player: its mass is capped at the starting mass.
@@ -92,6 +92,17 @@ The first measurement alone gave the normal set 78.6% and 81 s, the second 90.6%
 How the numbers were reached: the first boss chased face-first and bit every 0.56 s and ate the autopilot in 12–27 s; a boss that only turned its back slowly was never reached. With face and back phases and bite 0.85 / every 1.3 s the autopilot won 93% and nobody died in the fight; bite 1.15 / every 1.1 s gave 75% but fights of 105 s on the fight probe. The shipped 1.0 / 1.2 s is between them.
 
 The autopilot gives the boss four times the priority of an ordinary prey (`BOSS.lure`), otherwise it ignores a target that bites back; a live player chooses on their own.
+
+### The retune
+
+The aim: the autopilot on normal difficulty wins 60–90% of boss fights and a won fight lasts 30–90 s at the median. `node tools/boss-fight.mjs 70 normal` plays ordinary free runs (no mass set by hand) until 70 of them have met the boss. A fight starts when the boss event begins and ends at the win screen, at the player's death, or unfinished after 300 s; an unfinished fight counts as lost. Measured after the wall-rim fix (`644e6f7`).
+
+| | Fights | Won | Died in the fight (to the boss) | Unfinished | Won fight, median (p25–p75) |
+|---|---|---|---|---|---|
+| Before: mass 2400, crust 0.3, bite 1.0 | 70 | 90.0% | 1 (0) | 6 | 94 s (64–125) |
+| After: mass 1800, crust 0.5, bite 1.8 | 71 | 74.6% | 9 (6) | 9 | 57 s (38–116) |
+
+The old boss almost never killed: it lost by dragging fights past five minutes. A harder bite alone makes fights longer (the player shrinks and needs more bites), so the cake was made lighter and softer and its bite stronger together. On the 40-fight probes on the way the win share moved 7–10 points between neighbouring settings (mass 1800 / crust 0.5 / bite 1.5: 85%, 55 s; bite 1.65 on 71 fights: 90%, 54 s; mass 1900 / crust 0.45 / bite 1.7 on 71 fights: 59%, 78 s).
 
 ## Performance
 
