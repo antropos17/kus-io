@@ -21,6 +21,9 @@ const ALBUM_ROWS = [
 const TIER_W = [1, 0.1, 0.05, 0.6],
   BIG_MASS = 150,
   ON_FIELD = 0.6;
+// How many times a name must be swallowed whole before its sticker opens, per tier: common ones at once, the rest take work.
+// This paces the album without touching who comes onto the field.
+const NEED = [1, 3, 3, 3];
 const STICKERS = [];
 for (const [rid, , tier, names] of ALBUM_ROWS)
   for (const nm of names) {
@@ -64,18 +67,31 @@ function saveAlbum() {
     localStorage.setItem('kus.album', JSON.stringify(album));
   } catch (e) {}
 }
-const albumCount = () => STICKERS.filter((s) => album.c[s.id] > 0).length;
+// kus.albumOld: stickers opened under the old one-swallow rule, written once, so NEED never closes a sticker a player already has
+let albumOld = [];
+try {
+  const o = localStorage.getItem('kus.albumOld');
+  if (o) albumOld = [].concat(JSON.parse(o) || []);
+  else {
+    albumOld = STICKERS.filter((s) => album.c[s.id] > 0 && album.c[s.id] < NEED[s.tier]).map((s) => s.id);
+    localStorage.setItem('kus.albumOld', JSON.stringify(albumOld));
+  }
+} catch (e) {}
+const need = (s) => NEED[s.tier];
+const hasSticker = (s) => (album.c[s.id] || 0) >= need(s) || albumOld.includes(s.id);
+const albumCount = () => STICKERS.filter(hasSticker).length;
 const rowOf = (rid) => ALBUM_ROWS.find((r) => r[0] === rid);
-const rowMissing = (rid) => STICKERS.filter((s) => s.row === rid && !(album.c[s.id] > 0));
+const rowMissing = (rid) => STICKERS.filter((s) => s.row === rid && !hasSticker(s));
 
 function albumEat(B) {
   // the player has swallowed B whole
   if (!runActive || !player || player.cheated) return;
   const s = STICKERS.find((x) => x.take(B));
   if (!s) return;
-  const n = album.c[s.id] || 0;
-  album.c[s.id] = n + 1;
-  if (!n) {
+  const had = hasSticker(s);
+  album.c[s.id] = (album.c[s.id] || 0) + 1;
+  if (!had && !hasSticker(s)) addFeed(`Наклейка «${esc(s.name)}»: ${album.c[s.id]} из ${need(s)}`, 3200);
+  else if (!had) {
     if (!run.stk) run.stk = [];
     run.stk.push(s.name);
     addFeed(`Новая наклейка: <b>${esc(s.name)}</b>`, 4200);
@@ -89,8 +105,8 @@ function albumEat(B) {
       haptic(25);
     }
     renderAlbumBtn();
-    if (albumBuilt) albumDirty = true;
   }
+  if (albumBuilt) albumDirty = true; // the counters on the page change with every swallow
   saveAlbum();
 }
 
@@ -200,20 +216,22 @@ function buildAlbum() {
 function fillAlbum() {
   const n = albumCount();
   $('albumN').textContent = `${n} / ${STICKERS.length}`;
-  $('albumSub').textContent = `Проглоти конфету целиком, и её наклейка твоя. За полный ряд ${ROW_SUGAR} сахара`;
+  $('albumSub').textContent = `Проглоти конфету целиком, и её наклейка твоя; редкую — ${NEED[1]} раза. За полный ряд ${ROW_SUGAR} сахара`;
   for (const sec of $('albumRows').children) {
     const rid = sec.dataset.r,
-      have = STICKERS.filter((s) => s.row === rid && album.c[s.id] > 0).length,
+      have = STICKERS.filter((s) => s.row === rid && hasSticker(s)).length,
       all = STICKERS.filter((s) => s.row === rid).length,
       done = album.r.includes(rid);
     sec.classList.toggle('done', done);
     sec.querySelector('.ah span').textContent = done ? `собран, +${ROW_SUGAR} сахара` : `${have} / ${all}`;
     for (const btn of sec.querySelectorAll('.st')) {
-      const c = album.c[btn.dataset.id] || 0,
-        nm = btn.dataset.id;
-      btn.classList.toggle('no', !c);
-      btn.lastChild.textContent = c > 1 ? '×' + c : '';
-      btn.setAttribute('aria-label', c ? `${nm}: съедено ${c}` : `${nm}: ещё не съедено`);
+      const s = STICKERS.find((x) => x.id === btn.dataset.id),
+        c = album.c[s.id] || 0,
+        nm = s.id,
+        got = hasSticker(s);
+      btn.classList.toggle('no', !got);
+      btn.lastChild.textContent = got ? (c > 1 ? '×' + c : '') : c ? `${c} из ${need(s)}` : '';
+      btn.setAttribute('aria-label', got ? `${nm}: съедено ${c}` : c ? `${nm}: съедено ${c} из ${need(s)}` : `${nm}: ещё не съедено`);
     }
   }
   albumDirty = false;
@@ -237,8 +255,11 @@ $('albumRows').addEventListener('click', (e) => {
   if (!t) return;
   const s = STICKERS.find((x) => x.id === t.dataset.id),
     c = album.c[s.id] || 0;
-  $('albumCap').textContent = c
-    ? `${s.name}: съедено целиком ${c} ${c % 10 === 1 && c % 100 !== 11 ? 'раз' : c % 10 >= 2 && c % 10 <= 4 && (c % 100 < 12 || c % 100 > 14) ? 'раза' : 'раз'}`
-    : `${s.name}: ещё не съедено. Ищи на поле и проглоти целиком`;
+  $('albumCap').textContent =
+    !hasSticker(s) && c
+      ? `${s.name}: съедено ${c} из ${need(s)}, наклейка откроется на ${need(s)}-й`
+      : c
+        ? `${s.name}: съедено целиком ${c} ${c % 10 === 1 && c % 100 !== 11 ? 'раз' : c % 10 >= 2 && c % 10 <= 4 && (c % 100 < 12 || c % 100 > 14) ? 'раза' : 'раз'}`
+        : `${s.name}: ещё не съедено. Ищи на поле и проглоти целиком${need(s) > 1 ? ` ${need(s)} раза` : ''}`;
 });
 renderAlbumBtn();
