@@ -121,7 +121,7 @@ function beginEvent(k) {
     b.spinT = 0;
     b.ai.boss = true;
     b.ai.away = false; // turning its back right now
-    b.face = Math.atan2(P.y - b.y, P.x - b.x);
+    b.face = b.fa = Math.atan2(P.y - b.y, P.x - b.x);
     blobs.push(b);
     c.b = b;
     c.m0 = m;

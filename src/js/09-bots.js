@@ -296,10 +296,10 @@ function tutorPrey() {
   const P = player,
     b = spawnBot(14),
     d = P.Rs + b.Rs + 85; // ambling 24 around this, it comes no closer than 61: the bite hint waits for the player to move in
-  P.face = 0; // to the right: the hint plaques stack on the left, the snack must not hide under them
+  P.face = P.fa = 0; // to the right: the hint plaques stack on the left, the snack must not hide under them
   b.x = b.hx = clamp(P.x + Math.cos(P.face) * d, 100, WORLD - 100);
   b.y = b.hy = clamp(P.y + Math.sin(P.face) * d, 100, WORLD - 100);
-  b.face = P.face; // its back to the player
+  b.face = b.fa = P.face; // its back to the player
   b.vx = b.vy = 0;
   b.tx = b.x;
   b.ty = b.y;

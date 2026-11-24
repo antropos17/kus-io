@@ -293,8 +293,8 @@ function drawSkin(b) {
   const a = skinTile(b.skin);
   if (!a.pat) return;
   const k = (a.span * b.Rs) / 256,
-    cs = Math.cos(b.face) * k,
-    sn = Math.sin(b.face) * k;
+    cs = Math.cos(b.fa) * k,
+    sn = Math.sin(b.fa) * k;
   try {
     a.pat.setTransform(new DOMMatrix([cs, sn, -sn, cs, b.x - (cs - sn) * 128, b.y - (sn + cs) * 128]));
   } catch (e) {

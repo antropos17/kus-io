@@ -62,6 +62,7 @@ class Blob {
     this.lunge = 0;
     this.lungeWant = 0;
     this.fw = 0;
+    this.fa = this.face; // the angle the face is drawn at: follows face smoothly, so a sudden turn never jerks the mouth
     this.chunk = null;
     this.swT = 0;
     this.lickT = 0;
@@ -328,6 +329,7 @@ function updateBlob(b, dt) {
   b.lunge += (b.lungeWant - b.lunge) * (1 - Math.exp(-dt * (b.lungeWant > b.lunge ? 70 : 30)));
   const hc = b.chunk && !b.chunk.dead && b.chunk.state === 'held' ? b.chunk : null; // head shakes while the piece tears free
   b.fw = hc ? Math.sin(hc.t * 32) * 0.2 * Math.max(0, 1 - hc.t / hc.holdT) : b.fw * Math.exp(-dt * 20);
+  b.fa = angDiff(b.fa + angDiff(b.face, b.fa) * (1 - Math.exp(-dt * 30)), 0);
 }
 
 function computeTargets(b) {
@@ -365,7 +367,7 @@ function computeTargets(b) {
       if (d < rf) r *= 1 + rk * Math.sin(d * 5 - rp) * (1 - d * 0.19);
     } // a wave runs round the body from the bite
     if (faceFx) {
-      const da = angDiff(a, b.face),
+      const da = angDiff(a, b.fa),
         d = da < 0 ? -da : da;
       if (ext !== 0 && d < 1.25) {
         const c = Math.cos(d * 1.2566);

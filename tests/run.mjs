@@ -179,6 +179,43 @@ test('streak, jelly wobble and swallowing whole', async () => {
   await g.close();
 });
 
+// The mouth sits on the front rim, not in the middle of the body: food must vanish into it, not into thin air.
+test('mouth: on the front rim where the candy looks, food goes into it, a sudden turn is smoothed', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} const out = { geo: [] };
+    P.mass = 90; for (let i = 0; i < 40; i++) k.update(1/60);
+    k.place(P, 2000, 2000, 1.1); for (let i = 0; i < 40; i++) k.update(1/60);
+    for (const open of [0, 0.4, 1.2]) {
+      P.mouth = open; const m = k.mouthGeo(P), q = P.contourAt(m.f), rim = Math.hypot(q[0] - P.x, q[1] - P.y);
+      out.geo.push({ open, dirErr: Math.abs(((m.f - P.face + 9 * Math.PI) % (2 * Math.PI)) - Math.PI), centre: (m.xc + m.H / 2) / rim, jaw: (m.xc + m.H) / rim });
+    }
+    // a sprinkle ahead and off to one side: where does it disappear?
+    k.food.length = 0; const fx = Math.cos(P.face), fy = Math.sin(P.face);
+    const f = { kind: 0, x: P.x + fx * P.Rs * 1.3 - fy * P.Rs * 0.55, y: P.y + fy * P.Rs * 1.3 + fx * P.Rs * 0.55, m: 1, c: 0, ai: 0, sz: 8 };
+    k.food.push(f); let last = null;
+    for (let i = 0; i < 120 && k.food.includes(f); i++) { last = [f.x, f.y]; k.update(1/60); }
+    out.eaten = !k.food.includes(f);
+    out.side = Math.abs(((Math.atan2(last[1] - P.y, last[0] - P.x) - P.fa + 9 * Math.PI) % (2 * Math.PI)) - Math.PI);
+    out.mouthW = k.mouthGeo(P).W / P.Rs;
+    // the tongue throws the face round by half a radian at once: the drawn face follows over a few frames
+    const a0 = P.fa; P.face += 0.5; k.update(1/60); out.step = Math.abs(P.fa - a0);
+    for (let i = 0; i < 20; i++) k.update(1/60); out.settled = Math.abs(P.fa - P.face);
+    return out; })()`);
+  for (const q of r.geo) {
+    assert(q.dirErr < 0.05, `the mouth must face where the candy looks: off by ${q.dirErr.toFixed(3)} rad at open ${q.open}`);
+    assert(q.centre > 0.7, `the mouth centre must be at the rim, not in the middle: ${q.centre.toFixed(2)} of the rim radius at open ${q.open}`);
+    if (q.open) assert(q.jaw > 0.85 && q.jaw < 1.02, `the jaw must reach the outline: ${q.jaw.toFixed(2)} of the rim radius at open ${q.open}`);
+  }
+  assert(r.eaten, 'the sprinkle in front was not eaten');
+  assert(r.side < Math.atan(r.mouthW) + 0.1, `the sprinkle must go into the mouth: it vanished ${r.side.toFixed(2)} rad off the face line`);
+  assert(
+    r.step < 0.3 && r.settled < 0.02,
+    `a sudden turn must be smoothed: first frame ${r.step.toFixed(3)} rad, after 1/3 s off by ${r.settled.toFixed(3)}`,
+  );
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 // A shove into the corner must stop at the wall's rim: past it, the next frame's wall snapped the body back in one jump.
 test('pinned in a corner: a shoved body stays at the rim and does not jump', async () => {
   const g = await open();

@@ -154,7 +154,7 @@ function paintSticker(cv, s) {
     k = cv.width / 104,
     keep = [ctx, cam.z, lod, state];
   const b = new Blob({ name: s.name, pal: s.look.pal, mass: 40, x: 0, y: 0, hat: s.look.hat, skin: s.look.skin, kind: s.look.kind });
-  b.face = Math.PI / 2; // looking at us: eyes either side, mouth below, hat on top
+  b.face = b.fa = Math.PI / 2; // looking at us: eyes either side, mouth below, hat on top
   b.tx = b.x;
   b.ty = b.y;
   b.mouth = 0.3;
