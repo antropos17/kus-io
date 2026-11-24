@@ -57,6 +57,7 @@ Sound takes are made outside the repository with earshot (https://github.com/Leo
 | `09-bots` | bot AI, spawning, hedgehog, piranhas, cake, `population` |
 | `10-album` | the album of eaten bots: `STICKERS`, rows `ALBUM_ROWS`, `pickBotName` (how often each name comes onto the field), `albumEat` (called from `swallowWhole`), the end-of-run line, the album page and `paintSticker` (the game's own drawing code on a stand-in candy) |
 | `10-daily` | "Конфета дня" (candy of the day, mode `daily`): the twist of the day `DAILY` by the local date (`dailyOf`), `day` — the twist in force, the best of the day and the days-in-a-row streak (`dailySave`) |
+| `10-juice` | HUD rewards: the streak fuse (`streakUp` from `doBite`, `streakTick` every frame from `updateHUD`), the streak shouts `STREAK_WORDS` (shrunk to stay on screen), «+N» off the mass counter (`gainPop` from `bumpMass`), the milestones `MASS_MARKS`, reset per life by `juiceReset` |
 | `10-stages` | the stages of a free run (`STAGE`, `stg`): piranha raid, sweet rain, the Big Cake boss (`BOSS`, `b.boss`), the win (`stageWin`, `kus.clear`) and the second shift (`secondShift`); `stagesOn()` keeps the ordinary cake and packs off a free run; `renderStage` fills the HUD line `#stage` |
 | `10-flow` | missions and patterns, start and end of a run, the 3-minute mode, `updateCamera`, `updateHUD`, the main `update` |
 | `11-draw-world` | the tray, `buildPath` (body outline), sprinkles, strands, wounds |

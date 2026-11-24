@@ -171,7 +171,7 @@ class Chunk {
       o.happyT = Math.max(o.happyT, 0.45);
       if (o.isPlayer) {
         Sfx.bloop(clamp(1.3 - o.Rs / 300, 0.7, 1.3) * (1 + Math.min(o.combo || 1, 6) * 0.04));
-        bumpMass();
+        bumpMass(this.mass);
       } else if (Math.random() < 0.25) o.lickT = 0.7;
     }
   }
@@ -241,7 +241,7 @@ class Gulp {
       this.A.mass += this.gain;
       gulpKick(this.A, this.gain, 0.8);
       jolt(this.A, this.A.face, 2.6);
-      if (this.A.isPlayer) bumpMass();
+      if (this.A.isPlayer) bumpMass(this.gain, true);
       this.A.swT = 0.34;
       this.A.lickT = 0.7;
       this.dead = true;
@@ -479,6 +479,7 @@ function doBite(A, B, ang, dashBite) {
     A.comboT = 2.6;
     gain *= 1 + Math.min(A.combo - 1, 5) * 0.08;
     mission('combo', A.combo, true);
+    streakUp();
   }
   const ch = new Chunk(A, B, bx, by, gain, chunkR, ang, wnd.w);
   chunks.push(ch);

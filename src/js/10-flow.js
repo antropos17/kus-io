@@ -199,6 +199,7 @@ function fixDiff() {
 function spawnPlayer(spawnT) {
   const m0 = day === 'tiny' ? 16 : DIFFS[diff].start;
   shownMass = m0;
+  juiceReset(m0);
   const name = (nick.value || '').trim().slice(0, 14) || 'Кусака',
     [x, y] = safeSpawn();
   player = new Blob({
@@ -521,11 +522,12 @@ let hudT = 0,
   lastLb = '',
   shownMass = 0,
   shownInt = -1;
-function bumpMass() {
+function bumpMass(n, whole) {
   if (!player || state !== 'play') return;
+  const t = gainPop(n, whole); // a bigger piece pops the counter harder
   if (!calm && massEl.animate)
-    massEl.animate([{ transform: 'scale(1.24)', color: '#ffd23f' }, { transform: 'scale(1)' }], {
-      duration: 240,
+    massEl.animate([{ transform: `scale(${[1.24, 1.24, 1.3, 1.4, 1.55][t]})`, color: t >= 3 ? '#ff7a9c' : '#ffd23f' }, { transform: 'scale(1)' }], {
+      duration: 240 + t * 40,
       easing: 'cubic-bezier(.2,1.5,.4,1)',
     });
 }
@@ -555,6 +557,7 @@ function updateHUD(dt) {
       massEl.textContent = v;
     }
   }
+  streakTick();
   hudT -= dt;
   if (hudT > 0) return;
   hudT = 0.25;
@@ -580,7 +583,6 @@ function updateHUD(dt) {
       ['magnet', 'pMagnet'],
     ])
       if (player[prop] > 0) fx += `<span style="background:${PICK[k][2]}">${PICK[k][0]} ${Math.ceil(player[prop])}</span>`;
-  if (player && player.alive && player.comboT > 0 && player.combo > 1) fx += `<span style="background:#9be15d">Серия ×${player.combo}</span>`;
   if (fx !== lastFx) {
     $('fx').innerHTML = fx;
     lastFx = fx;
