@@ -70,6 +70,7 @@ test('first visit: short menu fits 360x640, one tap plays, a snack waits; full m
         over: c.scrollHeight - c.clientHeight,
         first: document.body.classList.contains('first'),
         rows: ['dif', 'skins', 'hats', 'mis', 'modeSeg'].filter(shown),
+        secs: ['secMode', 'secLook', 'secMis', 'secSet', 'secHelp'].filter(shown),
         flavour: shown('sw'),
         focus: document.activeElement && document.activeElement.id,
       };
@@ -102,13 +103,69 @@ test('first visit: short menu fits 360x640, one tap plays, a snack waits; full m
   await g.page.tap('#pMenu');
   await g.page.waitForTimeout(250);
   const b = await menu();
-  assert(!b.first && b.rows.length === 5, `after a finished run the menu must be full, shows ${b.rows}`);
+  assert(!b.first && b.secs.length === 5, `after a finished run the menu must show all five sections, shows ${b.secs}`);
   assert(!(await g.page.evaluate(() => window.__kus.blobs.some((x) => x.tame))), 'the snack stayed tame after the run');
   await g.page.reload();
   await g.page.waitForTimeout(600);
   assert(!(await menu()).first, 'the full menu was not remembered');
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
+});
+
+test('menu: sections and Play fit the screen, nothing overlaps, targets are 44px; an opened section scrolls into view', async () => {
+  for (const [w, h, touch] of [
+    [1280, 720, false],
+    [360, 640, true],
+    [844, 390, true],
+  ]) {
+    const g = await open({ width: w, height: h, touch, dpr: 2, play: false, returning: true });
+    const tag = `${w}x${h}`;
+    const r = await g.page.evaluate(() => {
+      const vis = (e) => e.offsetWidth > 0 && e.offsetHeight > 0,
+        els = [...document.querySelectorAll('#menu button, #menu input')].filter(vis),
+        box = els.map((e) => [e.id || e.className || e.textContent.slice(0, 12), e.getBoundingClientRect()]),
+        c = document.querySelector('#menu .card'),
+        out = { n: els.length, off: [], small: [], hit: [], over: c.scrollHeight - c.clientHeight };
+      for (const [n, b] of box) {
+        if (b.left < 0 || b.top < 0 || b.right > innerWidth || b.bottom > innerHeight) out.off.push(n);
+        if (b.height < 44 || b.width < 44) out.small.push(`${n} ${Math.round(b.width)}x${Math.round(b.height)}`);
+      }
+      for (let i = 0; i < box.length; i++)
+        for (let j = i + 1; j < box.length; j++) {
+          const a = box[i][1],
+            b = box[j][1];
+          if (a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1)
+            out.hit.push(box[i][0] + ' / ' + box[j][0]);
+        }
+      return out;
+    });
+    assert(g.errors.length === 0, g.errors.join(' | '));
+    assert(r.n >= 8, `${tag}: only ${r.n} menu controls are visible`);
+    assert(r.over <= 1, `${tag}: the folded menu scrolls by ${r.over}px`);
+    assert(!r.off.length, `${tag}: off the screen: ${r.off}`);
+    assert(!r.small.length, `${tag}: smaller than 44px: ${r.small}`);
+    assert(!r.hit.length, `${tag}: overlapping: ${r.hit}`);
+    for (const id of ['secMode', 'secLook', 'secMis', 'secSet', 'secHelp']) {
+      await g.page.click(`#${id} .sh`);
+      await g.page.waitForTimeout(260);
+      const o = await g.page.evaluate((id) => {
+        const p = document.getElementById('play').getBoundingClientRect(),
+          f = document.getElementById(id).querySelector('.sb').firstElementChild.getBoundingClientRect(),
+          open = [...document.querySelectorAll('#menu .sec.open')].map((x) => x.id);
+        return {
+          open,
+          play: p.top >= 0 && p.bottom <= innerHeight && p.left >= 0 && p.right <= innerWidth,
+          first: f.top >= 0 && f.bottom <= innerHeight && (f.bottom <= p.top + 1 || f.right <= p.left), // above Play, or beside it sideways
+        };
+      }, id);
+      assert(o.open.length === 1 && o.open[0] === id, `${tag}: open sections ${o.open}, expected only ${id}`);
+      assert(o.play, `${tag}: Play left the screen with ${id} open`);
+      assert(o.first, `${tag}: ${id} opened out of sight`);
+    }
+    await g.page.click('#secHelp .sh');
+    assert(!(await g.page.evaluate(() => document.querySelector('#menu .sec.open'))), `${tag}: a second tap must fold the section`);
+    await g.close();
+  }
 });
 
 test('phone: play controls stay inside the screen', async () => {
@@ -843,6 +900,7 @@ test('settings: difficulty and graphics apply and are remembered', async () => {
   const g = await open({ play: false, returning: true });
   const mass = {};
   for (const d of ['easy', 'hard', 'normal']) {
+    if (!(await g.page.isVisible('#diffSeg'))) await g.page.click('#secMode .sh'); // difficulty lives in the folded Mode section
     await g.page.click(`#diffSeg button[data-v=${d}]`);
     await g.page.click('#play');
     await g.page.waitForTimeout(120);
