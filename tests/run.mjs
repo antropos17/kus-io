@@ -1701,9 +1701,15 @@ test('lang: the settings switch saves the choice and reloads; not on the pause c
   await g.page.goto(URL + '?c=143&n=' + encodeURIComponent('Сеня'));
   await g.page.waitForTimeout(500);
   await g.page.evaluate(() => document.querySelector('#secSet .sh').click());
-  await g.page.waitForTimeout(200);
-  await Promise.all([g.page.waitForNavigation(), g.page.click('#langSeg [data-v="en"]')]);
-  await g.page.waitForTimeout(500);
+  await g.page.waitForTimeout(400); // let the section finish opening and scrolling before the tap
+  await g.page.click('#langSeg [data-v="en"]');
+  // the click reloads the page: wait until the new page is up, whatever the reload timing
+  let lang = null;
+  for (let i = 0; i < 40 && lang !== 'en'; i++) {
+    await g.page.waitForTimeout(150);
+    lang = await g.page.evaluate(() => window.__kus && window.__kus.LANG).catch(() => null);
+  }
+  await g.page.waitForTimeout(300);
   const a = await g.page.evaluate(() => ({
     lang: window.__kus.LANG,
     saved: localStorage.getItem('kus.lang'),
