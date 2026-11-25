@@ -1947,6 +1947,22 @@ test('lang: sticker names fit their tiles on a 360x640 phone in both languages',
   }
 });
 
+test('lang: the og.png and README screenshot tools stay Russian on any machine', async () => {
+  const { readFileSync } = await import('node:fs');
+  for (const f of ['tools/og.mjs', 'tools/shots.mjs']) {
+    const src = readFileSync(join(root, f), 'utf8'),
+      opens = src.match(/new(?:Page|Context)\(\{[^\n]*/g) || []; // the whole call line: the options hold nested objects
+    assert(opens.length && opens.every((o) => o.includes("locale: 'ru-RU'")), `${f}: a browser page without locale 'ru-RU': ${opens.join(' | ')}`);
+  }
+});
+
+test('lang: the English sticker caption has no broken ordinal', async () => {
+  const g = await open({ play: false, locale: 'en-US' });
+  const s = await g.page.evaluate(() => window.__kus.t('al.capPart', 'Gummy', 1, 3));
+  assert(!/\d(th|st|nd|rd)\b/.test(s), `caption: "${s}"`);
+  await g.close();
+});
+
 for (const [name, fn] of tests) {
   if (only && !name.includes(only)) continue;
   const t0 = Date.now();

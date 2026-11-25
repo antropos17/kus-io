@@ -231,7 +231,7 @@ const STR = {
   'al.aNone': [(n) => `${n}: ещё не съедено`, (n) => `${n}: not eaten yet`],
   'al.capPart': [
     (n, c, k) => `${n}: съедено ${c} из ${k}, наклейка откроется на ${k}-й`,
-    (n, c, k) => `${n}: eaten ${c} of ${k}, the sticker opens on the ${k}th`,
+    (n, c, k) => `${n}: eaten ${c} of ${k}, the sticker opens at ${k}`,
   ],
   'al.capGot': [
     (n, c) =>
