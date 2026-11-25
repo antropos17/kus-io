@@ -337,6 +337,14 @@ window.__kus = {
     renderMode();
   },
   toMenu,
+  trophy: {
+    get running() {
+      return tr.running;
+    },
+    get frames() {
+      return tr.frames;
+    },
+  },
   stages: {
     kind: stageKind,
     get stg() {

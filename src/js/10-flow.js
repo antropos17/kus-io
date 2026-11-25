@@ -221,6 +221,7 @@ function spawnPlayer(spawnT) {
   input.dashHeld = false;
 }
 function startGame() {
+  trophyStop(); // the win card's glaze, for «Вторая смена» and a new game alike
   if (state === 'won') return secondShift(); // the win screen's main button carries on
   if (state === 'play' || (state === 'dead' && overEl.classList.contains('hidden'))) return;
   Sfx.init();
@@ -348,6 +349,7 @@ function toMenu() {
     spawnDust(player.x, player.y, player.pal, 0, 0, 12);
   } // the run was paid out when the cake fell
   stageStop();
+  trophyStop();
   state = 'menu';
   paused = false;
   runActive = false;
@@ -444,6 +446,9 @@ function showOver() {
   $('chalLink').classList.add('hidden');
   overEl.classList.remove('hidden');
   hudEl.classList.add('hidden');
+  // the glaze frame goes on after the card is shown: it is measured on the card
+  if (won) trophyStart(card);
+  else trophyStop();
   setTimeout(() => $('again').focus({ preventScroll: true }), 50);
 }
 

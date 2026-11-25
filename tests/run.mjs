@@ -1076,6 +1076,61 @@ test('stages: the trophy card fits a phone: close button out of the bitten corne
   }
 });
 
+test('trophy: the glaze runs only while the win card is shown', async () => {
+  const WIN = `const beat = () => { const P = free(); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1); const B = S().cur.b; B.spawnT = 0; B.ai = null; B.mass = 60;
+      k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
+      while (k.state === 'play' && f++ < 400) { P.tx = B.x; P.ty = B.y; B.tx = B.x; B.ty = B.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); } };
+    const raf = (n) => new Promise((res) => { const s = () => (n-- > 0 ? requestAnimationFrame(s) : res()); s(); });
+    const fx = () => document.getElementById('trophyFx');
+    const shown = () => { const c = fx(); return !!c && getComputedStyle(c).display !== 'none' && c.getBoundingClientRect().width > 0; };`;
+  const g = await open({ width: 390, height: 844, touch: true, dpr: 2, play: false, returning: true });
+  const r = await g.page.evaluate(`(async () => { ${STG} ${WIN} const out = {};
+    out.before = !!k.trophy && k.trophy.running;
+    beat(); out.state = k.state;
+    await new Promise((res) => setTimeout(res, 1500));
+    out.running = k.trophy.running; out.frames = k.trophy.frames; out.shown = shown();
+    { const c = fx(), card = document.querySelector('#over .card'), cr = c.getBoundingClientRect(), kr = card.getBoundingClientRect();
+      out.size = [cr.left - kr.left, cr.top - kr.top, cr.width - kr.width, cr.height - kr.height].map((v) => Math.round(v));
+      out.px = [c.width, c.height, Math.round((card.offsetWidth + 48) * devicePixelRatio), Math.round((card.offsetHeight + 48) * devicePixelRatio)];
+      out.cardT = card.style.transform; }
+    document.getElementById('again').click(); await raf(2);
+    out.afterShift = k.trophy.running; const f0 = k.trophy.frames; await raf(30); out.grew = k.trophy.frames - f0; out.shownShift = shown();
+    // die in the second shift: the death card has no glaze
+    const Q = k.player, G = k.spawnBot(3000); G.spawnT = 0; G.ai = null; Q.mass = 20; Q.spawnT = 0;
+    k.place(G, 2600, 2600, 0); k.place(Q, 2600 + G.Rs + Q.Rs - 6, 2600, 0);
+    for (let f = 0; Q.alive && f < 20 * 60; f++) { G.biteCd = Math.min(G.biteCd, 0); Q.graceT = 99; G.tx = Q.x; G.ty = Q.y; k.update(1 / 60); }
+    for (let f = 0; document.getElementById('over').classList.contains('hidden') && f < 5 * 60; f++) k.update(1 / 60);
+    await raf(3); out.dead = [k.state, k.trophy.running, shown()];
+    // a win, then «В меню»; a win, then a new game from the menu: each stops it
+    k.toMenu(); beat(); await raf(3); out.win2 = k.trophy.running; document.getElementById('toMenu').click(); await raf(2); out.menu = [k.state, k.trophy.running, shown()];
+    beat(); await raf(3); k.toMenu(); k.startGame(); await raf(2); out.newGame = [k.state, k.trophy.running, shown()];
+    return out; })()`);
+  assert(r.before === false, `no glaze before a win: ${r.before}`);
+  assert(r.state === 'won' && r.running && r.frames > 30 && r.shown, `the glaze on the win card: ${JSON.stringify(r)}`);
+  assert(r.size.join() === '-24,-24,48,48', `the canvas is the card + 24 px: ${r.size}`);
+  assert(r.px[0] === r.px[2] && r.px[1] === r.px[3], `the canvas follows the pixel ratio: ${r.px}`);
+  assert(!r.cardT || r.cardT === 'none', `the pop-in must end at rest: "${r.cardT}"`);
+  assert(r.afterShift === false && r.grew === 0 && !r.shownShift, `«Вторая смена» stops it: ${JSON.stringify([r.afterShift, r.grew, r.shownShift])}`);
+  assert(r.dead[0] === 'dead' && r.dead[1] === false && r.dead[2] === false, `the death card has no glaze: ${r.dead}`);
+  assert(r.win2 && r.menu[0] === 'menu' && !r.menu[1] && !r.menu[2], `«В меню» stops it: ${JSON.stringify([r.win2, r.menu])}`);
+  assert(r.newGame[0] === 'play' && !r.newGame[1] && !r.newGame[2], `a new game stops it: ${r.newGame}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+  // calm: the frame is drawn once, whole and still, with no loop
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.addInitScript(() => localStorage.getItem('kus.best') === null && localStorage.setItem('kus.best', '0'));
+  await page.goto(URL);
+  await page.waitForTimeout(600);
+  const c = await page.evaluate(`(async () => { ${STG} ${WIN} beat(); await raf(20);
+    return { state: k.state, running: k.trophy.running, frames: k.trophy.frames, shown: shown(), t: document.querySelector('#over .card').style.transform }; })()`);
+  assert(c.state === 'won' && !c.running && c.frames === 1 && c.shown && !c.t, `calm: one still frame ${JSON.stringify(c)}`);
+  assert(errors.length === 0, errors.join(' | '));
+  await ctx.close();
+});
+
 test('stages: the 3-minute mode and the candy of the day keep their cake and piranhas', async () => {
   const g = await open({ play: false, returning: true });
   const r = await g.page.evaluate(`(() => { ${STG} const out = {};
