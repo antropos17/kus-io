@@ -158,14 +158,15 @@ for (const sg of segs) {
 blocked.add('4,9');
 const NEST = { x: 4.5, y: 9.4 };
 
-/* ---------- sound: everything is synthesised, nothing is loaded ---------- */
-const A = { ctx: null, on: true, last: {} };
+/* ---------- sound: everything is synthesised, nothing is loaded. Close, wet and panned to where it happens ---------- */
+const A = { ctx: null, on: true, last: {}, pan: 0 };
 function audioInit() {
   if (!A.on) return;
   try {
     if (!A.ctx) {
       const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
-      A.ctx = new C(); A.master = A.ctx.createGain(); A.master.gain.value = .2; A.master.connect(A.ctx.destination);
+      A.ctx = new C(); A.master = A.ctx.createGain(); A.master.gain.value = .26;
+      if (A.ctx.createDynamicsCompressor) { A.comp = A.ctx.createDynamicsCompressor(); A.master.connect(A.comp); A.comp.connect(A.ctx.destination); } else A.master.connect(A.ctx.destination);
       const n = Math.floor(A.ctx.sampleRate * .6); A.noise = A.ctx.createBuffer(1, n, A.ctx.sampleRate);
       const d = A.noise.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
     }
@@ -177,35 +178,49 @@ function can(name, gap) {
   const t = A.ctx.currentTime; if (t - (A.last[name] || -1) < gap) return false;
   A.last[name] = t; return true;
 }
+function out(node) { if (A.ctx.createStereoPanner) { const p = A.ctx.createStereoPanner(); p.pan.value = A.pan; node.connect(p); p.connect(A.master); } else node.connect(A.master); }
 function nz(dur, type, f, q, vol, f2, delay) {
   const t = A.ctx.currentTime + (delay || 0), s = A.ctx.createBufferSource(); s.buffer = A.noise;
   const fl = A.ctx.createBiquadFilter(); fl.type = type; fl.frequency.setValueAtTime(f, t); if (f2) fl.frequency.exponentialRampToValueAtTime(f2, t + dur); fl.Q.value = q;
   const gn = A.ctx.createGain(); gn.gain.setValueAtTime(vol, t); gn.gain.exponentialRampToValueAtTime(.001, t + dur);
-  s.connect(fl); fl.connect(gn); gn.connect(A.master); s.start(t, Math.random() * .3); s.stop(t + dur + .02);
+  s.connect(fl); fl.connect(gn); out(gn); s.start(t, Math.random() * .3); s.stop(t + dur + .02);
 }
 function tone(dur, type, f1, f2, vol, delay) {
   const t = A.ctx.currentTime + (delay || 0), o = A.ctx.createOscillator(); o.type = type;
   o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t + dur);
   const gn = A.ctx.createGain(); gn.gain.setValueAtTime(.0001, t); gn.gain.linearRampToValueAtTime(vol, t + .008); gn.gain.exponentialRampToValueAtTime(.001, t + dur);
-  o.connect(gn); gn.connect(A.master); o.start(t); o.stop(t + dur + .02);
+  o.connect(gn); out(gn); o.start(t); o.stop(t + dur + .02);
 }
+const glop = (v, d) => { tone(.11, 'sine', rnd(190, 270), 70, v, d); tone(.08, 'sine', rnd(320, 430), 120, v * .55, (d || 0) + .06); };
 const SFX = {
-  bite(big) { if (!can('bite', .05)) return; nz(.07, 'bandpass', rnd(900, 2200), 1.2, .5); tone(.09, 'sine', big ? 105 : 150, 50, big ? .5 : .28); },
-  squish() { if (!can('sq', .08)) return; nz(.15, 'lowpass', 750, .8, .32, 170); },
-  snap() { if (!can('snap', .07)) return; tone(.07, 'triangle', rnd(520, 820), 150, .16); },
-  crack() { if (!can('crack', .09)) return; for (let i = 0; i < 3; i++) nz(.035, 'highpass', rnd(1800, 3200), .7, .32, 0, i * .035); tone(.12, 'sine', 90, 40, .3); },
+  bite(big) {                                                        // teeth through skin: a few dry crunches, a thud, then the wet part
+    if (!can('bite', .05)) return;
+    for (let i = 0; i < (big ? 3 : 2); i++) nz(.035, 'bandpass', rnd(1200, 3000), 2, .42, 0, i * .018);
+    tone(.09, 'sine', big ? 105 : 150, 50, big ? .5 : .28); nz(.13, 'lowpass', 900, .8, .26, 180, .03); glop(.14, .04);
+  },
+  squish() { if (!can('sq', .08)) return; nz(.2, 'lowpass', 900, .8, .32, 160); glop(.2, .02); },
+  squelch() { if (!can('sqc', .07)) return; nz(.18, 'bandpass', rnd(500, 900), 6, .42, rnd(200, 350)); glop(.26); },
+  smack() { if (!can('smack', .1)) return; nz(.05, 'bandpass', rnd(700, 1300), 3, .2); tone(.05, 'sine', rnd(240, 340), 150, .11); },
+  drip() { if (!can('drip', .09)) return; tone(.07, 'sine', rnd(900, 1500), rnd(350, 500), .06); },
+  thump() { if (!can('thump', .12)) return; tone(.1, 'sine', 70, 45, .32); },
+  pop() { if (!can('pop', .1)) return; nz(.12, 'lowpass', 2600, .7, .5, 200); tone(.18, 'sine', 160, 40, .5); glop(.3, .05); },
+  snap() { if (!can('snap', .07)) return; tone(.07, 'triangle', rnd(520, 820), 150, .16); nz(.02, 'highpass', 3000, .7, .14); },
+  crack() { if (!can('crack', .09)) return; let d = 0; for (let i = 0; i < 5; i++) { nz(.03, 'highpass', rnd(1800, 3400), .7, .3, 0, d); d += rnd(.015, .05); } tone(.12, 'sine', 90, 40, .3); },
   clang() { if (!can('clang', .07)) return; tone(.08, 'square', 920, 700, .07); tone(.11, 'square', 1390, 1100, .05); },
   roar() { if (!can('roar', .5)) return; tone(.8, 'sawtooth', 92, 42, .3); nz(.8, 'lowpass', 320, 1, .3, 90); },
+  grunt() { if (!can('grunt', .2)) return; tone(.2, 'sawtooth', 115, 68, .13); nz(.16, 'lowpass', 400, 1, .12); },
+  squeak() { if (!can('squeak', .12)) return; tone(.07, 'sawtooth', rnd(1500, 2100), rnd(2400, 3000), .03); },
+  croak() { if (!can('croak', .15)) return; tone(.06, 'square', 150, 95, .06); tone(.06, 'square', 140, 90, .06, .07); },
+  slurp() { if (!can('slurp', .2)) return; for (let i = 0; i < 6; i++) nz(.1, 'bandpass', 350 + i * 220, 7, .2, 600 + i * 260, i * .06); glop(.16, .36); },
   place() { if (!can('place', .05)) return; tone(.13, 'sine', 120, 45, .5); nz(.09, 'lowpass', 500, 1, .22); },
   tick() { if (!can('tick', .03)) return; tone(.03, 'square', 660, 640, .05); },
   horn() { if (!can('horn', .3)) return; tone(.55, 'sawtooth', 98, 92, .14); tone(.55, 'sawtooth', 147, 139, .09); },
   lost() { if (!can('lost', .1)) return; tone(.38, 'triangle', 330, 105, .25); },
   coin() { if (!can('coin', .045)) return; tone(.05, 'square', 1250, 1600, .04); },
   combo(n) { if (!can('combo', .05)) return; const f = 330 * Math.pow(1.122, Math.min(n - 1, 14)); tone(.14, 'triangle', f, f * 1.5, .16); },
-  slurp() { if (!can('slurp', .2)) return; nz(.4, 'bandpass', 380, 5, .3, 1900); },
-  lick() { if (!can('lick', .06)) return; nz(.1, 'bandpass', 1500, 3, .22, 480); }
+  lick() { if (!can('lick', .06)) return; nz(.1, 'bandpass', 1500, 3, .22, 480); glop(.12, .05); }
 };
-const sfx = (n, a) => { try { SFX[n](a); } catch (e) {} };
+const sfx = (n, a, x) => { try { A.pan = x === undefined ? 0 : clamp((x / COLS * 2 - 1) * .8, -1, 1); SFX[n](a); } catch (e) {} };
 
 /* ---------- monsters (towers) ---------- */
 const T = {
@@ -227,6 +242,7 @@ const K = {
   toad:  { r: .35, hp: 11,  sp: .65, rew: 6,  soft: 1,   leg: .55, segs: [[-.2, .78, .72], [.55, .48, .52]], legs: [[0, -.45], [0, .35]], cols: ['#8fae4a', '#6b8f3a', '#34491c'] },
   shell: { r: .37, hp: 20,  sp: .55, rew: 9,  soft: .4,  leg: .35, segs: [[-.15, .82, .68], [.68, .34, .34]], legs: [[0, -.5], [0, 0], [0, .5]], cols: ['#b08f78', '#8a6f5a', '#45332a'], armor: true },
   boar:  { r: .45, hp: 50,  sp: .36, rew: 22, soft: .45, leg: .45, segs: [[-.5, .55, .52], [.05, .68, .6], [.68, .4, .38]], legs: [[0, -.1], [1, .25]], cols: ['#8a6450', '#6b4a3a', '#2f1f17'] },
+  worm:  { r: .2,  hp: 14,  sp: .5,  rew: 8,  soft: 1,   leg: 0,   segs: [[-2.5, .52, .52], [-1.65, .6, .6], [-.8, .66, .66], [.05, .66, .66], [.8, .5, .5]], legs: [], cols: ['#eab0b6', '#b56a78', '#5a2a38'] },
   brood: { r: .6,  hp: 150, sp: .27, rew: 60, soft: .9,  leg: .4,  segs: [[-.42, .72, .78], [.22, .55, .55], [.72, .33, .33]], legs: [[0, .3], [1, -.25], [1, .1], [1, .4]], cols: ['#b07a9a', '#8d5a7a', '#40243a'], split: 8 }
 };
 const BUGS = [['#9cbb4e', '#7c9a3a', '#3c4f19'], ['#c98345', '#a8642a', '#522e11'], ['#8a7be0', '#6a5acd', '#2f2670'], ['#49ad9f', '#2f8f83', '#143d38'], ['#d4b545', '#b89b2e', '#5c4c10']];
@@ -238,7 +254,7 @@ try { best = +localStorage.getItem('hrum-best') || 0; } catch (e) {}
 function fresh() {
   return { coins: 130, lives: 15, wave: 0, active: false, queue: [], spawnT: 0, gap: .9, time: 0, shake: 0, fadeT: 0, freeze: 0, slowT: 0,
            cam: { x: COLS / 2, y: ROWS / 2, z: 1 }, camT: { x: COLS / 2, y: ROWS / 2, z: 1 },
-           enemies: [], carc: [], towers: [], parts: [], texts: [], strands: [], pools: [], flashes: [], guts: [], spurts: [], fly: [], pending: 0, combo: 0, comboT: 0, banner: null, waveTotal: 0,
+           enemies: [], carc: [], towers: [], parts: [], texts: [], strands: [], pools: [], flashes: [], guts: [], spurts: [], fly: [], lens: [], pending: 0, combo: 0, comboT: 0, banner: null, waveTotal: 0,
            build: null, sel: null, speed: 1, over: false };
 }
 function mkTower(type, c, r, lvl, spent) {
@@ -252,6 +268,7 @@ function buildWave(w) {
   const q = [], add = (k, n) => { for (let i = 0; i < n; i++) q.push(k); };
   add('bug', Math.min(5 + w * 2, 30));
   if (w >= 2) add('toad', Math.min(1 + w, 20));
+  if (w >= 3) add('worm', Math.min(w - 1, 9));
   if (w >= 4) add('shell', Math.min(w - 2, 14));
   if (w >= 6) add('boar', Math.min(Math.floor(w / 3), 9));
   for (let i = q.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [q[i], q[j]] = [q[j], q[i]]; }
@@ -270,7 +287,7 @@ function spawn(kind, s) {
   const d = K[kind], R = d.r, max = Math.max(1, Math.round(d.hp * hpMul(Math.max(1, S.wave)))), n = d.segs.length, hx = d.segs[n - 1][0];
   const e = { kind, r: R, sp: d.sp, rew: d.rew, soft: d.soft, max, hp: max, s: 0, rot: Math.PI / 2, nodes: [],
               slowT: 0, slowF: 1, tug: 0, panic: false, bloody: 0, lost: 0, stepT: 0, x: 0, y: -2, shx: .04, shy: .07, walk: rnd(0, 6),
-              sq: 0, sqV: 0, sqT: 0, sqAng: 0, shake: 0, cols: d.cols || pick(BUGS), inv: clamp(.09 / (R * R), .22, 1.3) };
+              sq: 0, sqV: 0, sqT: 0, sqAng: 0, shake: 0, ph0: Math.random(), curl: 0, hop: false, rage: false, birthT: 4, lastDmg: 0, cols: d.cols || pick(BUGS), inv: clamp(.09 / (R * R), .22, 1.3) };
   e.s = s === undefined ? (hx - d.segs[0][0]) * R : s;
   d.segs.forEach((q, i) => {
     const off = (hx - q[0]) * R, p = posAt(e.s - off);
@@ -310,7 +327,7 @@ function drawSegLayer(c, sg, layer) {
         ell(c, X * .05, s * Y * .24, X * .46, Y * .27); c.fillStyle = '#dba9ae'; c.fill(); c.strokeStyle = '#7a3a48'; c.lineWidth = R * .03; c.stroke();
         for (const o of [-.25, 0, .25]) { c.beginPath(); c.arc(X * (.05 + o), s * Y * .24, Y * .13, s > 0 ? .4 : 3.5, s > 0 ? 2.7 : 5.9); c.stroke(); }
       }
-    } else if (sg.i === 0) {
+    } else if (sg.i === 0 || e.kind === 'worm') {
       const mk = (ph, amp) => { const p = []; for (let q = 0; q <= 8; q++) p.push({ x: -X * .6 + q * X * 1.2 / 8, y: Math.sin(q * 1.9 + ph) * Y * amp * (1 - Math.abs(q - 4) / 7) }); return p; };
       tube(c, mk(0, .55), R * .2); tube(c, mk(2.2, .4), R * .17);
       c.fillStyle = '#5c1410'; ell(c, X * .42, -Y * .28, X * .2, Y * .16, .4); c.fill(); c.fillStyle = 'rgba(255,200,190,.3)'; ell(c, X * .38, -Y * .32, X * .07, Y * .04, .4); c.fill();
@@ -389,6 +406,13 @@ function drawSegLayer(c, sg, layer) {
       c.strokeStyle = c3; c.lineWidth = R * .07;
       for (const o of [-.4, 0, .4]) { c.beginPath(); c.moveTo(-X * .8, o * Y); c.lineTo(X * .8, o * Y * .85); c.stroke(); }
     }
+  } else if (e.kind === 'worm') {
+    c.strokeStyle = c3; c.lineWidth = R * .07;                       // ringed like an earthworm
+    for (const o of [-.45, .1, .6]) { c.beginPath(); c.moveTo(o * X, -Y * .85); c.quadraticCurveTo(o * X + R * .12, 0, o * X, Y * .85); c.stroke(); }
+    if (head) {
+      c.fillStyle = '#2a050c'; ell(c, X * .55, 0, R * .22, R * .22); c.fill();
+      c.fillStyle = BONE; for (let q = 0; q < 7; q++) { const a = q / 7 * TAU; c.beginPath(); c.moveTo(X * .55 + Math.cos(a - .3) * R * .22, Math.sin(a - .3) * R * .22); c.lineTo(X * .55 + Math.cos(a) * R * .07, Math.sin(a) * R * .07); c.lineTo(X * .55 + Math.cos(a + .3) * R * .22, Math.sin(a + .3) * R * .22); c.closePath(); c.fill(); }
+    }
   } else {
     if (head) {
       c.strokeStyle = DARK; c.lineWidth = R * .09;
@@ -466,7 +490,7 @@ function makeChunk(sg, b) {
 let decal = null, dctx = null;
 const GW = COLS * 2, bgrid = new Float32Array(GW * ROWS * 2);                 // where the ground is wet, for footprints
 const wet = (x, y, v) => { const i = Math.floor(clamp(y, 0, ROWS - .01) * 2) * GW + Math.floor(clamp(x, 0, COLS - .01) * 2); if (v) bgrid[i] = Math.min(4, bgrid[i] + v); return bgrid[i]; };
-function addPart(p) { if (S.parts.length < 900) S.parts.push(p); }
+function addPart(p) { if (S.parts.length < 1500) S.parts.push(p); }
 function blood(x, y, n, pow, dir, spread) {
   for (let i = 0; i < n; i++) {
     const a = dir === undefined ? rnd(0, TAU) : dir + rnd(-spread, spread), v = rnd(.5, 3.2) * pow, life = rnd(.18, .5);
@@ -516,7 +540,7 @@ function drawLegShape(c, s, col) {
 }
 function splat(x, y, r, ang) {
   if (!dctx) return;
-  dctx.globalAlpha = .62; dctx.fillStyle = Math.random() < .5 ? '#560a12' : '#74101a';
+  dctx.globalAlpha = .72; dctx.fillStyle = Math.random() < .5 ? '#5e0a13' : '#7e111c';
   dctx.beginPath();
   if (ang === undefined) {
     dctx.arc(x, y, r, 0, TAU);
@@ -699,6 +723,21 @@ function drawOrgan(c, org, s, beat) {
     c.beginPath(); c.moveTo(-s * .45, 0); c.bezierCurveTo(-s * .5, -s * .45, s * .1, -s * .5, s * .3, -s * .15); c.bezierCurveTo(s * .55, s * .1, s * .2, s * .5, -s * .2, s * .4); c.closePath();
     c.fillStyle = gr; c.fill(); c.strokeStyle = '#2a050c'; c.lineWidth = s * .07; c.stroke();
     c.strokeStyle = 'rgba(60,4,12,.6)'; c.lineWidth = s * .04; c.beginPath(); c.moveTo(-s * .3, -s * .1); c.quadraticCurveTo(0, s * .05, s * .12, s * .3); c.stroke();
+  } else if (org === 'eye') {                                        // an eyeball trailing its nerve
+    c.strokeStyle = '#c2445c'; c.lineWidth = s * .16; c.lineCap = 'round'; c.beginPath(); c.moveTo(-s * .4, 0); c.quadraticCurveTo(-s * .8, s * .2, -s * 1.05, -s * .1); c.stroke();
+    const gr = c.createRadialGradient(-s * .15, -s * .15, 0, 0, 0, s * .5); gr.addColorStop(0, '#ffffff'); gr.addColorStop(1, '#c9bfae');
+    c.fillStyle = gr; c.beginPath(); c.arc(0, 0, s * .46, 0, TAU); c.fill(); c.strokeStyle = '#2a050c'; c.lineWidth = s * .07; c.stroke();
+    c.strokeStyle = 'rgba(190,30,45,.7)'; c.lineWidth = s * .035; for (const a of [2.2, 3.1, 4]) { c.beginPath(); c.moveTo(Math.cos(a) * s * .44, Math.sin(a) * s * .44); c.lineTo(Math.cos(a + .2) * s * .16, Math.sin(a + .2) * s * .16); c.stroke(); }
+    c.fillStyle = '#d6a21e'; c.beginPath(); c.arc(s * .14, 0, s * .22, 0, TAU); c.fill(); c.fillStyle = '#0e0807'; c.beginPath(); c.arc(s * .17, 0, s * .11, 0, TAU); c.fill();
+  } else if (org === 'brain') {
+    for (const q of [-1, 1]) { c.fillStyle = '#dba9ae'; c.beginPath(); c.ellipse(0, q * s * .2, s * .45, s * .25, 0, 0, TAU); c.fill(); c.strokeStyle = '#7a3a48'; c.lineWidth = s * .05; c.stroke(); for (const o of [-.22, 0, .22]) { c.beginPath(); c.arc(o * s, q * s * .2, s * .12, q > 0 ? .4 : 3.5, q > 0 ? 2.7 : 5.9); c.stroke(); } }
+  } else if (org === 'stomach') {
+    c.beginPath(); c.moveTo(-s * .4, -s * .25); c.bezierCurveTo(s * .1, -s * .5, s * .6, -s * .1, s * .3, s * .3); c.bezierCurveTo(s * .05, s * .55, -s * .45, s * .3, -s * .25, 0); c.closePath();
+    c.fillStyle = '#d9a08a'; c.fill(); c.strokeStyle = '#6a3024'; c.lineWidth = s * .06; c.stroke();
+    c.strokeStyle = 'rgba(150,20,40,.6)'; c.lineWidth = s * .03; c.beginPath(); c.moveTo(-s * .2, -s * .2); c.quadraticCurveTo(s * .2, -s * .1, s * .2, s * .25); c.stroke();
+  } else if (org === 'kidney') {
+    c.beginPath(); c.moveTo(-s * .1, -s * .45); c.bezierCurveTo(s * .5, -s * .5, s * .5, s * .5, -s * .1, s * .45); c.bezierCurveTo(-s * .4, s * .35, -s * .05, 0, -s * .4, -s * .3); c.closePath();
+    c.fillStyle = '#7a1f22'; c.fill(); c.strokeStyle = '#2a0806'; c.lineWidth = s * .07; c.stroke();
   } else if (org === 'liver') {
     for (const [x, y, rx, ry, q] of [[-.15, 0, .42, .28, .2], [.25, .08, .3, .2, -.3]]) { c.fillStyle = '#6a1c14'; c.beginPath(); c.ellipse(x * s, y * s, rx * s, ry * s, q, 0, TAU); c.fill(); c.strokeStyle = '#2a0806'; c.lineWidth = s * .06; c.stroke(); }
   } else {
@@ -710,14 +749,15 @@ function drawOrgan(c, org, s, beat) {
 function drawScrap(c, sg) {
   const rot = sg.rot || 0;
   c.globalAlpha = 1 - .55 * rot;
+  if (sg.flat) c.scale(1.4, .62);                                    // trodden flat
   if (sg.scrap === 'meat') drawMeat(c, sg.size, rot > .45 ? '#4f3d22' : '#8f1626');
   else if (sg.scrap === 'leg') drawLegShape(c, sg.size, sg.col);
-  else drawOrgan(c, sg.org, sg.size, sg.beat > 0 ? .14 * Math.abs(Math.sin(sg.beat * 14)) : 0);
+  else drawOrgan(c, sg.org, sg.size, sg.beat > 0 ? .16 * Math.abs(Math.sin(sg.beat * 8)) : 0);
   if (rot > .2 && sg.scrap !== 'leg') { c.fillStyle = 'rgba(58,68,30,' + (rot * .6) + ')'; c.beginPath(); c.arc(0, 0, sg.size * .4, 0, TAU); c.fill(); }
   c.globalAlpha = 1;
 }
-function organ(x, y, dir) {                                           // an organ knocked clean out of the body
-  const a = dir + rnd(-1.2, 1.2), v = rnd(1.5, 3.2), org = pick(['heart', 'liver', 'lung']), size = rnd(.16, .22);
+function organ(x, y, dir, type) {                                           // an organ knocked clean out of the body
+  const a = dir + rnd(-1.2, 1.2), v = rnd(1.5, 3.2), org = type || pick(['heart', 'liver', 'lung', 'stomach', 'kidney', 'kidney']), size = org === 'eye' ? rnd(.1, .13) : org === 'kidney' ? rnd(.11, .14) : rnd(.16, .22);
   S.carc.push({ scrap: 'organ', org, e: null, x, y, ang: rnd(0, TAU), size, col: '', rx: size * .4, ry: size * .4, vx: Math.cos(a) * v, vy: Math.sin(a) * v, va: rnd(-8, 8), dead: true, gone: false, held: 0, bites: [], legs: [], dirty: false, rot: 0, beat: org === 'heart' ? 2.5 : 0 });
 }
 /* reward: bones fly to the counter, kills chain into a combo */
@@ -739,6 +779,9 @@ function updateFly(dt) {
 }
 function bump() { const el = $('coins'); el.textContent = S.coins - S.pending; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
 const COMBO = { 5: 'МЯСОРУБКА', 10: 'БОЙНЯ', 15: 'ПИР', 20: 'КРОВАВАЯ БАНЯ', 30: 'КОНЕЦ СВЕТА' };
+function lens(n) {                                                    // blood on the glass
+  for (let i = 0; i < n; i++) if (S.lens.length < 14) S.lens.push({ x: rnd(.04, .96), y: rnd(.05, .8), r: rnd(.02, .055), life: 3.2, max: 3.2, drip: rnd(.03, .1), sat: [0, 1, 2, 3].map(() => [rnd(0, TAU), rnd(1, 1.9), rnd(.2, .5)]) });
+}
 function banner(txt, sub, life) { S.banner = { txt, sub: sub || '', life: life || 1.6, max: life || 1.6 }; }
 const meatOf = sg => Math.max(1, Math.round((sg.rx + sg.ry) / 2 / .11));
 function spawnGut(sg, la, ld, len) {
@@ -772,7 +815,7 @@ function updateGuts(dt) {
       const dx = p[1].x - p[0].x, dy = p[1].y - p[0].y, d = Math.hypot(dx, dy) || 1e-6;
       if (d > rest * 1.25) { const f = (sg.dead ? 40 : 40 * sg.e.inv) * Math.min(1, d / rest - .95); sg.vx += dx / d * f * dt; sg.vy += dy / d * f * dt; if (!sg.dead) sg.e.tug = .08; }   // whoever it is attached to gets hauled along
       if (q.rest * (n - 1) < .3) {
-        blood(p[0].x, p[0].y, 8, .9); blood(M.x, M.y, 5, .6); gain(M.x, M.y, 1); q.eater.chew = .5; q.eater.gore = 1; q.eater.eaten++; sfx('squish'); sg.gut = false;
+        blood(p[0].x, p[0].y, 8, .9); blood(M.x, M.y, 5, .6); gain(M.x, M.y, 1); q.eater.chew = .5; q.eater.gore = 1; q.eater.eaten++; sfx('pop', 0, M.x); sg.gut = false;
         S.texts.push({ x: M.x, y: M.y - .35, txt: 'ням', life: .6, col: '#f4bfc3', size: .3 });
         continue;
       }
@@ -801,7 +844,7 @@ function sever(e, wa) {                                               // the rea
   const P = bodyPt(st, Math.PI, st.rx * .8);
   spurt(st, Math.PI, st.rx * .8, 1.8); st.gut = false; spawnGut(st, Math.PI, st.rx * .7, e.r * rnd(3.4, 4.6)); organ(P.x, P.y, wa); if (Math.random() < .5) organ(P.x, P.y, wa + Math.PI);
   blood(P.x, P.y, 14, 1.2); bones(P.x, P.y, 2, 1); flash(P.x, P.y, 1.4, .18);
-  S.shake = Math.max(S.shake, .08); S.freeze = Math.max(S.freeze, .06); sfx('crack'); sfx('squish');
+  S.shake = Math.max(S.shake, .08); S.freeze = Math.max(S.freeze, .06); sfx('crack', 0, P.x); sfx('squelch', 0, P.x); lens(1);
   S.texts.push({ x: e.x, y: e.y - e.r, txt: 'РАЗОРВАНА', life: .9, col: '#ff8a3d', size: .36 });
 }
 function carcassBite(sg, t) {                                         // a big carcass is eaten down one mouthful at a time
@@ -836,14 +879,19 @@ function kill(e, t, hit, wa) {
   if (COMBO[S.combo]) { banner(COMBO[S.combo], 'комбо ×' + S.combo + ' · +' + S.combo + ' костей', 1.4); S.shake = Math.max(S.shake, .1); flash(e.x, e.y, 3, .3); }
   try { if (navigator.vibrate) navigator.vibrate(heavy ? 30 : 12); } catch (er) {}
   if (S.active && !S.queue.length && !K[e.kind].split && !S.enemies.some(o => o !== e && o.hp > 0)) { S.slowT = Math.max(S.slowT, .8); S.camT = { x: e.x, y: e.y, z: 1.35 }; flash(e.x, e.y, 3.5, .4); }   // the last one of the wave dies in slow motion
-  blood(e.x, e.y, Math.round(9 * big), 1.3); meat(e.x, e.y, Math.round(2 * big), 1.1); bones(e.x, e.y, Math.round(2 * big), 1.1);
-  pool(e.x, e.y, e.r * .8); ring(e.x, e.y, '#c2182b', e.r * 2.6, .3); flash(e.x, e.y, 1.6 + e.r, .22);
-  S.shake = Math.max(S.shake, .035 * big); sfx('crack'); sfx('squish');
+  const over = e.lastDmg >= e.max * .6, ob = over ? 1.7 : 1;         // far more than it could take: it bursts
+  blood(e.x, e.y, Math.round(18 * big * ob), 1.4 * ob); meat(e.x, e.y, Math.round(2 * big * ob), 1.1 * ob); bones(e.x, e.y, Math.round(2 * big), 1.1 * ob);
+  puff(e.x, e.y, 'rgba(170,20,35,.24)', 4, 1.6, e.r * .7);
+  if (over) { S.texts.push({ x: e.x, y: e.y - e.r - .6, txt: 'В КЛОЧЬЯ', life: .8, col: '#ffffff', size: .34 }); sfx('pop', 0, e.x); lens(2); }
+  if (heavy) lens(3);
+  pool(e.x, e.y, e.r * 1.1); ring(e.x, e.y, '#c2182b', e.r * 2.6, .3); flash(e.x, e.y, 1.6 + e.r, .22);
+  S.shake = Math.max(S.shake, .045 * big); sfx('crack', 0, e.x); sfx('squish', 0, e.x);
   for (const sg of e.nodes) {                                        // the body comes apart into pieces that slide and stay
-    const a = Math.atan2(sg.y - e.y, sg.x - e.x) + rnd(-.6, .6), v = rnd(.5, 1.6);
+    const a = Math.atan2(sg.y - e.y, sg.x - e.x) + rnd(-.6, .6), v = rnd(.5, 1.6) * ob;
     sg.dead = true; sg.life = rnd(7, 10); sg.va = rnd(-7, 7); sg.meat = meatOf(sg);
     if (!sg.head && !sg.gut && Math.random() < .5) spawnGut(sg, rnd(0, TAU), 0, e.r * rnd(2.4, 3.6));
-    if (!sg.head && Math.random() < .35) organ(sg.x, sg.y, rnd(0, TAU));
+    if (sg.head) { if (e.kind !== 'worm' && Math.random() < .7) organ(sg.x, sg.y, rnd(0, TAU), 'eye'); if (Math.random() < .35 * ob) organ(sg.x, sg.y, rnd(0, TAU), 'brain'); }
+    else for (let q = Math.random() < .6 * ob ? (sg.rx > .25 ? 2 : 1) : 0; q > 0; q--) organ(sg.x, sg.y, rnd(0, TAU));
     sg.vx += Math.cos(a) * v; sg.vy += Math.sin(a) * v;
     if (sg === hit) { sg.vx += Math.cos(wa) * 2.2; sg.vy += Math.sin(wa) * 2.2; }
     for (const l of sg.legs) l.ph = Math.sin(l.ph + e.walk * 10);
@@ -873,15 +921,16 @@ function bite(sg, dmg, t, noStrand) {
   const fracAfter = 1 - Math.max(e.hp - dmg, 0) / e.max;
   const b = { a: wa - sg.ang + rnd(-.45, .45), d: rr * (1.15 - .85 * fracAfter), r: rr * clamp(2.3 / Math.sqrt(e.max), .26, .62) * (dmg > 1 ? 1.2 : 1) };
   const chunk = plate ? null : makeChunk(sg, b);
-  e.hp -= dmg; sg.dmg += dmg; sg.bites.push(b); sg.dirty = true;
+  e.lastDmg = dmg; e.hp -= dmg; sg.dmg += dmg; sg.bites.push(b); sg.dirty = true;
   e.sqAng = wa; e.sqV -= 6 * e.soft + 1.2; e.shake = .12;            // jaws squeeze the body, then yank it towards the monster
   sg.vx += Math.cos(wa) * 2.6 * e.inv; sg.vy += Math.sin(wa) * 2.6 * e.inv;
   flash(ex, ey, .9 + dmg * .12, .12);
   if (dmg >= 3) S.freeze = Math.max(S.freeze, .045);
 
-  if (plate) { shards(ex, ey, ['#b4bfcc', '#6a7786', '#dfe6ee'], 4, .9, wa); puff(ex, ey, 'rgba(255,233,168,.5)', 2, 1.5, .1); sfx('clang'); }
+  if (plate) { e.curl = .5; e.sqV -= 4; shards(ex, ey, ['#b4bfcc', '#6a7786', '#dfe6ee'], 4, .9, wa); puff(ex, ey, 'rgba(255,233,168,.5)', 2, 1.5, .1); sfx('clang'); }
   else {
-    blood(ex, ey, 3 + dmg * 2, 1, wa, 1.1); sfx('bite', dmg > 1);
+    blood(ex, ey, 7 + dmg * 3, 1.1, wa, 1.1); blood(ex, ey, 3, .6); puff(ex, ey, 'rgba(170,20,35,.22)', 2, 1.2, .16); sfx('bite', dmg > 1, ex);
+    if (Math.random() < .4) sfx(e.kind === 'boar' || e.kind === 'brood' ? 'grunt' : e.kind === 'toad' ? 'croak' : 'squeak', 0, ex);
     if (Math.random() < .25) meat(ex, ey, 1, .8, wa);
     if (e.hp > 0 && Math.random() < .28 + dmg * .06) tearLeg(e, sg, wa);
     if (dmg >= 3) { spurt(sg, b.a, rr * .8, 1.2); S.texts.push({ x: ex, y: ey - .2, txt: pick(['ХРЯСЬ', 'ЧАВК', 'ХРУМ']), life: .55, col: '#ffffff', size: .3 }); }
@@ -894,23 +943,46 @@ function bite(sg, dmg, t, noStrand) {
     S.texts.push({ x: e.x, y: e.y - e.r, txt: 'панцирь расколот', life: .8, col: '#dfe6ee' });
   }
   if (e.hp <= 0) kill(e, t, sg, wa);
-  else if (!plate && !sg.head && e.nodes[0] === sg && e.nodes.length > 1 && sg.dmg >= e.max * .34) sever(e, wa);
+  else if (!plate && !sg.head && e.nodes[0] === sg && e.nodes.length > 1 && sg.dmg >= e.max * (e.kind === 'worm' ? .17 : .34)) sever(e, wa);
   return chunk;
 }
 
 /* ---------- update ---------- */
+function gait(e, dt) {                                               // every kind moves its own way
+  if (e.curl > 0) { e.curl -= dt; return 0; }
+  const k = e.kind;
+  if (k === 'toad') {                                                // in hops, landing with a thud
+    const c = (S.time * 1.5 + e.ph0) % 1, moving = c < .45;
+    if (e.hop && !moving) { e.sqAng = e.rot; e.sqV -= 3.5; puff(e.x, e.y, 'rgba(120,95,70,.3)', 3, .8, e.r * .5); sfx('thump', 0, e.x); }
+    e.hop = moving; if (!moving) return 0;
+    const q = Math.sin(c / .45 * Math.PI); e.sqAng = e.rot; e.sqT = Math.max(e.sqT, .2 * q); return 3.5 * q;
+  }
+  if (k === 'bug') return 1 + .55 * Math.sin(S.time * 5 + e.ph0 * 6);   // skitters in bursts
+  if (k === 'worm') return 1 + .35 * Math.sin(S.time * 4 + e.ph0 * 6);
+  if (k === 'boar' && e.hp < e.max * .6) {                           // hurt, it charges
+    if (!e.rage) { e.rage = true; sfx('grunt', 0, e.x); S.texts.push({ x: e.x, y: e.y - e.r, txt: 'В ЯРОСТИ', life: .8, col: '#ff5a3c', size: .3 }); }
+    if (Math.random() < dt * 8) puff(e.x, e.y, 'rgba(120,95,70,.3)', 1, .8, .2);
+    return 1.7;
+  }
+  if (k === 'brood') {                                               // keeps giving birth on the march
+    e.birthT -= dt;
+    if (e.birthT <= 0 && e.s > 1) { e.birthT = 4.5; const b = spawn('bug', Math.max(.6, e.s - .6)); b.sqV = 6; blood(e.x, e.y, 8, .9); sfx('squelch', 0, e.x); e.sqV -= 3; S.texts.push({ x: e.x, y: e.y - e.r, txt: 'рожает', life: .7, col: '#f4bfc3' }); }
+  }
+  return 1;
+}
 function updateEnemy(e, dt) {
   const k = K[e.kind], n = e.nodes.length;
   const f = (e.slowT > 0 ? e.slowF : 1) * (e.tug > 0 ? .55 : 1) * (1 - .09 * Math.min(e.lost, 5)) * (e.panic ? 1.15 : 1) * (e.torn ? .65 : 1);
   e.slowT -= dt; e.tug -= dt; e.bloody -= dt; if (e.shake > 0) e.shake -= dt;
-  const v = e.sp * f; e.s += v * dt; e.walk += v * dt * (e.tug > 0 ? 2.4 : 1) / (e.r / .3);
+  const v = e.sp * f * gait(e, dt); e.s += v * dt; e.walk += v * dt * (e.tug > 0 ? 2.4 : 1) / (e.r / .3);
   const limp = Math.min(e.lost, 4) * .03;
   for (let i = n - 1; i >= 0; i--) {                                 // every segment is a little mass on a spring to its spot on the trail
-    const sg = e.nodes[i], p = posAt(e.s - sg.off), wob = Math.sin(e.walk * 9 + i * 1.3) * (.012 + limp);
+    const sg = e.nodes[i], p = posAt(e.s - sg.off), wob = Math.sin(e.walk * 9 + i * 1.3) * (.012 + limp + (e.kind === 'worm' ? .05 : 0));
     const tx = p.x - Math.sin(p.ang) * wob, ty = p.y + Math.cos(p.ang) * wob, ks = i === n - 1 ? 240 : 110, fr = Math.exp(-(i === n - 1 ? 24 : 11) * dt);
     sg.vx = (sg.vx + (tx - sg.x) * ks * dt) * fr; sg.vy = (sg.vy + (ty - sg.y) * ks * dt) * fr;
     sg.x += sg.vx * dt; sg.y += sg.vy * dt;
   }
+  if (e.tug > 0) for (const q of e.nodes) { q.vx += (Math.random() - .5) * 16 * dt * e.inv; q.vy += (Math.random() - .5) * 16 * dt * e.inv; }   // thrashes while something has hold of it
   for (let it = 0; it < 2; it++) for (let i = n - 1; i >= 1; i--) {  // and the spine keeps them a fixed distance apart
     const a = e.nodes[i], b = e.nodes[i - 1], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1e-6, diff = (d - (b.off - a.off)) / d;
     a.x += dx * diff * .3; a.y += dy * diff * .3; b.x -= dx * diff * .7; b.y -= dy * diff * .7;
@@ -941,7 +1013,8 @@ function updateEnemy(e, dt) {
     }
   }
   const hurt = 1 - e.hp / e.max;
-  if (hurt > .25 && Math.random() < dt * 7 * hurt) splat(e.x + rnd(-.1, .1), e.y + rnd(-.1, .1), rnd(.02, .06));   // the wounded leave a trail
+  if (hurt > .25 && Math.random() < dt * 7 * hurt) splat(e.x + rnd(-.1, .1), e.y + rnd(-.1, .1), rnd(.02, .06));
+  if (hurt > .3 && Math.random() < dt * 5 * hurt) { blood(e.x, e.y, 1, .35); if (Math.random() < .3) sfx('drip', 0, e.x); }   // the wounded leave a trail
   if (e.s >= L) {
     e.hp = 0; for (const q of e.nodes) q.gone = true;
     S.lives -= e.kind === 'brood' ? 5 : 1; S.shake = Math.max(S.shake, .08); sfx('lost');
@@ -963,13 +1036,14 @@ function updateCarcasses(dt) {
         sg.gone = true; continue;
       }
     }
-    if (sg.beat > 0) sg.beat -= dt;
+    if (sg.beat > 0) { const b0 = Math.floor(sg.beat * 8 / Math.PI); sg.beat -= dt; if (Math.floor(sg.beat * 8 / Math.PI) !== b0) sfx('thump', 0, sg.x); }   // a torn-out heart goes on beating for a moment
+    if (sg.org === 'eye' && !sg.flat) { const k = Math.exp(-1.1 * dt) / fr; sg.vx *= k; sg.vy *= k; sg.ang += Math.hypot(sg.vx, sg.vy) * dt * 9; }   // eyeballs roll a long way
     sg.vx *= fr; sg.vy *= fr; sg.va *= fr;
     sg.x = clamp(sg.x + sg.vx * dt, .1, COLS - .1); sg.y = clamp(sg.y + sg.vy * dt, .1, ROWS - .1); sg.ang += sg.va * dt;
     if (!sg.scrap && Math.hypot(sg.vx, sg.vy) > .4 && Math.random() < dt * 20) splat(sg.x, sg.y, rnd(.03, .07));   // smeared as it slides
   }
   S.carc = S.carc.filter(sg => !sg.gone);
-  while (S.carc.length > 60) {                                       // too much litter: the oldest scraps sink into the ground
+  while (S.carc.length > 80) {                                       // too much litter: the oldest scraps sink into the ground
     let i = S.carc.findIndex(q => q.scrap && q.held <= 0); if (i < 0) i = S.carc.findIndex(q => q.held <= 0); if (i < 0) break;
     const sg = S.carc.splice(i, 1)[0]; stampSeg(sg); sg.gone = true;
   }
@@ -989,6 +1063,8 @@ function collide() {
       a.x -= nx * push * wa; a.y -= ny * push * wa; b.x += nx * push * wb; b.y += ny * push * wb;
       a.vx -= nx * push * wa * 9; a.vy -= ny * push * wa * 9; b.vx += nx * push * wb * 9; b.vy += ny * push * wb * 9;
       if (a.dead) a.va += push * 30 * (nx * .5 - ny); if (b.dead) b.va -= push * 30 * (nx * .5 - ny);
+      const o = a.scrap === 'organ' && !b.dead ? a : b.scrap === 'organ' && !a.dead ? b : null;   // something alive trod on an organ
+      if (o && !o.flat) { o.flat = true; o.beat = 0; blood(o.x, o.y, 8, 1); pool(o.x, o.y, .13); sfx('squelch', 0, o.x); }
     }
   }
 }
@@ -1065,7 +1141,7 @@ function updateTower(t, dt) {
   if (t.gore > .3 && Math.random() < dt * t.gore * 4) blood(m.x, m.y, 1, .12);              // jaws drip
   else if (t.type !== 'glut' && t.phase === 'idle' && Math.random() < dt * .5) addPart({ kind: 'blood', x: m.x, y: m.y, vx: 0, vy: .5, life: .4, max: .4, col: 'rgba(220,230,210,.55)', size: .03, rot: 0, vr: 0, dry: true });
   if (t.chew > 0) {
-    t.chew -= dt;
+    const c0 = Math.floor(t.chew * 22 / Math.PI); t.chew -= dt; if (Math.floor(t.chew * 22 / Math.PI) !== c0) sfx('smack', 0, t.x);
     if (Math.random() < dt * 26) blood(m.x, m.y, 1, .45);
     if (t.chew <= 0 && t.chunk) { if (Math.random() < .35) bones(m.x, m.y, 1, .7); t.chunk = null; }
   }
@@ -1161,6 +1237,7 @@ function update(dt) {
   updateCarcasses(dt); updateGuts(dt); updateSpurts(dt); updateFly(dt);
   if (S.comboT > 0) { S.comboT -= dt; if (S.comboT <= 0) S.combo = 0; }
   if (S.banner) { S.banner.life -= dt; if (S.banner.life <= 0) S.banner = null; }
+  for (const l of S.lens) l.life -= dt; S.lens = S.lens.filter(l => l.life > 0);
   if ((S.tick = (S.tick | 0) + 1) % 2 === 0) collide();
   S.enemies = S.enemies.filter(e => e.hp > 0);
 
@@ -1189,7 +1266,7 @@ function update(dt) {
   S.fadeT += dt;
   if (S.fadeT > 2 && dctx) {                                         // old blood slowly soaks into the ground
     S.fadeT = 0; dctx.save(); dctx.setTransform(1, 0, 0, 1, 0, 0); dctx.globalCompositeOperation = 'destination-out';
-    dctx.fillStyle = 'rgba(0,0,0,.09)'; dctx.fillRect(0, 0, decal.width, decal.height); dctx.restore();
+    dctx.fillStyle = 'rgba(0,0,0,.05)'; dctx.fillRect(0, 0, decal.width, decal.height); dctx.restore();
     for (let i = 0; i < bgrid.length; i++) bgrid[i] *= .85;
   }
 
@@ -1605,10 +1682,18 @@ function drawSeg(sg) {
     for (const o of [-.5, .5]) { g.beginPath(); g.moveTo(fx, fy); g.lineTo(fx + R * .12, fy + s * R * .05 + o * R * .1); g.stroke(); }
   }
   g.globalAlpha = 1;
-  if (!sg.dead) { const q = 1 + e.sq + .03 * e.soft * Math.sin(S.time * 9 + e.walk); g.rotate(e.sqAng - sg.ang); g.scale(q, 1 / q); g.rotate(sg.ang - e.sqAng); }
+  if (!sg.dead) { const q = 1 + e.sq + .05 * e.soft * Math.sin(S.time * 7 + e.ph0 * 6 + sg.i); g.rotate(e.sqAng - sg.ang); g.scale(q, 1 / q); g.rotate(sg.ang - e.sqAng); }
   g.drawImage(sg.spr, -sg.size / 2, -sg.size / 2, sg.size, sg.size);
+  if (sg.head && !sg.dead && EYES[e.kind] && Math.sin(S.time * 1.3 + e.ph0 * 40) < .96) {   // eyes that catch the light, wider when it is scared
+    const [ex, ey, rgb] = EYES[e.kind](sg, R), er = R * (e.panic ? .34 : .24);
+    g.globalCompositeOperation = 'lighter'; for (const s of [-1, 1]) glowAt(ex, s * ey, er, rgb, e.panic ? .7 : .45); g.globalCompositeOperation = 'source-over';
+  }
   g.restore();
 }
+const EYES = {
+  bug: (sg, R) => [sg.rx * .35, sg.ry * .65, '255,80,60'], toad: (sg, R) => [-sg.rx * .05, sg.ry * .75, '255,215,70'], shell: (sg, R) => [sg.rx * .35, sg.ry * .6, '255,140,60'],
+  boar: (sg, R) => [.05 * R, .2 * R, '255,60,60'], brood: (sg, R) => [.1 * R, .2 * R, '255,60,60']
+};
 
 /* coloured light pooling on the ground, drifting mist, fireflies */
 const GLOW = { chomp: '255,190,90', neck: '190,120,255', lick: '140,255,170', glut: '255,70,90' };
@@ -1722,6 +1807,14 @@ function draw() {
   }
   g.globalAlpha = 1;
   g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(vig, 0, 0);
+  for (const l of S.lens) {
+    const al = Math.min(.8, l.life / l.max * 1.3), x = l.x * W, y = l.y * H, r = l.r * W, run = (l.max - l.life) * l.drip * H;
+    g.globalAlpha = al; g.fillStyle = '#7a0b14';
+    g.beginPath(); g.arc(x, y, r, 0, TAU); for (const [a, q, k] of l.sat) { g.moveTo(x + Math.cos(a) * r * q + r * k, y + Math.sin(a) * r * q); g.arc(x + Math.cos(a) * r * q, y + Math.sin(a) * r * q, r * k, 0, TAU); } g.fill();
+    g.fillRect(x - r * .22, y, r * .44, run); g.beginPath(); g.arc(x, y + run, r * .3, 0, TAU); g.fill();
+    g.fillStyle = 'rgba(255,190,190,.35)'; g.beginPath(); g.ellipse(x - r * .3, y - r * .35, r * .25, r * .12, -.6, 0, TAU); g.fill();
+  }
+  g.globalAlpha = 1;
 
   if (S.active && S.waveTotal) {                                     // how much of the wave is still alive
     const left = (S.queue.length + S.enemies.length) / S.waveTotal, bh = 5 * dpr;
