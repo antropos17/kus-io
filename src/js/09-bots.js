@@ -19,6 +19,10 @@ function newAI() {
 function botThink(b) {
   const ai = b.ai,
     myBite = biteOf(b.mass, false);
+  if (b.isPlayer && wrap && wrap.state === 'run' && Math.hypot(wrap.x - b.x, wrap.y - b.y) < 900) {
+    ai.mode = 'wrap'; // the autopilot runs after the wrapper (botSteer aims at it every frame); bots never see it
+    return;
+  }
   if (b.tame) {
     ai.mode = 'tame';
     return;
@@ -160,6 +164,14 @@ function botSteer(b, dt) {
     b.tx = b.hx + Math.cos(a) * 24;
     b.ty = b.hy + Math.sin(a) * 24;
     return;
+  }
+  if (ai.mode === 'wrap') {
+    if (wrap && wrap.state === 'run') {
+      b.tx = wrap.x;
+      b.ty = wrap.y;
+      return;
+    }
+    ai.think = 0; // caught or gone: think again next frame
   }
   if (ai.mode === 'boss') {
     // crawl after the player face first, so the cherry on the back stays away from them

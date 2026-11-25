@@ -304,6 +304,84 @@ test('streak: label, fuse, stamps and the summary when it lapses', async () => {
   await g.close();
 });
 
+// After a ×5 streak lapses in a clean run, a wrapped candy pops out of the last wound and runs; caught, it pays WRAP.amt[final].
+test('wrapper: a ×5 streak in a clean run drops a wrapper that pays when caught, nothing with cheats', async () => {
+  const g = await open();
+  await g.page.mouse.move(600, 360); // the pointer in the middle of the screen: the player stands still
+  const r = await g.page.evaluate(`(() => { ${QUIET} const out = {}; k.M.act.length = 0; /* no mission prize sugar */
+    P.mass = 120; for (let i = 0; i < 40; i++) k.update(1/60);
+    const V = k.spawnBot(400); V.ai = null; V.spawnT = 0; for (let i = 0; i < 30; i++) k.update(1/60);
+    // between the scripted bites nothing else earns sugar or bites
+    const tick = (n) => { for (let i = 0; i < n; i++) { k.food.length = 0; k.pickups.length = 0; P.biteCd = 999; V.biteCd = 999; k.update(1/60); } };
+    const bite = () => { k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; V.mass = 400; P.biteCd = 0;
+      const n0 = P.stats.bites; let f = 0;
+      // a slow bite (a stage event in the way) must not let the streak lapse: hold the window open until it lands
+      while (f < 180 && P.stats.bites === n0) { if (P.combo > 0) P.comboT = Math.max(P.comboT, 1); P.tx = V.x; P.ty = V.y; V.tx = V.x; V.ty = V.y; V.biteCd = 9; k.update(1/60); f++; }
+      P.biteCd = 999; V.biteCd = 999; };
+    const streak5 = () => { P.combo = 0; P.comboT = 0; for (let n = 0; n < 5; n++) bite(); return P.combo; };
+    out.combo = streak5();
+    let born = -1, ran = -1;
+    for (let f = 0; f < 180; f++) { tick(1); if (k.wrap && born < 0) born = f; if (k.wrap && k.wrap.state === 'run' && ran < 0) ran = f; }
+    out.born = born; out.ran = ran; out.alive = !!k.wrap;
+    // a second ×5 streak lapses while the first wrapper still runs: the same single wrapper
+    const w1 = k.wrap; if (w1) { w1.life = 99; w1.x = 3500; w1.y = 3300; }
+    const sumEl = document.querySelector('#streakSum'); sumEl.textContent = ''; // only this lapse can write the summary now
+    out.combo2 = streak5(); tick(170); out.same = !!w1 && k.wrap === w1;
+    out.lapsed2 = P.comboT <= 0 && /^Серия ×5 · \\+\\d+ сахара$/.test(sumEl.textContent); out.sum2 = sumEl.textContent;
+    // catch it
+    const w = k.wrap; if (w) k.place(P, w.x, w.y, 0);
+    const s0 = k.run.sugar; let caught = -1;
+    for (let f = 0; f < 2; f++) { tick(1); if (k.reveal && !k.wrap && caught < 0) caught = f; }
+    out.caught = caught; out.f = k.reveal ? k.reveal.final : -1;
+    tick(185); out.gain = k.run.sugar - s0; out.amt = k.WRAP.amt[out.f]; out.sum = document.querySelector('#streakSum').textContent; out.revealGone = k.reveal === null;
+    // a cheat on: the next ×5 streak lapses without a wrapper
+    k.CHEAT.god = true; tick(2); out.combo3 = streak5(); let any = false;
+    for (let f = 0; f < 200; f++) { tick(1); if (k.wrap || k.reveal) any = true; }
+    out.cheatWrap = any; out.cheated = P.cheated; return out; })()`);
+  assert(r.combo === 5 && r.combo2 === 5 && r.combo3 === 5, `the scripted streaks must reach ×5 (${r.combo}, ${r.combo2}, ${r.combo3})`);
+  assert(r.born >= 0 && r.alive, `a wrapper must appear when a ×5 streak lapses and still run after 3 s (born ${r.born}, alive ${r.alive})`);
+  assert(r.ran >= r.born && r.ran - r.born <= 30, `the wrapper must start running within 0.5 s (born ${r.born}, ran ${r.ran})`);
+  assert(r.lapsed2, `the second ×5 streak must have lapsed (summary "${r.sum2}")`);
+  assert(r.same, 'a second lapse while a wrapper runs must not make another one');
+  assert(r.caught >= 0, 'touching the wrapper must catch it within 2 frames (reveal on, wrapper gone)');
+  assert(r.f >= 0 && Math.abs(r.gain - r.amt) < 1e-6, `a caught wrapper must pay exactly WRAP.amt[${r.f}] = ${r.amt}, paid ${r.gain}`);
+  assert(/^Фантик пойман · \+\d+ сахара$/.test(r.sum), `the summary pill must say the wrapper was caught: "${r.sum}"`);
+  assert(r.revealGone, 'the reveal must be over 3 s after the catch');
+  assert(r.cheated && !r.cheatWrap, `no wrapper in a run with cheats (cheated ${r.cheated}, wrapper ${r.cheatWrap})`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('wrapper: an uncaught one leaves after 5 s and pays nothing; death and the menu clear it', async () => {
+  const g = await open();
+  await g.page.mouse.move(600, 360);
+  const r = await g.page.evaluate(`(() => { ${QUIET} const out = {}; k.M.act.length = 0;
+    const V = k.spawnBot(400); V.ai = null; V.spawnT = 0; k.place(V, 1000, 1000, 0); k.place(P, 3000, 3000, 0);
+    const tick = (n) => { for (let i = 0; i < n; i++) { const Q = k.player; k.food.length = 0; k.pickups.length = 0; if (Q) Q.biteCd = 999; V.biteCd = 999; k.update(1/60); } };
+    // a running wrapper and a reveal under way at once
+    const both = () => { const Q = k.player; k.spawnWrap(V, Q.x + Q.Rs + 10, Q.y, 0); tick(24); const w = k.wrap; if (w) k.place(Q, w.x, w.y, 0); tick(2);
+      k.spawnWrap(V, Q.x + Q.Rs + 10, Q.y, 1); return !!k.wrap && !!k.reveal; };
+    tick(10); const s0 = k.run.sugar;
+    k.spawnWrap(V, V.x + V.Rs, V.y, 0); out.spawned = !!k.wrap; let rev = false;
+    for (let f = 0; f < 336; f++) { tick(1); if (k.reveal) rev = true; }
+    out.left = k.wrap === null; out.rev = rev; out.gain = k.run.sugar - s0;
+    out.both1 = both(); P.alive = false; tick(120);
+    out.deadClear = k.wrap === null && k.reveal === null; out.deadGain = k.run.sugar - s0;
+    k.toMenu(); k.startGame(); k.player.spawnT = 0; tick(10);
+    out.both2 = both(); k.toMenu(); out.menuClear = k.wrap === null && k.reveal === null;
+    k.startGame(); out.startClear = k.wrap === null && k.reveal === null; tick(60); out.after = k.wrap === null && k.reveal === null; return out; })()`);
+  assert(r.spawned, 'spawnWrap must make a wrapper');
+  assert(
+    r.left && !r.rev && r.gain === 0,
+    `an uncaught wrapper must leave within 5.6 s and pay nothing (gone ${r.left}, reveal ${r.rev}, +${r.gain})`,
+  );
+  assert(r.both1 && r.both2, `the setup needs a wrapper and a reveal at once (${r.both1}, ${r.both2})`);
+  assert(r.deadClear && r.deadGain === 0, `the player's death must clear the wrapper and the reveal unpaid (${r.deadClear}, +${r.deadGain})`);
+  assert(r.menuClear && r.startClear && r.after, `the menu and a new run must clear them (${r.menuClear}, ${r.startClear}, ${r.after})`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 // The mouth sits on the front rim, not in the middle of the body: food must vanish into it, not into thin air.
 test('mouth: on the front rim where the candy looks, food goes into it, a sudden turn is smoothed', async () => {
   const g = await open();
@@ -1219,6 +1297,11 @@ test('sound: every effect plays without throwing', async () => {
       ['squelch', []],
       ['power', []],
       ['dash', []],
+      ['wrapPop', []],
+      ['wrapStep', []],
+      ['wrapCatch', []],
+      ['wrapUp', [2]],
+      ['wrapPay', [true]],
     ];
     // every embedded take must decode; then each effect plays from its takes and, with them switched off, from the synth
     const failed = await S.ready;

@@ -237,6 +237,7 @@ function startGame() {
   rollMissions();
   saveM();
   run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0 };
+  clearWrap();
   sugarReset();
   runActive = true;
   timeLeft = timed() ? 180 : 0;
@@ -275,6 +276,7 @@ function tally() {
   if (player.cheated) run.cheated = true;
 }
 function finishRun() {
+  clearWrap(); // a wrapper still running or in its reveal pays nothing
   sugarSettle();
   runActive = false;
   document.body.classList.remove('playing');
@@ -304,6 +306,7 @@ function finishRun() {
   }
 }
 function die(by) {
+  clearWrap();
   tally();
   stick.id = -1;
   stick.on = false;
@@ -333,6 +336,7 @@ function endTimed() {
   finishRun();
 }
 function toMenu() {
+  clearWrap();
   sugarSettle();
   if (state === 'play' && player && player.alive) {
     tally();

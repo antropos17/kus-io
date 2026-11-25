@@ -72,6 +72,9 @@ const SKINS = [
 const FREE_SKINS = 4; // the rest are prizes for missions
 const SKIN_PRICE = (i) => 150 + (i - FREE_SKINS) * 100; // or bought with sugar, dearer further down the list
 const SUGAR = { bites: 1, food: 0.2, kills: 6, wound: 1, tongue: 2, pickup: 2, piranha: 2, hedge: 3, cake: 3 }; // sugar per action in a clean run
+// the runaway wrapper after a ×min streak: seconds to catch it, sugar and odds per tier (plain, rare, jackpot), the chance it grows a tier in the reveal,
+// its speed as a multiple of the player's top speed at birth (v0) and after tire seconds (v1)
+const WRAP = { min: 5, life: 5, amt: [20, 45, 120], odds: [0.55, 0.33, 0.12], up: 0.45, v0: 1.25, v1: 0.7, tire: 2.2 };
 const skinArt = {};
 function skinTile(id) {
   // each skin is one small see-through tile, painted once and laid over any flavour

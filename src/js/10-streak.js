@@ -32,7 +32,9 @@ const RUSH_POOL = 40,
 let rushAcc = 0;
 
 function streakWrapHook(P) {
-  // Task 4 hangs the runaway wrapper here: called once for every streak that lapses (combo > 1)
+  // called once for every streak that lapses (combo > 1): a ×WRAP.min one in a clean run drops the runaway wrapper, one at a time
+  if (runActive && P === player && !P.cheated && P.combo >= WRAP.min && !wrap && !reveal)
+    spawnWrap(streak.lastVictim, streak.lastWound.x, streak.lastWound.y);
 }
 
 // the page side of a live streak: the chip, the fuse round the bite button, the sugar rush on the edges
@@ -183,6 +185,7 @@ function streakTick(dt) {
     p.y += p.vy * dt;
     p.a += dt * 3;
   }
+  wrapTick(dt);
 }
 
 // ---- drawing ----
@@ -259,5 +262,415 @@ function drawStreakFx() {
     ctx.lineTo(p.x + c, p.y + s);
     ctx.stroke();
   }
+  ctx.globalAlpha = 1;
+}
+
+// ---------- the runaway wrapper: a wrapped candy with legs that pops out of the last wound after a ×5 streak ----------
+// It is not a Blob and not in blobs, so bots never see it; only the player's autopilot chases it (botThink).
+// Caught within WRAP.life seconds it plays a reveal over the player (the game keeps running) and pays WRAP.amt[final].
+const WRAP_POP = 0.3, // the hop out of the wound, seconds
+  WRAP_COL = [
+    ['#fff1dc', '#ff5d8f'],
+    ['#ffd23f', '#ff9a3c'],
+    ['#ff5d8f', '#c49bff'],
+  ], // body and twisted ends per tier: plain, rare, jackpot
+  WRAP_RGB = ['255,241,220', '255,210,63', '255,93,143'],
+  WRAP_WORD = ['', 'Редкий!', 'Джекпот!'];
+let wrap = null, // { x, y, vx, vy, t, life, tier, final, state: 'pop' | 'run', step }
+  reveal = null, // { t, tier, final, shown, paid, from, flash }: tier is the one shown now, from the one it was caught as
+  wrapOut = null; // the one that got away, fading out for 0.4 s (drawing only)
+function wrapBurst(x, y, n, col) {
+  // a sprinkle burst in the world; none under calm, fewer on weaker graphics
+  if (calm) return;
+  n = lod === 1 ? n >> 1 : lod === 2 ? n >> 2 : n;
+  const z = cam.z;
+  for (let i = 0; i < n; i++) {
+    const a = rand(TAU),
+      sp = rand(60, 230) / z;
+    parts.push({
+      x,
+      y,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp,
+      r: rand(1.6, 3.2) / z,
+      t: 0,
+      T: rand(0.45, 0.9),
+      c: col || SPRINKLES[(Math.random() * SPRINKLES.length) | 0],
+    });
+  }
+}
+function spawnWrap(B, wx, wy, tier) {
+  // B: the victim whose wound it pops out of; tier: forced for tests, rolled from WRAP.odds otherwise
+  const P = player;
+  if (tier === undefined) {
+    const r = Math.random();
+    tier = r < WRAP.odds[0] ? 0 : r < WRAP.odds[0] + WRAP.odds[1] ? 1 : 2;
+  }
+  tier = clamp(tier | 0, 0, 2);
+  // it hops away from the player (from the victim's middle when there is none) and lands clear of the player's mouth
+  let ux = wx - (P ? P.x : B ? B.x : wx),
+    uy = wy - (P ? P.y : B ? B.y : wy);
+  const d = Math.hypot(ux, uy);
+  if (d < 1) {
+    const a = rand(TAU);
+    ux = Math.cos(a);
+    uy = Math.sin(a);
+  } else {
+    ux /= d;
+    uy /= d;
+  }
+  const hop = Math.max(0, (P ? P.Rs : 0) + 90 - d) + 40;
+  wrap = {
+    x: wx,
+    y: wy,
+    vx: (ux * hop) / WRAP_POP,
+    vy: (uy * hop) / WRAP_POP,
+    t: 0,
+    life: WRAP.life,
+    tier,
+    final: Math.min(2, tier + (Math.random() < WRAP.up ? 1 : 0)),
+    state: 'pop',
+    step: 0,
+  };
+  wrapBurst(wx, wy, 22);
+  Sfx.wrapPop();
+}
+function clearWrap() {
+  wrap = null;
+  reveal = null;
+  wrapOut = null;
+}
+function wrapRun(P, dt) {
+  const w = wrap;
+  w.t += dt;
+  if (w.state === 'pop') {
+    w.x = clamp(w.x + w.vx * dt, 20, WORLD - 20);
+    w.y = clamp(w.y + w.vy * dt, 20, WORLD - 20);
+    if (w.t >= WRAP_POP) {
+      w.state = 'run';
+      w.t = 0;
+    }
+    return;
+  }
+  w.life -= dt;
+  if (w.life <= 0) {
+    wrapOut = { x: w.x, y: w.y, t: 0, tier: w.tier }; // it got away: a teasing hop and a fade, nothing paid
+    wrap = null;
+    return;
+  }
+  // flee from the player in a zigzag, pushed back from the tray edges, fast at first and tiring
+  const ax = w.x - P.x,
+    ay = w.y - P.y,
+    d = Math.hypot(ax, ay) || 1,
+    zig = Math.sin(w.t * 5) * 0.9,
+    c = Math.cos(zig),
+    s = Math.sin(zig),
+    m = 120;
+  let dx = (ax * c - ay * s) / d,
+    dy = (ax * s + ay * c) / d;
+  if (w.x < m) dx += (1 - w.x / m) * 2;
+  else if (w.x > WORLD - m) dx -= (1 - (WORLD - w.x) / m) * 2;
+  if (w.y < m) dy += (1 - w.y / m) * 2;
+  else if (w.y > WORLD - m) dy -= (1 - (WORLD - w.y) / m) * 2;
+  const l = Math.hypot(dx, dy) || 1,
+    sp = P.maxSpeed() * lerp(WRAP.v0, WRAP.v1, clamp(w.t / WRAP.tire, 0, 1));
+  w.vx = (dx / l) * sp;
+  w.vy = (dy / l) * sp;
+  w.x = clamp(w.x + w.vx * dt, 20, WORLD - 20);
+  w.y = clamp(w.y + w.vy * dt, 20, WORLD - 20);
+  w.step += dt * 3;
+  if (w.step >= 1) {
+    w.step -= 1;
+    Sfx.wrapStep();
+  }
+  if (Math.hypot(w.x - P.x, w.y - P.y) < P.Rs + 14) {
+    // caught: the reveal plays over the player while the game runs on
+    reveal = { t: 0, tier: w.tier, final: w.final, shown: 0, paid: false, from: w.tier, flash: 0 };
+    wrap = null;
+    wrapBurst(w.x, w.y, 34);
+    if (!calm) {
+      cam.shake = Math.max(cam.shake, 6);
+      cam.sa = Math.atan2(w.y - P.y, w.x - P.x);
+    }
+    Sfx.wrapCatch();
+  }
+}
+// how far above the player's centre the reveal sits, in screen pixels: clear of a big body and its name
+const revealOff = (P, z) => Math.max(90, P.Rs * z + 60);
+function revealTick(P, dt) {
+  const R = reveal,
+    z = cam.z;
+  R.t += dt;
+  R.flash = Math.max(0, R.flash - dt * 3);
+  // the tier steps up at 0.35 s + 0.3 s per step
+  while (R.tier < R.final && R.t >= 0.35 + 0.3 * (R.tier - R.from + 1)) {
+    R.tier++;
+    R.flash = 1;
+    wrapBurst(P.x, P.y - revealOff(P, z) / z, 30, WRAP_COL[R.tier][0]);
+    if (!calm) {
+      cam.shake = Math.max(cam.shake, 4);
+      cam.sa = -Math.PI / 2;
+    }
+    Sfx.wrapUp(R.tier);
+  }
+  // the amount rolls up over 1.2 s, ticking higher as it goes
+  const amt = WRAP.amt[R.final],
+    e = 1 - Math.pow(1 - clamp((R.t - 0.25) / 1.2, 0, 1), 3),
+    v = R.t >= 1.45 ? amt : Math.round(amt * e * (0.4 + (0.6 * (R.tier + 1)) / (R.final + 1))),
+    st = Math.max(1, amt / 12);
+  if (v > R.shown) {
+    if (Math.floor(v / st) !== Math.floor(R.shown / st)) Sfx.tick(Math.min(7, ((v / amt) * 8) | 0));
+    R.shown = v;
+  }
+  if (R.t >= 1.5 && !R.paid) {
+    R.paid = true;
+    if (runActive && !P.cheated && !run.cheated) {
+      run.sugar += amt; // first into run.sugar, then the cubes carry it to the pill
+      sugarFly(P.x, P.y - revealOff(P, z) / z, amt, 8 + 3 * R.final); // the cubes leave from the number
+      sumEl.textContent = `Фантик пойман · +${amt} сахара`;
+      sumEl.classList.add('on');
+      streak.sumT = 2;
+      Sfx.wrapPay(R.final === 2);
+    }
+  }
+  if (R.t >= 3) reveal = null;
+}
+function wrapTick(dt) {
+  if (wrapOut) {
+    wrapOut.t += dt;
+    if (wrapOut.t >= 0.4) wrapOut = null;
+  }
+  if (!wrap && !reveal) return;
+  const P = player;
+  if (!P || !P.alive) return clearWrap(); // the player died: nothing waits for the next life
+  if (wrap) wrapRun(P, dt);
+  if (reveal) revealTick(P, dt);
+}
+
+// ---- drawing (screen pixels) ----
+function wrapGlow(x, y, r, a, rgb) {
+  if (a <= 0) return;
+  a = Math.min(1, a);
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, `rgba(255,250,235,${a})`);
+  g.addColorStop(0.4, `rgba(${rgb},${a * 0.6})`);
+  g.addColorStop(1, `rgba(${rgb},0)`);
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+}
+function wrapText(txt, x, y, fill, lw) {
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#2a120c';
+  ctx.lineWidth = lw;
+  ctx.strokeText(txt, x, y);
+  ctx.fillStyle = fill;
+  ctx.fillText(txt, x, y);
+}
+function drawBonbon(x, y, s, tier, rot, legs, t) {
+  // the wrapped candy: an oval body with sliding stripes and two twisted ends; legs, eyes and a smile while it runs
+  const c = WRAP_COL[tier];
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.scale(s, s);
+  if (legs) {
+    ctx.strokeStyle = ctx.fillStyle = '#3a2118';
+    ctx.lineWidth = 3.2;
+    ctx.lineCap = 'round';
+    for (let sd = -1; sd <= 1; sd += 2) {
+      const k = Math.sin(t * 32 + sd * 1.5) * 7;
+      ctx.beginPath();
+      ctx.moveTo(sd * 7, 11);
+      ctx.lineTo(sd * 7 + k, 25);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(sd * 7 + k + 2, 25, 4, 2.2, 0, 0, TAU);
+      ctx.fill();
+    }
+  }
+  const wg = Math.sin(t * 9) * 3;
+  ctx.fillStyle = c[1];
+  for (let sd = -1; sd <= 1; sd += 2) {
+    ctx.beginPath();
+    ctx.moveTo(sd * 15, 0);
+    ctx.lineTo(sd * 32, -12 + wg);
+    ctx.quadraticCurveTo(sd * 27, 0, sd * 32, 12 - wg);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.fillStyle = c[0];
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 19, 14, 0, 0, TAU);
+  ctx.fill();
+  ctx.save();
+  ctx.clip(); // one small body a frame
+  ctx.strokeStyle = c[1];
+  ctx.lineWidth = 5;
+  const sl = (t * 20) % 10;
+  ctx.beginPath();
+  for (let q = -3; q <= 3; q++) {
+    ctx.moveTo(q * 10 - 8 + sl, -15);
+    ctx.lineTo(q * 10 + 8 + sl, 15);
+  }
+  ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.beginPath();
+  ctx.ellipse(-7, -6, 6, 3, -0.4, 0, TAU);
+  ctx.fill();
+  if (legs) {
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(-5, -1, 3.6, 0, TAU);
+    ctx.arc(5, -1, 3.6, 0, TAU);
+    ctx.fill();
+    ctx.fillStyle = '#2a120c';
+    ctx.beginPath();
+    ctx.arc(-3.2, -0.5, 1.8, 0, TAU);
+    ctx.arc(6.8, -0.5, 1.8, 0, TAU);
+    ctx.fill();
+    ctx.strokeStyle = '#2a120c';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(0, 5, 3, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawWrap(z, ox, oy) {
+  // called in the world pass before the bodies, so it runs under them; draws in screen pixels and puts the world transform back
+  const w = wrap,
+    o = wrapOut;
+  if (!w && !o) return;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const t = calm ? 0 : time;
+  if (w) {
+    const x = w.x * z + ox,
+      y = w.y * z + oy,
+      running = w.state === 'run',
+      hop = running ? 0 : Math.sin(Math.PI * clamp(w.t / WRAP_POP, 0, 1)) * 36,
+      rgb = WRAP_RGB[w.tier];
+    if (running) {
+      // a beam of light in its tier colour, so it can be found on a busy tray
+      const bw = 24 + Math.sin(t * 6) * 4,
+        g = ctx.createLinearGradient(0, y - 300, 0, y);
+      g.addColorStop(0, `rgba(${rgb},0)`);
+      g.addColorStop(1, `rgba(${rgb},0.42)`);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(x - bw * 0.4, y - 300);
+      ctx.lineTo(x + bw * 0.4, y - 300);
+      ctx.lineTo(x + bw, y);
+      ctx.lineTo(x - bw, y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      wrapGlow(x, y, 34, 0.5, rgb);
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(x, y + 24, 18, 5, 0, 0, TAU);
+    ctx.fill();
+    wrapGlow(x, y - hop, 30, 0.35 + 0.15 * Math.sin(t * 8), rgb);
+    drawBonbon(x, y - hop, 1.1, w.tier, running ? Math.sin(t * 22) * 0.14 : calm ? 0 : w.t * 16, running, t);
+  }
+  if (o) {
+    const e = o.t / 0.4;
+    ctx.globalAlpha = Math.max(0, 1 - e);
+    drawBonbon(o.x * z + ox, o.y * z + oy - (calm ? 0 : Math.sin(Math.PI * e) * 28), 1.1, o.tier, calm ? 0 : Math.sin(e * 12) * 0.4, true, t);
+    ctx.globalAlpha = 1;
+  }
+  ctx.setTransform(DPR * z, 0, 0, DPR * z, DPR * ox, DPR * oy);
+}
+function drawWrapTag(z, ox, oy) {
+  // screen pass, over the bodies: «Лови!» above the running wrapper and the 5 s arc under its feet
+  const w = wrap;
+  if (!w || w.state !== 'run') return;
+  const x = w.x * z + ox,
+    y = w.y * z + oy,
+    t = calm ? 0 : time;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `900 16px ${FONT}`;
+  const s = 1 + 0.08 * Math.sin(t * 10);
+  ctx.save();
+  ctx.translate(x, y - 40);
+  ctx.scale(s, s);
+  wrapText('Лови!', 0, 0, '#ffd23f', 4);
+  ctx.restore();
+  // the 5 s timer: an arc under its feet that empties
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath();
+  ctx.arc(x, y + 24, 22, 0.15 * Math.PI, 0.85 * Math.PI);
+  ctx.stroke();
+  ctx.strokeStyle = '#ffd23f';
+  ctx.beginPath();
+  ctx.arc(x, y + 24, 22, 0.15 * Math.PI, 0.15 * Math.PI + 0.7 * Math.PI * clamp(w.life / WRAP.life, 0, 1));
+  ctx.stroke();
+}
+function drawReveal(z, ox, oy) {
+  // screen space, over the player: the edges dim, the wrapper spins open, the amount rolls up and the tier may grow
+  const R = reveal,
+    P = player;
+  if (!R || !P || !P.alive) return;
+  const x = P.x * z + ox,
+    y = P.y * z + oy - revealOff(P, z),
+    t = calm ? 0 : time,
+    T = R.t;
+  if (!calm) {
+    const a = 0.35 * Math.min(1, T / 0.25) * (T < 1.2 ? 1 : Math.max(0, 1 - (T - 1.2) / 0.3));
+    if (a > 0) {
+      const g = ctx.createRadialGradient(x, y + 20, 60, x, y + 20, Math.max(W, H) * 0.75);
+      g.addColorStop(0, 'rgba(10,5,3,0)');
+      g.addColorStop(1, `rgba(10,5,3,${a.toFixed(3)})`);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+  if (T < 0.3) {
+    drawBonbon(x, y, calm ? 1.3 : 1 + T * 2, R.from, calm ? 0 : T * 30, false, t);
+    wrapGlow(x, y, calm ? 60 : 40 + T * 120, 1, WRAP_RGB[R.from]);
+    return;
+  }
+  const a = T < 2.2 ? 1 : Math.max(0, 1 - (T - 2.2) / 0.6),
+    rgb = WRAP_RGB[R.tier],
+    col = WRAP_COL[R.tier][0];
+  wrapGlow(x, y, 70 + Math.sin(t * 8) * 6, 0.55 * a, rgb);
+  if (R.flash > 0 && !calm) wrapGlow(x, y, 180 * R.flash + 40, R.flash, rgb);
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.translate(x, y);
+  const pp = R.flash > 0 && !calm ? 1 + R.flash * 0.35 : 1;
+  ctx.scale(pp, pp);
+  ctx.font = `900 42px ${FONT}`;
+  wrapText(`+${R.shown}`, 0, 0, col, 7);
+  if (WRAP_WORD[R.tier]) {
+    ctx.font = `900 18px ${FONT}`;
+    wrapText(WRAP_WORD[R.tier], 0, -38, col, 5);
+  }
+  ctx.restore();
+}
+function drawWrapBlip(mx, my, k) {
+  // a blinking dot on the minimap (steady under calm)
+  if (!wrap) return;
+  ctx.globalAlpha = calm ? 1 : 0.55 + 0.45 * Math.sin(time * 10);
+  ctx.fillStyle = WRAP_COL[wrap.tier][0];
+  ctx.strokeStyle = '#3a2118';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(mx + wrap.x * k, my + wrap.y * k, 4, 0, TAU);
+  ctx.fill();
+  ctx.stroke();
   ctx.globalAlpha = 1;
 }

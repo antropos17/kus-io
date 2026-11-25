@@ -473,6 +473,7 @@ function drawMinimap(x0, y0, x1, y1) {
     ctx.fillStyle = PICK[q.type][2];
     ctx.fillRect(mx + q.x * k - 1.5, my + q.y * k - 1.5, 3, 3);
   }
+  drawWrapBlip(mx, my, k);
   if (player && player.alive) {
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 2;
@@ -589,6 +590,7 @@ function render() {
       ctx.fill(b.path);
       ctx.restore();
     }
+  drawWrap(z, ox, oy); // the runaway wrapper runs under the bodies
   drawStreakFuse(z);
   for (const b of vis) drawBlob(b);
   for (const s of strands) {
@@ -639,6 +641,8 @@ function render() {
   drawTexts(ox, oy, z);
   drawStamps(ox, oy, z);
   drawStreakFx();
+  drawWrapTag(z, ox, oy);
+  drawReveal(z, ox, oy);
   drawSugarCubes();
   if (player && player.alive && state === 'play') {
     for (const b of blobs) {

@@ -254,6 +254,15 @@ window.__kus = {
   get stamps() {
     return stamps;
   },
+  get wrap() {
+    return wrap;
+  },
+  get reveal() {
+    return reveal;
+  },
+  spawnWrap,
+  clearWrap,
+  WRAP,
   sugarFly,
   hud: {
     get sugarShown() {
