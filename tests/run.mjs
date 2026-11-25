@@ -1827,6 +1827,80 @@ test('lang: no Russian left in the English menu, sections, help, pause and admin
   }
 });
 
+test('lang: no Russian left in an English run, end card, album page, trophy, candy of the day and a challenge', async () => {
+  const drawn = () => {
+    window.__drawn = new Set();
+    for (const f of ['fillText', 'strokeText']) {
+      const o = CanvasRenderingContext2D.prototype[f];
+      CanvasRenderingContext2D.prototype[f] = function (s, ...a) {
+        window.__drawn.add(String(s));
+        return o.call(this, s, ...a);
+      };
+    }
+    window.__shared = [];
+    navigator.share = (d) => (window.__shared.push(d.title + ' ' + d.text), Promise.resolve());
+  };
+  const cyrDrawn = `[...window.__drawn].filter((s) => /[А-Яа-яЁё]/.test(s.replace(/kusь/gi, '')))`;
+  const g = await open({ width: 390, height: 844, touch: true, play: false, returning: true, locale: 'en-US' });
+  await g.page.addInitScript(drawn);
+  await g.page.reload();
+  await g.page.waitForTimeout(600);
+  const seen = {};
+  const look = async (tag) => {
+    const left = await g.page.evaluate(CYR);
+    if (left.length) seen[tag] = left;
+  };
+  // a run: a streak up to ×7 by swallowing small bots, a wrapper, the HUD and the tray drawn
+  await g.page.evaluate(`(() => { const k0 = window.__kus; k0.pause(true); k0.setMode('free'); k0.startGame(); ${QUIET} ${EAT}
+    k.render(); for (let i = 0; i < 7; i++) { eat(['Зефирка', 'Ёж', 'Торт', 'Пиранья', 'Суфле', 'Мусс', 'Безе'][i]); k.render(); }
+    if (k.spawnWrap) { k.spawnWrap(P.x + 120, P.y, 0); for (let i = 0; i < 20; i++) { k.update(1/60); k.render(); } }
+    for (let i = 0; i < 30; i++) { k.update(1/60); k.render(); } })()`);
+  await look('run HUD');
+  // the 3-minute end card
+  await g.page.evaluate(`(() => { const k = window.__kus; k.toMenu(); k.setMode('t3'); k.startGame(); k.player.spawnT = 0; k.setTimeLeft(0.001); for (let i = 0; i < 90; i++) k.update(1/60); })()`);
+  await look('3-minute end card');
+  await g.page.evaluate(() => document.getElementById('chalBtn').click());
+  // the album page from the menu
+  await g.page.evaluate(() => { window.__kus.toMenu(); document.getElementById('albumBtn').click(); document.querySelector('#albumRows .st').click(); });
+  await g.page.waitForTimeout(200);
+  await look('album page');
+  await g.page.evaluate(() => document.getElementById('albumX').click());
+  // the boss beaten: the trophy card, and its share text
+  await g.page.evaluate(`(() => { ${STG} const P = free(); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1);
+    const B = S().cur.b; B.spawnT = 0; B.ai = null; B.mass = 60; k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0);
+    let f = 0; while (k.state === 'play' && f++ < 400) { P.tx = B.x; P.ty = B.y; B.tx = B.x; B.ty = B.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); k.render(); }
+    for (let i = 0; i < 200; i++) k.update(1 / 60); })()`);
+  await look('trophy card');
+  await g.page.evaluate(() => document.getElementById('chalBtn').click());
+  // a candy-of-the-day run to its end card
+  await g.page.evaluate(`(() => { ${DAY} play(20261125, 120); })()`);
+  await look('candy of the day end card');
+  // the FPS line
+  await g.page.evaluate(`(() => { const k = window.__kus; k.toMenu(); document.querySelector('#fpsSeg [data-v="1"]').click(); k.setMode('free'); k.startGame(); })()`);
+  await g.page.waitForTimeout(1500);
+  await look('FPS line');
+  const canvas = await g.page.evaluate(cyrDrawn);
+  const shared = await g.page.evaluate(() => window.__shared.filter((s) => /[А-Яа-яЁё]/.test(s)));
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+  // a challenge link for today's candy, opened in English: the banner
+  const today = await (async () => {
+    const d = new Date();
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  })();
+  const c = await open({ width: 844, height: 390, touch: true, play: false, locale: 'en-US' });
+  for (const q of [`?c=143&n=Sam&d=${today}`, `?c=143&n=Sam&d=${today - 1}`, '?c=143&n=Sam']) {
+    await c.page.goto(URL + q);
+    await c.page.waitForTimeout(400);
+    const left = await c.page.evaluate(CYR);
+    if (left.length) seen['challenge ' + q] = left;
+  }
+  await c.close();
+  assert(!Object.keys(seen).length, 'Russian on screen: ' + JSON.stringify(seen));
+  assert(!canvas.length, 'Russian drawn on the canvas: ' + canvas.join(' | '));
+  assert(!shared.length, 'Russian in the share text: ' + shared.join(' | '));
+});
+
 for (const [name, fn] of tests) {
   if (only && !name.includes(only)) continue;
   const t0 = Date.now();
