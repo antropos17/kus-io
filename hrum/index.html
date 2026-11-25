@@ -200,6 +200,7 @@ const SFX = {
   },
   squish() { if (!can('sq', .08)) return; nz(.2, 'lowpass', 900, .8, .32, 160); glop(.2, .02); },
   squelch() { if (!can('sqc', .07)) return; nz(.18, 'bandpass', rnd(500, 900), 6, .42, rnd(200, 350)); glop(.26); },
+  gulp() { if (!can('gulp', .15)) return; tone(.16, 'sine', 260, 90, .28); tone(.1, 'sine', 140, 70, .22, .1); },
   smack() { if (!can('smack', .1)) return; nz(.05, 'bandpass', rnd(700, 1300), 3, .2); tone(.05, 'sine', rnd(240, 340), 150, .11); },
   drip() { if (!can('drip', .09)) return; tone(.07, 'sine', rnd(900, 1500), rnd(350, 500), .06); },
   thump() { if (!can('thump', .12)) return; tone(.1, 'sine', 70, 45, .32); },
@@ -226,12 +227,12 @@ const sfx = (n, a, x) => { try { A.pan = x === undefined ? 0 : clamp((x / COLS *
 
 /* ---------- monsters (towers) ---------- */
 const T = {
-  chomp: { name: 'Грызень', cost: 50, range: 1.5, rate: .5, dmg: 1, hr: .27, mouth: 1.15, neck: ['#8a6a34', '#4a3418'], desc: 'Грызень: рвёт мясо быстро, но только вблизи' },
-  neck:  { name: 'Змееглав', cost: 90, range: 2.7, rate: 1.15, dmg: 3, hr: .2, mouth: 1.3, neck: ['#7d5cc4', '#3d2a6b'], desc: 'Змееглав: бьёт издалека и вырывает кусок втрое больше' },
-  lick:  { name: 'Языкан', cost: 70, range: 1.9, rate: .85, dmg: 1, slow: .5, hr: .3, mouth: .72, desc: 'Языкан: цепляет языком и держит, тварь еле ползёт' },
+  chomp: { name: 'Грызень', cost: 50, range: 1.5, rate: 1.45, dmg: 4, hr: .27, mouth: 1.15, neck: ['#8a6a34', '#4a3418'], desc: 'Грызень: рвёт мясо быстро, но только вблизи' },
+  neck:  { name: 'Змееглав', cost: 90, range: 2.7, rate: 2.3, dmg: 9, hr: .2, mouth: 1.3, neck: ['#7d5cc4', '#3d2a6b'], desc: 'Змееглав: бьёт издалека и вырывает кусок втрое больше' },
+  lick:  { name: 'Языкан', cost: 70, range: 1.9, rate: 1.9, dmg: 3, slow: .5, hr: .3, mouth: .72, desc: 'Языкан: цепляет языком и держит, тварь еле ползёт' },
   acid:  { name: 'Кислотник', cost: 110, range: 2.6, rate: 2.2, dmg: 1, hr: .3, mouth: 1.25, desc: 'Кислотник: плюёт лужу кислоты, она разъедает всех, кто в ней, и растворяет панцирь' },
   grab:  { name: 'Душитель', cost: 120, range: 2.0, rate: 2.6, dmg: 2, hr: .34, mouth: 0, desc: 'Душитель: обвивает щупальцем, давит и швыряет назад по тропе' },
-  glut:  { name: 'Пасть', cost: 140, range: 1.45, rate: 1.35, dmg: 2, aoe: true, hr: .44, mouth: 0, desc: 'Пасть: мясной цветок в яме, рвёт всех вокруг разом' }
+  glut:  { name: 'Пасть', cost: 140, range: 1.45, rate: 2.4, dmg: 5, aoe: true, hr: .44, mouth: 0, desc: 'Пасть: мясной цветок в яме, рвёт всех вокруг разом' }
 };
 const MAXLVL = 4, MUT = { chomp: 'Бешеный', neck: 'Потрошитель', lick: 'Хват', glut: 'Воронка', acid: 'Желчь', grab: 'Кракен' };   // level 4 is a mutation with its own trick
 const tStat = t => {
@@ -333,7 +334,7 @@ function drawSegLayer(c, sg, layer) {
       }
     } else if (sg.i === 0 || e.kind === 'worm') {
       const mk = (ph, amp) => { const p = []; for (let q = 0; q <= 8; q++) p.push({ x: -X * .6 + q * X * 1.2 / 8, y: Math.sin(q * 1.9 + ph) * Y * amp * (1 - Math.abs(q - 4) / 7) }); return p; };
-      tube(c, mk(0, .55), R * .2); tube(c, mk(2.2, .4), R * .17);
+      for (let k = 0; k < 7; k++) { const pth = mk(k * 1.3, .2 + .08 * (k % 3)).map(o => ({ x: o.x, y: o.y + (k - 3) * Y * .17 })); tubePath(c, pth); c.strokeStyle = '#4a121c'; c.lineWidth = R * .11; c.stroke(); c.strokeStyle = NOODLE[k % 6]; c.lineWidth = R * .075; c.stroke(); }   // packed in like noodles
       c.fillStyle = '#5c1410'; ell(c, X * .42, -Y * .28, X * .2, Y * .16, .4); c.fill(); c.fillStyle = 'rgba(255,200,190,.3)'; ell(c, X * .38, -Y * .32, X * .07, Y * .04, .4); c.fill();
     } else {
       for (const s of [-1, 1]) { ell(c, -X * .1, s * Y * .34, X * .42, Y * .24, s * .15); c.fillStyle = '#c98890'; c.fill(); c.strokeStyle = '#7a3a48'; c.lineWidth = R * .03; c.stroke(); }
@@ -502,7 +503,7 @@ const wet = (x, y, v) => { const i = Math.floor(clamp(y, 0, ROWS - .01) * 2) * G
 function addPart(p) { if (S.parts.length < 1500) S.parts.push(p); }
 function blood(x, y, n, pow, dir, spread) {
   for (let i = 0; i < n; i++) {
-    const a = dir === undefined ? rnd(0, TAU) : dir + rnd(-spread, spread), v = rnd(.5, 3.2) * pow, life = rnd(.18, .5);
+    const a = dir === undefined ? rnd(0, TAU) : dir + rnd(-spread, spread), v = rnd(.4, 2.3) * pow, life = rnd(.28, .7);
     addPart({ kind: 'blood', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life, max: life, col: Math.random() < .5 ? '#c2182b' : '#8f0f1e', size: rnd(.035, .09), rot: 0, vr: 0 });
   }
 }
@@ -653,7 +654,7 @@ function updateStrands(dt) {
       e.sqT = Math.max(e.sqT, Math.min(.34, Math.max(0, d / s.L0 - .6) * .16) * e.soft);
       e.tug = .08;
       if (stretch > 0 && !s.tongue) {                                // tug of war: the body is dragged off the trail, the monster leans in
-        const f = Math.min(stretch, 1) * 46 * e.inv * (4 - s.brk.filter(Boolean).length) / 4;
+        const f = Math.min(stretch, 1) * 30 * e.inv * (4 - s.brk.filter(Boolean).length) / 4;
         sg.vx += dx / d * f * dt; sg.vy += dy / d * f * dt;
         t.kx -= dx / d * .7 * dt * Math.min(stretch, 1); t.ky -= dy / d * .7 * dt * Math.min(stretch, 1);
         if (dctx && Math.random() < dt * 30) {                       // claw furrows
@@ -684,7 +685,7 @@ function drawStrand(s) {
     const edge = Math.abs(2 * u - 1), mid = s.w * thin * thin, end = s.w * Math.max(thin, .6);
     return mid + (end - mid) * edge * edge;
   };
-  const vib = s.held ? .05 * Math.exp(-s.age * 5) : 0;               // a fresh fibre hums like a plucked string
+  const vib = 0;
   const pt = (i, side, k) => {
     const a = p[Math.max(0, i - 1)], b = p[Math.min(n - 1, i + 1)], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1e-6;
     const o = wAt(i) * .5 * side + vib * Math.sin(i / (n - 1) * Math.PI) * Math.sin(s.age * 46 + k * 1.7);
@@ -795,11 +796,30 @@ function lens(n) {                                                    // blood o
 }
 function banner(txt, sub, life) { S.banner = { txt, sub: sub || '', life: life || 1.6, max: life || 1.6 }; }
 const meatOf = sg => Math.max(1, Math.round((sg.rx + sg.ry) / 2 / .11));
-function spawnGut(sg, la, ld, len) {
-  if (S.guts.length >= 12 || sg.gut) return; sg.gut = true;
-  const A0 = bodyPt(sg, la, ld), N = 16, p = [];
-  for (let i = 0; i < N; i++) { const x = A0.x + rnd(-.03, .03), y = A0.y + rnd(-.03, .03); p.push({ x, y, px: x, py: y }); }
-  S.guts.push({ pts: p, seg: sg, la, ld, rest: len / (N - 1), grow: 0, eater: null, t: 0, w: clamp(sg.e.r * .32, .075, .14) });
+const NOODLE = ['#f2b9bd', '#e39aa2', '#f6d2c4', '#d98a92', '#eec3a8', '#c9788a'];
+function spawnGut(sg, la, ld, len) {                                  // not one rope but a whole spill of thin ones, every one a little different
+  if (sg.gut || S.guts.length > 60) return; sg.gut = true;
+  const A0 = bodyPt(sg, la, ld), n = clamp(Math.round(sg.e.r * 22), 5, 11), bw = clamp(sg.e.r * .11, .03, .055);
+  for (let k = 0; k < n; k++) {
+    const N = 10, p = [];
+    for (let i = 0; i < N; i++) { const x = A0.x + rnd(-.05, .05), y = A0.y + rnd(-.05, .05); p.push({ x, y, px: x, py: y }); }
+    S.guts.push({ pts: p, seg: sg, la: la + rnd(-.35, .35), ld: ld * rnd(.6, 1), rest: len * rnd(.45, 1.15) / (N - 1), grow: -k * .12, eater: null, t: 0,
+                  w: bw * rnd(.75, 1.3), col: NOODLE[(k + sg.i) % NOODLE.length], wav: rnd(4, 9), ph: rnd(0, TAU), amp: rnd(.5, 1.4), first: k === 0 });
+  }
+}
+function noodle(c, q, dark) {
+  const p = q.pts, n = p.length, v = [];
+  for (let i = 0; i < n; i++) {
+    const a = p[Math.max(0, i - 1)], b = p[Math.min(n - 1, i + 1)], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1e-6, u = i / (n - 1);
+    const o = Math.sin(u * q.wav + q.ph) * q.w * 2.2 * q.amp * Math.sin(Math.min(1, u * 3) * Math.PI / 2);     // each keeps its own kinks
+    v.push({ x: p[i].x - dy / d * o, y: p[i].y + dx / d * o });
+  }
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  c.save(); c.translate(.02, .03); tubePath(c, v); c.strokeStyle = 'rgba(0,0,0,.28)'; c.lineWidth = q.w; c.stroke(); c.restore();
+  tubePath(c, v); c.strokeStyle = '#4a121c'; c.lineWidth = q.w * 1.25; c.stroke();
+  c.strokeStyle = q.col; c.lineWidth = q.w * .85; c.stroke();
+  c.save(); c.translate(-q.w * .15, -q.w * .2); tubePath(c, v); c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = q.w * .22; c.stroke(); c.restore();
+  if (dark > 0) { tubePath(c, v); c.strokeStyle = 'rgba(52,60,30,' + Math.min(.7, dark) + ')'; c.lineWidth = q.w * 1.25; c.stroke(); }
 }
 function updateGuts(dt) {
   const keep = [];
@@ -811,7 +831,7 @@ function updateGuts(dt) {
     let M = null;
     if (q.eater && q.eater.gone) q.eater = null;
     if (q.eater) {                                                   // a monster has the loose end and sucks it in like a noodle
-      M = mouthPt(q.eater); q.eater.flash = .12; q.rest *= Math.exp(-dt * 1.5);
+      M = mouthPt(q.eater); q.eater.flash = .12; q.rest *= Math.exp(-dt * .9);
       if (Math.random() < dt * 14) blood(M.x, M.y, 1, .3);
     }
     let P = M;
@@ -821,7 +841,7 @@ function updateGuts(dt) {
     }
     for (let i = 1; i < n - (P ? 1 : 0); i++) { const v = p[i], vx = (v.x - v.px) * .8, vy = (v.y - v.py) * .8; v.px = v.x; v.py = v.y; v.x += vx; v.y += vy; }
     if (P) pin(p[n - 1], P);
-    const rest = q.rest * (.15 + .85 * q.grow);
+    const rest = q.rest * (.15 + .85 * Math.max(0, q.grow));
     for (let it = 0; it < 4; it++) for (let i = 0; i < n - 1; i++) {
       const a = p[i], b = p[i + 1], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1e-6; if (d <= rest) continue;   // slack is free to coil
       const diff = (d - rest) / d, ma = i === 0 ? 0 : .5, mb = P && i === n - 2 ? 0 : .5, tot = ma + mb; if (!tot) continue;
@@ -831,12 +851,12 @@ function updateGuts(dt) {
       const dx = p[1].x - p[0].x, dy = p[1].y - p[0].y, d = Math.hypot(dx, dy) || 1e-6;
       if (d > rest * 1.25) { const f = (sg.dead ? 40 : 40 * sg.e.inv) * Math.min(1, d / rest - .95); sg.vx += dx / d * f * dt; sg.vy += dy / d * f * dt; if (!sg.dead) sg.e.tug = .08; }   // whoever it is attached to gets hauled along
       if (M && q.rest * (n - 1) < .3) {
-        blood(p[0].x, p[0].y, 8, .9); blood(M.x, M.y, 5, .6); gain(M.x, M.y, 1); q.eater.chew = .5; q.eater.gore = 1; q.eater.eaten++; sfx('pop', 0, M.x); sg.gut = false;
-        S.texts.push({ x: M.x, y: M.y - .35, txt: 'ням', life: .6, col: '#f4bfc3', size: .3 });
+        blood(p[0].x, p[0].y, 3, .6); blood(M.x, M.y, 2, .4); q.eater.chew = Math.max(q.eater.chew, .6); q.eater.gore = 1; sfx('smack', 0, M.x);
+        if (q.first) { gain(M.x, M.y, 1); q.eater.eaten++; S.texts.push({ x: M.x, y: M.y - .35, txt: 'ням', life: .6, col: '#f4bfc3', size: .3 }); }
         continue;
       }
     }
-    if (Math.random() < dt * 4) splat(p[n - 1].x, p[n - 1].y, rnd(.015, .04));
+    if (Math.random() < dt * .8) splat(p[n - 1].x, p[n - 1].y, rnd(.015, .04));
     keep.push(q);
   }
   S.guts = keep;
@@ -860,7 +880,7 @@ function sever(e, wa) {                                               // the rea
   const P = bodyPt(st, Math.PI, st.rx * .8);
   spurt(st, Math.PI, st.rx * .8, 1.8); st.gut = false; spawnGut(st, Math.PI, st.rx * .7, e.r * rnd(3.4, 4.6)); organ(P.x, P.y, wa); if (Math.random() < .5) organ(P.x, P.y, wa + Math.PI);
   blood(P.x, P.y, 14, 1.2); bones(P.x, P.y, 2, 1); flash(P.x, P.y, 1.4, .18);
-  S.shake = Math.max(S.shake, .08); S.freeze = Math.max(S.freeze, .06); sfx('crack', 0, P.x); sfx('squelch', 0, P.x); lens(1);
+  S.shake = Math.max(S.shake, .08); sfx('crack', 0, P.x); sfx('squelch', 0, P.x); lens(1);
   S.texts.push({ x: e.x, y: e.y - e.r, txt: 'РАЗОРВАНА', life: .9, col: '#ff8a3d', size: .36 });
 }
 function carcassBite(sg, t) {                                         // a big carcass is eaten down one mouthful at a time
@@ -887,7 +907,7 @@ function tearLeg(e, sg, wa) {
 }
 function kill(e, t, hit, wa) {
   const big = e.r / .3, heavy = e.kind === 'boar' || e.kind === 'brood';
-  S.combo = S.comboT > 0 ? S.combo + 1 : 1; S.comboT = 2.6;
+  S.combo = S.comboT > 0 ? S.combo + 1 : 1; S.comboT = 4.5;
   const extra = (S.combo >= 3 ? 1 : 0) + (COMBO[S.combo] ? S.combo : 0);
   gain(e.x, e.y, e.rew + extra, 7);
   S.texts.push({ x: e.x, y: e.y - e.r, txt: '+' + (e.rew + extra), life: .8, col: BONE, size: .28 });
@@ -895,7 +915,7 @@ function kill(e, t, hit, wa) {
   if (COMBO[S.combo]) { banner(COMBO[S.combo], 'комбо ×' + S.combo + ' · +' + S.combo + ' костей', 1.4); S.shake = Math.max(S.shake, .1); flash(e.x, e.y, 3, .3); }
   try { if (navigator.vibrate) navigator.vibrate(heavy ? 30 : 12); } catch (er) {}
   if (S.active && !S.queue.length && !K[e.kind].split && !S.enemies.some(o => o !== e && o.hp > 0)) { S.slowT = Math.max(S.slowT, .8); S.camT = { x: e.x, y: e.y, z: 1.35 }; flash(e.x, e.y, 3.5, .4); }   // the last one of the wave dies in slow motion
-  const over = e.lastDmg >= e.max * .6, ob = over ? 1.7 : 1;         // far more than it could take: it bursts
+  const over = e.lastDmg >= e.max * 1.2, ob = over ? 1.7 : 1;         // far more than it could take: it bursts
   blood(e.x, e.y, Math.round(18 * big * ob), 1.4 * ob); meat(e.x, e.y, Math.round(2 * big * ob), 1.1 * ob); bones(e.x, e.y, Math.round(2 * big), 1.1 * ob);
   puff(e.x, e.y, 'rgba(170,20,35,.24)', 4, 1.6, e.r * .7);
   if (over) { S.texts.push({ x: e.x, y: e.y - e.r - .6, txt: 'В КЛОЧЬЯ', life: .8, col: '#ffffff', size: .34 }); sfx('pop', 0, e.x); lens(2); }
@@ -914,7 +934,6 @@ function kill(e, t, hit, wa) {
     S.carc.push(sg);
   }
   if (!over) for (let i = 0; i < e.nodes.length - 1; i++) link(e.nodes[i], e.nodes[i + 1], e.nodes[i].off - e.nodes[i + 1].off);   // still joined: it flops as one body
-  if (heavy) S.freeze = Math.max(S.freeze, .07);
   if (K[e.kind].split) {
     for (let i = 0; i < K[e.kind].split; i++) { const k = spawn('bug', Math.max(.6, e.s - i * .25)); k.sqV = rnd(4, 9); k.sqAng = rnd(0, TAU); for (const q of k.nodes) { q.vx = rnd(-2.5, 2.5); q.vy = rnd(-2.5, 2.5); } }
     S.slowT = 1.3; S.camT = { x: e.x, y: e.y, z: 1.5 }; S.shake = Math.max(S.shake, .16); sfx('roar');
@@ -936,25 +955,24 @@ function bite(sg, dmg, t, noStrand) {
   const plate = armored(e);
   if (plate) dmg = 1;
   const fracAfter = 1 - Math.max(e.hp - dmg, 0) / e.max;
-  const b = { a: wa - sg.ang + rnd(-.45, .45), d: rr * (1.15 - .85 * fracAfter), r: rr * clamp(2.3 / Math.sqrt(e.max), .26, .62) * (dmg > 1 ? 1.2 : 1) };
+  const b = { a: wa - sg.ang + rnd(-.45, .45), d: rr * (1.15 - .85 * fracAfter), r: rr * clamp(1.45 * Math.sqrt(dmg / e.max), .3, .72) };
   const chunk = plate ? null : makeChunk(sg, b);
   e.lastDmg = dmg; e.hp -= dmg; sg.dmg += dmg; sg.bites.push(b); sg.dirty = true;
   e.sqAng = wa; e.sqV -= 2 * e.soft + .6; e.shake = .12;
-  for (const q of e.nodes) { q.lsqAng = wa; q.lsqV -= q === sg ? 9 * e.soft + 3 : (Math.abs(q.i - sg.i) === 1 ? 3.5 : 1.4) * e.soft; }
+  for (const q of e.nodes) { q.lsqAng = wa; q.lsqV -= q === sg ? 5 * e.soft + 2 : (Math.abs(q.i - sg.i) === 1 ? 2 : .8) * e.soft; }
   if (t.type === 'neck' && t.lvl >= 4 && !armored(e)) { tearLeg(e, sg, wa); spurt(sg, wa - sg.ang, rr * .8, 1); }            // jaws squeeze the body, then yank it towards the monster
   sg.vx += Math.cos(wa) * 2.6 * e.inv; sg.vy += Math.sin(wa) * 2.6 * e.inv;
   flash(ex, ey, .9 + dmg * .12, .12);
-  if (dmg >= 3) S.freeze = Math.max(S.freeze, .045);
 
   if (plate) { e.curl = .5; e.sqV -= 4; shards(ex, ey, ['#b4bfcc', '#6a7786', '#dfe6ee'], 4, .9, wa); puff(ex, ey, 'rgba(255,233,168,.5)', 2, 1.5, .1); sfx('clang'); }
   else {
-    blood(ex, ey, 7 + dmg * 3, 1.1, wa, 1.1); blood(ex, ey, 3, .6); puff(ex, ey, 'rgba(170,20,35,.22)', 2, 1.2, .16); sfx('bite', dmg > 1, ex);
+    blood(ex, ey, 7 + Math.min(dmg, 6) * 2, 1.1, wa, 1.1); blood(ex, ey, 3, .6); puff(ex, ey, 'rgba(170,20,35,.22)', 2, 1.2, .16); sfx('bite', dmg >= 9, ex);
     if (Math.random() < .4) sfx(e.kind === 'boar' || e.kind === 'brood' ? 'grunt' : e.kind === 'toad' ? 'croak' : 'squeak', 0, ex);
     if (Math.random() < .25) meat(ex, ey, 1, .8, wa);
-    if (e.hp > 0 && Math.random() < .28 + dmg * .06) tearLeg(e, sg, wa);
-    if (dmg >= 3) { spurt(sg, b.a, rr * .8, 1.2); S.texts.push({ x: ex, y: ey - .2, txt: pick(['ХРЯСЬ', 'ЧАВК', 'ХРУМ']), life: .55, col: '#ffffff', size: .3 }); }
+    if (e.hp > 0 && Math.random() < .25 + Math.min(dmg, 7) * .03) tearLeg(e, sg, wa);
+    if (dmg >= 9) { spurt(sg, b.a, rr * .8, 1.2); S.texts.push({ x: ex, y: ey - .2, txt: pick(['ХРЯСЬ', 'ЧАВК', 'ХРУМ']), life: .55, col: '#ffffff', size: .3 }); }
     if (e.hp > 0 && !sg.head && fracAfter > .45 && Math.random() < .5) spawnGut(sg, b.a, clamp(b.d - b.r * .6, 0, rr), e.r * rnd(3, 4.2));
-    if (!noStrand && e.hp > 0) mkStrand(sg, b.a, clamp(b.d - b.r * .7, 0, rr), t, { w: .1 + e.r * .14, maxLen: rnd(1.1, 1.9), maxAge: 1.1 });
+    if (!noStrand && e.hp > 0) mkStrand(sg, b.a, clamp(b.d - b.r * .7, 0, rr), t, { w: .1 + e.r * .14, maxLen: rnd(1.3, 2.1), maxAge: 2.4 });
   }
   if (plate && !armored(e)) {
     for (const q of e.nodes) q.dirty = true;
@@ -1000,9 +1018,9 @@ function updateEnemy(e, dt) {
     const tx = p.x - Math.sin(p.ang) * wob, ty = p.y + Math.cos(p.ang) * wob, ks = i === n - 1 ? 240 : 110, fr = Math.exp(-(i === n - 1 ? 24 : 11) * dt);
     sg.vx = (sg.vx + (tx - sg.x) * ks * dt) * fr; sg.vy = (sg.vy + (ty - sg.y) * ks * dt) * fr;
     sg.x += sg.vx * dt; sg.y += sg.vy * dt;
-    sg.lsqV += (-210 * sg.lsq - (6 + 14 * (1 - e.soft)) * sg.lsqV) * dt; sg.lsq = clamp(sg.lsq + sg.lsqV * dt, -.5, .5);
+    sg.lsqV += (-90 * sg.lsq - (11 + 10 * (1 - e.soft)) * sg.lsqV) * dt; sg.lsq = clamp(sg.lsq + sg.lsqV * dt, -.5, .5);
   }
-  if (e.tug > 0) for (const q of e.nodes) { q.vx += (Math.random() - .5) * 16 * dt * e.inv; q.vy += (Math.random() - .5) * 16 * dt * e.inv; }   // thrashes while something has hold of it
+  if (e.tug > 0) for (const q of e.nodes) { q.vx += (Math.random() - .5) * 5 * dt * e.inv; q.vy += (Math.random() - .5) * 5 * dt * e.inv; }   // thrashes while something has hold of it
   for (let it = 0; it < 2; it++) for (let i = n - 1; i >= 1; i--) {  // and the spine keeps them a fixed distance apart
     const a = e.nodes[i], b = e.nodes[i - 1], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1e-6, diff = (d - (b.off - a.off)) / d;
     a.x += dx * diff * .3; a.y += dy * diff * .3; b.x -= dx * diff * .7; b.y -= dy * diff * .7;
@@ -1013,7 +1031,7 @@ function updateEnemy(e, dt) {
     sg.ang += angd(want, sg.ang) * Math.min(1, dt * 14);
   }
   e.x = e.main.x; e.y = e.main.y; e.rot = e.main.ang;
-  const kS = 150 + 500 * (1 - e.soft), cS = 7 + 22 * (1 - e.soft);
+  const kS = 70 + 260 * (1 - e.soft), cS = 9 + 16 * (1 - e.soft);
   e.sqV += (kS * (e.sqT - e.sq) - cS * e.sqV) * dt; e.sq = clamp(e.sq + e.sqV * dt, -.45, .6);
   e.sqT = 0;
 
@@ -1091,7 +1109,7 @@ function collide() {
 
 function eat(sg, t) {
   const m = mouthPt(t);
-  sg.gone = true; t.chew = .5; t.gore = 1; t.eaten++;
+  sg.gone = true; t.chew = 1.3; t.gore = 1; t.eaten++;
   blood(m.x, m.y, sg.scrap ? 3 : 8, .8); sfx('squish');
   if (!sg.scrap) { t.chunk = { spr: sg.spr, size: sg.size * .6, rot: sg.ang }; gain(m.x, m.y, 1); }
 }
@@ -1113,14 +1131,14 @@ function updateTongue(t, dt) {
   if (tg.st === 'out') {
     if (sg.gone) tg.st = 'back';
     else {
-      const P = bodyPt(sg, tg.la, tg.ld), dx = P.x - tg.tip.x, dy = P.y - tg.tip.y, d = Math.hypot(dx, dy), stp = 24 * dt;
+      const P = bodyPt(sg, tg.la, tg.ld), dx = P.x - tg.tip.x, dy = P.y - tg.tip.y, d = Math.hypot(dx, dy), stp = 11 * dt;
       if (d > stp) { tg.tip.x += dx / d * stp; tg.tip.y += dy / d * stp; }
       else {
         tg.tip.x = P.x; tg.tip.y = P.y; tg.st = 'stuck';
         if (sg.dead) { tg.hold = .1; blood(P.x, P.y, 4, .6); sfx('squish'); }
         else {
           const e = sg.e; tg.chunk = bite(sg, st.dmg, t, true);
-          if (e.hp <= 0) tg.hold = .08; else if (grab) { e.slowT = 1.4; e.slowF = .12; tg.hold = 1.3; tg.tick = .32; } else { e.slowT = 1.6; e.slowF = st.slow; tg.hold = .5; }
+          if (e.hp <= 0) tg.hold = .08; else if (grab) { e.slowT = 1.4; e.slowF = .12; tg.hold = 1.3; tg.tick = .45; } else { e.slowT = 1.6; e.slowF = st.slow; tg.hold = 1; }
         }
       }
     }
@@ -1132,7 +1150,7 @@ function updateTongue(t, dt) {
       if (sg.dead) sg.held = .3;
       else {                                                         // it hauls on the body it is stuck to
         const e = sg.e, f = (grab ? 55 : 34) * e.inv; e.tug = .08;
-        if (grab) { for (const q of e.nodes) { q.lsqAng = S.time * 7; q.lsqV -= 22 * dt * e.soft; } tg.tick -= dt; if (tg.tick <= 0) { tg.tick = .32; bite(sg, st.dmg, t, true); sfx('squelch', 0, sg.x); } }   // it squeezes e.sqAng = Math.atan2(dy, dx); e.sqT = Math.max(e.sqT, .2 * e.soft);
+        if (grab) { for (const q of e.nodes) { q.lsqAng = S.time * 7; q.lsqV -= 22 * dt * e.soft; } tg.tick -= dt; if (tg.tick <= 0) { tg.tick = .45; bite(sg, st.dmg, t, true); sfx('squelch', 0, sg.x); } }   // it squeezes e.sqAng = Math.atan2(dy, dx); e.sqT = Math.max(e.sqT, .2 * e.soft);
         sg.vx += dx / d * f * dt; sg.vy += dy / d * f * dt; t.kx -= dx / d * .5 * dt; t.ky -= dy / d * .5 * dt;
       }
       if (tg.hold <= 0) {
@@ -1151,10 +1169,10 @@ function updateTongue(t, dt) {
     }
   }
   if (tg.st === 'back') {
-    const dx = M.x - tg.tip.x, dy = M.y - tg.tip.y, d = Math.hypot(dx, dy), stp = 18 * dt;
+    const dx = M.x - tg.tip.x, dy = M.y - tg.tip.y, d = Math.hypot(dx, dy), stp = 7.5 * dt;
     if (tg.carry) { if (tg.carry.gone) tg.carry = null; else { tg.carry.x = tg.tip.x; tg.carry.y = tg.tip.y; tg.carry.vx = tg.carry.vy = 0; tg.carry.held = .5; } }
     if (d <= stp + .08) {
-      if (tg.carry) eat(tg.carry, t); else if (tg.chunk) { t.chunk = tg.chunk; t.chew = .45; }
+      if (tg.carry) eat(tg.carry, t); else if (tg.chunk) { t.chunk = tg.chunk; t.chew = 1.3; }
       t.tg = null; return;
     }
     tg.tip.x += dx / d * stp; tg.tip.y += dy / d * stp;
@@ -1174,9 +1192,9 @@ function updateTower(t, dt) {
   if (t.gore > .3 && Math.random() < dt * t.gore * 4) blood(m.x, m.y, 1, .12);              // jaws drip
   else if (t.type !== 'glut' && t.phase === 'idle' && Math.random() < dt * .5) addPart({ kind: 'blood', x: m.x, y: m.y, vx: 0, vy: .5, life: .4, max: .4, col: 'rgba(220,230,210,.55)', size: .03, rot: 0, vr: 0, dry: true });
   if (t.chew > 0) {
-    const c0 = Math.floor(t.chew * 22 / Math.PI); t.chew -= dt; if (Math.floor(t.chew * 22 / Math.PI) !== c0) sfx('smack', 0, t.x);
-    if (Math.random() < dt * 26) blood(m.x, m.y, 1, .45);
-    if (t.chew <= 0 && t.chunk) { if (Math.random() < .35) bones(m.x, m.y, 1, .7); t.chunk = null; }
+    const c0 = Math.floor(t.chew * 10 / Math.PI); t.chew -= dt; if (Math.floor(t.chew * 10 / Math.PI) !== c0) sfx('smack', 0, t.x);
+    if (Math.random() < dt * 9) blood(m.x, m.y, 1, .3);
+    if (t.chew <= 0) { sfx('gulp', 0, t.x); if (t.chunk) { if (Math.random() < .35) bones(m.x, m.y, 1, .5); t.chunk = null; } }
   }
   if (t.tg) updateTongue(t, dt);
   if (t.type === 'glut' && st.mut) for (const e of S.enemies) {      // the funnel drags everything nearby towards the teeth
@@ -1212,44 +1230,53 @@ function updateTower(t, dt) {
     else if (t.type === 'acid') spit(t, target, st);
     else { t.phase = t.type === 'glut' ? 'lunge' : 'wind'; t.pt = 0; t.tseg = sg; t.chunk = null; t.chew = 0; }
   } else if (t.phase === 'wind') {                                   // rears back before the strike
-    t.pt += dt / .09;
+    t.pt += dt / .24;                                                // slow enough to see the jaws open
     const k = Math.min(1, t.pt);
     t.hx = t.x - Math.cos(t.ang) * .12 * k; t.hy = t.y - Math.sin(t.ang) * .12 * k;
     if (t.pt >= 1) {
       t.phase = 'lunge'; t.pt = 0; t.wx = t.hx; t.wy = t.hy;
-      const sg = t.tseg; t.ldur = Math.max(t.type === 'neck' ? .14 : .1, sg ? Math.hypot(sg.x - t.x, sg.y - t.y) / 16 : 0);
+      const sg = t.tseg; t.ldur = Math.max(t.type === 'neck' ? .2 : .16, sg ? Math.hypot(sg.x - t.x, sg.y - t.y) / 9 : 0);
     }
   } else if (t.phase === 'lunge') {
     if (t.type === 'glut') {
-      t.pt += dt / .2;
+      t.pt += dt / .5;
       if (t.pt >= 1) {
-        ring(t.x, t.y, '#c2182b', st.range * 2, .22); S.shake = Math.max(S.shake, .07); S.freeze = Math.max(S.freeze, .04); flash(t.x, t.y, st.range + .6, .16);
+        ring(t.x, t.y, '#c2182b', st.range * 2, .22); S.shake = Math.max(S.shake, .07); flash(t.x, t.y, st.range + .6, .16);
         for (const v of S.enemies) {
           if (v.hp <= 0 || Math.hypot(v.x - t.x, v.y - t.y) > st.range + v.r * .5) continue;
           const ch = bite(nearestSeg(v, t), st.dmg, t); if (ch && !t.chunk) t.chunk = ch;
         }
         for (const sg of S.carc) if (!sg.gone && sg.held <= 0 && Math.hypot(sg.x - t.x, sg.y - t.y) < st.range) bite(sg, 1, t);
-        t.phase = 'back'; t.pt = 0; t.bdur = .45;
+        t.phase = 'back'; t.pt = 0; t.bdur = .9;
       }
       return;
     }
     const sg = t.tseg;
-    if (!sg || sg.gone) { t.phase = 'back'; t.pt = 0; t.bx = t.hx; t.by = t.hy; t.bdur = Math.max(.2, Math.hypot(t.hx - t.x, t.hy - t.y) / 10); return; }
+    if (!sg || sg.gone) { t.phase = 'back'; t.pt = 0; t.bx = t.hx; t.by = t.hy; t.bdur = Math.max(.55, Math.hypot(t.hx - t.x, t.hy - t.y) / 3); return; }
     t.pt += dt / t.ldur;
     t.ang = Math.atan2(sg.y - t.y, sg.x - t.x);
     const reach = (sg.rx + sg.ry) / 2 * .4 + d.hr * d.mouth * .85, tx = sg.x - Math.cos(t.ang) * reach, ty = sg.y - Math.sin(t.ang) * reach;
     const k = Math.min(1, t.pt) ** 2;
     t.hx = t.wx + (tx - t.wx) * k; t.hy = t.wy + (ty - t.wy) * k;
+    if (t.pt >= 1) { t.phase = 'grip'; t.pt = 0; sfx('squelch', 0, sg.x); }
+  } else if (t.phase === 'grip') {                                   // teeth sink in and hold; the piece comes away only when the grip ends
+    const sg = t.tseg;
+    if (!sg || sg.gone) { t.phase = 'back'; t.pt = 0; t.bx = t.hx; t.by = t.hy; t.bdur = Math.max(.55, Math.hypot(t.hx - t.x, t.hy - t.y) / 3); return; }
+    t.pt += dt / .3;
+    t.ang = Math.atan2(sg.y - t.y, sg.x - t.x);
+    const reach = (sg.rx + sg.ry) / 2 * .4 + d.hr * d.mouth * .85;
+    t.hx = sg.x - Math.cos(t.ang) * reach; t.hy = sg.y - Math.sin(t.ang) * reach;
+    if (!sg.dead) { const e = sg.e; e.tug = .08; sg.lsqAng = t.ang; sg.lsqV -= 14 * dt * e.soft; }
     if (t.pt >= 1) {
       if (sg.dead && !sg.scrap && sg.meat > 1) { sg.meat--; t.chunk = carcassBite(sg, t); }
       else if (sg.dead) { t.carry = sg; sg.held = 3; t.gore = Math.min(1, t.gore + .4); blood(sg.x, sg.y, 5, .8); sfx('squish'); }   // seize the carcass and drag it home
       else t.chunk = bite(sg, st.dmg, t);
-      t.phase = 'back'; t.pt = 0; t.bx = t.hx; t.by = t.hy; t.bdur = Math.max(.2, Math.hypot(t.hx - t.x, t.hy - t.y) / 10);
+      t.phase = 'back'; t.pt = 0; t.bx = t.hx; t.by = t.hy; t.bdur = Math.max(.55, Math.hypot(t.hx - t.x, t.hy - t.y) / 3);
     }
   } else {
     t.pt += dt / t.bdur;
     if (t.type !== 'glut') {
-      const p = Math.min(1, t.pt) - 1, k = 1 + 2.70158 * p * p * p + 1.70158 * p * p;   // ease out with a little overshoot
+      const p = Math.min(1, t.pt), k = p * p * (3 - 2 * p);          // a slow, even pull
       t.hx = t.bx + (t.x - t.bx) * k; t.hy = t.by + (t.y - t.by) * k;
       if (t.carry) {
         if (t.carry.gone) t.carry = null;
@@ -1258,7 +1285,7 @@ function updateTower(t, dt) {
     }
     if (t.pt >= 1) {
       t.phase = 'idle'; t.hx = t.x; t.hy = t.y;
-      if (t.carry) { eat(t.carry, t); t.carry = null; } else if (t.chunk) t.chew = .45;
+      if (t.carry) { eat(t.carry, t); t.carry = null; } else if (t.chunk) t.chew = 1.3;
     }
   }
 }
@@ -1824,20 +1851,21 @@ function drawTower(t) {
   g.save(); g.translate(t.x, t.y); g.rotate(t.ph); g.drawImage(lairSpr, -ls / 2, -ls / 2, ls, ls); g.restore();
   if (t.lvl >= 4) { g.strokeStyle = 'rgba(255,60,80,' + (.45 + .25 * Math.sin(S.time * 5 + t.ph)) + ')'; g.lineWidth = .035; g.setLineDash([.1, .07]); g.lineDashOffset = -S.time * .4; g.beginPath(); g.arc(t.x, t.y, .56, 0, TAU); g.stroke(); g.setLineDash([]); }   // a mutant
   if (t.type === 'grab') {
-    drawGrab(g, t.x, t.y, hr, t.tg ? 1 : t.chew > 0 ? Math.abs(Math.sin(t.chew * 22)) : .15 + .1 * Math.sin(S.time * 2 + t.ph), S.time + t.ph, t.gore, !!t.tg);
+    drawGrab(g, t.x, t.y, hr, t.tg ? 1 : t.chew > 0 ? Math.abs(Math.sin(t.chew * 10)) : .15 + .1 * Math.sin(S.time * 2 + t.ph), S.time + t.ph, t.gore, !!t.tg);
     if (t.tg) drawTongue(t);
   } else if (t.type === 'glut') {
     const p = Math.min(1, t.pt);
-    const fold = t.phase === 'lunge' ? .14 - .32 * p : t.phase === 'back' ? 1 - .86 * p * p : t.chew > 0 ? .7 + .3 * Math.abs(Math.sin(t.chew * 20)) : t.flash > 0 ? 0 : .14 + .06 * Math.sin(S.time * 2 + t.ph);
+    const fold = t.phase === 'lunge' ? .14 - .32 * p : t.phase === 'back' ? 1 - .86 * p * p : t.chew > 0 ? .7 + .3 * Math.abs(Math.sin(t.chew * 10)) : t.flash > 0 ? 0 : .14 + .06 * Math.sin(S.time * 2 + t.ph);
     drawFlower(g, t.x, t.y, hr, fold, t.ph, t.gore, S.time + t.ph);
   } else {
     let open, sx = 1 + .03 * Math.sin(S.time * 3 + t.ph);
     if (t.phase === 'wind') { open = Math.min(1, t.pt); sx = 1 - .1 * Math.min(1, t.pt); }
+    else if (t.phase === 'grip') { open = .3 * (1 - Math.min(1, t.pt)); sx = 1.06; }
     else if (t.phase === 'lunge') { open = 1; sx = 1 + .16 * Math.min(1, t.pt); }
     else if (t.phase === 'back') { open = t.carry ? .2 : .02; sx = 1 - .1 * (1 - Math.min(1, t.pt)); }
     else if (t.tg || (t.type === 'acid' && t.flash > 0)) open = 1;
     else if (t.flash > 0) open = .8;
-    else if (t.chew > 0) open = .45 * Math.abs(Math.sin(t.chew * 22));
+    else if (t.chew > 0) open = .45 * Math.abs(Math.sin(t.chew * 10));
     else open = .12 + .06 * Math.sin(S.time * 2.4 + t.ph);
     const len = Math.hypot(hx - t.x, hy - t.y);
     g.save(); g.translate(hx + .07, hy + .11); g.rotate(t.ang); g.scale(hr * 1.9, hr * 1.5); g.fillStyle = SHADOW; g.beginPath(); g.arc(0, 0, 1, 0, TAU); g.fill(); g.restore();
@@ -1858,7 +1886,7 @@ function drawTower(t) {
     }
   }
   if (t.chunk) {                                                     // the torn piece, held in the jaws and chewed down
-    const k = t.phase === 'idle' ? clamp(t.chew / .45, 0, 1) : 1, m = mouthPt(t), sz = t.chunk.size * (.35 + .65 * k);
+    const k = t.phase === 'idle' ? Math.ceil(clamp(t.chew / 1.3, 0, 1) * 4) / 4 : 1, m = mouthPt(t), sz = t.chunk.size * (.3 + .7 * k);
     g.save(); g.translate(m.x, m.y); g.rotate(t.chunk.rot);
     g.globalAlpha = Math.min(1, k * 3); g.drawImage(t.chunk.spr, -sz / 2, -sz / 2, sz, sz); g.globalAlpha = 1; g.restore();
   }
@@ -1874,7 +1902,7 @@ function drawSeg(sg) {
   const e = sg.e, R = e.r, k = K[e.kind];
   if (sg.dirty || sg.sprTs !== ts || (!sg.dead && Math.abs(angd(sg.ang, sg.litAng)) > .4)) renderSeg(sg);   // re-lit when the body turns
   const sh = !sg.dead && e.shake > 0;
-  g.save(); g.translate(sg.x + (sh ? rnd(-.04, .04) : 0), sg.y + (sh ? rnd(-.04, .04) : 0));
+  g.save(); g.translate(sg.x + (sh ? rnd(-.01, .01) : 0), sg.y + (sh ? rnd(-.01, .01) : 0));
   g.save(); g.translate(sg.dead ? .06 : e.shx * 1.5, sg.dead ? .09 : e.shy * 1.5); g.rotate(sg.ang); g.scale(sg.rx * 1.35, sg.ry * 1.3);   // a soft shadow thrown away from the nearest light
   g.fillStyle = SHADOW; g.beginPath(); g.arc(0, 0, 1, 0, TAU); g.fill(); g.restore();
   g.rotate(sg.ang);
@@ -1894,7 +1922,7 @@ function drawSeg(sg) {
   }
   g.globalAlpha = 1;
   if (!sg.dead) {
-    const q = 1 + e.sq + .05 * e.soft * Math.sin(S.time * 7 + e.ph0 * 6 + sg.i); g.rotate(e.sqAng - sg.ang); g.scale(q, 1 / q); g.rotate(sg.ang - e.sqAng);
+    const q = 1 + e.sq + .03 * e.soft * Math.sin(S.time * 3.5 + e.ph0 * 6 + sg.i); g.rotate(e.sqAng - sg.ang); g.scale(q, 1 / q); g.rotate(sg.ang - e.sqAng);
     if (sg.lsq) { g.rotate(sg.lsqAng - sg.ang); g.scale(1 + sg.lsq, 1 / (1 + sg.lsq)); g.rotate(sg.ang - sg.lsqAng); }
   }
   g.drawImage(sg.spr, -sg.size / 2, -sg.size / 2, sg.size, sg.size);
@@ -1945,15 +1973,15 @@ function drawLight() {                                               // darkness
   for (const m of MUSH) hole(m.x, m.y, .95, .5);
   for (const a of S.acid) hole(a.x, a.y, a.r * 1.5, .55);
   for (const t of S.towers) hole(t.hx, t.hy, 1.35 + t.lvl * .15 + .06 * Math.sin(S.time * 3 + t.ph), .8);
-  for (const f of S.flashes) hole(f.x, f.y, f.r, .95 * f.life / f.max);
+  for (const f of S.flashes) hole(f.x, f.y, f.r, .6 * f.life / f.max);
   g.imageSmoothingEnabled = true; g.drawImage(light, 0, 0, COLS, ROWS);
   g.globalCompositeOperation = 'lighter';                            // a warm flare on top of each strike
-  for (const f of S.flashes) { const a = .3 * f.life / f.max, gr = g.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r * .7); gr.addColorStop(0, 'rgba(255,170,120,' + a + ')'); gr.addColorStop(1, 'rgba(255,120,80,0)'); g.fillStyle = gr; g.beginPath(); g.arc(f.x, f.y, f.r * .7, 0, TAU); g.fill(); }
+  for (const f of S.flashes) { const a = .12 * f.life / f.max, gr = g.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r * .7); gr.addColorStop(0, 'rgba(255,170,120,' + a + ')'); gr.addColorStop(1, 'rgba(255,120,80,0)'); g.fillStyle = gr; g.beginPath(); g.arc(f.x, f.y, f.r * .7, 0, TAU); g.fill(); }
   g.globalCompositeOperation = 'source-over';
 }
 
 function draw() {
-  const W = cv.width, H = cv.height, z = S.cam.z, a = ts * dpr * z, sh = S.shake * ts * dpr;
+  const W = cv.width, H = cv.height, z = S.cam.z, a = ts * dpr * z, sh = S.shake * ts * dpr * .35;
   const cx = clamp(S.cam.x, COLS / (2 * z), COLS - COLS / (2 * z)), cy = clamp(S.cam.y, ROWS / (2 * z), ROWS - ROWS / (2 * z));
   view = { a, tx: W / 2 - cx * a + (sh ? rnd(-sh, sh) : 0), ty: H / 2 - cy * a + (sh ? rnd(-sh, sh) : 0) };
   g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
@@ -1984,7 +2012,7 @@ function draw() {
     for (let i = 0; i < 2 + Math.floor(rt * 5); i++) { const q = S.time * (5 + i * 1.7) + sg.x * 9 + i * 2; g.beginPath(); g.arc(sg.x + Math.cos(q) * (.16 + .04 * i), sg.y - .1 + Math.sin(q * 1.3) * .12, .014, 0, TAU); g.fill(); }
     if (rt > .28 && rt < .85) { g.fillStyle = 'rgba(240,235,210,.9)'; for (let i = 0; i < 6; i++) { const q = i * 2.4 + sg.y * 7, w = Math.sin(S.time * 6 + i * 1.9) * .015; g.beginPath(); g.ellipse(sg.x + Math.cos(q) * sg.rx * .5 + w, sg.y + Math.sin(q) * sg.ry * .5, .022, .009, q + S.time * 2, 0, TAU); g.fill(); } }   // maggots
   }
-  for (const q of S.guts) tube(g, q.pts, q.w, { web: true, t: q.t, dark: q.seg.dead ? (q.seg.rot || 0) : 0 });
+  for (const q of S.guts) if (q.grow > 0) noodle(g, q, q.seg.dead ? (q.seg.rot || 0) : 0);
   for (const e of S.enemies) for (const sg of e.nodes) drawSeg(sg);
   for (const s of S.strands) drawStrand(s);
   for (const t of S.towers) if (t.type !== 'glut') drawTower(t);
@@ -2011,13 +2039,13 @@ function draw() {
   g.globalAlpha = 1;
   drawAir(); drawLight(); drawFlies();
   g.globalCompositeOperation = 'lighter';
-  for (const f of S.fly) if (f.t > 0) glowAt(f.x, f.y, .3, '255,230,170', .35);
+  for (const f of S.fly) if (f.t > 0) glowAt(f.x, f.y, .22, '255,230,170', .14);
   g.globalCompositeOperation = 'source-over';
   for (const f of S.fly) { if (f.t <= 0) continue; g.save(); g.translate(f.x, f.y); g.rotate(f.rot); drawBone(g, .2, .05); g.restore(); }
   g.textAlign = 'center';
   for (const t of S.texts) {
     if (!t.max) t.max = t.life;
-    const sz = (t.size || .26) * (1 + .7 * Math.max(0, 1 - (t.max - t.life) / .09));   // each number lands with a pop
+    const sz = (t.size || .26) * (1 + .3 * Math.max(0, 1 - (t.max - t.life) / .12));   // each number lands with a pop
     g.font = sz + 'px "Russo One", sans-serif';
     g.globalAlpha = clamp(t.life * 3, 0, 1);
     g.lineWidth = sz * .28; g.lineJoin = 'round'; g.strokeStyle = DARK; g.strokeText(t.txt, t.x, t.y);
@@ -2040,7 +2068,7 @@ function draw() {
   }
   g.textAlign = 'center'; g.lineJoin = 'round';
   if (S.combo >= 2) {
-    const k = S.comboT / 2.6, fs = W * (.075 + Math.min(.05, S.combo * .003)), x = W * .84, y = W * .13;
+    const k = S.comboT / 4.5, fs = W * (.075 + Math.min(.05, S.combo * .003)), x = W * .84, y = W * .13;
     g.font = fs + 'px "Russo One", sans-serif'; g.lineWidth = fs * .22; g.strokeStyle = DARK; g.strokeText('×' + S.combo, x, y); g.fillStyle = '#ff8a3d'; g.fillText('×' + S.combo, x, y);
     g.fillStyle = 'rgba(0,0,0,.6)'; g.fillRect(x - W * .09, y + W * .02, W * .18, 4 * dpr); g.fillStyle = '#ff8a3d'; g.fillRect(x - W * .09, y + W * .02, W * .18 * k, 4 * dpr);
   }
