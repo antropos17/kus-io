@@ -323,6 +323,7 @@ window.__kus = {
   },
   toMenu,
   stages: {
+    kind: stageKind,
     get stg() {
       return stg;
     },

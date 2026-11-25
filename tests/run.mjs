@@ -971,6 +971,44 @@ test('stages: the HUD stage line stays clear of the table on phones, next to a c
   }
 });
 
+test('hud: cream pills fit phones; the stage pill fills and its jaws chomp when the event starts', async () => {
+  for (const opt of [
+    { width: 360, height: 640, touch: true, dpr: 2 },
+    { width: 844, height: 390, touch: true, dpr: 2 },
+  ]) {
+    const g = await open({ ...opt, play: false, returning: true });
+    const r = await g.page.evaluate(`(() => { ${STG} const out = {};
+      const P = free(); P.stats.maxMass = 135; P.mass = 135; P.pMagnet = 4.9; run(1 / 30);
+      const st = document.getElementById('stage'), fx = document.getElementById('fx');
+      out.hungry = st.classList.contains('hungry'); out.chomp0 = st.classList.contains('chomp');
+      out.p = parseFloat(st.style.getPropertyValue('--p')); out.ic = !!st.querySelector('svg.ic'); out.kind = k.stages.kind();
+      document.getElementById('feed').innerHTML = ''; // hints are wider than the column by design: measure the pills
+      const sr = document.getElementById('score').getBoundingClientRect(), br = document.getElementById('board').getBoundingClientRect();
+      out.right = sr.right; out.hit = sr.right > br.left && sr.bottom > br.top && sr.top < br.bottom;
+      const coins = fx.querySelectorAll('.coin[data-k=magnet]');
+      out.coins = coins.length; out.t = coins.length ? parseFloat(coins[0].style.getPropertyValue('--t')) : -1; out.fxText = fx.textContent.trim();
+      out.streakChip = fx.textContent.includes('Серия');
+      P.stats.maxMass = 150; let f = 0; for (; f < 4 && !(S().cur && S().cur.k === 'pir'); f++) run(1 / 60);
+      out.started = !!(S().cur && S().cur.k === 'pir');
+      let late = 0; for (; late < 3 && !st.classList.contains('chomp'); late++) run(1 / 60);
+      out.late = late; out.chomp = st.classList.contains('chomp'); out.hungry2 = st.classList.contains('hungry');
+      run(1); out.chomp1 = st.classList.contains('chomp');
+      return out; })()`);
+    const w = `${opt.width}x${opt.height}`;
+    assert(r.hungry && !r.chomp0 && r.kind === 'pir', `${w}: waiting at p~0.9 must be hungry, not chomping (${JSON.stringify(r)})`);
+    assert(Math.abs(r.p - 0.9) <= 0.02 && r.ic, `${w}: --p ${r.p}, icon ${r.ic}`);
+    assert(r.right <= 216 && !r.hit, `${w}: the HUD column ends at ${r.right}px or runs into the table`);
+    assert(r.started && r.late <= 2 && r.chomp && !r.hungry2, `${w}: the jaws must chomp within 2 frames of the raid start (${JSON.stringify(r)})`);
+    assert(!r.chomp1, `${w}: the chomp must stop after about 0.64 s`);
+    assert(
+      r.coins === 1 && r.t > 0.55 && r.t < 0.65 && r.fxText === '5 с' && !r.streakChip,
+      `${w}: buff coin ${JSON.stringify([r.coins, r.t, r.fxText])}`,
+    );
+    assert(g.errors.length === 0, g.errors.join(' | '));
+    await g.close();
+  }
+});
+
 // smarter bots: a scene with the player and a few bots, everything else parked far away
 const BOTS = `const k = window.__kus, P = k.player; k.pause(true);
   for (const key in k.CHEAT) k.CHEAT[key] = key === 'speed' ? 1 : false;

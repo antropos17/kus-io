@@ -91,6 +91,7 @@ function raid(n) {
 // a newcomer who is still small when the raid comes by the clock meets a smaller pack; piranhas never hunt a player under 90 anyway
 const raidSize = (m) => (m < 100 ? 3 : m < 150 ? 4 : 6) + stg.lap * 2;
 function beginEvent(k) {
+  stageChompT = time + 0.64; // the HUD jaws chomp once
   const P = player,
     c = { k, t: 0 };
   if (k === 'pir') {
@@ -254,14 +255,30 @@ function stageLine() {
     p = Math.max(m / s.mass, s.by ? (time - stg.t0) / s.by : 0);
   return [`до ${s.name} ${Math.max(1, Math.ceil(s.mass - m))}`, clamp(p, 0, 1)];
 }
-let lastStage = '';
+let lastStage = '',
+  stageIcon = '';
 function renderStage() {
   const [t, p] = stageLine(),
     el = $('stage'),
-    key = t + '|' + (p < 0 ? -1 : Math.round(p * 40));
+    kind = t ? stageKind() : '',
+    hungry = !!kind && p >= 0.85 && !stg.cur && !(stg.winT > 0), // waiting for the next event and it is almost here
+    chomp = time < stageChompT,
+    key = t + '|' + (p < 0 ? -1 : Math.round(p * 40)) + '|' + kind + (hungry ? 'h' : '') + (chomp ? 'c' : '');
   if (key === lastStage) return;
   lastStage = key;
-  el.textContent = t;
+  el.classList.toggle('off', !t);
+  el.classList.toggle('hungry', hungry);
+  el.classList.toggle('chomp', chomp);
+  if (!t) return;
+  const m = /^(.*\S)\s+(\d+(?:\s*с|%)?)$/.exec(t); // a trailing number goes to its own slot so a long label can shrink but not the number
+  el.querySelector('.t').textContent = m ? m[1] + ' ' : t; // the space keeps the line readable as plain text
+  el.querySelector('b').textContent = m ? m[2] : '';
+  if (kind !== stageIcon) {
+    stageIcon = kind;
+    const old = el.querySelector('.ic');
+    if (old) old.remove();
+    el.insertAdjacentHTML('beforeend', STAGE_ICON[kind]);
+  }
   el.style.setProperty('--p', p < 0 ? '0' : p.toFixed(3));
 }
 function stageWin() {

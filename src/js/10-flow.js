@@ -568,19 +568,7 @@ function updateHUD(dt) {
         ? `цель: ${challenge.c}`
         : '';
   renderStage();
-  let fx = '';
-  if (player && player.alive)
-    for (const [k, prop] of [
-      ['speed', 'pSpeed'],
-      ['shield', 'pShield'],
-      ['magnet', 'pMagnet'],
-    ])
-      if (player[prop] > 0) fx += `<span style="background:${PICK[k][2]}">${PICK[k][0]} ${Math.ceil(player[prop])}</span>`;
-  if (player && player.alive && player.comboT > 0 && player.combo > 1) fx += `<span style="background:#9be15d">Серия ×${player.combo}</span>`;
-  if (fx !== lastFx) {
-    $('fx').innerHTML = fx;
-    lastFx = fx;
-  }
+  renderFx();
   const list = blobs.filter((b) => b.alive && !b.kind).sort((a, b) => b.mass - a.mass),
     top = list.slice(0, H < 520 ? 3 : W < 600 ? 5 : 8);
   const was = leader;

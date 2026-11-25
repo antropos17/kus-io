@@ -160,3 +160,70 @@ function drawSugarCubes() {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 }
 addEventListener('resize', sugSockBox);
+
+// ---------- HUD: the stage pill (jaws, cloud or cake slice) and the buff coins ----------
+let stageChompT = -9; // game time until which the jaws chomp: set when a stage event starts
+// which icon the pill wears: the event under way, or the one that is next; '' when there is no stage line
+function stageKind() {
+  if (!stg || mode !== 'free' || !runActive || !player) return '';
+  if (stg.winT > 0) return 'boss';
+  return stg.cur ? stg.cur.k : STAGE_KEYS[stg.i];
+}
+const JAW_SVG =
+    '<svg class="ic jaw" viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="10" rx="4" fill="#4a0c1c"/><g class="jt"><path d="M1.5 9Q1.5 2.5 12 2.5T22.5 9V10H1.5Z" fill="#ff4f7b"/><path d="M1.5 9Q1.5 2.5 12 2.5T22.5 9" fill="none" stroke="#c8264f" stroke-width="1.4"/><path d="M4.5 9.6l2.6 4.4 2.6-4.4zM10.7 9.6l1.3 4.4 1.3-4.4h-2.6zM14.3 9.6l2.6 4.4 2.6-4.4z" fill="#fff6ea"/></g><g class="jb"><path d="M1.5 15Q1.5 21.5 12 21.5T22.5 15V14H1.5Z" fill="#ff4f7b"/><path d="M1.5 15Q1.5 21.5 12 21.5T22.5 15" fill="none" stroke="#c8264f" stroke-width="1.4"/><path d="M6 14.4l2.4-3.8 2.4 3.8zM13.2 14.4l2.4-3.8 2.4 3.8z" fill="#fff6ea"/></g></svg>',
+  RAIN_SVG =
+    '<svg class="ic rain" viewBox="0 0 24 24"><path d="M6.5 14.5a3.6 3.6 0 0 1-.4-7.2 5.2 5.2 0 0 1 10-.6 3.9 3.9 0 0 1 1.4 7.8Z" fill="#d7f1ff" stroke="#3b9fd0" stroke-width="1.4" stroke-linejoin="round"/><g stroke-width="2.2" stroke-linecap="round"><path d="M8 17.2v2" stroke="#ff4f7b"/><path d="M12 17.8v2.2" stroke="#ffd23f"/><path d="M16 17.2v2" stroke="#9be15d"/></g></svg>',
+  CAKE_SVG =
+    '<svg class="ic" viewBox="0 0 24 24"><path d="M3 12 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5Z" fill="#f6c88a" stroke="#8a4b2a" stroke-width="1.4" stroke-linejoin="round"/><path d="M3 12 21 9v3.5q-2.2 1.8-4.2 0t-4.2 1.4-4.2-.2-3.4.8Z" fill="#ff4f7b" stroke="#c8264f" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 5.8 13.6 2.4" fill="none" stroke="#3a6b2a" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="8" r="2.5" fill="#e8274b" stroke="#a31236" stroke-width="1"/></svg>',
+  STAGE_ICON = { pir: JAW_SVG, rain: RAIN_SVG, boss: CAKE_SVG },
+  FX_ICON = {
+    speed:
+      '<svg viewBox="0 0 24 24"><path d="M13.5 2 5.5 13.5H11L9.5 22 18.5 10H12.8Z" fill="#ffd23f" stroke="#c98b00" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+    shield:
+      '<svg viewBox="0 0 24 24"><path d="M12 2.5 20 5.5v6c0 5-3.4 8.4-8 10-4.6-1.6-8-5-8-10v-6Z" fill="#7ad7ff" stroke="#2f8fbf" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 6.5v12.3c-3-1.3-5-3.7-5-7.2V8Z" fill="#fff" opacity=".55"/></svg>',
+    magnet:
+      '<svg viewBox="0 0 24 24"><path d="M6.5 5.5v6.5a5.5 5.5 0 0 0 11 0V5.5" fill="none" stroke="#e8274b" stroke-width="4.4"/><path d="M4.3 2.5h4.4v3.6H4.3zM15.3 2.5h4.4v3.6h-4.4z" fill="#d7e0ea" stroke="rgba(58,33,24,.25)" stroke-width=".6"/></svg>',
+  };
+// the buff coins: a cream circle that drains from the top as the bonus runs out, the seconds beside it
+const FX_LIST = [
+    ['speed', 'pSpeed'],
+    ['shield', 'pShield'],
+    ['magnet', 'pMagnet'],
+  ],
+  fxLive = []; // the coins now on the page: { prop, k, coin, b, t, s } with the last written fill and seconds
+function renderFx() {
+  const el = $('fx');
+  let key = '';
+  if (player && player.alive) for (const [k, prop] of FX_LIST) if (player[prop] > 0) key += k + ',';
+  if (key !== lastFx) {
+    // the set of bonuses changed: rebuild the coins
+    lastFx = key;
+    fxLive.length = 0;
+    let html = '';
+    for (const [k, prop] of FX_LIST)
+      if (key.includes(k + ',')) {
+        html += `<span class="coin" data-k="${k}">${FX_ICON[k]}</span><b></b>`;
+        fxLive.push({ k, prop, coin: null, b: null, t: -1, s: -1 });
+      }
+    el.innerHTML = html;
+    const coins = el.querySelectorAll('.coin'),
+      nums = el.querySelectorAll('b');
+    for (let i = 0; i < fxLive.length; i++) {
+      fxLive[i].coin = coins[i];
+      fxLive[i].b = nums[i];
+    }
+  }
+  for (const f of fxLive) {
+    const v = Math.max(0, player[f.prop]),
+      t = Math.round(clamp(v / PICK[f.k][1], 0, 1) * 100) / 100,
+      s = Math.ceil(v);
+    if (t !== f.t) {
+      f.t = t;
+      f.coin.style.setProperty('--t', t);
+    }
+    if (s !== f.s) {
+      f.s = s;
+      f.b.textContent = s + ' с';
+    }
+  }
+}
