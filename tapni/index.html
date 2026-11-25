@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тапни</title>
+<meta name="description" content="Лента, где посты не видео: их проходят тапами. История с развилками, тест, мем, микроигра.">
+<meta property="og:title" content="Тапни: лента, которую проходят тапами">
+<meta property="og:description" content="Пять интерактивных постов: история с развилками, тест, мем, микроигра и демо-реклама.">
+<meta name="theme-color" content="#15111d">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;700&family=Unbounded:wght@600;800&display=swap" rel="stylesheet">
+<style>
+/* One dark world by choice. Layout: phone-width column, full-height snap feed, overlay chrome. */
+:root{
+  color-scheme: dark;
+  --ink:#15111d;
+  --ink-2:#221b2e;
+  --paper:#f7f1e8;
+  --muted:#b9aec6;
+  --accent:#ff6b4a;
+  --accent-2:#ffd23f;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --body:"Onest",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:#0c0911;color:var(--paper);font-family:var(--body);display:flex;justify-content:center;overflow:hidden;overscroll-behavior:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+button:focus-visible{outline:3px solid var(--accent-2);outline-offset:2px}
+
+#app{position:relative;width:min(100%,430px);height:100%;height:100dvh;display:flex;flex-direction:column;background:var(--ink)}
+.top{position:absolute;inset:0 0 auto 0;z-index:5;display:flex;justify-content:center;gap:20px;padding:14px 16px 26px;font-weight:500;font-size:15px;color:var(--muted);background:linear-gradient(#0009,#0000);pointer-events:none}
+.top b{color:var(--paper);font-weight:700;border-bottom:2px solid var(--paper);padding-bottom:4px}
+
+#feed{flex:1;min-height:0;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;overscroll-behavior:contain}
+#feed::-webkit-scrollbar{display:none}
+.post{position:relative;height:100%;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden}
+.stage{position:absolute;inset:0;transition:background .4s}
+.scene{position:absolute;inset:0;animation:fade .28s ease-out both}
+
+.bar{position:absolute;left:12px;right:12px;top:48px;height:3px;border-radius:3px;background:#fff3;z-index:4;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--paper);border-radius:3px}
+.bar.wait i{animation:pulse 1.1s ease-in-out infinite}
+
+.actor{position:absolute;transform:translate(-50%,-50%);line-height:1;user-select:none}
+.actor span{display:inline-block}
+.pop span{animation:pop .45s cubic-bezier(.2,1.6,.4,1) both}
+.float span{animation:pop .45s cubic-bezier(.2,1.6,.4,1) both, float 2.4s ease-in-out .45s infinite}
+.shake span{animation:shake .5s ease-in-out both}
+.slide span{animation:slide .5s ease-out both}
+
+.copy{position:absolute;left:16px;right:76px;bottom:136px;display:flex;flex-direction:column;gap:10px}
+.line{font-family:var(--display);font-weight:800;font-size:clamp(20px,6.2vw,27px);line-height:1.18;text-wrap:balance;text-shadow:0 2px 14px #0008;animation:rise .4s ease-out both}
+.q{font-weight:700;font-size:16px;color:var(--accent-2);animation:rise .35s ease-out both}
+.opts{display:flex;flex-direction:column;gap:10px;animation:rise .35s ease-out both}
+.opt{padding:14px 16px;border-radius:14px;background:var(--paper);color:var(--ink);font-weight:700;font-size:16px;text-align:left;box-shadow:0 6px 0 #0005;transition:transform .08s,box-shadow .08s}
+.opt:active,.opt.picked{transform:translateY(4px);box-shadow:0 2px 0 #0005}
+.opt.picked{background:var(--accent-2)}
+.hint{align-self:flex-start;padding:9px 14px;border-radius:99px;background:var(--accent);color:var(--ink);font-weight:700;font-size:14px;animation:rise .35s ease-out both, pulse 1.1s ease-in-out .4s infinite}
+
+.hud{position:absolute;left:16px;top:66px;font-family:var(--display);font-weight:800;font-size:26px;font-variant-numeric:tabular-nums;text-shadow:0 2px 12px #0008}
+.ball{position:absolute;width:78px;height:78px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#fff8,#fff0 42%),var(--accent);box-shadow:0 8px 0 #0004;transition:left .12s,top .12s;touch-action:manipulation}
+.ball:active{transform:scale(.92)}
+
+.card{position:absolute;left:16px;right:76px;bottom:136px;padding:18px;border-radius:20px;background:var(--ink-2);border:1px solid #fff2;display:flex;flex-direction:column;gap:10px;animation:rise .45s ease-out both}
+.kick{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-2)}
+.big{font-size:54px;line-height:1}
+.card h2{font-family:var(--display);font-weight:800;font-size:22px;line-height:1.15;text-wrap:balance}
+.card p{font-size:15px;line-height:1.4;color:var(--muted)}
+.stat{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.track{height:6px;border-radius:6px;background:#fff2;overflow:hidden}
+.track i{display:block;height:100%;background:var(--accent);border-radius:6px}
+.more{font-size:13px;font-weight:500;color:var(--paper);animation:float 1.6s ease-in-out infinite}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.btn{flex:1 1 auto;padding:11px 14px;border-radius:12px;font-weight:700;font-size:14px;background:#fff1;border:1px solid #fff3}
+.btn.main{background:var(--accent);color:var(--ink);border-color:transparent}
+
+.outro{display:flex;flex-direction:column;justify-content:center;gap:14px;padding:72px 24px 24px;background:radial-gradient(120% 80% at 0% 100%,#3b2a63,var(--ink) 70%)}
+.outro h2{font-family:var(--display);font-weight:800;font-size:clamp(24px,7.4vw,32px);line-height:1.12;text-wrap:balance}
+.outro p,.outro li{font-size:16px;line-height:1.45;color:var(--muted)}
+.outro ul{display:flex;flex-direction:column;gap:8px;padding-left:20px}
+.outro .btn{flex:none;align-self:flex-start;margin-top:6px}
+.meta{position:absolute;left:16px;right:76px;bottom:16px;z-index:3;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.chip{align-self:flex-start;padding:4px 10px;border-radius:99px;background:#0007;border:1px solid #fff3;font-size:12px;font-weight:700}
+.who{font-weight:700;font-size:15px}
+.cap{font-size:14px;line-height:1.35;color:#fffc;text-shadow:0 1px 8px #0008}
+
+.rail{position:absolute;right:10px;bottom:16px;z-index:3;display:flex;flex-direction:column;gap:14px;align-items:center}
+.rail button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:500;font-variant-numeric:tabular-nums;width:52px}
+.rail svg{width:30px;height:30px;fill:var(--paper);filter:drop-shadow(0 2px 6px #0008);transition:transform .15s}
+.rail button:active svg{transform:scale(1.25)}
+.rail .on svg{fill:var(--accent)}
+
+.nav{height:56px;flex:none;display:flex;align-items:center;justify-content:space-around;background:#0c0911;border-top:1px solid #fff1;font-size:12px;font-weight:500;color:var(--muted)}
+.nav button{padding:8px 14px;border-radius:10px}
+.nav .cur{color:var(--paper);font-weight:700}
+.nav .plus{background:var(--paper);color:var(--ink);font-weight:700;font-size:20px;line-height:1;padding:6px 18px}
+
+#toast{position:absolute;left:50%;bottom:76px;transform:translateX(-50%);z-index:9;max-width:calc(100% - 32px);padding:10px 14px;border-radius:12px;background:var(--paper);color:var(--ink);font-size:14px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s;text-align:center}
+#toast.show{opacity:1}
+
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes float{50%{transform:translateY(-10px)}}
+@keyframes shake{20%,60%{transform:translateX(-8px) rotate(-3deg)}40%,80%{transform:translateX(8px) rotate(3deg)}}
+@keyframes slide{from{transform:translateX(60px);opacity:0}to{transform:none;opacity:1}}
+@keyframes rise{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+@keyframes pulse{50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){
+  .scene,.actor span,.line,.q,.opts,.hint,.card,.more,.bar.wait i{animation:none!important}
+  #feed{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top"><span>Подписки</span><b>Для тебя</b></div>
+  <main id="feed" aria-label="Лента"></main>
+  <nav class="nav" aria-label="Разделы">
+    <button type="button" class="cur" data-msg="">Лента</button>
+    <button type="button" class="plus" data-msg="Создание поста появится на следующем шаге" aria-label="Создать пост">+</button>
+    <button type="button" data-msg="В прототипе работает только лента">Профиль</button>
+  </nav>
+  <div id="toast" role="status"></div>
+</div>
+
+<script>
+/* A post is a graph of scenes, not a video file.
+   Scene types: play (auto-advance), tap (wait for a tap), choice (buttons), game (tap target), end (result card). */
+var G = {
+  dusk:'linear-gradient(160deg,#3b2a63,#7a3b6b 60%,#c8564b)',
+  rose:'linear-gradient(160deg,#6b2d4f,#b8475a 60%,#f08a5d)',
+  wine:'linear-gradient(160deg,#2a1a3a,#5b2440 60%,#8a2f3f)',
+  night:'linear-gradient(170deg,#0f1433,#232a66 60%,#4a3f8f)',
+  door:'linear-gradient(170deg,#1d2b2a,#2f4a44 60%,#56705f)',
+  play:'linear-gradient(160deg,#10324a,#1c5a6e 60%,#2f8f83)',
+  ad:'linear-gradient(160deg,#4a2a1a,#8a4a2a 60%,#d98a4a)'
+};
+
+var POSTS = [
+ { kind:'История · 4 концовки', author:'@ruslan', cap:'Первое свидание. Решаешь ты.', likes:18400, com:312, start:'a', scenes:{
+   a:{type:'play',bg:G.dusk,actors:[{e:'🧍‍♂️',x:42,y:36,size:96},{e:'⏰',x:70,y:24,size:48,anim:'float',delay:300}],lines:['До свидания 20 минут.','С пустыми руками нельзя.'],next:'b'},
+   b:{type:'choice',bg:G.dusk,actors:[{e:'💐',x:30,y:34,size:84,anim:'float'},{e:'🍷',x:66,y:34,size:84,anim:'float',delay:200}],q:'Что берёшь?',options:[{t:'Цветы',next:'c1'},{t:'Вино',next:'d1'}]},
+   c1:{type:'play',bg:G.rose,actors:[{e:'👩',x:58,y:34,size:96,anim:'slide'},{e:'💐',x:34,y:40,size:64}],lines:['Она улыбается.','Вечер начался хорошо.'],next:'c2'},
+   c2:{type:'choice',bg:G.rose,actors:[{e:'🎬',x:30,y:34,size:80,anim:'float'},{e:'🌇',x:66,y:34,size:80,anim:'float',delay:200}],q:'Куда ведёшь?',options:[{t:'В кино',next:'e1'},{t:'На крышу',next:'e2'}]},
+   d1:{type:'play',bg:G.wine,actors:[{e:'👩',x:58,y:34,size:96,anim:'slide'},{e:'🍷',x:34,y:40,size:64,anim:'shake',delay:900}],lines:['«Я не пью».','Неловкая пауза.'],next:'d2'},
+   d2:{type:'choice',bg:G.wine,actors:[{e:'😅',x:48,y:34,size:96}],q:'Что делаешь?',options:[{t:'Шутишь',next:'e3'},{t:'Молчишь',next:'e4'}]},
+   e1:{type:'end',bg:G.rose,emoji:'🍿',title:'Тихий романтик',text:'Два часа сидели рядом. На титрах она взяла тебя за руку.',pct:34},
+   e2:{type:'end',bg:G.dusk,emoji:'🌇',title:'Рисковый',text:'На крыше было холодно. Зато она отдала тебе свой шарф.',pct:21},
+   e3:{type:'end',bg:G.wine,emoji:'😄',title:'Выкрутился',text:'«Тогда вино мне, а тебе лучший лимонад в городе». Она засмеялась.',pct:29},
+   e4:{type:'end',bg:G.wine,emoji:'🫠',title:'Неловкий',text:'Десять минут обсуждали погоду. Второго свидания пока нет.',pct:16}
+ }},
+ { kind:'Тест', author:'@nesplyu', cap:'Кто ты в три часа ночи? Два тапа.', likes:9200, com:140, start:'a', scenes:{
+   a:{type:'play',bg:G.night,actors:[{e:'🌙',x:68,y:22,size:72,anim:'float'},{e:'📱',x:40,y:38,size:88,delay:250}],lines:['03:00.','Ты всё ещё не спишь.'],next:'b'},
+   b:{type:'choice',bg:G.night,actors:[{e:'🌙',x:68,y:22,size:72,anim:'float'}],q:'Почему?',options:[{t:'Листаю ленту',next:'c'},{t:'Думаю о жизни',next:'d'}]},
+   c:{type:'choice',bg:G.night,actors:[{e:'⏰',x:50,y:32,size:92,anim:'shake'}],q:'Завтра вставать в семь.',options:[{t:'Ещё пять минут',next:'r1'},{t:'Всё, сплю',next:'r2'}]},
+   d:{type:'choice',bg:G.night,actors:[{e:'💭',x:50,y:32,size:92,anim:'float'}],q:'О чём думаешь?',options:[{t:'Что я сказал в 2019-м',next:'r3'},{t:'Как всё успеть',next:'r4'}]},
+   r1:{type:'end',kick:'Твой результат',emoji:'🦉',title:'Сова без тормозов',text:'Твои «пять минут» длятся до рассвета.',pct:41},
+   r2:{type:'end',kick:'Твой результат',emoji:'🛌',title:'Редкий вид',text:'Ты умеешь остановиться. Таких мало.',pct:12},
+   r3:{type:'end',kick:'Твой результат',emoji:'🫣',title:'Архивариус стыда',text:'Тот разговор помнишь только ты. Можно отпустить.',pct:27},
+   r4:{type:'end',kick:'Твой результат',emoji:'📋',title:'Ночной планировщик',text:'План готов, сил нет. Утром он покажется странным.',pct:20}
+ }},
+ { kind:'Мем · выбор для вида', author:'@dver', cap:'Не открывай. Серьёзно.', likes:31700, com:980, start:'a', scenes:{
+   a:{type:'tap',bg:G.door,actors:[{e:'🚪',x:50,y:34,size:130}],lines:['Не открывай эту дверь.'],hint:'Тапни, чтобы открыть',next:'b'},
+   b:{type:'choice',bg:G.door,actors:[{e:'🚪',x:50,y:34,size:130,anim:'shake'}],q:'Точно открыть?',options:[{t:'Да',next:'c'},{t:'Конечно да',next:'c'}]},
+   c:{type:'tap',bg:G.door,actors:[{e:'🚪',x:50,y:34,size:130,anim:'shake'}],lines:['Заело.'],hint:'Тапни ещё раз',next:'e'},
+   e:{type:'end',kick:'Концовка одна',emoji:'🐈',title:'Там был кот',text:'Он спал. Теперь недоволен.',pct:100,stat:'Сюда приходят все: кнопки вели в одно место'}
+ }},
+ { kind:'Микроигра', author:'@reakcia', cap:'Поймай шар 10 раз за 7 секунд.', likes:5600, com:88, start:'a', scenes:{
+   a:{type:'play',bg:G.play,actors:[{e:'🟠',x:50,y:34,size:110,anim:'float'}],lines:['Поймай шар 10 раз.','У тебя 7 секунд.'],next:'g'},
+   g:{type:'game',bg:G.play,goal:10,time:7000,win:'w',lose:'l'},
+   w:{type:'end',kick:'Результат',emoji:'🏆',title:'Успел',text:'10 из 10. Реакция в порядке.',pct:38,stat:'Успевают 38% · демо-цифра'},
+   l:{type:'end',kick:'Результат',emoji:'⏱️',title:'Не успел',text:'Шар оказался быстрее. Попробуй ещё раз.',pct:62,stat:'Не успевают 62% · демо-цифра'}
+ }},
+ { kind:'Реклама · демо', author:'Краска «Лиса»', cap:'Вымышленный бренд. Показывает, как выбор зрителя ведёт к товару.', likes:1200, com:14, start:'a', scenes:{
+   a:{type:'play',bg:G.ad,actors:[{e:'🪞',x:50,y:34,size:110}],lines:['Подберём оттенок за один тап.'],next:'b'},
+   b:{type:'choice',bg:G.ad,actors:[{e:'💇‍♀️',x:50,y:32,size:104,anim:'float'}],q:'Какой у тебя цвет волос?',options:[{t:'Тёмные',next:'p1'},{t:'Светлые',next:'p2'},{t:'Рыжие',next:'p3'}]},
+   p1:{type:'end',kick:'Реклама · демо',emoji:'🌰',title:'Оттенок «Каштан 04»',text:'Тёплый блик для тёмных волос. Здесь стояла бы карточка товара.',cta:'Смотреть оттенок'},
+   p2:{type:'end',kick:'Реклама · демо',emoji:'🍯',title:'Оттенок «Мёд 11»',text:'Мягкое золото для светлых волос. Здесь стояла бы карточка товара.',cta:'Смотреть оттенок'},
+   p3:{type:'end',kick:'Реклама · демо',emoji:'🦊',title:'Оттенок «Медь 07»',text:'Глубокая медь для рыжих волос. Здесь стояла бы карточка товара.',cta:'Смотреть оттенок'}
+ }}
+];
+
+var ICON = {
+  like:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.400 2.900 4.500 6.600 4.500c2.100 0 3.700 1.100 5.400 3 1.700-1.900 3.300-3 5.400-3 3.700 0 5.700 3.900 4.200 7.300C19.500 16.400 12 21 12 21z"/></svg>',
+  com:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C6.500 3 2 6.800 2 11.500c0 2.400 1.200 4.600 3.100 6.100L4.500 22l4.300-2.300c1 .3 2.100.4 3.200.4 5.500 0 10-3.800 10-8.600S17.500 3 12 3z"/></svg>',
+  share:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 4l9 8-9 8v-5c-5 0-8.500 1.500-11 5 1-6 4.500-10.500 11-11V4z"/></svg>',
+  remix:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l-5 4 5 4V9h8a3 3 0 013 3v1h3v-1a6 6 0 00-6-6H7V4zm10 16l5-4-5-4v3H9a3 3 0 01-3-3v-1H3v1a6 6 0 006 6h8v3z"/></svg>'
+};
+
+function el(tag, cls, text){ var e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
+function fmt(n){ return n>=1000 ? (n/1000).toFixed(n>=10000?0:1).replace('.',',')+' тыс.' : String(n); }
+
+var toastEl=document.getElementById('toast'), toastT=0;
+function toast(msg){ if(!msg) return; toastEl.textContent=msg; toastEl.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(function(){toastEl.classList.remove('show');},1900); }
+
+var swiped=false;
+function buzz(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(e){} }
+function sharePost(idx, text){
+  var url=location.origin+location.pathname+'#p'+(idx+1);
+  try{
+    if(navigator.share){ navigator.share({title:'Тапни',text:text,url:url}).catch(function(){}); return; }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text+' '+url).then(function(){ toast('Ссылка скопирована'); },function(){ toast('Не получилось скопировать ссылку'); });
+      return;
+    }
+  }catch(e){}
+  toast('Шеринг недоступен в этом окне');
+}
+
+function Player(post, root, idx){
+  var stage=root.querySelector('.stage'), barBox=root.querySelector('.bar'), bar=barBox.firstElementChild;
+  var timers=[], onTap=null, running=false;
+  function later(fn,ms){ timers.push(setTimeout(fn,ms)); }
+  function clear(){ timers.forEach(clearTimeout); timers=[]; onTap=null; }
+  function runBar(ms){ barBox.classList.remove('wait'); bar.style.transition='none'; bar.style.width='0%'; void bar.offsetWidth; bar.style.transition='width '+ms+'ms linear'; bar.style.width='100%'; }
+  function waitBar(){ bar.style.transition='none'; bar.style.width='100%'; barBox.classList.add('wait'); }
+
+  function go(id){
+    clear();
+    var s=post.scenes[id];
+    stage.textContent='';
+    if(s.bg) stage.style.background=s.bg;
+    var sc=el('div','scene'); stage.appendChild(sc);
+
+    (s.actors||[]).forEach(function(a){
+      var w=el('span','actor '+(a.anim||'pop')), i=el('span',null,a.e);
+      w.style.left=a.x+'%'; w.style.top=a.y+'%'; w.style.fontSize=(a.size||72)+'px';
+      i.style.animationDelay=(a.delay||0)+'ms';
+      w.appendChild(i); sc.appendChild(w);
+    });
+
+    var lines=s.lines||[], after=lines.length*650+350;
+    var copy=el('div','copy');
+    lines.forEach(function(t,i){ var p=el('p','line',t); p.style.animationDelay=(i*650)+'ms'; copy.appendChild(p); });
+
+    if(s.type==='play'){
+      sc.appendChild(copy);
+      var dur=after+1300; runBar(dur); later(function(){ go(s.next); },dur);
+    }
+    else if(s.type==='tap'){
+      sc.appendChild(copy); waitBar();
+      later(function(){ copy.appendChild(el('span','hint',s.hint)); onTap=function(){ go(s.next); }; },after-200);
+    }
+    else if(s.type==='choice'){
+      sc.appendChild(copy); waitBar();
+      later(function(){
+        copy.appendChild(el('p','q',s.q));
+        var box=el('div','opts');
+        s.options.forEach(function(o){
+          var b=el('button','opt',o.t); b.type='button';
+          b.addEventListener('click',function(ev){
+            ev.stopPropagation(); if(box.dataset.done) return; box.dataset.done='1';
+            b.classList.add('picked'); buzz(12); later(function(){ go(o.next); },190);
+          });
+          box.appendChild(b);
+        });
+        copy.appendChild(box);
+      }, lines.length ? after : 250);
+    }
+    else if(s.type==='game'){
+      var score=0, hud=el('div','hud','0 / '+s.goal), ball=el('button','ball');
+      ball.type='button'; ball.setAttribute('aria-label','Шар, нажми');
+      function move(){ ball.style.left=(8+Math.random()*52)+'%'; ball.style.top=(20+Math.random()*42)+'%'; }
+      move(); sc.appendChild(hud); sc.appendChild(ball);
+      ball.addEventListener('pointerdown',function(ev){
+        ev.stopPropagation(); buzz(8); score++; hud.textContent=score+' / '+s.goal;
+        if(score>=s.goal) go(s.win); else move();
+      });
+      runBar(s.time); later(function(){ go(s.lose); },s.time);
+    }
+    else if(s.type==='end'){
+      waitBar(); barBox.classList.remove('wait');
+      var card=el('div','card');
+      card.appendChild(el('span','kick',s.kick||'Твоя концовка'));
+      card.appendChild(el('div','big',s.emoji));
+      card.appendChild(el('h2',null,s.title));
+      card.appendChild(el('p',null,s.text));
+      if(s.pct!=null){
+        var st=el('div','stat'), tr=el('div','track'), fill=el('i');
+        fill.style.width=s.pct+'%'; tr.appendChild(fill); st.appendChild(tr);
+        st.appendChild(el('span',null,s.stat||('Так выбрали '+s.pct+'% · демо-цифра')));
+        card.appendChild(st);
+      }
+      var row=el('div','row');
+      var again=el('button','btn','Ещё раз'); again.type='button';
+      again.addEventListener('click',function(ev){ ev.stopPropagation(); go(post.start); });
+      var main=el('button','btn main',s.cta||'Поделиться'); main.type='button';
+      main.addEventListener('click',function(ev){
+        ev.stopPropagation();
+        if(s.cta) toast('В прототипе ссылка никуда не ведёт');
+        else sharePost(idx,'Мне выпало «'+s.title+'». А тебе?');
+      });
+      row.appendChild(again); row.appendChild(main); card.appendChild(row);
+      if(!swiped && idx<POSTS.length-1) card.appendChild(el('p','more','↑ Листай вверх'));
+      sc.appendChild(card);
+    }
+  }
+
+  stage.addEventListener('click',function(){ if(onTap){ var f=onTap; onTap=null; f(); } });
+  return {
+    start:function(){ if(running) return; running=true; go(post.start); },
+    stop:function(){ if(!running) return; running=false; clear(); stage.textContent=''; bar.style.transition='none'; bar.style.width='0%'; barBox.classList.remove('wait'); }
+  };
+}
+
+var feed=document.getElementById('feed'), players=new Map();
+
+var likes={};
+try{ likes=JSON.parse(localStorage.getItem('tapni-likes')||'{}')||{}; }catch(e){ likes={}; }
+function saveLikes(){ try{ localStorage.setItem('tapni-likes',JSON.stringify(likes)); }catch(e){} }
+
+POSTS.forEach(function(p,idx){
+  var sec=el('section','post');
+  var stage=el('div','stage'); stage.style.background=p.scenes[p.start].bg||'var(--ink)';
+  var barBox=el('div','bar'); barBox.appendChild(el('i'));
+  var meta=el('div','meta');
+  meta.appendChild(el('span','chip',p.kind));
+  meta.appendChild(el('span','who',p.author));
+  meta.appendChild(el('span','cap',p.cap));
+
+  var rail=el('div','rail');
+  function railBtn(icon,label,count,fn){
+    var b=el('button'); b.type='button'; b.setAttribute('aria-label',label);
+    b.innerHTML=ICON[icon]; var c=el('span',null,count); b.appendChild(c);
+    b.addEventListener('click',function(){ fn(b,c); }); rail.appendChild(b);
+  }
+  var liked=!!likes[idx];
+  railBtn('like','Нравится',fmt(p.likes+(liked?1:0)),function(b,c){ liked=!liked; if(liked) likes[idx]=1; else delete likes[idx]; saveLikes(); buzz(10); b.classList.toggle('on',liked); c.textContent=fmt(p.likes+(liked?1:0)); });
+  if(liked) rail.firstElementChild.classList.add('on');
+  railBtn('com','Комментарии',fmt(p.com),function(){ toast('Комментариев в прототипе нет'); });
+  railBtn('share','Поделиться','Другу',function(){ sharePost(idx,p.cap); });
+  railBtn('remix','Переделать','Ремикс',function(){ toast('Ремикс поста появится на следующем шаге'); });
+
+  sec.appendChild(stage); sec.appendChild(barBox); sec.appendChild(meta); sec.appendChild(rail);
+  feed.appendChild(sec);
+  players.set(sec, Player(p, sec, idx));
+});
+
+(function(){
+  var o=el('section','post outro');
+  o.appendChild(el('span','kick','Прототип'));
+  o.appendChild(el('h2',null,'Лента, где посты проходят, а не смотрят'));
+  o.appendChild(el('p',null,'Каждый пост собран из сцен и развилок. Это код, а не видеофайл, поэтому он лёгкий и отвечает на тапы.'));
+  var ul=el('ul');
+  ul.appendChild(el('li',null,'Дальше: описываешь историю текстом и получаешь такой пост.'));
+  ul.appendChild(el('li',null,'Потом: ремикс чужого поста в один тап.'));
+  o.appendChild(ul);
+  var b=el('button','btn main','В начало ленты'); b.type='button';
+  b.addEventListener('click',function(){ feed.scrollTo({top:0,behavior:'smooth'}); });
+  o.appendChild(b); feed.appendChild(o);
+})();
+
+/* A post plays only while it fills the screen and restarts when you come back to it. */
+var io=new IntersectionObserver(function(entries){
+  entries.forEach(function(en){
+    var pl=players.get(en.target);
+    if(en.isIntersecting && en.intersectionRatio>=0.6) pl.start(); else pl.stop();
+  });
+},{root:feed,threshold:[0,0.6]});
+players.forEach(function(_,sec){ io.observe(sec); });
+
+feed.addEventListener('scroll',function(){ if(feed.scrollTop>40) swiped=true; },{passive:true});
+document.addEventListener('keydown',function(e){
+  var d = (e.key==='ArrowDown'||e.key==='PageDown') ? 1 : (e.key==='ArrowUp'||e.key==='PageUp') ? -1 : 0;
+  if(d){ e.preventDefault(); feed.scrollBy({top:d*feed.clientHeight,behavior:'smooth'}); }
+});
+(function(){ var m=/^#p(\d+)$/.exec(location.hash); var t=m && feed.children[m[1]-1]; if(t) t.scrollIntoView(); })();
+
+document.querySelectorAll('.nav button').forEach(function(b){
+  b.addEventListener('click',function(){ toast(b.dataset.msg); });
+});
+</script>
+</body>
+</html>
