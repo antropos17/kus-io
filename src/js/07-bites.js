@@ -577,7 +577,7 @@ function swallowWhole(A, B) {
     onStreakBite(A, B, B.x, B.y, run.sugar - sugar0, close);
     albumEat(B);
     if (B.kind === 'piranha') mission('piranha', 1);
-    floatText(A.x, A.y - A.Rs - 30 / cam.z, 'ням! +' + Math.round(gain), '#ffd23f', 28);
+    floatText(A.x, A.y - A.Rs - 30 / cam.z, (A.combo > 1 ? '+' : 'ням! +') + Math.round(gain), '#ffd23f', 28); // in a streak its stamps do the talking
     Sfx.gulp(1);
     cam.shake = Math.max(cam.shake, 7);
     if (!calm && !B.boss) {

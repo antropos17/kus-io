@@ -254,6 +254,9 @@ window.__kus = {
   get stamps() {
     return stamps;
   },
+  get texts() {
+    return texts;
+  },
   get wrap() {
     return wrap;
   },

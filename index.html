@@ -2749,7 +2749,7 @@ function swallowWhole(A, B) {
     onStreakBite(A, B, B.x, B.y, run.sugar - sugar0, close);
     albumEat(B);
     if (B.kind === 'piranha') mission('piranha', 1);
-    floatText(A.x, A.y - A.Rs - 30 / cam.z, 'ням! +' + Math.round(gain), '#ffd23f', 28);
+    floatText(A.x, A.y - A.Rs - 30 / cam.z, (A.combo > 1 ? '+' : 'ням! +') + Math.round(gain), '#ffd23f', 28); // in a streak its stamps do the talking
     Sfx.gulp(1);
     cam.shake = Math.max(cam.shake, 7);
     if (!calm && !B.boss) {
@@ -5666,6 +5666,7 @@ function onStreakBite(P, B, wx, wy, add, close) {
   sugarFly(wx, wy, add, Math.min(P.combo, 5) + 1); // the cubes carry this bite's sugar into the pill
   const word = close ? 'На волоске!' : STREAK.words[P.combo];
   if (word) addStamp(word);
+  if (word && /ням/i.test(word)) for (const t of texts) if (t.s.startsWith('ням! ')) t.s = t.s.slice(5); // the stamp says it now: a swallow's «ням!» still floating keeps only its number
   if (!calm) {
     streak.pop = 1;
     cam.shake = Math.max(cam.shake, 3 + Math.min(P.combo, 6) * 0.9);
@@ -9468,6 +9469,9 @@ window.__kus = {
   },
   get stamps() {
     return stamps;
+  },
+  get texts() {
+    return texts;
   },
   get wrap() {
     return wrap;

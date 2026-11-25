@@ -94,6 +94,7 @@ function onStreakBite(P, B, wx, wy, add, close) {
   sugarFly(wx, wy, add, Math.min(P.combo, 5) + 1); // the cubes carry this bite's sugar into the pill
   const word = close ? 'На волоске!' : STREAK.words[P.combo];
   if (word) addStamp(word);
+  if (word && /ням/i.test(word)) for (const t of texts) if (t.s.startsWith('ням! ')) t.s = t.s.slice(5); // the stamp says it now: a swallow's «ням!» still floating keeps only its number
   if (!calm) {
     streak.pop = 1;
     cam.shake = Math.max(cam.shake, 3 + Math.min(P.combo, 6) * 0.9);
