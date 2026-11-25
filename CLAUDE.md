@@ -17,6 +17,7 @@ npm run build      build index.html from src/
 npm test           build and run the tests in headless Chrome (needs an installed Chrome)
 npm run format     prettier over src/js, tools, tests
 node tests/run.mjs soak    only the tests whose name contains "soak" (no build: run npm run build first)
+node tools/wrap-curve.mjs 30 normal    the autopilot's runaway-wrapper catch rate and its share of a run's sugar (see docs/stages.md «Фантик»)
 npm run check      exit with an error if index.html does not match src/
 npm run og         rebuild og.png, the 1200×630 link preview picture, from a real frame of the game
 npm run shots      rebuild the README screenshots in docs/media/ from real frames of the game
@@ -58,13 +59,16 @@ Sound takes are made outside the repository with earshot (https://github.com/Leo
 | `10-album` | the album of eaten bots: `STICKERS`, rows `ALBUM_ROWS`, `pickBotName` (how often each name comes onto the field), `albumEat` (called from `swallowWhole`), the end-of-run line, the album page and `paintSticker` (the game's own drawing code on a stand-in candy) |
 | `10-daily` | "Конфета дня" (candy of the day, mode `daily`): the twist of the day `DAILY` by the local date (`dailyOf`), `day` — the twist in force, the best of the day and the days-in-a-row streak (`dailySave`) |
 | `10-stages` | the stages of a free run (`STAGE`, `stg`): piranha raid, sweet rain, the Big Cake boss (`BOSS`, `b.boss`), the win (`stageWin`, `kus.clear`) and the second shift (`secondShift`); `stagesOn()` keeps the ordinary cake and packs off a free run; `renderStage` fills the HUD line `#stage` |
+| `10-streak` | the bite streak's juice (×N over the candy, fuses, stamps, sugar rush, the summary pill) and the runaway wrapper (`WRAP` in `02-tuning`) |
 | `10-flow` | missions and patterns, start and end of a run, the 3-minute mode, `updateCamera`, `updateHUD`, the main `update` |
+| `10-hud` | the cream-pill HUD: the sugar pill (odometer, `sugarFly` cubes flying into it), the stage pill with jaws, the buff coins |
 | `11-draw-world` | the tray, `buildPath` (body outline), sprinkles, strands, wounds |
 | `12-draw-face` | mouth (`mouthGeo`, `drawMouthBack`, `drawMouthFront`), eyes, tongue, hats |
 | `13-draw-body` | bodies, pieces, labels, minimap, `render` |
 | `14-input` | mouse, keyboard, joystick and buttons on phones, choosing flavour, pattern and hat in the menu, the folding menu sections (`renderSecs` writes what each head shows) |
 | `15-admin` | the admin panel with cheats |
 | `16-settings` | pause, settings (one set, moved by `setHome` between the menu section and the pause card), the challenge link |
+| `16-trophy` | the live glaze frame of the trophy win card (canvas, drawn only while the card is shown) |
 | `17-boot` | `adapt` (automatic graphics tuning), `frame`, startup, `window.__kus` |
 
 A frame: `frame` → `update(dt)` (bots, bodies, collisions, bites, food, rings of points, camera, HUD) → `render()`.
@@ -85,6 +89,9 @@ Saves in `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.be
 - The difficulty `DIFFS`, the rescue from a lethal bite (`graceT`) and the allowances for a small player in `09-bots` keep a newcomer alive. Check the balance with the autopilot (`player.ai = newAI()`), not by eye.
 - Stages are for free play only. In `t3`, `daily` and the world behind the menu the cake and the piranha packs come as before (`population` in `09-bots`); in a free run the piranhas come only as stage raids and the cake only as the boss. Thresholds are the player's peak mass of the life (150, 600, 1600) with time ceilings for the first two (0:45, 2:00); nothing new starts while the boss is on the field.
 - The boss is the player's alone: bots neither bite it nor hunt it, and it bites only the player (`biteScan`, `botThink`). A win is a slow-down arc (`slowT`, `slowLen`, `slowDip`), never a freeze, and with cheats it does not count.
+- The wrapper's reveal (the dimmed edges and the counting number after a catch) never pauses game time. The wrapper appears only in a clean run, after a ×5+ streak lapses on its own, at most one at a time. Bots ignore it; the player's autopilot chases it (that is how `wrap-curve` measures it).
+- `sugarFly` is called after the sugar is added to `run.sugar`, in the same turn: the cubes only show a sum that is already paid, and the pill's odometer catches up when they land.
+- The trophy card is only for beating the Big Cake (`run.won`). Death, `t3` and `daily` keep the ordinary end card.
 - The page stays one file with no external scripts. No syntax or CSS newer than what iOS 15 Safari has (`inset`, for example, has already been replaced).
 - The ES5 script embedded at the start of `<body>` shows errors on screen. Do not touch it and do not move it to modern syntax.
 
