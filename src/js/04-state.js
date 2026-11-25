@@ -20,7 +20,7 @@ let mode = 'free',
   lastFx = '';
 let run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: 0, cheated: false, sugar: 0 }; // totals for the whole run, across lives in the timed mode
 let sugar = 0; // sugar in the bank, spent on patterns
-const SET = { lefty: false, bs: 1, gfx: 'auto', fps: false };
+const SET = { lefty: true, hv: 2, bs: 1, gfx: 'auto', fps: false }; // lefty: Кусь and Язык on the left, the joystick hint on the right (the default); hv 2: the hand in this save was chosen under that default
 const DIFFS = {
   // start mass, how eagerly bots go for you, seconds between lucky escapes (0 = none), your speed edge, how long a bot keeps chasing
   easy: { start: 55, hunt: 0.5, grace: 7, speed: 1.12, chase: 2.5 },

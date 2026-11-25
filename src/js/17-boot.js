@@ -160,7 +160,7 @@ function start(data) {
     const md = localStorage.getItem('kus.mode');
     if (md === 't3' || md === 'daily') mode = md;
     const st = JSON.parse(localStorage.getItem('kus.set') || '{}');
-    if (st.lefty === true) SET.lefty = true;
+    if (st.lefty === true || (st.lefty === false && st.hv === 2)) SET.lefty = st.lefty; // an older save's false was the old default, not a choice
     if (st.gfx === 'low' || st.gfx === 'high') SET.gfx = st.gfx;
     SET.fps = st.fps === true;
     const dv = localStorage.getItem('kus.diff');

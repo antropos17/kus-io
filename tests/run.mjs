@@ -1412,6 +1412,31 @@ test('bots: easy and normal keep the old script, no traits, packs, sneaks or lic
   await g.close();
 });
 
+// On phones the buttons sit on the left and the joystick hint on the right by default; «Справа» moves them back and is remembered.
+// A save from before this default (lefty: false without hv) is the old default, not a choice: it gets the new one.
+test('settings: phone buttons on the left by default, the hand switch is remembered', async () => {
+  const side = (page) => page.evaluate(() => { const d = document.getElementById('dash').getBoundingClientRect(), t = document.getElementById('dodge').getBoundingClientRect();
+    return { lefty: document.body.classList.contains('lefty'), dash: d.left + d.width / 2, tongue: t.left + t.width / 2, w: innerWidth,
+      pressed: document.querySelector('#handSeg [aria-pressed="true"]')?.dataset.v, saved: JSON.parse(localStorage.getItem('kus.set') || 'null') }; });
+  const g = await open({ width: 390, height: 844, touch: true });
+  const fresh = await side(g.page);
+  assert(fresh.lefty && fresh.dash < fresh.w / 2 && fresh.tongue < fresh.w / 2 && fresh.pressed === '1', `fresh phone: Кусь and Язык must sit on the left: ${JSON.stringify(fresh)}`);
+  await g.page.evaluate(() => document.querySelector('#handSeg button[data-v="0"]').click());
+  const right = await side(g.page);
+  assert(!right.lefty && right.dash > right.w / 2 && right.pressed === '0' && right.saved && right.saved.lefty === false && right.saved.hv === 2, `«Справа» must move the buttons right and save it: ${JSON.stringify(right)}`);
+  await g.page.reload(); await g.page.waitForTimeout(600); await g.page.tap('#play'); await g.page.waitForTimeout(250);
+  const again = await side(g.page);
+  assert(!again.lefty && again.dash > again.w / 2, `the chosen «Справа» must survive a reload: ${JSON.stringify(again)}`);
+  await g.close();
+  const old = await open({ width: 390, height: 844, touch: true, play: false });
+  await old.page.evaluate(() => localStorage.setItem('kus.set', JSON.stringify({ lefty: false, bs: 1, gfx: 'auto', fps: false })));
+  await old.page.reload(); await old.page.waitForTimeout(600); await old.page.tap('#play'); await old.page.waitForTimeout(250);
+  const oldSave = await side(old.page);
+  assert(oldSave.lefty && oldSave.dash < oldSave.w / 2, `an old save with the old default must get the new left default: ${JSON.stringify(oldSave)}`);
+  assert(g.errors.length === 0 && old.errors.length === 0, [...g.errors, ...old.errors].join(' | '));
+  await old.close();
+});
+
 test('settings: difficulty and graphics apply and are remembered', async () => {
   const g = await open({ play: false, returning: true });
   const mass = {};

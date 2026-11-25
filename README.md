@@ -59,7 +59,7 @@ Special rivals:
 - Move a finger anywhere on the screen: a joystick appears under it.
 - «Кусь» (bite): the dash with a stronger bite, can be held.
 - «Язык» (tongue): the sticky tongue.
-- In the pause menu the buttons can go on the right or on the left, in three sizes.
+- The buttons sit on the left by default and the joystick hint on the right; in the settings and the pause menu they can go on the right instead, in three sizes.
 
 ## Modes
 
