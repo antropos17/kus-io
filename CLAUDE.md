@@ -24,7 +24,7 @@ npm run shots      rebuild the README screenshots in docs/media/ from real frame
 npm run sfx        rebuild src/js/05-sound-data.js from tools/sfx.json, then build (needs ffmpeg and the earshot takes on disk)
 ```
 
-The tests use the installed Chrome (`channel: chrome`); another binary: `CHROME=/path/to/chrome`.
+The tests use the installed Chrome (`channel: chrome`); another binary: `CHROME=/path/to/chrome`. Every test browser is pinned to `locale: 'ru-RU'` (headless Chrome is English, and the game picks its language from the browser); `open({ locale: 'en-US' })` gives an English page.
 
 Deploying: `npm test`, commit `src/` together with the built `index.html`, `git push`. Pages updates within a minute.
 
@@ -47,6 +47,7 @@ Sound takes are made outside the repository with earshot (https://github.com/Leo
 | File | What is inside |
 |---|---|
 | `01-helpers` | `clamp`, `lerp`, `rand`, `angDiff`, `vnoise`, `FONT` |
+| `01-lang` | the language: `LANG` (`kus.lang`, else the phone's language), the string table `STR` and `t`, English candy names `EN_NAMES` with `nameOf`/`accOf` (Russian names stay the save keys), `applyLang` for the `data-t`/`data-th`/`data-ta` markup |
 | `02-tuning` | world constants, `massToR`, `biteOf`, `lethalFor`, palettes, `PICK` bonuses, hats, patterns (`SKINS`, `skinTile`, `drawSkin`), bot names |
 | `03-dom` | `$`, canvas, `resize`, `PIXEL_BUDGET`, safe-area insets |
 | `04-state` | shared state: `blobs`, `food`, `parts`, `player`, `state`, `mode`, `cam`, `calm`, `input`, `stick`; settings `SET`, difficulty `DIFFS`, cheats `CHEAT`, missions `M`, `haptic` |
@@ -75,7 +76,7 @@ A frame: `frame` → `update(dt)` (bots, bodies, collisions, bites, food, rings 
 
 A bite step by step (`checkBites`): wind-up → snap → `doBite` → the piece is held in the teeth and stretches on a strand → chewing → `Chunk.finish` (the mass is added).
 
-`window.__kus` in `17-boot` gives the tests the state and functions (`player`, `blobs`, `update`, `render`, `place`, `spawnBot`, `spawnSpecial`, `Sfx`, `cam`, `CHEAT`, `pause`, `setLod`, and for the HUD, streak, wrapper and trophy work: `streak`, `stamps`, `texts` (floating numbers and words), `wrap`, `reveal`, `spawnWrap`, `clearWrap`, `WRAP`, `sugarFly`, `hud` (`sugarShown`, `air`, `sugarSettle`), `trophy`, `stages.kind`). The easiest way to test a new mechanic is through it.
+`window.__kus` in `17-boot` gives the tests the state and functions (`LANG`, `t`, `STR`, `EN_NAMES`, `nameOf`, `player`, `blobs`, `update`, `render`, `place`, `spawnBot`, `spawnSpecial`, `Sfx`, `cam`, `CHEAT`, `pause`, `setLod`, and for the HUD, streak, wrapper and trophy work: `streak`, `stamps`, `texts` (floating numbers and words), `wrap`, `reveal`, `spawnWrap`, `clearWrap`, `WRAP`, `sugarFly`, `hud` (`sugarShown`, `air`, `sugarSettle`), `trophy`, `stages.kind`). The easiest way to test a new mechanic is through it.
 
 Saves in `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.best`, `kus.best3`, `kus.mode`, `kus.diff`, `kus.set`, `kus.m` (missions and unlocked patterns), `kus.seen` (hints already shown), `kus.cheat`, `kus.lbmin`, `kus.daily` (candy of the day: date `d` like 20261123, best of the day `best`, days in a row `streak`, longest streak `top`), `kus.album` (album: `c` — times each sticker was swallowed whole, `r` — ids of rows already paid), `kus.albumOld` (ids of stickers opened before `NEED`, written once so they stay open), `kus.clear` (free-play wins: the fastest first-shift clear `best` in seconds, the number of clears `wins`).
 

@@ -24,8 +24,9 @@ function assert(cond, msg) {
 
 // A fresh page with the game started. Bots are parked far away and cheats are off, so a test controls everything it needs.
 // returning: storage says a run was finished before, so the menu is the full one and not the short first-visit one.
-async function open({ width = 1200, height = 720, touch = false, dpr = 1, play = true, returning = false } = {}) {
-  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: dpr, hasTouch: touch, isMobile: touch });
+// locale: the browser language; Russian by default, since headless Chrome is English and the game picks its language from it.
+async function open({ width = 1200, height = 720, touch = false, dpr = 1, play = true, returning = false, locale = 'ru-RU' } = {}) {
+  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: dpr, hasTouch: touch, isMobile: touch, locale });
   const page = await ctx.newPage();
   if (returning) await page.addInitScript(() => localStorage.getItem('kus.best') === null && localStorage.setItem('kus.best', '0'));
   page.setDefaultTimeout(120000);
@@ -855,7 +856,7 @@ test('daily: a run with cheats is not recorded', async () => {
 test('daily: a challenge link opens the same candy, an old one says so', async () => {
   const out = {};
   for (const d of [20261123, 20261122]) {
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'ru-RU' });
     const page = await ctx.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
@@ -901,7 +902,7 @@ test('daily: a challenge link opens the same candy, an old one says so', async (
 
 // A phone opened from a friend's link on a fixed date (25 Nov 2026: «Двойная посыпка», the longest twist name).
 async function linkPhone(width, height, q, returning) {
-  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2, hasTouch: true, isMobile: true });
+  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2, hasTouch: true, isMobile: true, locale: 'ru-RU' });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
@@ -1190,7 +1191,7 @@ test('trophy: the glaze runs only while the win card is shown', async () => {
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
   // calm: the frame is drawn once, whole and still, with no loop
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce', locale: 'ru-RU' });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
@@ -1655,6 +1656,44 @@ test('pace: real frames on this machine (information only)', async () => {
   );
   console.log(`      ${r.fps} fps, worst frame ${r.worstMs} ms, detail ${r.detail}`);
   await g.close();
+});
+
+// ---------- language ----------
+test('lang: phone language picks ru or en; a saved choice wins; junk and blocked storage fall back', async () => {
+  const pick = async (locale, init) => {
+    const ctx = await browser.newContext({ locale });
+    const page = await ctx.newPage();
+    if (init) await page.addInitScript(init);
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(String(e)));
+    await page.goto(URL);
+    await page.waitForTimeout(400);
+    const r = await page.evaluate(() => ({ lang: window.__kus.LANG, html: document.documentElement.lang, title: document.title }));
+    await ctx.close();
+    return { ...r, errors };
+  };
+  const en = await pick('en-US'),
+    ru = await pick('ru-RU'),
+    be = await pick('be-BY'),
+    kk = await pick('kk-KZ'),
+    de = await pick('de-DE');
+  assert(en.lang === 'en' && en.html === 'en' && en.title.startsWith('KUS.io'), `en-US: ${JSON.stringify(en)}`);
+  assert(ru.lang === 'ru' && ru.html === 'ru' && ru.title.startsWith('КУСЬ.io'), `ru-RU: ${JSON.stringify(ru)}`);
+  assert(be.lang === 'ru' && kk.lang === 'ru' && de.lang === 'en', `be ${be.lang}, kk ${kk.lang}, de ${de.lang}`);
+  const saved = await pick('ru-RU', () => localStorage.setItem('kus.lang', 'en'));
+  assert(saved.lang === 'en', `kus.lang=en on ru-RU: ${saved.lang}`);
+  for (const junk of ['de', '', 'EN']) {
+    const j = await pick('ru-RU', `localStorage.setItem('kus.lang', ${JSON.stringify(junk)})`);
+    assert(j.lang === 'ru', `kus.lang=${JSON.stringify(junk)}: ${j.lang}`);
+  }
+  const blocked = await pick('en-US', () => {
+    Object.defineProperty(window, 'localStorage', {
+      get() {
+        throw new Error('blocked');
+      },
+    });
+  });
+  assert(blocked.lang === 'en' && blocked.errors.length === 0, `blocked storage: ${JSON.stringify(blocked)}`);
 });
 
 for (const [name, fn] of tests) {

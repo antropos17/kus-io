@@ -220,6 +220,11 @@ function start(data) {
   requestAnimationFrame(frame);
 }
 window.__kus = {
+  LANG,
+  t,
+  STR,
+  EN_NAMES,
+  nameOf,
   Sfx,
   SFX_DATA,
   botStat, // what the smarter bots of hard and extreme have done (09-bots)
