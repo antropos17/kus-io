@@ -34,7 +34,7 @@ button:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
 .stat{display:flex;align-items:baseline;gap:5px}
 .stat small{font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.55}
 .stat b{font-family:var(--display);font-weight:400;font-size:19px;font-variant-numeric:tabular-nums;display:inline-block;transform-origin:left center}
-@keyframes bump{0%{transform:scale(1.45);color:#fff}100%{transform:scale(1)}}
+@keyframes bump{0%{transform:scale(1.22);color:#fff}100%{transform:scale(1)}}
 #coins.bump{animation:bump .2s ease-out}
 #lives{color:var(--blood)}
 #wave{color:var(--ember)}
@@ -51,13 +51,13 @@ button:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
 }
 #toast.on{opacity:1}
 
-#tray{padding:6px 16px 10px;display:grid;grid-template-columns:1fr 92px;gap:6px}
-#towers{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+#tray{padding:6px 16px 10px;display:grid;grid-template-columns:1fr 74px;gap:5px}
+#towers{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
 .tw{
   background:linear-gradient(#2a1c19,#1a1210);border-radius:10px;padding:3px 0 5px;min-height:66px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid var(--ink-3)
 }
-.tw canvas{width:38px;height:38px}
+.tw canvas{width:34px;height:34px}
 .tw i{font-style:normal;font-family:var(--display);font-size:12px;color:var(--ember);line-height:1}
 .tw.sel{border-color:var(--blood);background:linear-gradient(#4a1c1c,#2a1210)}
 .tw.poor{opacity:.45}
@@ -216,6 +216,8 @@ const SFX = {
   tick() { if (!can('tick', .03)) return; tone(.03, 'square', 660, 640, .05); },
   horn() { if (!can('horn', .3)) return; tone(.55, 'sawtooth', 98, 92, .14); tone(.55, 'sawtooth', 147, 139, .09); },
   lost() { if (!can('lost', .1)) return; tone(.38, 'triangle', 330, 105, .25); },
+  spit() { if (!can('spit', .08)) return; nz(.12, 'bandpass', 900, 2, .3, 2400); tone(.08, 'sine', 400, 150, .2); },
+  sizzle() { if (!can('sizzle', .12)) return; nz(.3, 'highpass', 3500, .5, .1); nz(.22, 'bandpass', 6000, 3, .07); },
   coin() { if (!can('coin', .045)) return; tone(.05, 'square', 1250, 1600, .04); },
   combo(n) { if (!can('combo', .05)) return; const f = 330 * Math.pow(1.122, Math.min(n - 1, 14)); tone(.14, 'triangle', f, f * 1.5, .16); },
   lick() { if (!can('lick', .06)) return; nz(.1, 'bandpass', 1500, 3, .22, 480); glop(.12, .05); }
@@ -227,14 +229,16 @@ const T = {
   chomp: { name: 'Грызень', cost: 50, range: 1.5, rate: .5, dmg: 1, hr: .27, mouth: 1.15, neck: ['#8a6a34', '#4a3418'], desc: 'Грызень: рвёт мясо быстро, но только вблизи' },
   neck:  { name: 'Змееглав', cost: 90, range: 2.7, rate: 1.15, dmg: 3, hr: .2, mouth: 1.3, neck: ['#7d5cc4', '#3d2a6b'], desc: 'Змееглав: бьёт издалека и вырывает кусок втрое больше' },
   lick:  { name: 'Языкан', cost: 70, range: 1.9, rate: .85, dmg: 1, slow: .5, hr: .3, mouth: .72, desc: 'Языкан: цепляет языком и держит, тварь еле ползёт' },
+  acid:  { name: 'Кислотник', cost: 110, range: 2.6, rate: 2.2, dmg: 1, hr: .3, mouth: 1.25, desc: 'Кислотник: плюёт лужу кислоты, она разъедает всех, кто в ней, и растворяет панцирь' },
+  grab:  { name: 'Душитель', cost: 120, range: 2.0, rate: 2.6, dmg: 2, hr: .34, mouth: 0, desc: 'Душитель: обвивает щупальцем, давит и швыряет назад по тропе' },
   glut:  { name: 'Пасть', cost: 140, range: 1.45, rate: 1.35, dmg: 2, aoe: true, hr: .44, mouth: 0, desc: 'Пасть: мясной цветок в яме, рвёт всех вокруг разом' }
 };
-const MAXLVL = 3;
+const MAXLVL = 4, MUT = { chomp: 'Бешеный', neck: 'Потрошитель', lick: 'Хват', glut: 'Воронка', acid: 'Желчь', grab: 'Кракен' };   // level 4 is a mutation with its own trick
 const tStat = t => {
-  const d = T[t.type], l = t.lvl - 1;
-  return { dmg: d.dmg * t.lvl, rate: d.rate * Math.pow(.85, l), range: d.range + .22 * l, slow: d.slow ? d.slow - .1 * l : 0 };
+  const d = T[t.type], l = Math.min(t.lvl, 3) - 1, mut = t.lvl >= 4;
+  return { mut, dmg: Math.round(d.dmg * (l + 1) * (mut && t.type === 'neck' ? 1.6 : 1)), rate: d.rate * Math.pow(.85, l) * (mut && t.type === 'chomp' ? .55 : 1), range: d.range + .22 * l + (mut && t.type === 'glut' ? .45 : 0), slow: d.slow ? d.slow - .1 * l : 0 };
 };
-const upCost = t => Math.round(T[t.type].cost * .7 * t.lvl);
+const upCost = t => t.lvl >= 3 ? T[t.type].cost * 2 : Math.round(T[t.type].cost * .7 * t.lvl);
 
 /* ---------- creatures. segs: [x, rx, ry] in body radii, tail first, head last; legs: [segment, x] ---------- */
 const K = {
@@ -254,7 +258,7 @@ try { best = +localStorage.getItem('hrum-best') || 0; } catch (e) {}
 function fresh() {
   return { coins: 130, lives: 15, wave: 0, active: false, queue: [], spawnT: 0, gap: .9, time: 0, shake: 0, fadeT: 0, freeze: 0, slowT: 0,
            cam: { x: COLS / 2, y: ROWS / 2, z: 1 }, camT: { x: COLS / 2, y: ROWS / 2, z: 1 },
-           enemies: [], carc: [], towers: [], parts: [], texts: [], strands: [], pools: [], flashes: [], guts: [], spurts: [], fly: [], lens: [], pending: 0, combo: 0, comboT: 0, banner: null, waveTotal: 0,
+           enemies: [], carc: [], towers: [], parts: [], texts: [], strands: [], pools: [], flashes: [], guts: [], spurts: [], fly: [], lens: [], links: [], shots: [], acid: [], pending: 0, combo: 0, comboT: 0, banner: null, waveTotal: 0,
            build: null, sel: null, speed: 1, over: false };
 }
 function mkTower(type, c, r, lvl, spent) {
@@ -292,7 +296,7 @@ function spawn(kind, s) {
   d.segs.forEach((q, i) => {
     const off = (hx - q[0]) * R, p = posAt(e.s - off);
     e.nodes.push({ e, i, off, rx: q[1] * R, ry: q[2] * R, size: Math.max(q[1], q[2]) * R * 2 + R * 1.5, x: p.x, y: p.y, vx: 0, vy: 0, va: 0, ang: p.ang,
-                   spr: null, bites: [], dirty: true, legs: [], dead: false, gone: false, life: 0, held: 0, head: i === n - 1, dmg: 0, meat: 1, gut: false, litAng: p.ang });
+                   spr: null, bites: [], dirty: true, lsq: 0, lsqV: 0, lsqAng: 0, legs: [], dead: false, gone: false, life: 0, held: 0, head: i === n - 1, dmg: 0, meat: 1, gut: false, litAng: p.ang });
   });
   d.legs.forEach(([si, fx], j) => { for (const side of [1, -1]) e.nodes[si].legs.push({ side, fx: fx * R, on: true, ph: j * 2.1 + (side > 0 ? 0 : Math.PI) }); });
   e.main = e.nodes.reduce((a, b) => b.rx * b.ry > a.rx * a.ry ? b : a);
@@ -353,6 +357,7 @@ function drawSegLayer(c, sg, layer) {
     }
   };
   if (e.kind === 'boar' && sg.i === 0) { c.strokeStyle = c3; c.lineWidth = R * .08; c.beginPath(); c.moveTo(-X, 0); c.quadraticCurveTo(-X - R * .25, R * .2, -X - R * .32, -R * .12); c.stroke(); }
+  if (e.kind === 'boar') { c.fillStyle = c3; for (let q = 0; q < 16; q++) { const a = q / 16 * TAU, x = Math.cos(a) * X, y = Math.sin(a) * Y; c.beginPath(); c.moveTo(x * .9 - Math.sin(a) * R * .07, y * .9 + Math.cos(a) * R * .07); c.lineTo(x * 1.17 - R * .08, y * 1.17); c.lineTo(x * .9 + Math.sin(a) * R * .07, y * .9 - Math.cos(a) * R * .07); c.closePath(); c.fill(); } }   // bristles
   const gr = c.createRadialGradient(lx * X * .45, ly * Y * .45, 0, 0, 0, Math.max(X, Y) * 1.2);
   gr.addColorStop(0, c1); gr.addColorStop(.5, c2); gr.addColorStop(1, c3);
   ell(c, 0, 0, X, Y); c.fillStyle = gr; c.fill();
@@ -361,6 +366,10 @@ function drawSegLayer(c, sg, layer) {
   const shd = c.createRadialGradient(-lx * X * .9, -ly * Y * .9, 0, -lx * X * .9, -ly * Y * .9, Math.max(X, Y) * 1.3); shd.addColorStop(0, 'rgba(0,0,0,.5)'); shd.addColorStop(1, 'rgba(0,0,0,0)');
   c.fillStyle = shd; c.fillRect(-X * 1.2, -Y * 1.2, X * 2.4, Y * 2.4);
   const ra = Math.atan2(ly, lx); c.strokeStyle = 'rgba(255,250,225,.4)'; c.lineWidth = R * .09; c.beginPath(); c.ellipse(0, 0, X * .93, Y * .93, 0, ra - 1, ra + 1); c.stroke();
+  if (!head) { const ao = c.createLinearGradient(X * .45, 0, X, 0); ao.addColorStop(0, 'rgba(0,0,0,0)'); ao.addColorStop(1, 'rgba(0,0,0,.5)'); c.fillStyle = ao; c.fillRect(X * .4, -Y * 1.2, X * .8, Y * 2.4); }   // tucked under the segment in front
+  c.strokeStyle = 'rgba(255,255,255,.22)'; c.lineWidth = R * .04; c.lineCap = 'round'; c.beginPath(); c.moveTo(-X * .6, ly * Y * .5); c.quadraticCurveTo(0, ly * Y * .82, X * .6, ly * Y * .5); c.stroke();   // a wet streak
+  if (e.kind === 'bug' && sg.i === 0) { const sh = c.createLinearGradient(-X, -Y, X, Y); sh.addColorStop(0, 'rgba(120,255,220,.3)'); sh.addColorStop(.5, 'rgba(255,255,255,0)'); sh.addColorStop(1, 'rgba(255,120,220,.22)'); c.fillStyle = sh; c.fillRect(-X, -Y, X * 2, Y * 2); }   // beetle sheen
+  if (e.kind === 'worm' && sg.i === 2) { c.fillStyle = 'rgba(255,228,228,.4)'; c.fillRect(-X * .45, -Y, X * .9, Y * 2); }
   c.restore();
   ell(c, 0, 0, X, Y); c.strokeStyle = DARK; c.lineWidth = R * .06; c.stroke();
 
@@ -577,7 +586,7 @@ function stampSeg(sg) {                                              // a carcas
 /* ---------- muscle fibres: verlet ropes between the wound and the mouth. They pull on whatever they are hooked into ---------- */
 const bodyPt = (sg, la, ld) => ({ x: sg.x + Math.cos(sg.ang + la) * ld, y: sg.y + Math.sin(sg.ang + la) * ld });
 const mouthPt = t => {
-  const d = T[t.type]; if (t.type === 'glut') return { x: t.x, y: t.y };
+  const d = T[t.type]; if (!d.mouth) return { x: t.x, y: t.y };
   return { x: t.hx + t.kx + Math.cos(t.ang) * d.hr * d.mouth, y: t.hy + t.ky + Math.sin(t.ang) * d.hr * d.mouth };
 };
 function mkStrand(sg, la, ld, t, o) {
@@ -701,9 +710,11 @@ function tube(c, p, w, o) {
   if (o.web && n > 4) { tubePath(c, p); c.closePath(); c.fillStyle = 'rgba(255,190,195,.13)'; c.fill(); }
   const wd = i => w * (1 + .22 * Math.sin(i * 1.9 - (o.t || 0) * 4)) * (big(i) ? 1.28 : 1);
   const seg = (i, lw, col) => { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(p[i].x, p[i].y); c.lineTo(p[i + 1].x, p[i + 1].y); c.stroke(); };
-  for (let i = 0; i < n - 1; i++) seg(i, wd(i), '#3d0e18');
-  for (let i = 0; i < n - 1; i++) seg(i, wd(i) * .76, big(i) ? '#b46a80' : '#e39aa2');
-  for (let i = 0; i < n - 1; i++) seg(i, wd(i) * .4, big(i) ? '#cc8a9c' : '#f4bfc3');
+  tubePath(c, p); c.strokeStyle = '#3d0e18'; c.lineWidth = w * 1.02; c.stroke();
+  c.fillStyle = '#3d0e18'; for (let i = 1; i < n; i++) { c.beginPath(); c.arc(p[i].x, p[i].y, wd(i) * .57, 0, TAU); c.fill(); }      // each link swells
+  tubePath(c, p); c.strokeStyle = '#e39aa2'; c.lineWidth = w * .76; c.stroke();
+  for (let i = 1; i < n; i++) { c.fillStyle = big(i) ? '#b46a80' : '#e39aa2'; c.beginPath(); c.arc(p[i].x, p[i].y, wd(i) * .44, 0, TAU); c.fill(); }
+  for (let i = 1; i < n; i++) { c.fillStyle = big(i) ? '#cc8a9c' : '#f6c4c8'; c.beginPath(); c.arc(p[i].x - w * .07, p[i].y - w * .09, wd(i) * .23, 0, TAU); c.fill(); }
   const nrm = i => { const a = p[Math.max(0, i - 1)], b = p[Math.min(n - 1, i + 1)], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1e-6; return [-dy / d, dx / d]; };
   c.strokeStyle = 'rgba(150,20,40,.75)'; c.lineWidth = w * .07; c.beginPath();
   for (let i = 0; i < n; i++) { const [nx, ny] = nrm(i), q = w * .24 * Math.sin(i * 2.3); i ? c.lineTo(p[i].x + nx * q, p[i].y + ny * q) : c.moveTo(p[i].x + nx * q, p[i].y + ny * q); }
@@ -780,7 +791,7 @@ function updateFly(dt) {
 function bump() { const el = $('coins'); el.textContent = S.coins - S.pending; el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }
 const COMBO = { 5: 'МЯСОРУБКА', 10: 'БОЙНЯ', 15: 'ПИР', 20: 'КРОВАВАЯ БАНЯ', 30: 'КОНЕЦ СВЕТА' };
 function lens(n) {                                                    // blood on the glass
-  for (let i = 0; i < n; i++) if (S.lens.length < 14) S.lens.push({ x: rnd(.04, .96), y: rnd(.05, .8), r: rnd(.02, .055), life: 3.2, max: 3.2, drip: rnd(.03, .1), sat: [0, 1, 2, 3].map(() => [rnd(0, TAU), rnd(1, 1.9), rnd(.2, .5)]) });
+  for (let i = 0; i < n; i++) if (S.lens.length < 14) S.lens.push({ x: rnd(.04, .96), y: rnd(.05, .8), r: rnd(.014, .038), life: 2.6, max: 2.6, drip: rnd(.03, .1), sat: [0, 1, 2, 3].map(() => [rnd(0, TAU), rnd(1, 1.9), rnd(.2, .5)]) });
 }
 function banner(txt, sub, life) { S.banner = { txt, sub: sub || '', life: life || 1.6, max: life || 1.6 }; }
 const meatOf = sg => Math.max(1, Math.round((sg.rx + sg.ry) / 2 / .11));
@@ -803,18 +814,23 @@ function updateGuts(dt) {
       M = mouthPt(q.eater); q.eater.flash = .12; q.rest *= Math.exp(-dt * 1.5);
       if (Math.random() < dt * 14) blood(M.x, M.y, 1, .3);
     }
-    for (let i = 1; i < n - (M ? 1 : 0); i++) { const v = p[i], vx = (v.x - v.px) * .8, vy = (v.y - v.py) * .8; v.px = v.x; v.py = v.y; v.x += vx; v.y += vy; }
-    if (M) pin(p[n - 1], M);
+    let P = M;
+    if (!P && !sg.dead && q.grow > .8) {                             // someone is standing on the loose end: the owner is held by its own insides
+      const en = p[n - 1];
+      for (const o of S.enemies) if (o !== sg.e && o.hp > 0 && Math.hypot(o.x - en.x, o.y - en.y) < o.r * .8) { P = { x: en.x, y: en.y }; if (Math.random() < dt * 3) { blood(en.x, en.y, 2, .4); sfx('squelch', 0, en.x); } break; }
+    }
+    for (let i = 1; i < n - (P ? 1 : 0); i++) { const v = p[i], vx = (v.x - v.px) * .8, vy = (v.y - v.py) * .8; v.px = v.x; v.py = v.y; v.x += vx; v.y += vy; }
+    if (P) pin(p[n - 1], P);
     const rest = q.rest * (.15 + .85 * q.grow);
     for (let it = 0; it < 4; it++) for (let i = 0; i < n - 1; i++) {
       const a = p[i], b = p[i + 1], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1e-6; if (d <= rest) continue;   // slack is free to coil
-      const diff = (d - rest) / d, ma = i === 0 ? 0 : .5, mb = M && i === n - 2 ? 0 : .5, tot = ma + mb; if (!tot) continue;
+      const diff = (d - rest) / d, ma = i === 0 ? 0 : .5, mb = P && i === n - 2 ? 0 : .5, tot = ma + mb; if (!tot) continue;
       a.x += dx * diff * ma / tot; a.y += dy * diff * ma / tot; b.x -= dx * diff * mb / tot; b.y -= dy * diff * mb / tot;
     }
-    if (M) {
+    if (P) {
       const dx = p[1].x - p[0].x, dy = p[1].y - p[0].y, d = Math.hypot(dx, dy) || 1e-6;
       if (d > rest * 1.25) { const f = (sg.dead ? 40 : 40 * sg.e.inv) * Math.min(1, d / rest - .95); sg.vx += dx / d * f * dt; sg.vy += dy / d * f * dt; if (!sg.dead) sg.e.tug = .08; }   // whoever it is attached to gets hauled along
-      if (q.rest * (n - 1) < .3) {
+      if (M && q.rest * (n - 1) < .3) {
         blood(p[0].x, p[0].y, 8, .9); blood(M.x, M.y, 5, .6); gain(M.x, M.y, 1); q.eater.chew = .5; q.eater.gore = 1; q.eater.eaten++; sfx('pop', 0, M.x); sg.gut = false;
         S.texts.push({ x: M.x, y: M.y - .35, txt: 'ням', life: .6, col: '#f4bfc3', size: .3 });
         continue;
@@ -838,7 +854,7 @@ function sever(e, wa) {                                               // the rea
   sg.dead = true; sg.va = rnd(-5, 5); sg.meat = meatOf(sg); sg.vx += Math.cos(wa) * 1.6; sg.vy += Math.sin(wa) * 1.6;
   sg.bites.push({ a: 0, d: sg.rx * .95, r: sg.ry * .75 }); sg.dirty = true;
   for (const l of sg.legs) { if (l.on) e.lost++; l.ph = Math.sin(l.ph + e.walk * 10); }
-  S.carc.push(sg);
+  S.carc.push(sg); link(sg, st, sg.off - st.off, 1.5);                  // hanging on by a thread
   st.bites.push({ a: Math.PI, d: st.rx * .95, r: st.ry * .75 }); st.dirty = true;
   e.torn = true; e.main = e.nodes.reduce((a, b) => b.rx * b.ry > a.rx * a.ry ? b : a);
   const P = bodyPt(st, Math.PI, st.rx * .8);
@@ -887,7 +903,7 @@ function kill(e, t, hit, wa) {
   pool(e.x, e.y, e.r * 1.1); ring(e.x, e.y, '#c2182b', e.r * 2.6, .3); flash(e.x, e.y, 1.6 + e.r, .22);
   S.shake = Math.max(S.shake, .045 * big); sfx('crack', 0, e.x); sfx('squish', 0, e.x);
   for (const sg of e.nodes) {                                        // the body comes apart into pieces that slide and stay
-    const a = Math.atan2(sg.y - e.y, sg.x - e.x) + rnd(-.6, .6), v = rnd(.5, 1.6) * ob;
+    const a = Math.atan2(sg.y - e.y, sg.x - e.x) + rnd(-.6, .6), v = over ? rnd(1, 2.6) : rnd(.15, .6);
     sg.dead = true; sg.life = rnd(7, 10); sg.va = rnd(-7, 7); sg.meat = meatOf(sg);
     if (!sg.head && !sg.gut && Math.random() < .5) spawnGut(sg, rnd(0, TAU), 0, e.r * rnd(2.4, 3.6));
     if (sg.head) { if (e.kind !== 'worm' && Math.random() < .7) organ(sg.x, sg.y, rnd(0, TAU), 'eye'); if (Math.random() < .35 * ob) organ(sg.x, sg.y, rnd(0, TAU), 'brain'); }
@@ -897,6 +913,7 @@ function kill(e, t, hit, wa) {
     for (const l of sg.legs) l.ph = Math.sin(l.ph + e.walk * 10);
     S.carc.push(sg);
   }
+  if (!over) for (let i = 0; i < e.nodes.length - 1; i++) link(e.nodes[i], e.nodes[i + 1], e.nodes[i].off - e.nodes[i + 1].off);   // still joined: it flops as one body
   if (heavy) S.freeze = Math.max(S.freeze, .07);
   if (K[e.kind].split) {
     for (let i = 0; i < K[e.kind].split; i++) { const k = spawn('bug', Math.max(.6, e.s - i * .25)); k.sqV = rnd(4, 9); k.sqAng = rnd(0, TAU); for (const q of k.nodes) { q.vx = rnd(-2.5, 2.5); q.vy = rnd(-2.5, 2.5); } }
@@ -922,7 +939,9 @@ function bite(sg, dmg, t, noStrand) {
   const b = { a: wa - sg.ang + rnd(-.45, .45), d: rr * (1.15 - .85 * fracAfter), r: rr * clamp(2.3 / Math.sqrt(e.max), .26, .62) * (dmg > 1 ? 1.2 : 1) };
   const chunk = plate ? null : makeChunk(sg, b);
   e.lastDmg = dmg; e.hp -= dmg; sg.dmg += dmg; sg.bites.push(b); sg.dirty = true;
-  e.sqAng = wa; e.sqV -= 6 * e.soft + 1.2; e.shake = .12;            // jaws squeeze the body, then yank it towards the monster
+  e.sqAng = wa; e.sqV -= 2 * e.soft + .6; e.shake = .12;
+  for (const q of e.nodes) { q.lsqAng = wa; q.lsqV -= q === sg ? 9 * e.soft + 3 : (Math.abs(q.i - sg.i) === 1 ? 3.5 : 1.4) * e.soft; }
+  if (t.type === 'neck' && t.lvl >= 4 && !armored(e)) { tearLeg(e, sg, wa); spurt(sg, wa - sg.ang, rr * .8, 1); }            // jaws squeeze the body, then yank it towards the monster
   sg.vx += Math.cos(wa) * 2.6 * e.inv; sg.vy += Math.sin(wa) * 2.6 * e.inv;
   flash(ex, ey, .9 + dmg * .12, .12);
   if (dmg >= 3) S.freeze = Math.max(S.freeze, .045);
@@ -981,6 +1000,7 @@ function updateEnemy(e, dt) {
     const tx = p.x - Math.sin(p.ang) * wob, ty = p.y + Math.cos(p.ang) * wob, ks = i === n - 1 ? 240 : 110, fr = Math.exp(-(i === n - 1 ? 24 : 11) * dt);
     sg.vx = (sg.vx + (tx - sg.x) * ks * dt) * fr; sg.vy = (sg.vy + (ty - sg.y) * ks * dt) * fr;
     sg.x += sg.vx * dt; sg.y += sg.vy * dt;
+    sg.lsqV += (-210 * sg.lsq - (6 + 14 * (1 - e.soft)) * sg.lsqV) * dt; sg.lsq = clamp(sg.lsq + sg.lsqV * dt, -.5, .5);
   }
   if (e.tug > 0) for (const q of e.nodes) { q.vx += (Math.random() - .5) * 16 * dt * e.inv; q.vy += (Math.random() - .5) * 16 * dt * e.inv; }   // thrashes while something has hold of it
   for (let it = 0; it < 2; it++) for (let i = n - 1; i >= 1; i--) {  // and the spine keeps them a fixed distance apart
@@ -1056,7 +1076,7 @@ function collide() {
   for (let i = 0; i < all.length; i++) {
     const a = all[i], ra = (a.rx + a.ry) * .42;
     for (let j = i + 1; j < all.length; j++) {
-      const b = all[j]; if (!a.dead && !b.dead && a.e === b.e) continue;
+      const b = all[j]; if (a.e && a.e === b.e) continue;
       const dx = b.x - a.x, dy = b.y - a.y, rr = ra + (b.rx + b.ry) * .42; if (Math.abs(dx) > rr || Math.abs(dy) > rr) continue;
       const d = Math.hypot(dx, dy); if (d >= rr || d < 1e-4) continue;
       const push = (rr - d) * .5, wa = a.dead ? .8 : .22, wb = b.dead ? .8 : .22, nx = dx / d, ny = dy / d;
@@ -1085,10 +1105,10 @@ function findScrap(t, range) {
 function newTongue(t, sg, la, ld) {
   const m = mouthPt(t), p = []; for (let i = 0; i < 14; i++) p.push({ x: m.x, y: m.y, px: m.x, py: m.y });
   sfx('lick');
-  return { st: 'out', pts: p, seg: sg, la, ld, tip: { x: m.x, y: m.y }, hold: 0, chunk: null, carry: null, age: 0 };
+  return { st: 'out', pts: p, seg: sg, la, ld, tip: { x: m.x, y: m.y }, hold: 0, chunk: null, carry: null, age: 0, wrap: 0, tick: 0, dir: Math.random() < .5 ? 1 : -1 };
 }
 function updateTongue(t, dt) {
-  const tg = t.tg, p = tg.pts, n = p.length, M = mouthPt(t), sg = tg.seg, st = tStat(t);
+  const tg = t.tg, p = tg.pts, n = p.length, M = mouthPt(t), sg = tg.seg, st = tStat(t), grab = t.type === 'grab';
   tg.age += dt;
   if (tg.st === 'out') {
     if (sg.gone) tg.st = 'back';
@@ -1100,21 +1120,34 @@ function updateTongue(t, dt) {
         if (sg.dead) { tg.hold = .1; blood(P.x, P.y, 4, .6); sfx('squish'); }
         else {
           const e = sg.e; tg.chunk = bite(sg, st.dmg, t, true);
-          if (e.hp > 0) { e.slowT = 1.6; e.slowF = st.slow; tg.hold = .5; } else tg.hold = .08;
+          if (e.hp <= 0) tg.hold = .08; else if (grab) { e.slowT = 1.4; e.slowF = .12; tg.hold = 1.3; tg.tick = .32; } else { e.slowT = 1.6; e.slowF = st.slow; tg.hold = .5; }
         }
       }
     }
   } else if (tg.st === 'stuck') {
     if (sg.gone) tg.st = 'back';
     else {
-      const P = bodyPt(sg, tg.la, tg.ld); tg.tip.x = P.x; tg.tip.y = P.y; tg.hold -= dt;
+      const P = bodyPt(sg, tg.la, tg.ld); tg.tip.x = P.x; tg.tip.y = P.y; tg.hold -= dt; tg.wrap = Math.min(1, tg.wrap + dt * 6);
       const dx = M.x - P.x, dy = M.y - P.y, d = Math.hypot(dx, dy) || 1e-6;
       if (sg.dead) sg.held = .3;
       else {                                                         // it hauls on the body it is stuck to
-        const e = sg.e, f = 34 * e.inv; e.tug = .08; e.sqAng = Math.atan2(dy, dx); e.sqT = Math.max(e.sqT, .2 * e.soft);
+        const e = sg.e, f = (grab ? 55 : 34) * e.inv; e.tug = .08;
+        if (grab) { for (const q of e.nodes) { q.lsqAng = S.time * 7; q.lsqV -= 22 * dt * e.soft; } tg.tick -= dt; if (tg.tick <= 0) { tg.tick = .32; bite(sg, st.dmg, t, true); sfx('squelch', 0, sg.x); } }   // it squeezes e.sqAng = Math.atan2(dy, dx); e.sqT = Math.max(e.sqT, .2 * e.soft);
         sg.vx += dx / d * f * dt; sg.vy += dy / d * f * dt; t.kx -= dx / d * .5 * dt; t.ky -= dy / d * .5 * dt;
       }
-      if (tg.hold <= 0) { tg.st = 'back'; if (sg.dead) tg.carry = sg; else sg.e.sqV -= 4 * sg.e.soft; blood(P.x, P.y, 2, .4); }
+      if (tg.hold <= 0) {
+        tg.st = 'back'; blood(P.x, P.y, 2, .4);
+        if (sg.dead) tg.carry = sg;
+        else {
+          const e = sg.e; e.sqV -= 4 * e.soft;
+          if (e.hp > 0 && (grab || st.mut)) {                        // flung back down the trail
+            const back = grab ? (1.1 + .25 * Math.min(t.lvl, 3)) * (st.mut ? 1.8 : 1) : .9; e.s = Math.max(.4, e.s - back);
+            const pa = posAt(e.s); for (const q of e.nodes) { q.vx += (pa.x - q.x) * 3; q.vy += (pa.y - q.y) * 3; }
+            S.texts.push({ x: e.x, y: e.y - e.r, txt: 'ШВЫРЬ', life: .7, col: '#e6a8ff', size: .32 }); sfx('thump', 0, e.x); puff(e.x, e.y, 'rgba(120,95,70,.35)', 5, 1.4, .25);
+            if (grab && st.mut) bite(sg, st.dmg * 3, t, true);
+          }
+        }
+      }
     }
   }
   if (tg.st === 'back') {
@@ -1146,6 +1179,10 @@ function updateTower(t, dt) {
     if (t.chew <= 0 && t.chunk) { if (Math.random() < .35) bones(m.x, m.y, 1, .7); t.chunk = null; }
   }
   if (t.tg) updateTongue(t, dt);
+  if (t.type === 'glut' && st.mut) for (const e of S.enemies) {      // the funnel drags everything nearby towards the teeth
+    if (e.hp <= 0) continue; const dx = t.x - e.x, dy = t.y - e.y, d = Math.hypot(dx, dy); if (d > st.range + .7 || d < .05) continue;
+    for (const q of e.nodes) { q.vx += dx / d * 11 * dt * e.inv; q.vy += dy / d * 11 * dt * e.inv; } e.tug = Math.max(e.tug, .03);
+  }
 
   if (t.phase === 'idle') {
     t.hx = t.x; t.hy = t.y;
@@ -1155,7 +1192,7 @@ function updateTower(t, dt) {
       if (Math.hypot(e.x - t.x, e.y - t.y) <= st.range + e.r * .5 && (!target || e.s > target.s)) target = e;
     }
     if (!target) {                                                   // nothing alive in reach: eat what is lying around
-      if (t.cd > 0 || t.tg) return;
+      if (t.cd > 0 || t.tg || t.type === 'acid') return;
       const gq = S.guts.find(q => !q.eater && !q.seg.gone && q.grow > .6 && Math.hypot(q.pts[q.pts.length - 1].x - t.x, q.pts[q.pts.length - 1].y - t.y) < st.range);
       if (gq) { const en = gq.pts[gq.pts.length - 1]; gq.eater = t; t.cd = .9; if (t.type !== 'glut') t.ang = Math.atan2(en.y - t.y, en.x - t.x); sfx('slurp'); return; }
       const cs = findScrap(t, st.range + .15);                       // only what it can reach from its own burrow
@@ -1163,7 +1200,7 @@ function updateTower(t, dt) {
       cs.held = 3; t.cd = Math.min(.6, st.rate); t.chunk = null; t.chew = 0; t.pt = 0; t.tseg = cs;
       const want = Math.atan2(cs.y - t.y, cs.x - t.x);
       if (t.type === 'glut') { bite(cs, 1, t); t.flash = .35; }       // the pit throws a hook and reels it in
-      else if (t.type === 'lick') { t.ang = want; t.tg = newTongue(t, cs, 0, 0); }
+      else if (t.type === 'lick' || t.type === 'grab') { t.ang = want; t.tg = newTongue(t, cs, 0, 0); }
       else { t.ang = want; t.phase = 'wind'; }
       return;
     }
@@ -1171,7 +1208,8 @@ function updateTower(t, dt) {
     t.ang += angd(want, t.ang) * Math.min(1, dt * 12);               // the head follows its prey
     if (t.cd > 0 || t.tg) return;
     t.cd = st.rate; t.ang = want;
-    if (t.type === 'lick') t.tg = newTongue(t, sg, Math.atan2(t.y - sg.y, t.x - sg.x) - sg.ang, (sg.rx + sg.ry) / 2 * .85);
+    if (t.type === 'lick' || t.type === 'grab') t.tg = newTongue(t, sg, Math.atan2(t.y - sg.y, t.x - sg.x) - sg.ang, (sg.rx + sg.ry) / 2 * .85);
+    else if (t.type === 'acid') spit(t, target, st);
     else { t.phase = t.type === 'glut' ? 'lunge' : 'wind'; t.pt = 0; t.tseg = sg; t.chunk = null; t.chew = 0; }
   } else if (t.phase === 'wind') {                                   // rears back before the strike
     t.pt += dt / .09;
@@ -1234,7 +1272,7 @@ function update(dt) {
   for (const e of S.enemies) if (e.hp > 0) updateEnemy(e, dt);
   for (const t of S.towers) updateTower(t, dt);
   updateStrands(dt);
-  updateCarcasses(dt); updateGuts(dt); updateSpurts(dt); updateFly(dt);
+  updateCarcasses(dt); updateLinks(dt); updateGuts(dt); updateSpurts(dt); updateFly(dt); updateAcid(dt);
   if (S.comboT > 0) { S.comboT -= dt; if (S.comboT <= 0) S.combo = 0; }
   if (S.banner) { S.banner.life -= dt; if (S.banner.life <= 0) S.banner = null; }
   for (const l of S.lens) l.life -= dt; S.lens = S.lens.filter(l => l.life > 0);
@@ -1350,6 +1388,20 @@ function paintGround(b) {
     const x = rnd(.3, COLS - .3), y = rnd(.5, ROWS - 1); if (onPath(x, y)) continue;
     b.save(); b.translate(x, y); b.rotate(rnd(0, TAU)); b.globalAlpha = .7; b.fillStyle = BONE; b.beginPath(); b.ellipse(0, 0, .07, .06, 0, 0, TAU); b.fill(); b.fillRect(.03, -.03, .06, .06);
     b.fillStyle = '#1a0c0c'; for (const s of [-1, 1]) { b.beginPath(); b.arc(.01, s * .025, .016, 0, TAU); b.fill(); } b.restore(); b.globalAlpha = 1;
+  }
+
+  for (let i = 0; i < 26; i++) {                                     // fallen leaves
+    const x = rnd(0, COLS), y = rnd(0, ROWS); b.save(); b.translate(x, y); b.rotate(rnd(0, TAU)); b.fillStyle = pick(['rgba(122,84,40,.7)', 'rgba(94,66,30,.7)', 'rgba(140,104,48,.6)']);
+    b.beginPath(); b.moveTo(-.05, 0); b.quadraticCurveTo(0, -.035, .05, 0); b.quadraticCurveTo(0, .035, -.05, 0); b.fill(); b.strokeStyle = 'rgba(30,20,10,.5)'; b.lineWidth = .006; b.beginPath(); b.moveTo(-.05, 0); b.lineTo(.05, 0); b.stroke(); b.restore();
+  }
+  for (let i = 0; i < 14; i++) {                                     // small pale flowers
+    const x = rnd(.2, COLS - .2), y = rnd(.2, ROWS - .2); if (onPath(x, y)) continue; const col = pick(['#e9e2c0', '#c9b6e8', '#e8b6c0']);
+    for (let k = 0; k < 5; k++) { b.fillStyle = col; b.beginPath(); b.arc(x + Math.cos(k * 1.257) * .022, y + Math.sin(k * 1.257) * .022, .014, 0, TAU); b.fill(); } b.fillStyle = '#d8a21e'; b.beginPath(); b.arc(x, y, .01, 0, TAU); b.fill();
+  }
+  b.strokeStyle = 'rgba(30,18,10,.45)'; b.lineCap = 'round';          // claw scratches worn into the trail
+  for (let i = 0; i < 40; i++) {
+    const p = posAt(rnd(.5, L)), a = p.ang + rnd(-.3, .3), o = rnd(-.3, .3), x = p.x - Math.sin(p.ang) * o, y = p.y + Math.cos(p.ang) * o, len = rnd(.08, .2); b.lineWidth = rnd(.008, .016);
+    for (const k of [-1, 0, 1]) { b.beginPath(); b.moveTo(x + k * .02 * Math.sin(a), y - k * .02 * Math.cos(a)); b.lineTo(x + Math.cos(a) * len + k * .02 * Math.sin(a), y + Math.sin(a) * len - k * .02 * Math.cos(a)); b.stroke(); }
   }
 
   // the burrow they crawl out of
@@ -1536,7 +1588,7 @@ function artToad(c, r, ang, open, gore, blink, tm) {
 }
 function drawMonster(c, type, x, y, r, ang, open, sx, sy, gore, blink, tm) {
   c.save(); c.translate(x, y); c.rotate(ang); c.scale(sx || 1, sy || 1);
-  (type === 'chomp' ? artGnasher : type === 'neck' ? artSerpent : artToad)(c, r, ang, open, gore || 0, blink, tm || 0);
+  (type === 'chomp' ? artGnasher : type === 'neck' ? artSerpent : type === 'acid' ? artSpitter : artToad)(c, r, ang, open, gore || 0, blink, tm || 0);
   c.restore();
 }
 
@@ -1589,33 +1641,192 @@ function paintLair(c) {                                              // a dug-ou
   for (let k = 0; k < 5; k++) { const a = rnd(0, TAU), rr = rnd(.44, .5), q = rnd(.03, .05); gr = c.createLinearGradient(0, -q, 0, q); gr.addColorStop(0, '#8b8d86'); gr.addColorStop(1, '#3d403c'); c.save(); c.translate(Math.cos(a) * rr, Math.sin(a) * rr); c.fillStyle = gr; c.beginPath(); c.ellipse(0, 0, q, q * .75, a, 0, TAU); c.fill(); c.restore(); }
 }
 
-/* a tongue: a tapered muscular ribbon on a rope, with a sticky pad at the end */
+/* ---------- a tapered ribbon along a line of points: tongues and tentacles are both built from it ---------- */
+function ribbonPath(c, q, hw, k) {
+  const n = q.length, L = [], Rr = [];
+  for (let i = 0; i < n; i++) {
+    const a = q[Math.max(0, i - 1)], b = q[Math.min(n - 1, i + 1)], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1e-6, h = hw(i / (n - 1)) * k;
+    L.push([q[i].x - dy / d * h, q[i].y + dx / d * h]); Rr.push([q[i].x + dy / d * h, q[i].y - dx / d * h]);
+  }
+  c.beginPath(); c.moveTo(L[0][0], L[0][1]); for (let i = 1; i < n; i++) c.lineTo(L[i][0], L[i][1]); for (let i = n - 1; i >= 0; i--) c.lineTo(Rr[i][0], Rr[i][1]); c.closePath();
+  return L;
+}
+function tentacle(c, q, w0, w1, dim) {                                // an arm with a pale underside and a row of suckers
+  const hw = u => w0 + (w1 - w0) * u;
+  c.lineJoin = 'round';
+  c.save(); c.translate(.04, .06); ribbonPath(c, q, hw, 1); c.fillStyle = 'rgba(0,0,0,.3)'; c.fill(); c.restore();
+  const L = ribbonPath(c, q, hw, 1); c.fillStyle = dim ? '#33203f' : '#3b2247'; c.fill(); c.strokeStyle = '#120a18'; c.lineWidth = .018; c.stroke();
+  ribbonPath(c, q, hw, .6); c.fillStyle = dim ? '#5e3a70' : '#7a4a8c'; c.fill();
+  ribbonPath(c, q, hw, .2); c.fillStyle = 'rgba(205,165,220,.55)'; c.fill();
+  for (let i = 1; i < q.length - 1; i++) { const r = hw(i / (q.length - 1)) * .34; c.fillStyle = '#e6c9ee'; c.beginPath(); c.arc((L[i][0] + q[i].x) / 2, (L[i][1] + q[i].y) / 2, r, 0, TAU); c.fill(); c.fillStyle = '#7a4a8c'; c.beginPath(); c.arc((L[i][0] + q[i].x) / 2, (L[i][1] + q[i].y) / 2, r * .45, 0, TAU); c.fill(); }
+}
+/* a tongue or a grabbing arm: it wobbles on the way out, wraps round what it catches, thins as it stretches */
 function drawTongue(t) {
-  const tg = t.tg, p = tg.pts, n = p.length, len = ropeLen(p), thin = clamp(1.3 / (len + .9), .5, 1);
+  const tg = t.tg, p = tg.pts, n = p.length, len = ropeLen(p), thin = clamp(1.3 / (len + .9), .5, 1), grab = t.type === 'grab';
   const amp = tg.st === 'stuck' ? .012 : .05, q = [];
   for (let i = 0; i < n; i++) {
     const a = p[Math.max(0, i - 1)], b = p[Math.min(n - 1, i + 1)], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1e-6, u = i / (n - 1);
     const w = Math.sin(u * Math.PI) * amp * Math.sin(u * 8 - tg.age * 34) * Math.min(1, len);
-    q.push({ x: p[i].x - dy / d * w, y: p[i].y + dx / d * w, nx: -dy / d, ny: dx / d, u });
+    q.push({ x: p[i].x - dy / d * w, y: p[i].y + dx / d * w });
   }
-  const sm = x => x * x * (3 - 2 * x), hw = u => u < .8 ? .1 + (.062 * thin - .1) * sm(u / .8) : .062 * thin + (.1 - .062 * thin) * sm((u - .8) / .2);
-  const ribbon = k => { g.beginPath(); for (let i = 0; i < n; i++) { const v = q[i], h = hw(v.u) * k; i ? g.lineTo(v.x + v.nx * h, v.y + v.ny * h) : g.moveTo(v.x + v.nx * h, v.y + v.ny * h); } for (let i = n - 1; i >= 0; i--) { const v = q[i], h = hw(v.u) * k; g.lineTo(v.x - v.nx * h, v.y - v.ny * h); } g.closePath(); };
-  g.lineJoin = 'round'; g.lineCap = 'round';
-  ribbon(1); g.fillStyle = '#7d1a2e'; g.fill(); g.strokeStyle = '#3a0810'; g.lineWidth = .02; g.stroke();
-  ribbon(.66); g.fillStyle = '#c2445c'; g.fill();
-  ribbon(.26); g.fillStyle = 'rgba(240,150,165,.7)'; g.fill();
-  g.strokeStyle = 'rgba(90,10,30,.6)'; g.lineWidth = .012; g.beginPath(); for (let i = 0; i < n * .6; i++) i ? g.lineTo(q[i].x, q[i].y) : g.moveTo(q[i].x, q[i].y); g.stroke();
-  const tp = q[n - 1], gr = g.createRadialGradient(tp.x - .03, tp.y - .03, 0, tp.x, tp.y, .13);
-  gr.addColorStop(0, '#f3aebb'); gr.addColorStop(.6, '#c2445c'); gr.addColorStop(1, '#7d1a2e');
-  g.fillStyle = gr; g.beginPath(); g.arc(tp.x, tp.y, .115, 0, TAU); g.fill(); g.strokeStyle = '#3a0810'; g.lineWidth = .02; g.stroke();
-  g.fillStyle = 'rgba(255,255,255,.55)'; g.beginPath(); g.ellipse(tp.x - .04, tp.y - .045, .035, .02, -.6, 0, TAU); g.fill();
-  if (tg.chunk && tg.st !== 'out') { g.save(); g.translate(tp.x, tp.y); g.rotate(tg.chunk.rot); const sz = tg.chunk.size; g.drawImage(tg.chunk.spr, -sz / 2, -sz / 2, sz, sz); g.restore(); }
+  const sg = tg.seg;
+  if (tg.st === 'stuck' && sg && !sg.gone && tg.wrap > 0) {            // coils round the body
+    const rr = (sg.rx + sg.ry) / 2 * .97, a0 = Math.atan2(tg.tip.y - sg.y, tg.tip.x - sg.x), turns = (grab ? 5.4 : 2.3) * tg.wrap, m = grab ? 12 : 7;
+    for (let j = 1; j <= m; j++) { const a = a0 + tg.dir * j / m * turns; q.push({ x: sg.x + Math.cos(a) * rr, y: sg.y + Math.sin(a) * rr }); }
+  }
+  if (grab) { tentacle(g, q, .12 * Math.max(thin, .7), .045, false); }
+  else {
+    const sm = x => x * x * (3 - 2 * x), hw = u => u < .8 ? .105 + (.066 * thin - .105) * sm(u / .8) : .066 * thin + (.1 - .066 * thin) * sm((u - .8) / .2);
+    g.lineJoin = 'round'; g.lineCap = 'round';
+    g.save(); g.translate(.04, .07); ribbonPath(g, q, hw, 1); g.fillStyle = 'rgba(0,0,0,.3)'; g.fill(); g.restore();          // its shadow on the ground
+    ribbonPath(g, q, hw, 1); g.fillStyle = '#7d1a2e'; g.fill(); g.strokeStyle = '#3a0810'; g.lineWidth = .02; g.stroke();
+    ribbonPath(g, q, hw, .68); g.fillStyle = '#c2445c'; g.fill();
+    ribbonPath(g, q, hw, .28); g.fillStyle = 'rgba(240,150,165,.7)'; g.fill();
+    g.strokeStyle = 'rgba(90,10,30,.55)'; g.lineWidth = .012; g.beginPath(); for (let i = 0; i < q.length * .6; i++) i ? g.lineTo(q[i].x, q[i].y) : g.moveTo(q[i].x, q[i].y); g.stroke();
+    g.fillStyle = 'rgba(255,205,210,.55)';                                                                                 // papillae
+    for (let i = 1; i < q.length - 1; i++) for (const o of [-1, 1]) { const a = q[i - 1], b = q[i + 1], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1e-6, h = hw(i / (q.length - 1)) * .45 * o; g.beginPath(); g.arc(q[i].x - dy / d * h, q[i].y + dx / d * h, .011, 0, TAU); g.fill(); }
+    g.strokeStyle = 'rgba(225,235,215,.45)'; g.lineWidth = .014;                                                           // spit hanging off it
+    for (const i of [3, 7, 10]) if (i < q.length) { const dl = .05 + .04 * Math.sin(S.time * 5 + i); g.beginPath(); g.moveTo(q[i].x, q[i].y + .05); g.lineTo(q[i].x, q[i].y + .05 + dl); g.stroke(); }
+    const tp = q[q.length - 1], gr = g.createRadialGradient(tp.x - .03, tp.y - .03, 0, tp.x, tp.y, .13);
+    gr.addColorStop(0, '#f3aebb'); gr.addColorStop(.6, '#c2445c'); gr.addColorStop(1, '#7d1a2e');
+    g.fillStyle = gr; g.beginPath(); g.arc(tp.x, tp.y, .115, 0, TAU); g.fill(); g.strokeStyle = '#3a0810'; g.lineWidth = .02; g.stroke();
+    g.fillStyle = 'rgba(255,255,255,.55)'; g.beginPath(); g.ellipse(tp.x - .04, tp.y - .045, .035, .02, -.6, 0, TAU); g.fill();
+  }
+  if (tg.chunk && tg.st === 'back') { const tp = q[q.length - 1]; g.save(); g.translate(tp.x, tp.y); g.rotate(tg.chunk.rot); const sz = tg.chunk.size; g.drawImage(tg.chunk.spr, -sz / 2, -sz / 2, sz, sz); g.restore(); }
+}
+
+/* Кислотник: a bloated spitter with glowing sacs and a tube for a mouth */
+function artSpitter(c, r, ang, open, gore, blink, tm) {
+  c.strokeStyle = '#141d0a'; c.lineWidth = r * .15; c.lineCap = 'round'; c.lineJoin = 'round';
+  for (const s of [-1, 1]) for (const [x, a] of [[-.5, 2.2], [-.1, 1.75], [.3, 1.3]]) { c.beginPath(); c.moveTo(x * r, s * .55 * r); c.lineTo((x + Math.cos(a) * .55) * r, s * (.55 + Math.sin(a) * .5) * r); c.lineTo((x + Math.cos(a) * .8 + .12) * r, s * (.55 + Math.sin(a) * .9) * r); c.stroke(); }
+  c.beginPath(); c.ellipse(-.35 * r, 0, .78 * r, .82 * r, 0, 0, TAU); c.fillStyle = lit(c, ang, r, '#c3dc7e', '#55702c', '#16200b'); c.fill(); c.strokeStyle = DARK; c.lineWidth = r * .07; c.stroke();
+  c.strokeStyle = 'rgba(0,0,0,.3)'; c.lineWidth = r * .04; for (const x of [-.75, -.4, -.05]) { c.beginPath(); c.moveTo(x * r, -.7 * r); c.quadraticCurveTo((x + .12) * r, 0, x * r, .7 * r); c.stroke(); }
+  for (const [x, y, q] of [[-.62, -.34, .25], [-.62, .34, .25], [-.2, 0, .3]]) {                                           // sacs of acid, pulsing
+    const pr = q * r * (1 + .09 * Math.sin(tm * 4 + y * 9 + x * 5) + open * .1), gr = c.createRadialGradient((x - .06) * r, (y - .07) * r, 0, x * r, y * r, pr);
+    gr.addColorStop(0, '#f6ffb0'); gr.addColorStop(.45, '#9be035'); gr.addColorStop(1, '#2f5a10');
+    c.fillStyle = gr; c.beginPath(); c.arc(x * r, y * r, pr, 0, TAU); c.fill(); c.strokeStyle = '#16200b'; c.lineWidth = r * .05; c.stroke();
+    c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse((x - .08) * r, (y - .1) * r, pr * .3, pr * .16, -.6, 0, TAU); c.fill();
+    c.fillStyle = 'rgba(240,255,170,.8)'; for (let k = 0; k < 3; k++) { const a = tm * 2 + k * 2.1 + x * 7; c.beginPath(); c.arc(x * r + Math.cos(a) * pr * .5, y * r + Math.sin(a * 1.3) * pr * .5, pr * .09, 0, TAU); c.fill(); }
+  }
+  c.beginPath(); c.ellipse(.45 * r, 0, .42 * r, .4 * r, 0, 0, TAU); c.fillStyle = lit(c, ang, r, '#a7c264', '#44591f', '#10180a'); c.fill(); c.strokeStyle = DARK; c.lineWidth = r * .07; c.stroke();
+  const L = (.48 + .14 * open) * r;                                                                                        // the spitting tube
+  c.beginPath(); c.moveTo(.72 * r, -.16 * r); c.lineTo(.72 * r + L, -.1 * r); c.lineTo(.72 * r + L, .1 * r); c.lineTo(.72 * r, .16 * r); c.closePath(); c.fillStyle = '#2c3d16'; c.fill(); c.strokeStyle = DARK; c.lineWidth = r * .06; c.stroke();
+  c.fillStyle = '#c8f06a'; c.beginPath(); c.ellipse(.72 * r + L, 0, r * .05, r * .11, 0, 0, TAU); c.fill();
+  for (const s of [-1, 1]) { glowEye(c, .5 * r, s * .24 * r, .09 * r, '#d9ff5a', 'rgba(200,255,90,', blink); glowEye(c, .3 * r, s * .32 * r, .055 * r, '#d9ff5a', 'rgba(200,255,90,', blink); }
+}
+/* Душитель: a beak in a hole, with arms */
+function drawGrab(c, x, y, r, open, tm, gore, busy) {
+  c.save(); c.translate(x, y);
+  for (let k = 0; k < 3; k++) {
+    if (busy && k === 0) continue;
+    const a0 = k / 3 * TAU + .5, q = [];
+    for (let j = 0; j <= 7; j++) { const u = j / 7, a = a0 + Math.sin(tm * 1.7 + k * 2 + u * 3) * .55 * u; q.push({ x: Math.cos(a) * r * (.45 + u * 1.3), y: Math.sin(a) * r * (.45 + u * 1.3) }); }
+    tentacle(c, q, r * .27, r * .06, true);
+  }
+  let gr = c.createRadialGradient(-.2 * r, -.25 * r, 0, 0, 0, r * .78); gr.addColorStop(0, '#b98ad0'); gr.addColorStop(.55, '#5a3470'); gr.addColorStop(1, '#1e1026');
+  c.fillStyle = gr; c.beginPath(); c.arc(0, 0, r * .74, 0, TAU); c.fill(); c.strokeStyle = DARK; c.lineWidth = r * .07; c.stroke();
+  c.fillStyle = 'rgba(20,8,28,.45)'; for (const [px, py, pr] of [[-.4, .25, .12], [.35, .35, .1], [.1, -.5, .09], [-.45, -.3, .08], [.5, -.15, .07]]) { c.beginPath(); c.arc(px * r, py * r, pr * r, 0, TAU); c.fill(); }
+  c.fillStyle = '#5a0a17'; c.beginPath(); c.arc(0, 0, r * .33, 0, TAU); c.fill();
+  const o = (.06 + .22 * open) * r;                                                                                         // the beak
+  for (const s of [-1, 1]) { c.beginPath(); c.moveTo(-r * .3, s * o); c.quadraticCurveTo(0, s * (o + r * .34), r * .32, s * o); c.lineTo(r * .05, s * (o - r * .05)); c.closePath(); c.fillStyle = '#2a1c10'; c.fill(); c.strokeStyle = '#0e0807'; c.lineWidth = r * .04; c.stroke(); c.strokeStyle = 'rgba(255,220,160,.35)'; c.lineWidth = r * .03; c.beginPath(); c.moveTo(-r * .2, s * (o + r * .06)); c.quadraticCurveTo(0, s * (o + r * .24), r * .2, s * (o + r * .06)); c.stroke(); }
+  if (gore > 0) { c.fillStyle = 'rgba(160,18,32,' + (gore * .6) + ')'; c.beginPath(); c.arc(0, 0, r * .3, 0, TAU); c.fill(); }
+  for (const s of [-1, 1]) glowEye(c, r * .38 * s, -r * .42, r * .1, '#e6a8ff', 'rgba(210,140,255,', false, true);
+  c.restore();
+}
+
+/* ---------- acid: a lobbed glob, a pool that eats whatever stands in it ---------- */
+function spit(t, e, st) {
+  const m = mouthPt(t), lead = posAt(e.s + e.sp * .5);
+  S.shots.push({ x0: m.x, y0: m.y, tx: lead.x, ty: lead.y, t: 0, dur: .3 + Math.hypot(lead.x - m.x, lead.y - m.y) / 6, r: .5 + .07 * Math.min(t.lvl, 3) + (st.mut ? .2 : 0), life: st.mut ? 8 : 4, dmg: st.dmg });
+  t.flash = .3; t.kx -= Math.cos(t.ang) * .1; t.ky -= Math.sin(t.ang) * .1; sfx('spit', 0, t.x);
+}
+function melt(e, sg, dmg) {
+  if (e.hp <= 0 || sg.gone) return;
+  const rr = (sg.rx + sg.ry) / 2, wa = rnd(0, TAU), was = armored(e);
+  if (was) dmg *= 2;                                                  // acid is what armour is afraid of
+  sg.bites.push({ a: wa, d: rr * rnd(.55, 1.05), r: rr * rnd(.22, .32) }); sg.dirty = true;
+  e.lastDmg = dmg; e.hp -= dmg; sg.dmg += dmg; e.shake = .1; sg.lsqV -= 3;
+  puff(sg.x, sg.y, 'rgba(210,255,150,.25)', 2, .6, .14); blood(sg.x, sg.y, 2, .5); sfx('sizzle', 0, sg.x);
+  if (was && !armored(e)) { for (const q of e.nodes) q.dirty = true; S.texts.push({ x: e.x, y: e.y - e.r, txt: 'панцирь растворён', life: .8, col: '#c8f06a' }); }
+  if (e.hp <= 0) kill(e, null, sg, wa);
+  else if (!sg.head && e.nodes[0] === sg && e.nodes.length > 1 && sg.dmg >= e.max * (e.kind === 'worm' ? .17 : .34)) sever(e, wa);
+}
+function updateAcid(dt) {
+  const ks = [];
+  for (const s of S.shots) {
+    s.t += dt;
+    if (s.t < s.dur) { ks.push(s); continue; }
+    S.acid.push({ x: s.tx, y: s.ty, r: s.r, life: s.life, max: s.life, dmg: s.dmg, ph: rnd(0, 6) });
+    for (let i = 0; i < 12; i++) { const a = rnd(0, TAU), v = rnd(.5, 2.5); addPart({ kind: 'blood', x: s.tx, y: s.ty, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: .3, max: .3, col: '#b6f04a', size: rnd(.04, .08), rot: 0, vr: 0, dry: true }); }
+    flash(s.tx, s.ty, 1.2, .2); sfx('sizzle', 0, s.tx);
+    if (dctx) { dctx.globalAlpha = .3; dctx.fillStyle = '#4c6a18'; dctx.beginPath(); dctx.arc(s.tx, s.ty, s.r * .9, 0, TAU); dctx.fill(); dctx.globalAlpha = 1; }
+  }
+  S.shots = ks;
+  for (const a of S.acid) {
+    a.life -= dt;
+    if (Math.random() < dt * 9) puff(a.x + rnd(-a.r, a.r) * .6, a.y + rnd(-a.r, a.r) * .6, 'rgba(200,255,120,.14)', 1, .3, .1);
+    for (const e of S.enemies) {
+      if (e.hp <= 0) continue;
+      const sg = e.nodes.find(q => Math.hypot(q.x - a.x, q.y - a.y) < a.r); if (!sg) continue;
+      e.acidT = (e.acidT || 0) + dt; if (e.acidT >= .4) { e.acidT = 0; melt(e, pick(e.nodes.filter(q => Math.hypot(q.x - a.x, q.y - a.y) < a.r + q.rx)), a.dmg); }
+    }
+    for (const sg of S.carc) if (!sg.gone && Math.hypot(sg.x - a.x, sg.y - a.y) < a.r) sg.rot = Math.min(1, (sg.rot || 0) + dt * .22);   // what lies in it dissolves fast
+  }
+  S.acid = S.acid.filter(a => a.life > 0);
+}
+function drawAcid() {
+  for (const a of S.acid) {
+    const k = Math.min(1, a.life / (a.max * .2)), gr = g.createRadialGradient(a.x, a.y, 0, a.x, a.y, a.r);
+    gr.addColorStop(0, 'rgba(190,255,90,' + (.55 * k) + ')'); gr.addColorStop(.7, 'rgba(110,200,40,' + (.4 * k) + ')'); gr.addColorStop(1, 'rgba(60,140,20,0)');
+    g.fillStyle = gr; g.beginPath(); for (let i = 0; i < 5; i++) { const q = a.ph + i * 1.26, ox = Math.cos(q) * a.r * .3, oy = Math.sin(q) * a.r * .3; g.moveTo(a.x + ox + a.r * .75, a.y + oy); g.arc(a.x + ox, a.y + oy, a.r * .75, 0, TAU); } g.fill();
+    g.strokeStyle = 'rgba(240,255,170,' + (.7 * k) + ')'; g.lineWidth = .012;
+    for (let i = 0; i < 7; i++) { const q = a.ph + i * 2.4, b = (S.time * .9 + i * .37) % 1, bx = a.x + Math.cos(q) * a.r * .6 * ((i * 37 % 10) / 10), by = a.y + Math.sin(q) * a.r * .6 * ((i * 53 % 10) / 10); g.beginPath(); g.arc(bx, by, .02 + .05 * b, 0, TAU); g.globalAlpha = 1 - b; g.stroke(); }
+    g.globalAlpha = 1;
+  }
+}
+function drawShots() {
+  for (const s of S.shots) {
+    const k = s.t / s.dur, x = s.x0 + (s.tx - s.x0) * k, y = s.y0 + (s.ty - s.y0) * k, h = Math.sin(k * Math.PI) * .7;
+    g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(x, y, .1, .06, 0, 0, TAU); g.fill();
+    const gr = g.createRadialGradient(x - .03, y - h - .03, 0, x, y - h, .13 + h * .05); gr.addColorStop(0, '#f6ffb0'); gr.addColorStop(.5, '#9be035'); gr.addColorStop(1, '#2f5a10');
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y - h, .1 + h * .05, 0, TAU); g.fill();
+    g.globalCompositeOperation = 'lighter'; glowAt(x, y - h, .4, '170,255,80', .35); g.globalCompositeOperation = 'source-over';
+  }
+}
+
+/* ---------- sinew: a dead body stays in one piece until something pulls it apart ---------- */
+function link(a, b, rest, k) { S.links.push({ a, b, rest, max: rest * (k || 1.9) + .06 }); }
+function updateLinks(dt) {
+  const keep = [];
+  for (const l of S.links) {
+    const a = l.a, b = l.b; if (a.gone || b.gone) continue;
+    const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1e-6;
+    if (d > l.max) { const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2; blood(mx, my, 7, .9); meat(mx, my, 1, .6); sfx('snap', 0, mx); if (Math.random() < .5) sfx('squelch', 0, mx); continue; }   // it tears
+    if (d > l.rest) {
+      const wa = a.dead && a.held <= 0 ? 1 : 0, wb = b.dead && b.held <= 0 ? 1 : 0, tot = wa + wb;
+      if (tot) { const diff = (d - l.rest) / d; a.x += dx * diff * wa / tot; a.y += dy * diff * wa / tot; b.x -= dx * diff * wb / tot; b.y -= dy * diff * wb / tot;
+        a.vx += dx * diff * wa / tot * 14; a.vy += dy * diff * wa / tot * 14; b.vx -= dx * diff * wb / tot * 14; b.vy -= dy * diff * wb / tot * 14; }
+    }
+    keep.push(l);
+  }
+  S.links = keep;
+}
+function drawLinks() {
+  g.lineCap = 'round';
+  for (const l of S.links) {
+    const d = Math.hypot(l.b.x - l.a.x, l.b.y - l.a.y), k = clamp(l.rest / (d || 1e-6), .35, 1);
+    for (const [w, col, o] of [[.1, '#4a0a14', 0], [.06, '#a81826', -.015], [.025, '#e0596a', .02]]) { g.strokeStyle = col; g.lineWidth = w * k; g.beginPath(); g.moveTo(l.a.x + o, l.a.y + o); g.lineTo(l.b.x + o, l.b.y + o); g.stroke(); }
+  }
 }
 
 function drawTower(t) {
-  const d = T[t.type], hr = d.hr, hx = t.hx + t.kx, hy = t.hy + t.ky, ls = t.type === 'glut' ? 1.5 : 1.3;
+  const d = T[t.type], hr = d.hr, hx = t.hx + t.kx, hy = t.hy + t.ky, ls = d.mouth ? 1.3 : 1.5;
   g.save(); g.translate(t.x, t.y); g.rotate(t.ph); g.drawImage(lairSpr, -ls / 2, -ls / 2, ls, ls); g.restore();
-  if (t.type === 'glut') {
+  if (t.lvl >= 4) { g.strokeStyle = 'rgba(255,60,80,' + (.45 + .25 * Math.sin(S.time * 5 + t.ph)) + ')'; g.lineWidth = .035; g.setLineDash([.1, .07]); g.lineDashOffset = -S.time * .4; g.beginPath(); g.arc(t.x, t.y, .56, 0, TAU); g.stroke(); g.setLineDash([]); }   // a mutant
+  if (t.type === 'grab') {
+    drawGrab(g, t.x, t.y, hr, t.tg ? 1 : t.chew > 0 ? Math.abs(Math.sin(t.chew * 22)) : .15 + .1 * Math.sin(S.time * 2 + t.ph), S.time + t.ph, t.gore, !!t.tg);
+    if (t.tg) drawTongue(t);
+  } else if (t.type === 'glut') {
     const p = Math.min(1, t.pt);
     const fold = t.phase === 'lunge' ? .14 - .32 * p : t.phase === 'back' ? 1 - .86 * p * p : t.chew > 0 ? .7 + .3 * Math.abs(Math.sin(t.chew * 20)) : t.flash > 0 ? 0 : .14 + .06 * Math.sin(S.time * 2 + t.ph);
     drawFlower(g, t.x, t.y, hr, fold, t.ph, t.gore, S.time + t.ph);
@@ -1624,7 +1835,7 @@ function drawTower(t) {
     if (t.phase === 'wind') { open = Math.min(1, t.pt); sx = 1 - .1 * Math.min(1, t.pt); }
     else if (t.phase === 'lunge') { open = 1; sx = 1 + .16 * Math.min(1, t.pt); }
     else if (t.phase === 'back') { open = t.carry ? .2 : .02; sx = 1 - .1 * (1 - Math.min(1, t.pt)); }
-    else if (t.tg) open = 1;
+    else if (t.tg || (t.type === 'acid' && t.flash > 0)) open = 1;
     else if (t.flash > 0) open = .8;
     else if (t.chew > 0) open = .45 * Math.abs(Math.sin(t.chew * 22));
     else open = .12 + .06 * Math.sin(S.time * 2.4 + t.ph);
@@ -1653,7 +1864,7 @@ function drawTower(t) {
   }
   for (let i = 0; i < t.lvl; i++) {
     const x = t.x - (t.lvl - 1) * .08 + i * .16, y = t.y + .5;
-    g.fillStyle = BONE; g.strokeStyle = DARK; g.lineWidth = .015; g.beginPath(); g.moveTo(x - .05, y - .05); g.lineTo(x + .05, y - .05); g.lineTo(x, y + .07); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = i >= 3 ? '#ff3c50' : BONE; g.strokeStyle = DARK; g.lineWidth = .015; g.beginPath(); g.moveTo(x - .05, y - .05); g.lineTo(x + .05, y - .05); g.lineTo(x, y + .07); g.closePath(); g.fill(); g.stroke();
   }
 }
 
@@ -1682,7 +1893,10 @@ function drawSeg(sg) {
     for (const o of [-.5, .5]) { g.beginPath(); g.moveTo(fx, fy); g.lineTo(fx + R * .12, fy + s * R * .05 + o * R * .1); g.stroke(); }
   }
   g.globalAlpha = 1;
-  if (!sg.dead) { const q = 1 + e.sq + .05 * e.soft * Math.sin(S.time * 7 + e.ph0 * 6 + sg.i); g.rotate(e.sqAng - sg.ang); g.scale(q, 1 / q); g.rotate(sg.ang - e.sqAng); }
+  if (!sg.dead) {
+    const q = 1 + e.sq + .05 * e.soft * Math.sin(S.time * 7 + e.ph0 * 6 + sg.i); g.rotate(e.sqAng - sg.ang); g.scale(q, 1 / q); g.rotate(sg.ang - e.sqAng);
+    if (sg.lsq) { g.rotate(sg.lsqAng - sg.ang); g.scale(1 + sg.lsq, 1 / (1 + sg.lsq)); g.rotate(sg.ang - sg.lsqAng); }
+  }
   g.drawImage(sg.spr, -sg.size / 2, -sg.size / 2, sg.size, sg.size);
   if (sg.head && !sg.dead && EYES[e.kind] && Math.sin(S.time * 1.3 + e.ph0 * 40) < .96) {   // eyes that catch the light, wider when it is scared
     const [ex, ey, rgb] = EYES[e.kind](sg, R), er = R * (e.panic ? .34 : .24);
@@ -1696,11 +1910,12 @@ const EYES = {
 };
 
 /* coloured light pooling on the ground, drifting mist, fireflies */
-const GLOW = { chomp: '255,190,90', neck: '190,120,255', lick: '140,255,170', glut: '255,70,90' };
+const GLOW = { chomp: '255,190,90', neck: '190,120,255', lick: '140,255,170', glut: '255,70,90', acid: '170,255,90', grab: '210,140,255' };
 function glowAt(x, y, r, rgb, a) { const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(' + rgb + ',' + a + ')'); gr.addColorStop(1, 'rgba(' + rgb + ',0)'); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); }
 function drawGlows() {
   g.globalCompositeOperation = 'lighter';
-  for (const t of S.towers) glowAt(t.hx, t.hy, 1.5 + .1 * t.lvl, GLOW[t.type], .13 + .03 * Math.sin(S.time * 3 + t.ph));
+  for (const t of S.towers) glowAt(t.hx, t.hy, 1.5 + .1 * t.lvl, GLOW[t.type], (t.lvl >= 4 ? .22 : .13) + .03 * Math.sin(S.time * 3 + t.ph));
+  for (const a of S.acid) glowAt(a.x, a.y, a.r * 1.6, '160,255,80', .16 * Math.min(1, a.life));
   for (const m of MUSH) glowAt(m.x, m.y, .8, '90,255,220', .15 + .05 * Math.sin(S.time * 1.3 + m.x * 5));
   glowAt(NEST.x, NEST.y, 1.2, '255,220,160', .1);
   g.globalCompositeOperation = 'source-over';
@@ -1728,6 +1943,7 @@ function drawLight() {                                               // darkness
   const hole = (x, y, r, a) => { const gr = lctx.createRadialGradient(x * k, y * k, 0, x * k, y * k, r * k); gr.addColorStop(0, 'rgba(0,0,0,' + a + ')'); gr.addColorStop(1, 'rgba(0,0,0,0)'); lctx.fillStyle = gr; lctx.beginPath(); lctx.arc(x * k, y * k, r * k, 0, TAU); lctx.fill(); };
   hole(NEST.x, NEST.y - .2, 1.5, .7);
   for (const m of MUSH) hole(m.x, m.y, .95, .5);
+  for (const a of S.acid) hole(a.x, a.y, a.r * 1.5, .55);
   for (const t of S.towers) hole(t.hx, t.hy, 1.35 + t.lvl * .15 + .06 * Math.sin(S.time * 3 + t.ph), .8);
   for (const f of S.flashes) hole(f.x, f.y, f.r, .95 * f.life / f.max);
   g.imageSmoothingEnabled = true; g.drawImage(light, 0, 0, COLS, ROWS);
@@ -1759,6 +1975,7 @@ function draw() {
     g.beginPath(); g.arc(S.sel.x, S.sel.y, st.range, 0, TAU); g.fill(); g.stroke(); g.setLineDash([]);
   }
   for (const t of S.towers) if (t.type === 'glut') drawTower(t);       // pits lie under everything that walks
+  drawAcid(); drawLinks();
   for (const sg of S.carc) {
     drawSeg(sg);
     if (sg.scrap) continue;
@@ -1771,6 +1988,7 @@ function draw() {
   for (const e of S.enemies) for (const sg of e.nodes) drawSeg(sg);
   for (const s of S.strands) drawStrand(s);
   for (const t of S.towers) if (t.type !== 'glut') drawTower(t);
+  drawShots();
   for (const p of S.parts) {
     const al = clamp(p.life / p.max * 2.5, 0, 1);
     g.globalAlpha = al; g.fillStyle = p.col;
@@ -1808,7 +2026,7 @@ function draw() {
   g.globalAlpha = 1;
   g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(vig, 0, 0);
   for (const l of S.lens) {
-    const al = Math.min(.8, l.life / l.max * 1.3), x = l.x * W, y = l.y * H, r = l.r * W, run = (l.max - l.life) * l.drip * H;
+    const al = Math.min(.6, l.life / l.max * 1.1), x = l.x * W, y = l.y * H, r = l.r * W, run = (l.max - l.life) * l.drip * H;
     g.globalAlpha = al; g.fillStyle = '#7a0b14';
     g.beginPath(); g.arc(x, y, r, 0, TAU); for (const [a, q, k] of l.sat) { g.moveTo(x + Math.cos(a) * r * q + r * k, y + Math.sin(a) * r * q); g.arc(x + Math.cos(a) * r * q, y + Math.sin(a) * r * q, r * k, 0, TAU); } g.fill();
     g.fillRect(x - r * .22, y, r * .44, run); g.beginPath(); g.arc(x, y + run, r * .3, 0, TAU); g.fill();
@@ -1872,7 +2090,8 @@ for (const key of Object.keys(T)) {
   ic.width = ic.height = 38 * q;
   const c = ic.getContext('2d'); c.scale(38 * q, 38 * q);
   if (key === 'glut') drawFlower(c, .5, .5, .43, .08, .3, 0, 0);
-  else { const [oy, r] = { chomp: [.64, .29], neck: [.67, .35], lick: [.52, .36] }[key]; drawMonster(c, key, .5, oy, r, -Math.PI / 2, .4, 1, 1, 0, false, 0); }
+  else if (key === 'grab') drawGrab(c, .5, .5, .3, .5, 1, 0, false);
+  else { const [oy, r] = { chomp: [.64, .29], neck: [.67, .35], lick: [.52, .36], acid: [.6, .3] }[key]; drawMonster(c, key, .5, oy, r, -Math.PI / 2, .4, 1, 1, 0, false, 0); }
   b.append(ic);
   const p = document.createElement('i'); p.textContent = d.cost; b.append(p);
   b.addEventListener('click', () => { S.build = S.build === key ? null : key; S.sel = null; sfx('tick'); if (S.build) toast(d.desc); ui(); });
@@ -1882,7 +2101,7 @@ $('up').addEventListener('click', () => {
   const t = S.sel; if (!t || t.lvl >= MAXLVL) return;
   const cost = upCost(t);
   if (S.coins < cost) { toast('Не хватает костей: нужно ' + cost); return; }
-  S.coins -= cost; t.spent += cost; t.lvl++; puff(t.x, t.y, 'rgba(234,223,200,.35)', 8, 1.6, .2); ring(t.x, t.y, '#ff8a3d', 1.2, .3); flash(t.x, t.y, 2, .3); sfx('place'); ui();
+  S.coins -= cost; t.spent += cost; t.lvl++; if (t.lvl >= 4) { banner(MUT[t.type].toUpperCase(), 'мутация: ' + T[t.type].name, 1.4); lens(1); S.shake = Math.max(S.shake, .1); sfx('roar'); } puff(t.x, t.y, 'rgba(234,223,200,.35)', 8, 1.6, .2); ring(t.x, t.y, '#ff8a3d', 1.2, .3); flash(t.x, t.y, 2, .3); sfx('place'); ui();
 });
 $('sell').addEventListener('click', () => {
   const t = S.sel; if (!t) return;
@@ -1904,11 +2123,11 @@ function ui() {
   $('panel').hidden = !t;
   if (t) {
     const st = tStat(t);
-    $('pname').textContent = T[t.type].name + ' ' + t.lvl;
+    $('pname').textContent = t.lvl >= 4 ? T[t.type].name + ' · ' + MUT[t.type] : T[t.type].name + ' ' + t.lvl;
     $('pstat').textContent = 'кусок ' + st.dmg + ' · ' + (1 / st.rate).toFixed(1) + '/с';
     const up = $('up');
     if (t.lvl >= MAXLVL) { up.textContent = 'Максимум'; up.disabled = true; }
-    else { up.innerHTML = 'Откормить<em>' + upCost(t) + '</em>'; up.disabled = S.coins < upCost(t); }
+    else { up.innerHTML = (t.lvl >= 3 ? 'Мутация' : 'Откормить') + '<em>' + upCost(t) + '</em>'; up.disabled = S.coins < upCost(t); }
     $('sell').innerHTML = 'Прогнать<em>+' + Math.round(t.spent * .6) + '</em>';
   }
   const go = $('go');
