@@ -64,55 +64,58 @@ test('boot: menu and a new game start without errors (desktop and phone)', async
 test('first visit: short menu fits 360x640, one tap plays, a snack waits; full menu after a finished run', async () => {
   for (const locale of ['ru-RU', 'en-US'])
     try {
-  const g = await open({ locale, width: 360, height: 640, touch: true, dpr: 2, play: false });
-  const menu = () =>
-    g.page.evaluate(() => {
-      const c = document.querySelector('#menu .card'),
-        shown = (id) => document.getElementById(id).offsetHeight > 0;
-      return {
-        over: c.scrollHeight - c.clientHeight,
-        first: document.body.classList.contains('first'),
-        rows: ['dif', 'skins', 'hats', 'mis', 'modeSeg'].filter(shown),
-        secs: ['secMode', 'secLook', 'secMis', 'secSet', 'secHelp'].filter(shown),
-        flavour: shown('sw'),
-        focus: document.activeElement && document.activeElement.id,
-      };
-    });
-  const a = await menu();
-  assert(a.first, 'a first visit was not recognised');
-  assert(a.over <= 1, `first-visit menu scrolls by ${a.over}px at 360x640`);
-  assert(a.rows.length === 0 && a.flavour, `first-visit menu shows ${a.rows} (flavour shown: ${a.flavour})`);
-  assert(a.focus !== 'nick', 'the name field took the focus and would open the keyboard');
-  await g.page.tap('#play');
-  await g.page.waitForTimeout(250);
-  const p = await g.page.evaluate(() => {
-    const k = window.__kus,
-      P = k.player,
-      q = k.blobs.find((b) => b.tame);
-    return {
-      state: k.state,
-      name: P.name,
-      diff: localStorage.getItem('kus.diff'),
-      mode: localStorage.getItem('kus.mode'),
-      gap: q ? Math.hypot(q.x - P.x, q.y - P.y) - q.Rs - P.Rs : null,
-      small: q && q.mass < P.mass / 2,
-    };
-  });
-  assert(p.state === 'play' && p.name === (locale === 'en-US' ? 'Kusaka' : 'Кусака'), `Play with an empty name: state ${p.state}, name ${p.name}`);
-  assert(p.diff === 'normal' && p.mode === 'free', `first run must be normal and free, got ${p.diff}/${p.mode}`);
-  assert(p.gap !== null && p.gap < 120 && p.small, `no small snack in front of the new player (gap ${p.gap})`);
-  await g.page.tap('#pauseBtn');
-  await g.page.waitForTimeout(150);
-  await g.page.tap('#pMenu');
-  await g.page.waitForTimeout(250);
-  const b = await menu();
-  assert(!b.first && b.secs.length === 5, `after a finished run the menu must show all five sections, shows ${b.secs}`);
-  assert(!(await g.page.evaluate(() => window.__kus.blobs.some((x) => x.tame))), 'the snack stayed tame after the run');
-  await g.page.reload();
-  await g.page.waitForTimeout(600);
-  assert(!(await menu()).first, 'the full menu was not remembered');
-  assert(g.errors.length === 0, g.errors.join(' | '));
-  await g.close();
+      const g = await open({ locale, width: 360, height: 640, touch: true, dpr: 2, play: false });
+      const menu = () =>
+        g.page.evaluate(() => {
+          const c = document.querySelector('#menu .card'),
+            shown = (id) => document.getElementById(id).offsetHeight > 0;
+          return {
+            over: c.scrollHeight - c.clientHeight,
+            first: document.body.classList.contains('first'),
+            rows: ['dif', 'skins', 'hats', 'mis', 'modeSeg'].filter(shown),
+            secs: ['secMode', 'secLook', 'secMis', 'secSet', 'secHelp'].filter(shown),
+            flavour: shown('sw'),
+            focus: document.activeElement && document.activeElement.id,
+          };
+        });
+      const a = await menu();
+      assert(a.first, 'a first visit was not recognised');
+      assert(a.over <= 1, `first-visit menu scrolls by ${a.over}px at 360x640`);
+      assert(a.rows.length === 0 && a.flavour, `first-visit menu shows ${a.rows} (flavour shown: ${a.flavour})`);
+      assert(a.focus !== 'nick', 'the name field took the focus and would open the keyboard');
+      await g.page.tap('#play');
+      await g.page.waitForTimeout(250);
+      const p = await g.page.evaluate(() => {
+        const k = window.__kus,
+          P = k.player,
+          q = k.blobs.find((b) => b.tame);
+        return {
+          state: k.state,
+          name: P.name,
+          diff: localStorage.getItem('kus.diff'),
+          mode: localStorage.getItem('kus.mode'),
+          gap: q ? Math.hypot(q.x - P.x, q.y - P.y) - q.Rs - P.Rs : null,
+          small: q && q.mass < P.mass / 2,
+        };
+      });
+      assert(
+        p.state === 'play' && p.name === (locale === 'en-US' ? 'Kusaka' : 'Кусака'),
+        `Play with an empty name: state ${p.state}, name ${p.name}`,
+      );
+      assert(p.diff === 'normal' && p.mode === 'free', `first run must be normal and free, got ${p.diff}/${p.mode}`);
+      assert(p.gap !== null && p.gap < 120 && p.small, `no small snack in front of the new player (gap ${p.gap})`);
+      await g.page.tap('#pauseBtn');
+      await g.page.waitForTimeout(150);
+      await g.page.tap('#pMenu');
+      await g.page.waitForTimeout(250);
+      const b = await menu();
+      assert(!b.first && b.secs.length === 5, `after a finished run the menu must show all five sections, shows ${b.secs}`);
+      assert(!(await g.page.evaluate(() => window.__kus.blobs.some((x) => x.tame))), 'the snack stayed tame after the run');
+      await g.page.reload();
+      await g.page.waitForTimeout(600);
+      assert(!(await menu()).first, 'the full menu was not remembered');
+      assert(g.errors.length === 0, g.errors.join(' | '));
+      await g.close();
     } catch (e) {
       throw new Error(locale + ': ' + e.message);
     }
@@ -121,79 +124,79 @@ test('first visit: short menu fits 360x640, one tap plays, a snack waits; full m
 test('menu: sections and Play fit the screen, nothing overlaps, targets are 44px; an opened section scrolls into view', async () => {
   for (const locale of ['ru-RU', 'en-US'])
     try {
-  for (const [w, h, touch] of [
-    [1280, 720, false],
-    [360, 640, true],
-    [844, 390, true],
-  ]) {
-    const g = await open({ locale, width: w, height: h, touch, dpr: 2, play: false, returning: true });
-    const tag = `${w}x${h}`;
-    const r = await g.page.evaluate(() => {
-      const vis = (e) => e.offsetWidth > 0 && e.offsetHeight > 0,
-        els = [...document.querySelectorAll('#menu button, #menu input')].filter(vis),
-        box = els.map((e) => [e.id || e.className || e.textContent.slice(0, 12), e.getBoundingClientRect()]),
-        c = document.querySelector('#menu .card'),
-        out = { n: els.length, off: [], small: [], hit: [], over: c.scrollHeight - c.clientHeight };
-      for (const [n, b] of box) {
-        if (b.left < 0 || b.top < 0 || b.right > innerWidth || b.bottom > innerHeight) out.off.push(n);
-        if (b.height < 44 || b.width < 44) out.small.push(`${n} ${Math.round(b.width)}x${Math.round(b.height)}`);
-      }
-      for (let i = 0; i < box.length; i++)
-        for (let j = i + 1; j < box.length; j++) {
-          const a = box[i][1],
-            b = box[j][1];
-          if (a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1)
-            out.hit.push(box[i][0] + ' / ' + box[j][0]);
-        }
-      return out;
-    });
-    assert(g.errors.length === 0, g.errors.join(' | '));
-    assert(r.n >= 8, `${tag}: only ${r.n} menu controls are visible`);
-    assert(r.over <= 1, `${tag}: the folded menu scrolls by ${r.over}px`);
-    assert(!r.off.length, `${tag}: off the screen: ${r.off}`);
-    assert(!r.small.length, `${tag}: smaller than 44px: ${r.small}`);
-    assert(!r.hit.length, `${tag}: overlapping: ${r.hit}`);
-    for (const id of ['secMode', 'secLook', 'secMis', 'secSet', 'secHelp']) {
-      await g.page.click(`#${id} .sh`);
-      await g.page.waitForTimeout(260);
-      const o = await g.page.evaluate((id) => {
-        const p = document.getElementById('play').getBoundingClientRect(),
-          f = document.getElementById(id).querySelector('.sb').firstElementChild.getBoundingClientRect(),
-          open = [...document.querySelectorAll('#menu .sec.open')].map((x) => x.id);
-        return {
-          open,
-          play: p.top >= 0 && p.bottom <= innerHeight && p.left >= 0 && p.right <= innerWidth,
-          first: f.top >= 0 && f.bottom <= innerHeight && (f.bottom <= p.top + 1 || f.right <= p.left), // above Play, or beside it sideways
-        };
-      }, id);
-      assert(o.open.length === 1 && o.open[0] === id, `${tag}: open sections ${o.open}, expected only ${id}`);
-      assert(o.play, `${tag}: Play left the screen with ${id} open`);
-      assert(o.first, `${tag}: ${id} opened out of sight`);
-      if (id === 'secMode') {
-        const d = await g.page.evaluate(() =>
-          [...document.querySelectorAll('#diffSeg button')].map((e) => {
-            const b = e.getBoundingClientRect();
+      for (const [w, h, touch] of [
+        [1280, 720, false],
+        [360, 640, true],
+        [844, 390, true],
+      ]) {
+        const g = await open({ locale, width: w, height: h, touch, dpr: 2, play: false, returning: true });
+        const tag = `${w}x${h}`;
+        const r = await g.page.evaluate(() => {
+          const vis = (e) => e.offsetWidth > 0 && e.offsetHeight > 0,
+            els = [...document.querySelectorAll('#menu button, #menu input')].filter(vis),
+            box = els.map((e) => [e.id || e.className || e.textContent.slice(0, 12), e.getBoundingClientRect()]),
+            c = document.querySelector('#menu .card'),
+            out = { n: els.length, off: [], small: [], hit: [], over: c.scrollHeight - c.clientHeight };
+          for (const [n, b] of box) {
+            if (b.left < 0 || b.top < 0 || b.right > innerWidth || b.bottom > innerHeight) out.off.push(n);
+            if (b.height < 44 || b.width < 44) out.small.push(`${n} ${Math.round(b.width)}x${Math.round(b.height)}`);
+          }
+          for (let i = 0; i < box.length; i++)
+            for (let j = i + 1; j < box.length; j++) {
+              const a = box[i][1],
+                b = box[j][1];
+              if (a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1)
+                out.hit.push(box[i][0] + ' / ' + box[j][0]);
+            }
+          return out;
+        });
+        assert(g.errors.length === 0, g.errors.join(' | '));
+        assert(r.n >= 8, `${tag}: only ${r.n} menu controls are visible`);
+        assert(r.over <= 1, `${tag}: the folded menu scrolls by ${r.over}px`);
+        assert(!r.off.length, `${tag}: off the screen: ${r.off}`);
+        assert(!r.small.length, `${tag}: smaller than 44px: ${r.small}`);
+        assert(!r.hit.length, `${tag}: overlapping: ${r.hit}`);
+        for (const id of ['secMode', 'secLook', 'secMis', 'secSet', 'secHelp']) {
+          await g.page.click(`#${id} .sh`);
+          await g.page.waitForTimeout(260);
+          const o = await g.page.evaluate((id) => {
+            const p = document.getElementById('play').getBoundingClientRect(),
+              f = document.getElementById(id).querySelector('.sb').firstElementChild.getBoundingClientRect(),
+              open = [...document.querySelectorAll('#menu .sec.open')].map((x) => x.id);
             return {
-              v: e.dataset.v,
-              ok: b.left >= 0 && b.right <= innerWidth && b.width >= 44 && b.height >= 44,
-              clip: e.scrollWidth > e.clientWidth + 1,
-              sw: e.scrollWidth,
-              cw: e.clientWidth,
-              w: Math.round(b.width),
-              h: Math.round(b.height),
-              top: Math.round(b.top),
+              open,
+              play: p.top >= 0 && p.bottom <= innerHeight && p.left >= 0 && p.right <= innerWidth,
+              first: f.top >= 0 && f.bottom <= innerHeight && (f.bottom <= p.top + 1 || f.right <= p.left), // above Play, or beside it sideways
             };
-          }),
-        );
-        assert(d.length === 4, `${tag}: ${d.length} difficulty buttons, expected 4`);
-        assert(new Set(d.map((x) => x.top)).size === 1, `${tag}: the difficulty buttons do not share one row`);
-        for (const x of d) assert(x.ok && !x.clip, `${tag}: difficulty ${x.v} is off the screen, small or clipped ${JSON.stringify(x)}`);
+          }, id);
+          assert(o.open.length === 1 && o.open[0] === id, `${tag}: open sections ${o.open}, expected only ${id}`);
+          assert(o.play, `${tag}: Play left the screen with ${id} open`);
+          assert(o.first, `${tag}: ${id} opened out of sight`);
+          if (id === 'secMode') {
+            const d = await g.page.evaluate(() =>
+              [...document.querySelectorAll('#diffSeg button')].map((e) => {
+                const b = e.getBoundingClientRect();
+                return {
+                  v: e.dataset.v,
+                  ok: b.left >= 0 && b.right <= innerWidth && b.width >= 44 && b.height >= 44,
+                  clip: e.scrollWidth > e.clientWidth + 1,
+                  sw: e.scrollWidth,
+                  cw: e.clientWidth,
+                  w: Math.round(b.width),
+                  h: Math.round(b.height),
+                  top: Math.round(b.top),
+                };
+              }),
+            );
+            assert(d.length === 4, `${tag}: ${d.length} difficulty buttons, expected 4`);
+            assert(new Set(d.map((x) => x.top)).size === 1, `${tag}: the difficulty buttons do not share one row`);
+            for (const x of d) assert(x.ok && !x.clip, `${tag}: difficulty ${x.v} is off the screen, small or clipped ${JSON.stringify(x)}`);
+          }
+        }
+        await g.page.click('#secHelp .sh');
+        assert(!(await g.page.evaluate(() => document.querySelector('#menu .sec.open'))), `${tag}: a second tap must fold the section`);
+        await g.close();
       }
-    }
-    await g.page.click('#secHelp .sh');
-    assert(!(await g.page.evaluate(() => document.querySelector('#menu .sec.open'))), `${tag}: a second tap must fold the section`);
-    await g.close();
-  }
     } catch (e) {
       throw new Error(locale + ': ' + e.message);
     }
@@ -202,21 +205,21 @@ test('menu: sections and Play fit the screen, nothing overlaps, targets are 44px
 test('phone: play controls stay inside the screen', async () => {
   for (const locale of ['ru-RU', 'en-US'])
     try {
-  for (const [width, height] of [
-    [390, 844],
-    [360, 640],
-    [844, 390],
-  ]) {
-    const g = await open({ locale, width, height, touch: true, dpr: 2 });
-    const r = await g.page.evaluate(() =>
-      ['dash', 'dodge'].map((id) => {
-        const b = document.getElementById(id).getBoundingClientRect();
-        return b.left >= 0 && b.top >= 0 && b.right <= innerWidth && b.bottom <= innerHeight && b.width > 30;
-      }),
-    );
-    assert(r.every(Boolean), `bite/tongue buttons off screen at ${width}x${height}`);
-    await g.close();
-  }
+      for (const [width, height] of [
+        [390, 844],
+        [360, 640],
+        [844, 390],
+      ]) {
+        const g = await open({ locale, width, height, touch: true, dpr: 2 });
+        const r = await g.page.evaluate(() =>
+          ['dash', 'dodge'].map((id) => {
+            const b = document.getElementById(id).getBoundingClientRect();
+            return b.left >= 0 && b.top >= 0 && b.right <= innerWidth && b.bottom <= innerHeight && b.width > 30;
+          }),
+        );
+        assert(r.every(Boolean), `bite/tongue buttons off screen at ${width}x${height}`);
+        await g.close();
+      }
     } catch (e) {
       throw new Error(locale + ': ' + e.message);
     }
@@ -723,37 +726,39 @@ test('album: no sticker with cheats; a full row pays sugar once', async () => {
 test('album: the end screen with new stickers and a full row still fits phones without scrolling', async () => {
   for (const locale of ['ru-RU', 'en-US'])
     try {
-  for (const [w, h] of [
-    [360, 640],
-    [844, 390],
-  ]) {
-    const g = await open({ locale, width: w, height: h, touch: true, dpr: 2, play: false, returning: true });
-    const r = await g.page.evaluate(() => {
-      const k = window.__kus;
-      for (const n of ['Мармеладка', 'Желешка', 'Жвачка', 'Тянучка']) k.album.c[n] = 1;
-      k.pause(true);
-      k.setMode('t3');
-      k.startGame();
-      k.player.spawnT = 0;
-      for (let i = 0; i < 12; i++) k.mission('bites', 1);
-      for (const n of ['Зефирка', 'Суфле', 'Безе', 'Мусс', 'Бабл-гам']) k.albumEat({ name: n });
-      k.setTimeLeft(0.001);
-      for (let i = 0; i < 90; i++) k.update(1 / 60);
-      const c = document.querySelector('#over .card');
-      return {
-        line: document.getElementById('stk').textContent,
-        shown: document.getElementById('stk').offsetHeight > 0,
-        over: c.scrollHeight - c.clientHeight,
-      };
-    });
-    assert(
-      r.shown && r.line.includes(locale === 'en-US' ? 'Row “Chewy” complete' : 'Ряд «Тягучие» собран') && r.line.includes(locale === 'en-US' ? '9 of 30' : '9 из 30'),
-      `${w}x${h}: sticker line "${r.line}" (shown ${r.shown})`,
-    );
-    assert(r.over <= 1, `${w}x${h}: the end screen scrolls by ${r.over}px with "${r.line}"`);
-    assert(g.errors.length === 0, g.errors.join(' | '));
-    await g.close();
-  }
+      for (const [w, h] of [
+        [360, 640],
+        [844, 390],
+      ]) {
+        const g = await open({ locale, width: w, height: h, touch: true, dpr: 2, play: false, returning: true });
+        const r = await g.page.evaluate(() => {
+          const k = window.__kus;
+          for (const n of ['Мармеладка', 'Желешка', 'Жвачка', 'Тянучка']) k.album.c[n] = 1;
+          k.pause(true);
+          k.setMode('t3');
+          k.startGame();
+          k.player.spawnT = 0;
+          for (let i = 0; i < 12; i++) k.mission('bites', 1);
+          for (const n of ['Зефирка', 'Суфле', 'Безе', 'Мусс', 'Бабл-гам']) k.albumEat({ name: n });
+          k.setTimeLeft(0.001);
+          for (let i = 0; i < 90; i++) k.update(1 / 60);
+          const c = document.querySelector('#over .card');
+          return {
+            line: document.getElementById('stk').textContent,
+            shown: document.getElementById('stk').offsetHeight > 0,
+            over: c.scrollHeight - c.clientHeight,
+          };
+        });
+        assert(
+          r.shown &&
+            r.line.includes(locale === 'en-US' ? 'Row “Chewy” complete' : 'Ряд «Тягучие» собран') &&
+            r.line.includes(locale === 'en-US' ? '9 of 30' : '9 из 30'),
+          `${w}x${h}: sticker line "${r.line}" (shown ${r.shown})`,
+        );
+        assert(r.over <= 1, `${w}x${h}: the end screen scrolls by ${r.over}px with "${r.line}"`);
+        assert(g.errors.length === 0, g.errors.join(' | '));
+        await g.close();
+      }
     } catch (e) {
       throw new Error(locale + ': ' + e.message);
     }
@@ -762,56 +767,56 @@ test('album: the end screen with new stickers and a full row still fits phones w
 test('album: the page opens and closes, fits phones, stickers are big enough to tap', async () => {
   for (const locale of ['ru-RU', 'en-US'])
     try {
-  for (const [w, h] of [
-    [360, 640],
-    [844, 390],
-  ]) {
-    const g = await open({ locale, width: w, height: h, touch: true, dpr: 2, play: false, returning: true });
-    const row = await g.page.evaluate(() => document.querySelector('.bankRow').getBoundingClientRect().height);
-    await g.page.tap('#albumBtn');
-    await g.page.waitForTimeout(150);
-    const r = await g.page.evaluate(() => {
-      const c = document.querySelector('#album .card').getBoundingClientRect(),
-        st = [...document.querySelectorAll('#album .st')].map((b) => b.getBoundingClientRect());
-      const t0 = performance.now();
-      window.__kus.closeAlbum();
-      window.__kus.openAlbum();
-      return {
-        open: !document.getElementById('album').classList.contains('hidden'),
-        top: c.top,
-        bottom: c.bottom,
-        left: c.left,
-        right: c.right,
-        n: st.length,
-        minW: Math.min(...st.map((b) => b.width)),
-        minH: Math.min(...st.map((b) => b.height)),
-        reopen: performance.now() - t0,
-        page: document.scrollingElement.scrollTop,
-      };
-    });
-    const tag = `${w}x${h}`;
-    assert(r.open && r.n === 30, `${tag}: album open ${r.open}, ${r.n} stickers`);
-    assert(r.top >= 0 && r.left >= 0 && r.bottom <= h && r.right <= w && r.page === 0, `${tag}: the page leaves the screen ${JSON.stringify(r)}`);
-    assert(r.minW >= 44 && r.minH >= 44, `${tag}: a sticker is ${r.minW}x${r.minH}, less than 44px`);
-    assert(r.reopen < 50, `${tag}: reopening took ${r.reopen.toFixed(1)} ms`);
-    assert(row <= 48, `${tag}: the sugar line with the album button is ${row}px high`);
-    await g.page.keyboard.press('Escape');
-    await g.page.waitForTimeout(80);
-    const esc = await g.page.evaluate(() => document.getElementById('album').classList.contains('hidden'));
-    await g.page.tap('#albumBtn');
-    await g.page.waitForTimeout(80);
-    await g.page.tap('#albumX');
-    await g.page.waitForTimeout(80);
-    const x = await g.page.evaluate(() => ({ hidden: document.getElementById('album').classList.contains('hidden'), state: window.__kus.state }));
-    assert(esc, `${tag}: Esc did not close the album`);
-    assert(x.hidden && x.state === 'menu', `${tag}: the close button did not close the album (${JSON.stringify(x)})`);
-    assert(g.errors.length === 0, g.errors.join(' | '));
-    await g.close();
-  }
-  const f = await open({ locale, width: 360, height: 640, touch: true, dpr: 2, play: false });
-  const first = await f.page.evaluate(() => document.getElementById('albumBtn').offsetHeight);
-  assert(first === 0, 'the album button must wait until the first run is over');
-  await f.close();
+      for (const [w, h] of [
+        [360, 640],
+        [844, 390],
+      ]) {
+        const g = await open({ locale, width: w, height: h, touch: true, dpr: 2, play: false, returning: true });
+        const row = await g.page.evaluate(() => document.querySelector('.bankRow').getBoundingClientRect().height);
+        await g.page.tap('#albumBtn');
+        await g.page.waitForTimeout(150);
+        const r = await g.page.evaluate(() => {
+          const c = document.querySelector('#album .card').getBoundingClientRect(),
+            st = [...document.querySelectorAll('#album .st')].map((b) => b.getBoundingClientRect());
+          const t0 = performance.now();
+          window.__kus.closeAlbum();
+          window.__kus.openAlbum();
+          return {
+            open: !document.getElementById('album').classList.contains('hidden'),
+            top: c.top,
+            bottom: c.bottom,
+            left: c.left,
+            right: c.right,
+            n: st.length,
+            minW: Math.min(...st.map((b) => b.width)),
+            minH: Math.min(...st.map((b) => b.height)),
+            reopen: performance.now() - t0,
+            page: document.scrollingElement.scrollTop,
+          };
+        });
+        const tag = `${w}x${h}`;
+        assert(r.open && r.n === 30, `${tag}: album open ${r.open}, ${r.n} stickers`);
+        assert(r.top >= 0 && r.left >= 0 && r.bottom <= h && r.right <= w && r.page === 0, `${tag}: the page leaves the screen ${JSON.stringify(r)}`);
+        assert(r.minW >= 44 && r.minH >= 44, `${tag}: a sticker is ${r.minW}x${r.minH}, less than 44px`);
+        assert(r.reopen < 50, `${tag}: reopening took ${r.reopen.toFixed(1)} ms`);
+        assert(row <= 48, `${tag}: the sugar line with the album button is ${row}px high`);
+        await g.page.keyboard.press('Escape');
+        await g.page.waitForTimeout(80);
+        const esc = await g.page.evaluate(() => document.getElementById('album').classList.contains('hidden'));
+        await g.page.tap('#albumBtn');
+        await g.page.waitForTimeout(80);
+        await g.page.tap('#albumX');
+        await g.page.waitForTimeout(80);
+        const x = await g.page.evaluate(() => ({ hidden: document.getElementById('album').classList.contains('hidden'), state: window.__kus.state }));
+        assert(esc, `${tag}: Esc did not close the album`);
+        assert(x.hidden && x.state === 'menu', `${tag}: the close button did not close the album (${JSON.stringify(x)})`);
+        assert(g.errors.length === 0, g.errors.join(' | '));
+        await g.close();
+      }
+      const f = await open({ locale, width: 360, height: 640, touch: true, dpr: 2, play: false });
+      const first = await f.page.evaluate(() => document.getElementById('albumBtn').offsetHeight);
+      assert(first === 0, 'the album button must wait until the first run is over');
+      await f.close();
     } catch (e) {
       throw new Error(locale + ': ' + e.message);
     }
@@ -1154,12 +1159,12 @@ test('stages: beating the boss ends the run with a record, not with cheats; the 
 test('stages: the trophy card fits a phone: close button out of the bitten corner, the card scrolls in landscape', async () => {
   for (const locale of ['ru-RU', 'en-US'])
     try {
-  for (const [w, h] of [
-    [390, 844],
-    [844, 390],
-  ]) {
-    const g = await open({ locale, width: w, height: h, touch: true, play: false, returning: true });
-    const r = await g.page.evaluate(`(() => { ${STG}
+      for (const [w, h] of [
+        [390, 844],
+        [844, 390],
+      ]) {
+        const g = await open({ locale, width: w, height: h, touch: true, play: false, returning: true });
+        const r = await g.page.evaluate(`(() => { ${STG}
       const P = free(); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1); const B = S().cur.b; B.spawnT = 0; B.ai = null; B.mass = 60;
       k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
       while (k.state === 'play' && f++ < 400) { P.tx = B.x; P.ty = B.y; B.tx = B.x; B.ty = B.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); }
@@ -1167,14 +1172,14 @@ test('stages: the trophy card fits a phone: close button out of the bitten corne
       const again = document.getElementById('again'); again.scrollIntoView(); const ar = again.getBoundingClientRect();
       return { trophy: c.classList.contains('trophy'), x: [x.left, x.top, x.right, x.bottom], card: [cr.left, cr.top, cr.right, cr.bottom],
         scrolls: c.scrollHeight > c.clientHeight, againIn: ar.top >= 0 && ar.bottom <= innerHeight, w: innerWidth, h: innerHeight }; })()`);
-    const [xl, xt, xr, xb] = r.x;
-    assert(r.trophy, `${w}x${h}: no trophy`);
-    assert(xl >= 0 && xt >= 0 && xr <= r.w && xb <= r.h, `${w}x${h}: close button off screen ${r.x}`);
-    assert(!(xr > r.card[2] - 60 && xt < r.card[1] + 60), `${w}x${h}: close button in the bitten corner ${r.x} card ${r.card}`);
-    assert(r.againIn, `${w}x${h}: the main button cannot be reached`);
-    assert(g.errors.length === 0, g.errors.join(' | '));
-    await g.close();
-  }
+        const [xl, xt, xr, xb] = r.x;
+        assert(r.trophy, `${w}x${h}: no trophy`);
+        assert(xl >= 0 && xt >= 0 && xr <= r.w && xb <= r.h, `${w}x${h}: close button off screen ${r.x}`);
+        assert(!(xr > r.card[2] - 60 && xt < r.card[1] + 60), `${w}x${h}: close button in the bitten corner ${r.x} card ${r.card}`);
+        assert(r.againIn, `${w}x${h}: the main button cannot be reached`);
+        assert(g.errors.length === 0, g.errors.join(' | '));
+        await g.close();
+      }
     } catch (e) {
       throw new Error(locale + ': ' + e.message);
     }
@@ -1298,12 +1303,12 @@ test('stages: the HUD stage line stays clear of the table on phones, next to a c
 test('hud: cream pills fit phones; the stage pill fills and its jaws chomp when the event starts', async () => {
   for (const locale of ['ru-RU', 'en-US'])
     try {
-  for (const opt of [
-    { width: 360, height: 640, touch: true, dpr: 2 },
-    { width: 844, height: 390, touch: true, dpr: 2 },
-  ]) {
-    const g = await open({ locale, ...opt, play: false, returning: true });
-    const r = await g.page.evaluate(`(() => { ${STG} const out = {};
+      for (const opt of [
+        { width: 360, height: 640, touch: true, dpr: 2 },
+        { width: 844, height: 390, touch: true, dpr: 2 },
+      ]) {
+        const g = await open({ locale, ...opt, play: false, returning: true });
+        const r = await g.page.evaluate(`(() => { ${STG} const out = {};
       const P = free(); P.stats.maxMass = 135; P.mass = 135; P.pMagnet = 4.9; run(1 / 30);
       const st = document.getElementById('stage'), fx = document.getElementById('fx');
       out.hungry = st.classList.contains('hungry'); out.chomp0 = st.classList.contains('chomp');
@@ -1330,21 +1335,24 @@ test('hud: cream pills fit phones; the stage pill fills and its jaws chomp when 
       out.late = late; out.chomp = st.classList.contains('chomp'); out.hungry2 = st.classList.contains('hungry');
       run(1); out.chomp1 = st.classList.contains('chomp');
       return out; })()`);
-    const w = `${opt.width}x${opt.height}`;
-    assert(r.hungry && !r.chomp0 && r.kind === 'pir', `${w}: waiting at p~0.9 must be hungry, not chomping (${JSON.stringify(r)})`);
-    assert(Math.abs(r.p - 0.9) <= 0.02 && r.ic, `${w}: --p ${r.p}, icon ${r.ic}`);
-    assert(r.right <= 216 && !r.hit, `${w}: the HUD column ends at ${r.right}px or runs into the table`);
-    assert(r.n3 === 3 && r.fxRight <= 216 && !r.fxHit && !r.split, `${w}: three buffs: ${JSON.stringify([r.n3, r.fxRight, r.fxHit, r.split])}`);
-    assert(r.rows === 7 || opt.height < 520, `${w}: the setup needs the tall table, it has ${r.rows} rows`);
-    assert(r.started && r.late <= 2 && r.chomp && !r.hungry2, `${w}: the jaws must chomp within 2 frames of the raid start (${JSON.stringify(r)})`);
-    assert(!r.chomp1, `${w}: the chomp must stop after about 0.64 s`);
-    assert(
-      r.coins === 1 && r.t > 0.55 && r.t < 0.65 && r.fxText === (locale === 'en-US' ? '5 s' : '5 с') && !r.streakChip,
-      `${w}: buff coin ${JSON.stringify([r.coins, r.t, r.fxText])}`,
-    );
-    assert(g.errors.length === 0, g.errors.join(' | '));
-    await g.close();
-  }
+        const w = `${opt.width}x${opt.height}`;
+        assert(r.hungry && !r.chomp0 && r.kind === 'pir', `${w}: waiting at p~0.9 must be hungry, not chomping (${JSON.stringify(r)})`);
+        assert(Math.abs(r.p - 0.9) <= 0.02 && r.ic, `${w}: --p ${r.p}, icon ${r.ic}`);
+        assert(r.right <= 216 && !r.hit, `${w}: the HUD column ends at ${r.right}px or runs into the table`);
+        assert(r.n3 === 3 && r.fxRight <= 216 && !r.fxHit && !r.split, `${w}: three buffs: ${JSON.stringify([r.n3, r.fxRight, r.fxHit, r.split])}`);
+        assert(r.rows === 7 || opt.height < 520, `${w}: the setup needs the tall table, it has ${r.rows} rows`);
+        assert(
+          r.started && r.late <= 2 && r.chomp && !r.hungry2,
+          `${w}: the jaws must chomp within 2 frames of the raid start (${JSON.stringify(r)})`,
+        );
+        assert(!r.chomp1, `${w}: the chomp must stop after about 0.64 s`);
+        assert(
+          r.coins === 1 && r.t > 0.55 && r.t < 0.65 && r.fxText === (locale === 'en-US' ? '5 s' : '5 с') && !r.streakChip,
+          `${w}: buff coin ${JSON.stringify([r.coins, r.t, r.fxText])}`,
+        );
+        assert(g.errors.length === 0, g.errors.join(' | '));
+        await g.close();
+      }
     } catch (e) {
       throw new Error(locale + ': ' + e.message);
     }
@@ -1979,6 +1987,15 @@ test('settings: the language row keeps the same gap to the next heading as the o
   }
   const ref = gaps.phone.other;
   assert(ref > 6 && Math.abs(gaps.phone.lang - ref) <= 1 && Math.abs(gaps.pc.lang - ref) <= 1, `gaps after the language row vs the others: ${JSON.stringify(gaps)}`);
+});
+
+test('lang: the English stage pill says the number before an event is mass, not time', async () => {
+  const g = await open({ play: false, returning: true, locale: 'en-US' });
+  const r = await g.page.evaluate(`(() => { ${STG} free(); run(0.5);
+    const el = document.getElementById('stage');
+    return { label: el.querySelector('.t').textContent.trim(), num: el.querySelector('b').textContent.trim() }; })()`);
+  assert(/mass/i.test(r.label) && !/\bin$/.test(r.label) && /^\d+$/.test(r.num), `stage pill: "${r.label}" + "${r.num}"`);
+  await g.close();
 });
 
 for (const [name, fn] of tests) {

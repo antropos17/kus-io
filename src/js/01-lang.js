@@ -347,7 +347,7 @@ const STR = {
   'stg.n.boss': ['торт', 'cake'],
   'stg.n.pir': ['пираньи', 'piranhas'],
   'stg.n.rain': ['дождь', 'rain'],
-  'stg.to': [(e, n) => `до ${e} ${n}`, (e, n) => `${e} in ${n}`],
+  'stg.to': [(e, n) => `до ${e} ${n}`, (e, n) => `mass to ${e} ${n}`], // the number is mass left, not seconds; it stays last for the pill's number slot
   'feed.lap': [
     (n) => `<b>Смена ${n}</b>: пираньи, дождь и торт по кругу, быстрее. Торт сильнее`,
     (n) => `<b>Shift ${n}</b>: piranhas, rain and cake again, faster. The cake is stronger`,

@@ -47,7 +47,7 @@ Sound takes are made outside the repository with earshot (https://github.com/Leo
 | File | What is inside |
 |---|---|
 | `01-helpers` | `clamp`, `lerp`, `rand`, `angDiff`, `vnoise`, `FONT` |
-| `01-lang` | the language: `LANG` (`kus.lang`, else the phone's language), the string table `STR` and `t`, English candy names `EN_NAMES` with `nameOf`/`accOf` (Russian names stay the save keys), `applyLang` for the `data-t`/`data-th`/`data-ta` markup |
+| `01-lang` | the language: `LANG` (`kus.lang`, else the phone's language), the string table `STR` and `t`, English candy names `EN_NAMES` with `nameOf`/`accOf` (Russian names stay the save keys), `applyLang` for the markup: `data-t` text, `data-th` html, `data-ta` aria-label, `data-tt` title, `data-tp` placeholder, `data-tc` a `data-c` attribute that CSS shows with `content: attr(data-c)` |
 | `02-tuning` | world constants, `massToR`, `biteOf`, `lethalFor`, palettes, `PICK` bonuses, hats, patterns (`SKINS`, `skinTile`, `drawSkin`), bot names |
 | `03-dom` | `$`, canvas, `resize`, `PIXEL_BUDGET`, safe-area insets |
 | `04-state` | shared state: `blobs`, `food`, `parts`, `player`, `state`, `mode`, `cam`, `calm`, `input`, `stick`; settings `SET`, difficulty `DIFFS`, cheats `CHEAT`, missions `M`, `haptic` |
@@ -95,6 +95,7 @@ Saves in `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.be
 - The trophy card is only for beating the Big Cake (`run.won`). Death, `t3` and `daily` keep the ordinary end card.
 - The page stays one file with no external scripts. No syntax or CSS newer than what iOS 15 Safari has (`inset`, for example, has already been replaced).
 - The ES5 script embedded at the start of `<body>` shows errors on screen. Do not touch it and do not move it to modern syntax.
+- Every text a player sees goes through `t('key')` with both languages in `STR` (`01-lang`); candy names go through `nameOf`. Never call `t()` in a scope that has its own local `t` (about 60 functions use `t` for a time, a button or a twist): the call throws «t is not a function». Rename the local instead. The `lang:` tests catch it only on the paths they reach.
 
 ## The album
 
