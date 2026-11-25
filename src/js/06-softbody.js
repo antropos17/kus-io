@@ -219,7 +219,10 @@ function updateBlob(b, dt) {
   b.pMagnet -= dt;
   if (b.comboT > 0) {
     b.comboT -= dt;
-    if (b.comboT <= 0 && b.combo > 1) b.lickT = 0.7;
+    if (b.comboT <= 0 && b.combo > 1) {
+      b.lickT = 0.7;
+      if (b.isPlayer) onStreakEnd(b);
+    }
   }
   b.wowT -= dt;
   b.glintT -= dt;

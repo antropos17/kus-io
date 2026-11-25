@@ -248,6 +248,12 @@ window.__kus = {
     return chunks;
   },
   spawnBot,
+  get streak() {
+    return streak;
+  },
+  get stamps() {
+    return stamps;
+  },
   sugarFly,
   hud: {
     get sugarShown() {

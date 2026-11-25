@@ -734,6 +734,7 @@ function update(dt) {
     } // timed mode: back on the field
     else if (deadT > 1.1 && overEl.classList.contains('hidden')) showOver();
   }
+  streakTick(dt);
   updateCamera(dt);
   updateHUD(dt);
 }

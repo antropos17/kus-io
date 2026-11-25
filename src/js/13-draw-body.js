@@ -357,8 +357,8 @@ function drawGulp(g) {
   ctx.restore();
 }
 const labels = new Map();
-function labelFor(name, me) {
-  const key = (me ? '1' : '0') + name;
+function labelFor(name, me, col) {
+  const key = (me ? '1' : '0') + (col || '') + name;
   let L = labels.get(key);
   if (!L) {
     if (labels.size > 160) labels.clear();
@@ -376,7 +376,7 @@ function labelFor(name, me) {
     g.lineWidth = 7;
     g.strokeStyle = 'rgba(26,12,6,0.8)';
     g.strokeText(name, w / 2, 26);
-    g.fillStyle = me ? '#ffd23f' : 'rgba(255,241,220,0.95)';
+    g.fillStyle = col || (me ? '#ffd23f' : 'rgba(255,241,220,0.95)');
     g.fillText(name, w / 2, 26);
     L = { c, w };
     labels.set(key, L);
@@ -388,10 +388,19 @@ function drawName(b) {
   const z = cam.z,
     sr = b.Rs * z;
   if (sr < (lod ? 16 : 10) && !b.isPlayer) return;
-  const fs = clamp(sr * 0.3, 11, 17) / z,
-    y = b.y - b.Rs * (b.hat !== 'none' && sr >= 8 ? 1.55 : 1.04) - 6 / z;
-  const L = labelFor(b.name, b.isPlayer || !!b.boss),
+  const fs = clamp(sr * 0.3, 11, 17) / z;
+  let y = b.y - b.Rs * (b.hat !== 'none' && sr >= 8 ? 1.55 : 1.04) - 6 / z,
+    L = labelFor(b.name, b.isPlayer || !!b.boss),
     k = fs / 34;
+  const sk = streakStep(b);
+  if (sk) {
+    // a streak: the name gives way to a big ×N in the step's colour that pops on every bite
+    L = labelFor('×' + b.combo, true, STREAK_COL[sk]);
+    k = ((fs * 1.7) / 34) * (1 + streak.pop * 0.45);
+    y -= fs * 0.45;
+    streak.lt = y - 37 * k;
+    streak.lw = (L.w * k) / 2;
+  }
   if (b === leader) {
     // gold star for the sweetest one
     const sx = b.x - (L.w * k) / 2 - fs * 0.45,
@@ -580,6 +589,7 @@ function render() {
       ctx.fill(b.path);
       ctx.restore();
     }
+  drawStreakFuse(z);
   for (const b of vis) drawBlob(b);
   for (const s of strands) {
     ctx.save();
@@ -627,6 +637,8 @@ function render() {
   for (const b of vis) drawName(b);
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   drawTexts(ox, oy, z);
+  drawStamps(ox, oy, z);
+  drawStreakFx();
   drawSugarCubes();
   if (player && player.alive && state === 'play') {
     for (const b of blobs) {

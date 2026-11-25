@@ -256,6 +256,54 @@ test('streak, jelly wobble and swallowing whole', async () => {
   await g.close();
 });
 
+test('streak: label, fuse, stamps and the summary when it lapses', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} const out = {};
+    P.mass = 120; for (let i = 0; i < 40; i++) k.update(1/60);
+    const V = k.spawnBot(400); V.ai = null; V.spawnT = 0; for (let i = 0; i < 30; i++) k.update(1/60);
+    P.combo = 0; P.comboT = 0; k.stamps.length = 0;
+    const dash = document.querySelector('#dash'), sum = document.querySelector('#streakSum'), chip = document.querySelector('#sugar .mult');
+    const words = () => k.stamps.map((s) => s.txt); out.maxStamps = 0;
+    // one bite on V; hold: keep comboT at that value until the bite lands
+    const bite = (hold) => { k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; V.mass = 400; P.biteCd = 0;
+      const n0 = P.stats.bites; let f = 0;
+      while (f < 90 && P.stats.bites === n0) { if (hold) P.comboT = hold; P.tx = V.x; P.ty = V.y; V.tx = V.x; V.ty = V.y; V.biteCd = 9; k.update(1/60); out.maxStamps = Math.max(out.maxStamps, k.stamps.length); f++; }
+      P.biteCd = 999; V.biteCd = 999; /* only the scripted bites land */ };
+    for (let n = 1; n <= 5; n++) { bite(0);
+      if (n === 3) out.word3 = words();
+      if (n === 5) { out.word5 = words(); out.f = parseFloat(dash.style.getPropertyValue('--f')); out.victim = k.streak.lastVictim === V;
+        out.wound = Math.hypot(k.streak.lastWound.x - V.x, k.streak.lastWound.y - V.y) < V.Rs * 1.6;
+        out.fuse = dash.classList.contains('fuse') && dash.classList.contains('s3'); out.rush = document.querySelector('#vig').classList.contains('rush');
+        out.chip = chip.textContent; out.chipOn = chip.classList.contains('on'); out.air = k.hud.air > 0; out.start = k.streak.start; out.sugar = k.run.sugar; } }
+    for (let i = 0; i < 20; i++) { k.update(1/60); k.render(); }
+    out.lowEarly = dash.classList.contains('low'); // 0.3 s in: the window is far from shutting
+    P.comboT = 0.7; k.update(1/60); k.render(); // the last 0.8 s: the fuse blinks and the button says ещё кусь!
+    out.low = dash.classList.contains('low'); out.more = getComputedStyle(dash, '::after').content;
+    bite(0.3); out.close = words(); out.combo = P.combo; P.biteCd = 999; V.biteCd = 999; // no seventh bite: the streak must lapse
+    for (let i = 0; i < 180; i++) { k.update(1/60); if (i % 30 === 0) k.render(); }
+    out.sum = sum.textContent; out.sumOn = sum.classList.contains('on') && getComputedStyle(sum).visibility === 'visible';
+    out.fx = document.getElementById('fx').textContent;
+    out.chipGone = !chip.classList.contains('on'); out.fuseGone = !dash.classList.contains('fuse'); out.rushGone = !document.querySelector('#vig').classList.contains('rush');
+    for (let i = 0; i < 150; i++) k.update(1/60);
+    out.sumGone = !sum.classList.contains('on'); return out; })()`);
+  assert(r.word3.join() === 'Ням!', `bite 3 must stamp Ням! alone: ${r.word3}`);
+  assert(r.word5.join() === 'Хрум-хрум!', `bite 5 must stamp Хрум-хрум! alone: ${r.word5}`);
+  assert(r.maxStamps <= 1, `only one stamp may be visible at a time, saw ${r.maxStamps}`);
+  assert(!r.lowEarly && r.low && r.more.includes('ещё кусь!'), `the last 0.8 s must show low + «ещё кусь!» (${r.lowEarly}, ${r.low}, ${r.more})`);
+  assert(r.victim && r.wound, `the last victim and wound must be remembered (${r.victim}, ${r.wound})`);
+  assert(r.f >= 0.9 && r.f <= 1, `the fuse ring on the bite button must be full after a bite, --f is ${r.f}`);
+  assert(r.fuse && r.rush, 'step 3 must light the button fuse with sprinkles and the sugar rush edge');
+  assert(r.chip === '×5' && r.chipOn, `the sugar chip must read ×5, got "${r.chip}"`);
+  assert(r.air, 'a streak bite must send cubes to the sugar pill');
+  assert(r.combo === 6 && r.close.join() === 'На волоске!', `a bite in the last 0.45 s must stamp На волоске! (combo ${r.combo}, ${r.close})`);
+  assert(/^Серия ×6 · \+\d+ сахара$/.test(r.sum) && r.sumOn, `the summary must show when the streak lapses: "${r.sum}" ${r.sumOn}`);
+  assert(!r.fx.includes('Серия'), 'the streak must not be a buff coin');
+  assert(r.chipGone && r.fuseGone && r.rushGone, 'chip, fuse and rush must go when the streak lapses');
+  assert(r.sumGone, 'the summary must slide away after about 2 s');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 // The mouth sits on the front rim, not in the middle of the body: food must vanish into it, not into thin air.
 test('mouth: on the front rim where the candy looks, food goes into it, a sudden turn is smoothed', async () => {
   const g = await open();
@@ -380,7 +428,8 @@ test('hud: the sugar pill rolls to earned sugar once the cubes land', async () =
   assert(r.mid === 0 && r.end >= 6 && r.end === r.want && r.air === 0, `pill ${r.mid} -> ${r.end} (run ${r.want}), air ${r.air}`);
   assert(r.label === `сахар ${r.end}`, `aria-label "${r.label}"`);
   // cubes still in flight when the run ends are settled at once
-  const d = await g.page.evaluate(`(() => { ${QUIET} k.setMode('t3'); k.startGame(); k.player.spawnT = 0; k.run.sugar += 10; k.sugarFly(k.player.x, k.player.y, 10, 5); k.setTimeLeft(0.001);
+  const d = await g.page
+    .evaluate(`(() => { ${QUIET} k.setMode('t3'); k.startGame(); k.player.spawnT = 0; k.run.sugar += 10; k.sugarFly(k.player.x, k.player.y, 10, 5); k.setTimeLeft(0.001);
     for (let i = 0; i < 400 && k.state !== 'dead'; i++) k.update(1/60);
     return { state: k.state, air: k.hud.air, shown: k.hud.sugarShown, want: Math.floor(k.run.sugar) }; })()`);
   assert(d.state === 'dead' && d.air === 0 && d.shown === d.want, `settle at the end: ${JSON.stringify(d)}`);

@@ -163,7 +163,24 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #sugar .c{display:inline-block;height:1.16em;overflow:hidden;margin:-.08em 0}
 #sugar .s{display:flex;flex-direction:column;transition:transform .55s cubic-bezier(.22,1.35,.4,1)}
 #sugar .s span{height:1.16em;line-height:1.16em;text-align:center}
-#sugar .mult{position:absolute;right:-30px;top:-9px;transform:scale(0)}
+#sugar .mult{position:absolute;left:100%;top:-9px;margin-left:-12px;padding:4px 8px;border-radius:99px;background:var(--mc,#9be15d);color:var(--ink);font:900 14px/1 var(--font);white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.35);transform:scale(0) rotate(-8deg);transform-origin:0 100%;transition:transform .22s cubic-bezier(.3,1.6,.5,1)}
+#sugar .mult.on{transform:scale(1) rotate(-8deg)}
+/* streak: the summary under the HUD, the fuse and sprinkles round the bite button, the sugar rush on the screen edges */
+#streakSum{position:absolute;left:0;top:100%;margin-top:10px;padding:7px 13px;border-radius:99px;background:var(--cream);color:var(--ink);font:900 13px/1 var(--font);white-space:nowrap;box-shadow:0 4px 0 rgba(0,0,0,.4);opacity:0;visibility:hidden;transform:translateX(-14px);transition:opacity .2s,transform .2s cubic-bezier(.22,1,.36,1),visibility 0s .2s}
+#streakSum.on{opacity:1;visibility:visible;transform:none;transition:opacity .2s,transform .2s cubic-bezier(.22,1,.36,1)}
+#dash:before{content:"";position:absolute;left:-9px;top:-9px;right:-9px;bottom:-9px;border-radius:50%;background:conic-gradient(var(--fc,#9be15d) calc(var(--f,0)*360deg),rgba(0,0,0,.4) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));opacity:0;pointer-events:none}
+#dash.fuse:before{opacity:1}
+#dash.low:before{animation:fuseBlink .2s linear infinite alternate}
+#dash.low:after{content:"ещё кусь!";position:absolute;left:50%;bottom:calc(100% + 14px);transform:translateX(-50%);font:900 12px/1 var(--font);color:var(--lemon);text-shadow:0 2px 0 rgba(0,0,0,.6);white-space:nowrap;pointer-events:none;animation:fuseBlink .2s linear infinite alternate}
+#dash .spr{position:absolute;left:50%;top:50%;width:0;height:0;opacity:0;pointer-events:none;animation:sprSpin 9s linear infinite}
+#dash.s3 .spr{opacity:1}
+#dash .spr u{position:absolute;left:-4px;top:-1.5px;width:8px;height:3px;border-radius:2px;background:var(--c);transform:rotate(var(--a)) translateX(var(--sr,56px)) rotate(90deg)}
+#vig:after{content:"";position:absolute;left:0;top:0;right:0;bottom:0;box-shadow:inset 0 0 90px 20px rgba(255,79,123,.55);opacity:0}
+#vig.rush:after{animation:rushPulse .785s ease-in-out infinite}
+@keyframes fuseBlink{from{opacity:1}to{opacity:.3}}
+@keyframes sprSpin{to{transform:rotate(360deg)}}
+@keyframes rushPulse{0%,100%{opacity:.45}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){#dash.low:before,#dash.low:after,#dash .spr{animation:none}#vig.rush:after{animation:none;opacity:.8}#sugar .mult,#streakSum,#streakSum.on{transition:none}}
 #bank{margin:8px 0 0;font:800 14px/1.3 var(--font);color:#7a5a49;font-variant-numeric:tabular-nums}
 .bankRow{display:flex;align-items:center;gap:10px;margin:8px 0 0}
 .bankRow #bank{margin:0;flex:1 1 auto}
@@ -431,7 +448,7 @@ document.getElementById('nojs').style.display = 'none';
 <div id="safe"></div>
 
 <div id="hud" class="hidden">
-  <div id="score"><div id="mass">0</div><div class="lbl">масса</div><div id="sugar" aria-label="сахар 0"><span class="sock"><svg viewBox="0 0 24 24"><path d="M12 2.5 21 7.2 12 11.9 3 7.2Z" fill="#fffaf0" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M3 7.2 12 11.9V21.5L3 16.8Z" fill="#efe1c8" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M21 7.2 12 11.9V21.5L21 16.8Z" fill="#d6bd95" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><circle cx="9.5" cy="6.6" r=".9" fill="#fff"/><circle cx="14.2" cy="7.6" r=".7" fill="#fff"/><circle cx="6.5" cy="12" r=".6" fill="#fff"/></svg></span><span class="num"></span><span class="mult"></span></div><div id="timer"></div><div id="goal"></div><div id="stage" class="off"><span class="fill"></span><span class="t"></span><b></b></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="feed" aria-live="polite"></div></div>
+  <div id="score"><div id="mass">0</div><div class="lbl">масса</div><div id="sugar" aria-label="сахар 0"><span class="sock"><svg viewBox="0 0 24 24"><path d="M12 2.5 21 7.2 12 11.9 3 7.2Z" fill="#fffaf0" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M3 7.2 12 11.9V21.5L3 16.8Z" fill="#efe1c8" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M21 7.2 12 11.9V21.5L21 16.8Z" fill="#d6bd95" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><circle cx="9.5" cy="6.6" r=".9" fill="#fff"/><circle cx="14.2" cy="7.6" r=".7" fill="#fff"/><circle cx="6.5" cy="12" r=".6" fill="#fff"/></svg></span><span class="num"></span><span class="mult"></span></div><div id="streakSum" role="status"></div><div id="timer"></div><div id="goal"></div><div id="stage" class="off"><span class="fill"></span><span class="t"></span><b></b></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="feed" aria-live="polite"></div></div>
   <button id="pauseBtn" type="button" aria-label="Пауза" title="Пауза (Esc)"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
   <button id="dash" type="button" aria-label="Рывок с укусом"><span><b>Кусь</b><small>пробел</small></span></button>
   <button id="dodge" type="button" aria-label="Язык-присоска"><span><b>Язык</b><small>shift</small></span></button>
@@ -1715,7 +1732,10 @@ function updateBlob(b, dt) {
   b.pMagnet -= dt;
   if (b.comboT > 0) {
     b.comboT -= dt;
-    if (b.comboT <= 0 && b.combo > 1) b.lickT = 0.7;
+    if (b.comboT <= 0 && b.combo > 1) {
+      b.lickT = 0.7;
+      if (b.isPlayer) onStreakEnd(b);
+    }
   }
   b.wowT -= dt;
   b.glintT -= dt;
@@ -2431,6 +2451,7 @@ function checkBites(b, dt) {
   else if (tgt && (b.spawnT <= 0 || tgt.tame) && b.biteCd < 0.25 && gap < mR * 0.7 + 30 + b.Rs * 0.6)
     b.mouthWant = 0.62 + 0.07 * Math.sin(time * 24 + b.phase); // jaws tremble with hunger
   else b.mouthWant = b.snackT > 0 ? 0.4 : 0;
+  if (!c && b.isPlayer && b.comboT > 0 && b.combo > 1) b.mouthWant += 0.08 * Math.min(b.combo, 6); // a streak keeps the mouth hungrily open
   // the first run's snack can be bitten even while the newcomer is still shielded after spawning, and never bites back
   if (tgt && b.biteCd <= 0 && (b.spawnT <= 0 || tgt.tame) && !b.tame && gap < mR * 0.7) {
     if (c) c.finish();
@@ -2564,13 +2585,15 @@ function doBite(A, B, ang, dashBite) {
   const r0 = B.Rs * (1 - B.dentAt(ang) * 0.6),
     bx = B.x + nx * r0,
     by = B.y + ny * r0;
-  let gain = bite * 0.84;
+  let gain = bite * 0.84,
+    streakClose = false;
   const king = B === leader && A !== leader;
   if (king) gain *= 1.25; // a bite off the leader is worth more
   if (A.isPlayer) {
     // bites landed in quick succession pay a little extra each time
+    streakClose = A.comboT > 0 && A.comboT < STREAK.close; // the bite lands just before the window shuts
     A.combo = A.comboT > 0 ? (A.combo || 0) + 1 : 1;
-    A.comboT = 2.6;
+    A.comboT = STREAK.win;
     gain *= 1 + Math.min(A.combo - 1, 5) * 0.08;
     mission('combo', A.combo, true);
   }
@@ -2616,8 +2639,9 @@ function doBite(A, B, ang, dashBite) {
     if (intoWound) floatText(bx, ty - 28 / cam.z, 'в ранку!', '#ff8fb0', 18);
     if (weak) floatText(bx, ty - 28 / cam.z, 'слабое место!', '#ff8fb0', 18);
     else if (king) floatText(bx, ty - 28 / cam.z, 'кусь лидера!', '#ffd23f', 18);
-    else if (A.combo > 1 && !intoWound) floatText(bx, ty - 28 / cam.z, 'серия ×' + A.combo, '#9be15d', 18);
+    const sugar0 = run.sugar;
     mission('bites', 1);
+    onStreakBite(A, B, bx, by, run.sugar - sugar0, streakClose);
     if (intoWound) mission('wound', 1);
     if (weak) mission('cake', 1);
     if (B.kind === 'hedgehog') mission('hedge', 1);
@@ -4873,6 +4897,7 @@ function update(dt) {
     } // timed mode: back on the field
     else if (deadT > 1.1 && overEl.classList.contains('hidden')) showOver();
   }
+  streakTick(dt);
   updateCamera(dt);
   updateHUD(dt);
 }
@@ -5439,6 +5464,270 @@ function secondShift() {
   hudT = 0;
   addFeed(`<b>Смена ${stg.lap + 1}</b>: пираньи, дождь и торт по кругу, быстрее. Торт сильнее`, 5200);
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+}
+
+// ---------- streak juice: ×N over the candy, fuses, stamps, sugar rush and the summary ----------
+// A streak is player.combo while player.comboT (the 2.6 s window) is still running. doBite calls onStreakBite, updateBlob calls onStreakEnd.
+const STREAK = { win: 2.6, close: 0.45, low: 0.8, words: { 3: 'Ням!', 5: 'Хрум-хрум!', 7: 'Обжора!' } };
+const STREAK_COL = ['', '#9be15d', '#ff9a3c', '#ff4f7b']; // the colour of each step
+// 0: no streak (combo < 2), 1: ×2, 2: ×3-4, 3: ×5 and up
+const streakLevel = (combo) => (combo < 2 ? 0 : combo < 3 ? 1 : combo < 5 ? 2 : 3);
+// the step the player's face and label show right now
+const streakStep = (b) => (b.isPlayer && b.comboT > 0 ? streakLevel(b.combo || 0) : 0);
+const streak = { start: 0, sum: 0, lastVictim: null, lastWound: { x: 0, y: 0 }, pop: 0, on: false, lvl: 0, sumT: 0, lt: 0, lw: 0 }; // lt, lw: top and half width of the ×N label in world units (set by drawName)
+const stamps = []; // { txt, t, hw }: the word over the player; one at a time, a new one replaces it
+let stampOut = null; // the word just replaced, fading out for 0.12 s
+const multEl = sugarEl.querySelector('.mult'),
+  sumEl = $('streakSum'),
+  vigEl = $('vig');
+// 14 sprinkle capsules that circle the bite button at step 3 (CSS turns them)
+const dashSpr = document.createElement('i');
+dashSpr.className = 'spr';
+dashSpr.setAttribute('aria-hidden', 'true');
+for (let i = 0; i < 14; i++) {
+  const u = document.createElement('u');
+  u.style.cssText = `--a:${Math.round((i / 14) * 360)}deg;--c:${SPRINKLES[i % SPRINKLES.length]}`;
+  dashSpr.appendChild(u);
+}
+dashEl.appendChild(dashSpr);
+let domF = -1,
+  domLvl = -1,
+  domLow = false,
+  lastP = null;
+// the sprinkles that fly in from the screen edges at step 3
+const RUSH_POOL = 40,
+  rushSpr = Array.from({ length: RUSH_POOL }, () => ({ on: false, x: 0, y: 0, vx: 0, vy: 0, a: 0, t: 0, T: 1, c: '' }));
+let rushAcc = 0;
+
+function streakWrapHook(P) {
+  // Task 4 hangs the runaway wrapper here: called once for every streak that lapses (combo > 1)
+}
+
+// the page side of a live streak: the chip, the fuse round the bite button, the sugar rush on the edges
+function streakDom(P, lvl) {
+  const f = clamp(P.comboT / STREAK.win, 0, 1),
+    q = Math.round(f * 200) / 200,
+    low = P.comboT < STREAK.low;
+  if (q !== domF) {
+    domF = q;
+    dashEl.style.setProperty('--f', q);
+  }
+  if (lvl !== domLvl) {
+    if (lvl === 3 && domLvl < 3) dashEl.style.setProperty('--sr', dashEl.offsetWidth / 2 + 13 + 'px');
+    domLvl = lvl;
+    dashEl.style.setProperty('--fc', STREAK_COL[lvl] || STREAK_COL[1]);
+    dashEl.classList.toggle('fuse', lvl > 0);
+    dashEl.classList.toggle('s3', lvl === 3);
+    vigEl.classList.toggle('rush', lvl === 3);
+    multEl.style.setProperty('--mc', STREAK_COL[lvl] || STREAK_COL[1]);
+    multEl.classList.toggle('on', lvl > 0);
+  }
+  if (low !== domLow) {
+    domLow = low;
+    dashEl.classList.toggle('low', low);
+  }
+}
+function streakDomOff() {
+  if (domLvl === 0) return;
+  domLvl = 0;
+  domLow = false;
+  domF = -1;
+  dashEl.classList.remove('fuse', 's3', 'low');
+  vigEl.classList.remove('rush');
+  multEl.classList.remove('on');
+}
+function addStamp(txt) {
+  if (stamps.length)
+    stampOut = { txt: stamps[0].txt, hw: stamps[0].hw, t: 0, f: stamps[0].t, a0: stamps[0].t > 0.8 ? Math.max(0, 1 - (stamps[0].t - 0.8) / 0.3) : 1 }; // fades on from its current alpha
+  stamps.length = 0;
+  stamps.push({ txt, t: 0, hw: 0 });
+}
+function onStreakBite(P, B, wx, wy, add, close) {
+  // every bite the player lands; the sugar for it is already in run.sugar (earn runs before this call)
+  if (P.combo === 1) {
+    streak.start = run.sugar - add; // a fresh streak: remember the sugar it started from
+    streak.sum = 0;
+  }
+  streak.sum += add;
+  streak.lastVictim = B;
+  streak.lastWound.x = wx;
+  streak.lastWound.y = wy;
+  if (P.combo < 2) return;
+  const lvl = streakLevel(P.combo);
+  streak.on = true;
+  streak.lvl = lvl;
+  sugarFly(wx, wy, add, Math.min(P.combo, 5) + 1); // the cubes carry this bite's sugar into the pill
+  const word = close ? 'На волоске!' : STREAK.words[P.combo];
+  if (word) addStamp(word);
+  if (!calm) {
+    streak.pop = 1;
+    cam.shake = Math.max(cam.shake, 3 + Math.min(P.combo, 6) * 0.9);
+    cam.sa = Math.atan2(wy - P.y, wx - P.x);
+    if (multEl.animate)
+      multEl.animate([{ transform: 'scale(1.55) rotate(-8deg)' }, { transform: 'scale(1) rotate(-8deg)' }], {
+        duration: 340,
+        easing: 'cubic-bezier(.3,1.6,.5,1)',
+      });
+  }
+  multEl.textContent = '×' + P.combo;
+  streakDom(P, lvl);
+}
+function onStreakEnd(P) {
+  // comboT ran out with a streak of two or more bites: show what it was worth, then let Task 4 react
+  if (runActive && P === player) {
+    sumEl.textContent = `Серия ×${P.combo} · +${Math.max(0, Math.floor(run.sugar - streak.start))} сахара`;
+    sumEl.classList.add('on');
+    streak.sumT = 2;
+  }
+  streakWrapHook(P);
+}
+function streakClear() {
+  // a new life or run: nothing of the old streak stays on the page
+  streak.on = false;
+  streak.lvl = 0;
+  streak.pop = 0;
+  streak.sumT = 0;
+  streak.lastVictim = null;
+  stamps.length = 0;
+  stampOut = null;
+  for (const p of rushSpr) p.on = false;
+  sumEl.classList.remove('on');
+  streakDomOff();
+}
+function streakTick(dt) {
+  const P = player;
+  if (P !== lastP) {
+    lastP = P; // a new life or run: nothing of the old streak stays
+    streakClear();
+  }
+  const live = !!(P && P.alive && P.comboT > 0 && P.combo > 1),
+    lvl = live ? streakLevel(P.combo) : 0;
+  if (live) streakDom(P, lvl);
+  else streakDomOff();
+  streak.on = live;
+  streak.lvl = lvl;
+  streak.pop *= Math.exp(-dt * 9);
+  if (stamps.length) {
+    stamps[0].t += dt;
+    if (stamps[0].t > 1.1) stamps.length = 0;
+  }
+  if (stampOut) {
+    stampOut.t += dt;
+    if (stampOut.t > 0.12) stampOut = null;
+  }
+  if (streak.sumT > 0) {
+    streak.sumT -= dt;
+    if (streak.sumT <= 0) sumEl.classList.remove('on');
+  }
+  // sugar rush: 30 sprinkles a second from the screen edges (none under calm), fewer on weaker graphics
+  if (lvl === 3 && !calm && state === 'play') {
+    rushAcc += dt * 30 * (lod === 0 ? 1 : lod === 1 ? 0.5 : 0.25);
+    while (rushAcc >= 1) {
+      rushAcc--;
+      for (let i = 0; i < RUSH_POOL; i++) {
+        const p = rushSpr[i];
+        if (p.on) continue;
+        const side = (Math.random() * 4) | 0,
+          sp = rand(50, 130);
+        p.on = true;
+        p.t = 0;
+        p.T = rand(0.9, 1.5);
+        p.a = rand(TAU);
+        p.c = SPRINKLES[(Math.random() * SPRINKLES.length) | 0];
+        p.x = side < 2 ? rand(W) : side === 2 ? 0 : W;
+        p.y = side >= 2 ? rand(H) : side === 0 ? 0 : H;
+        p.vx = side < 2 ? rand(-30, 30) : side === 2 ? sp : -sp;
+        p.vy = side >= 2 ? rand(-30, 30) : side === 0 ? sp : -sp;
+        break;
+      }
+    }
+  } else rushAcc = 0;
+  for (let i = 0; i < RUSH_POOL; i++) {
+    const p = rushSpr[i];
+    if (!p.on) continue;
+    p.t += dt;
+    if (p.t >= p.T) p.on = false;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.a += dt * 3;
+  }
+}
+
+// ---- drawing ----
+function drawStreakFuse(z) {
+  // a ring on the tray under the player that burns down with the 2.6 s window
+  const P = player;
+  if (!P || !P.alive || !(P.comboT > 0) || streakLevel(P.combo || 0) < 1) return;
+  const R = P.Rs,
+    cy = P.y + R * 0.95,
+    rx = R * 1.15,
+    ry = R * 0.32,
+    low = P.comboT < STREAK.low;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineWidth = Math.max(3.5 / z, R * 0.08);
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(P.x, cy, rx, ry, 0, 0, TAU);
+  ctx.stroke();
+  if (low && !calm) ctx.globalAlpha = 0.62 + 0.38 * Math.sin(time * 28);
+  ctx.strokeStyle = STREAK_COL[streakLevel(P.combo)];
+  ctx.beginPath();
+  ctx.ellipse(P.x, cy, rx, ry, 0, -Math.PI / 2, -Math.PI / 2 + clamp(P.comboT / STREAK.win, 0, 1) * TAU);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawStamp(s, a, px, ox, oy, z) {
+  // above-right of the ×N label: it starts over the label's top edge, so it never shares the ×N band
+  const f = s.f === undefined ? s.t : s.f,
+    sc = calm ? 1 : f < 0.15 ? 1.8 - (0.8 * f) / 0.15 : 1;
+  ctx.font = `900 22px ${FONT}`;
+  if (!s.hw) s.hw = ctx.measureText(s.txt).width / 2; // measured once per stamp
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.translate(Math.min(px + streak.lw * z + 12 + s.hw, W - s.hw - 8), streak.lt * z + oy - 20 - (calm ? 0 : f * 12));
+  ctx.rotate(-0.14);
+  ctx.scale(sc, sc);
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = '#fff1dc';
+  ctx.strokeText(s.txt, 0, 0);
+  ctx.fillStyle = '#ff4f7b';
+  ctx.fillText(s.txt, 0, 0);
+  ctx.restore();
+}
+function drawStamps(ox, oy, z) {
+  // screen space; streak.lt / streak.lw (the ×N label's top and half width, in world units) are set by drawName
+  const P = player;
+  if (!(stamps.length || stampOut) || !P || !P.alive) return;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  const px = P.x * z + ox;
+  if (stampOut) drawStamp(stampOut, stampOut.a0 * (1 - stampOut.t / 0.12), px, ox, oy, z);
+  if (stamps.length) {
+    const f = stamps[0].t;
+    drawStamp(stamps[0], f > 0.8 ? Math.max(0, 1 - (f - 0.8) / 0.3) : 1, px, ox, oy, z);
+  }
+}
+function drawStreakFx() {
+  // screen space: the sugar-rush sprinkles
+  if (calm) return;
+  ctx.lineCap = 'round';
+  ctx.lineWidth = 3.5;
+  for (let i = 0; i < RUSH_POOL; i++) {
+    const p = rushSpr[i];
+    if (!p.on) continue;
+    const e = p.t / p.T,
+      c = Math.cos(p.a) * 4,
+      s = Math.sin(p.a) * 4;
+    ctx.globalAlpha = e < 0.15 ? e / 0.15 : 1 - (e - 0.15) / 0.85;
+    ctx.strokeStyle = p.c;
+    ctx.beginPath();
+    ctx.moveTo(p.x - c, p.y - s);
+    ctx.lineTo(p.x + c, p.y + s);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
 }
 
 // ---------- drawing: tray, food, strands, wounds ----------
@@ -6099,7 +6388,9 @@ function drawFace(b) {
     c = b.chunk && !b.chunk.dead ? b.chunk : null;
   const fierce = !!b.bite || !!(c && c.state === 'held'),
     yum = b.happyT > 0 || b.chewT > 0 || !!(c && c.state === 'chew'),
-    er = R * (fierce ? 0.175 : 0.16);
+    hot = streakStep(b), // a streak makes the player hungry: bigger eyes, hearts at step 3, a drool drop
+    big = hot >= 2 ? 1.25 : 1,
+    er = R * (fierce ? 0.175 : 0.16) * big;
   const look = Math.hypot(b.tx - b.x, b.ty - b.y) > 2 ? Math.atan2(b.ty - b.y, b.tx - b.x) : f,
     lx = Math.cos(look),
     ly = Math.sin(look);
@@ -6118,6 +6409,18 @@ function drawFace(b) {
       ctx.moveTo(ex + fx * s * 0.75 + px * sg * s * 0.55, ey + fy * s * 0.75 + py * sg * s * 0.55);
       ctx.lineTo(ex - px * sg * s * 0.45, ey - py * sg * s * 0.45);
       ctx.lineTo(ex - fx * s * 0.75 + px * sg * s * 0.55, ey - fy * s * 0.75 + py * sg * s * 0.55);
+      ctx.stroke();
+    } else if (hot === 3) {
+      // heart eyes, a gentle pulse
+      const k = er * 1.05 * (calm ? 1 : 1 + 0.1 * Math.sin(time * 8));
+      ctx.beginPath();
+      ctx.moveTo(ex, ey + k * 0.9);
+      ctx.bezierCurveTo(ex - k * 1.4, ey - k * 0.1, ex - k * 0.7, ey - k * 1.2, ex, ey - k * 0.4);
+      ctx.bezierCurveTo(ex + k * 0.7, ey - k * 1.2, ex + k * 1.4, ey - k * 0.1, ex, ey + k * 0.9);
+      ctx.fillStyle = '#ff4f7b';
+      ctx.fill();
+      ctx.lineWidth = er * 0.16;
+      ctx.strokeStyle = '#c8264f';
       ctx.stroke();
     } else if (yum) {
       // happy arcs while it chews
@@ -6161,7 +6464,7 @@ function drawFace(b) {
       ctx.fill(); // iris in the body's flavour
       ctx.fillStyle = '#1a0b07';
       ctx.beginPath();
-      ctx.arc(qx, qy, er * (b.wowT > 0 ? 0.48 : b.tongue || fierce ? 0.26 : 0.36), 0, TAU);
+      ctx.arc(qx, qy, er * (b.wowT > 0 ? 0.48 : b.tongue || fierce ? 0.26 : 0.36) * big, 0, TAU);
       ctx.fill();
       ctx.fillStyle = '#fff';
       ctx.beginPath();
@@ -6186,6 +6489,14 @@ function drawFace(b) {
         ctx.stroke();
       }
     }
+  }
+  if (hot === 3 && lod < 2 && R * cam.z > 16 && b.hurtT <= 0) {
+    // a drop of drool hangs from the corner of the mouth
+    const dl = R * (calm ? 0.1 : 0.1 + 0.05 * Math.sin(time * 3));
+    ctx.fillStyle = 'rgba(200,230,255,0.85)';
+    ctx.beginPath();
+    ctx.ellipse(b.x + fx * R * 0.8 + px * R * 0.24, b.y + fy * R * 0.8 + py * R * 0.24 + dl, R * 0.036, R * 0.05 + dl * 0.25, 0, 0, TAU);
+    ctx.fill();
   }
   if (yum && lod < 2 && R * cam.z > 16 && b.hurtT <= 0) {
     // a blush on both cheeks while it enjoys the bite
@@ -6744,8 +7055,8 @@ function drawGulp(g) {
   ctx.restore();
 }
 const labels = new Map();
-function labelFor(name, me) {
-  const key = (me ? '1' : '0') + name;
+function labelFor(name, me, col) {
+  const key = (me ? '1' : '0') + (col || '') + name;
   let L = labels.get(key);
   if (!L) {
     if (labels.size > 160) labels.clear();
@@ -6763,7 +7074,7 @@ function labelFor(name, me) {
     g.lineWidth = 7;
     g.strokeStyle = 'rgba(26,12,6,0.8)';
     g.strokeText(name, w / 2, 26);
-    g.fillStyle = me ? '#ffd23f' : 'rgba(255,241,220,0.95)';
+    g.fillStyle = col || (me ? '#ffd23f' : 'rgba(255,241,220,0.95)');
     g.fillText(name, w / 2, 26);
     L = { c, w };
     labels.set(key, L);
@@ -6775,10 +7086,19 @@ function drawName(b) {
   const z = cam.z,
     sr = b.Rs * z;
   if (sr < (lod ? 16 : 10) && !b.isPlayer) return;
-  const fs = clamp(sr * 0.3, 11, 17) / z,
-    y = b.y - b.Rs * (b.hat !== 'none' && sr >= 8 ? 1.55 : 1.04) - 6 / z;
-  const L = labelFor(b.name, b.isPlayer || !!b.boss),
+  const fs = clamp(sr * 0.3, 11, 17) / z;
+  let y = b.y - b.Rs * (b.hat !== 'none' && sr >= 8 ? 1.55 : 1.04) - 6 / z,
+    L = labelFor(b.name, b.isPlayer || !!b.boss),
     k = fs / 34;
+  const sk = streakStep(b);
+  if (sk) {
+    // a streak: the name gives way to a big ×N in the step's colour that pops on every bite
+    L = labelFor('×' + b.combo, true, STREAK_COL[sk]);
+    k = ((fs * 1.7) / 34) * (1 + streak.pop * 0.45);
+    y -= fs * 0.45;
+    streak.lt = y - 37 * k;
+    streak.lw = (L.w * k) / 2;
+  }
   if (b === leader) {
     // gold star for the sweetest one
     const sx = b.x - (L.w * k) / 2 - fs * 0.45,
@@ -6967,6 +7287,7 @@ function render() {
       ctx.fill(b.path);
       ctx.restore();
     }
+  drawStreakFuse(z);
   for (const b of vis) drawBlob(b);
   for (const s of strands) {
     ctx.save();
@@ -7014,6 +7335,8 @@ function render() {
   for (const b of vis) drawName(b);
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   drawTexts(ox, oy, z);
+  drawStamps(ox, oy, z);
+  drawStreakFx();
   drawSugarCubes();
   if (player && player.alive && state === 'play') {
     for (const b of blobs) {
@@ -8023,6 +8346,12 @@ window.__kus = {
     return chunks;
   },
   spawnBot,
+  get streak() {
+    return streak;
+  },
+  get stamps() {
+    return stamps;
+  },
   sugarFly,
   hud: {
     get sugarShown() {
