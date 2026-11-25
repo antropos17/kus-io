@@ -167,8 +167,13 @@ function botSteer(b, dt) {
   }
   if (ai.mode === 'wrap') {
     if (wrap && wrap.state === 'run') {
-      b.tx = wrap.x;
-      b.ty = wrap.y;
+      // a player holds full speed: aim a body length past it so the arrival slowdown never applies, and lunge when it is in reach
+      const dx = wrap.x - b.x,
+        dy = wrap.y - b.y,
+        d = Math.hypot(dx, dy) || 1;
+      b.tx = wrap.x + (dx / d) * 200;
+      b.ty = wrap.y + (dy / d) * 200;
+      if (d < b.Rs + 150 && b.dashCd <= 0 && Math.cos(angDiff(Math.atan2(dy, dx), b.face)) > 0.9) dash(b);
       return;
     }
     ai.think = 0; // caught or gone: think again next frame
