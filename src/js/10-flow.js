@@ -194,7 +194,7 @@ function fixDiff() {
 function spawnPlayer(spawnT) {
   const m0 = day === 'tiny' ? 16 : DIFFS[diff].start;
   shownMass = m0;
-  const name = (nick.value || '').trim().slice(0, 14) || 'Кусака',
+  const name = (nick.value || '').trim().slice(0, 14) || t('defName'),
     [x, y] = safeSpawn();
   player = new Blob({
     name,
@@ -225,9 +225,10 @@ function startGame() {
   if (state === 'won') return secondShift(); // the win screen's main button carries on
   if (state === 'play' || (state === 'dead' && overEl.classList.contains('hidden'))) return;
   Sfx.init();
-  const name = (nick.value || '').trim().slice(0, 14) || 'Кусака';
+  const typed = (nick.value || '').trim().slice(0, 14),
+    name = typed || t('defName');
   try {
-    localStorage.setItem('kus.name', name);
+    localStorage.setItem('kus.name', typed); // the default is never saved: it follows the language
     localStorage.setItem('kus.color', String(chosen));
     localStorage.setItem('kus.hat', chosenHat);
     localStorage.setItem('kus.skin', chosenSkin);

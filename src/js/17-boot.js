@@ -136,7 +136,7 @@ function start(data) {
     try {
       nm = localStorage.getItem('kus.name') || '';
     } catch (e) {}
-  nick.value = nm;
+  nick.value = isDefName(nm) ? '' : nm; // an old save kept the default name: show the empty field instead
   let col = Number.isInteger(data.color) ? data.color : -1;
   if (col < 0)
     try {

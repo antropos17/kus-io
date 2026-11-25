@@ -60,7 +60,7 @@ const challenge = (() => {
       c = parseInt(q.get('c'), 10),
       n = (q.get('n') || '').slice(0, 14);
     const d = parseInt(q.get('d'), 10); // the date of a candy-of-the-day challenge, 20261123
-    return c > 0 && c < 100000 ? { c, n: n || 'Друг', d: d > 20000000 && d < 30000000 ? d : 0 } : null;
+    return c > 0 && c < 100000 ? { c, n: !n ? t('friend') : isDefName(n) ? t('defName') : n, d: d > 20000000 && d < 30000000 ? d : 0 } : null;
   } catch (e) {
     return null;
   }

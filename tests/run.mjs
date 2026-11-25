@@ -1720,6 +1720,27 @@ test('lang: the settings switch saves the choice and reloads; not on the pause c
   await g.close();
 });
 
+test('lang: a saved default name follows the language and is not saved again', async () => {
+  const ctx = await browser.newContext({ locale: 'en-US' });
+  const page = await ctx.newPage();
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('x')) return;
+    sessionStorage.setItem('x', '1');
+    localStorage.setItem('kus.name', 'Кусака');
+    localStorage.setItem('kus.best', '0');
+  });
+  await page.goto(URL + '?c=50&n=' + encodeURIComponent('Кусака'));
+  await page.waitForTimeout(500);
+  const pre = await page.evaluate(() => ({ field: document.getElementById('nick').value, chal: document.getElementById('chal').textContent }));
+  assert(pre.field === '', `the field shows a saved default: "${pre.field}"`);
+  assert(!/Кусака/.test(pre.chal) && /Kusaka/.test(pre.chal), `the challenge banner: "${pre.chal}"`);
+  await page.click('#play');
+  await page.waitForTimeout(300);
+  const p = await page.evaluate(() => ({ name: window.__kus.player.name, saved: localStorage.getItem('kus.name') }));
+  assert(p.name === 'Kusaka' && !p.saved, `player ${p.name}, saved "${p.saved}"`);
+  await ctx.close();
+});
+
 for (const [name, fn] of tests) {
   if (only && !name.includes(only)) continue;
   const t0 = Date.now();

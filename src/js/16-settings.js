@@ -116,7 +116,7 @@ $('chalBtn').addEventListener('click', () => {
   if (run.won) return shareWin();
   // a link that carries your score: the friend sees it as the target
   const score = Math.round(run.max),
-    name = (nick.value || '').trim().slice(0, 14) || 'Кусака';
+    name = (nick.value || '').trim().slice(0, 14) || t('defName');
   const base = /^https?:$/.test(location.protocol) && !/claude|anthropic/i.test(location.hostname) ? location.origin + location.pathname : PUBLIC_URL;
   const daily = mode === 'daily' && run.rule, // a candy-of-the-day link opens the same day's run
     url = base + '?c=' + score + '&n=' + encodeURIComponent(name) + (daily ? '&d=' + run.day : ''),

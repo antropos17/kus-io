@@ -643,6 +643,8 @@ const LANG = (() => {
 const STR = {
   title: ['КУСЬ.io — мягкие конфеты кусают друг друга', 'KUS.io — soft candies bite each other'],
   'set.lang': ['Язык', 'Language'],
+  defName: ['Кусака', 'Kusaka'], // the name of a player who typed none; never saved, so it follows the language
+  friend: ['Друг', 'Friend'], // a challenge link without a name
 };
 function t(key, ...args) {
   const e = STR[key];
@@ -653,6 +655,7 @@ function t(key, ...args) {
   const v = e[LANG === 'en' ? 1 : 0];
   return typeof v === 'function' ? v(...args) : v;
 }
+const isDefName = (s) => s === STR.defName[0] || s === STR.defName[1];
 // candy names are save keys (album, tools, tests) and stay Russian; the screen shows them through nameOf
 const EN_NAMES = {};
 const nameOf = (name) => (LANG === 'en' ? EN_NAMES[name] || name : name);
@@ -1130,7 +1133,7 @@ const challenge = (() => {
       c = parseInt(q.get('c'), 10),
       n = (q.get('n') || '').slice(0, 14);
     const d = parseInt(q.get('d'), 10); // the date of a candy-of-the-day challenge, 20261123
-    return c > 0 && c < 100000 ? { c, n: n || 'Друг', d: d > 20000000 && d < 30000000 ? d : 0 } : null;
+    return c > 0 && c < 100000 ? { c, n: !n ? t('friend') : isDefName(n) ? t('defName') : n, d: d > 20000000 && d < 30000000 ? d : 0 } : null;
   } catch (e) {
     return null;
   }
@@ -4492,7 +4495,7 @@ function fixDiff() {
 function spawnPlayer(spawnT) {
   const m0 = day === 'tiny' ? 16 : DIFFS[diff].start;
   shownMass = m0;
-  const name = (nick.value || '').trim().slice(0, 14) || 'Кусака',
+  const name = (nick.value || '').trim().slice(0, 14) || t('defName'),
     [x, y] = safeSpawn();
   player = new Blob({
     name,
@@ -4523,9 +4526,10 @@ function startGame() {
   if (state === 'won') return secondShift(); // the win screen's main button carries on
   if (state === 'play' || (state === 'dead' && overEl.classList.contains('hidden'))) return;
   Sfx.init();
-  const name = (nick.value || '').trim().slice(0, 14) || 'Кусака';
+  const typed = (nick.value || '').trim().slice(0, 14),
+    name = typed || t('defName');
   try {
-    localStorage.setItem('kus.name', name);
+    localStorage.setItem('kus.name', typed); // the default is never saved: it follows the language
     localStorage.setItem('kus.color', String(chosen));
     localStorage.setItem('kus.hat', chosenHat);
     localStorage.setItem('kus.skin', chosenSkin);
@@ -8635,7 +8639,7 @@ $('chalBtn').addEventListener('click', () => {
   if (run.won) return shareWin();
   // a link that carries your score: the friend sees it as the target
   const score = Math.round(run.max),
-    name = (nick.value || '').trim().slice(0, 14) || 'Кусака';
+    name = (nick.value || '').trim().slice(0, 14) || t('defName');
   const base = /^https?:$/.test(location.protocol) && !/claude|anthropic/i.test(location.hostname) ? location.origin + location.pathname : PUBLIC_URL;
   const daily = mode === 'daily' && run.rule, // a candy-of-the-day link opens the same day's run
     url = base + '?c=' + score + '&n=' + encodeURIComponent(name) + (daily ? '&d=' + run.day : ''),
@@ -9415,7 +9419,7 @@ function start(data) {
     try {
       nm = localStorage.getItem('kus.name') || '';
     } catch (e) {}
-  nick.value = nm;
+  nick.value = isDefName(nm) ? '' : nm; // an old save kept the default name: show the empty field instead
   let col = Number.isInteger(data.color) ? data.color : -1;
   if (col < 0)
     try {

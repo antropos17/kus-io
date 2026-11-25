@@ -13,6 +13,8 @@ const LANG = (() => {
 const STR = {
   title: ['КУСЬ.io — мягкие конфеты кусают друг друга', 'KUS.io — soft candies bite each other'],
   'set.lang': ['Язык', 'Language'],
+  defName: ['Кусака', 'Kusaka'], // the name of a player who typed none; never saved, so it follows the language
+  friend: ['Друг', 'Friend'], // a challenge link without a name
 };
 function t(key, ...args) {
   const e = STR[key];
@@ -23,6 +25,7 @@ function t(key, ...args) {
   const v = e[LANG === 'en' ? 1 : 0];
   return typeof v === 'function' ? v(...args) : v;
 }
+const isDefName = (s) => s === STR.defName[0] || s === STR.defName[1];
 // candy names are save keys (album, tools, tests) and stay Russian; the screen shows them through nameOf
 const EN_NAMES = {};
 const nameOf = (name) => (LANG === 'en' ? EN_NAMES[name] || name : name);
