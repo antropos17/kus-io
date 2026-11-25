@@ -1963,6 +1963,24 @@ test('lang: the English sticker caption has no broken ordinal', async () => {
   await g.close();
 });
 
+test('settings: the language row keeps the same gap to the next heading as the other rows (phone and PC)', async () => {
+  const gaps = {};
+  for (const touch of [true, false]) {
+    const g = await open({ width: touch ? 390 : 1200, height: touch ? 844 : 900, touch, play: false, returning: true });
+    await g.page.evaluate(() => document.querySelector('#secSet .sh').click());
+    await g.page.waitForTimeout(400);
+    gaps[touch ? 'phone' : 'pc'] = await g.page.evaluate(() => {
+      const next = (el) => [...document.querySelectorAll('#secSetB .grp')].find((h) => h.getBoundingClientRect().top > el.getBoundingClientRect().bottom && h.getClientRects().length);
+      const gap = (el) => Math.round(next(el).getBoundingClientRect().top - el.getBoundingClientRect().bottom);
+      const sizeSeg = document.getElementById('sizeSeg');
+      return { lang: gap(document.getElementById('langSeg')), other: sizeSeg.getClientRects().length ? gap(sizeSeg) : null };
+    });
+    await g.close();
+  }
+  const ref = gaps.phone.other;
+  assert(ref > 6 && Math.abs(gaps.phone.lang - ref) <= 1 && Math.abs(gaps.pc.lang - ref) <= 1, `gaps after the language row vs the others: ${JSON.stringify(gaps)}`);
+});
+
 for (const [name, fn] of tests) {
   if (only && !name.includes(only)) continue;
   const t0 = Date.now();
