@@ -112,7 +112,8 @@ function onStreakEnd(P) {
   // comboT ran out with a streak of two or more bites: show what it was worth, then let Task 4 react
   // the wrapper's payout pill, if it is still up, is not replaced
   if (runActive && P === player && !(streak.sumT > 0 && sumEl.textContent.startsWith('Фантик'))) {
-    sumEl.textContent = `Серия ×${P.combo} · +${Math.max(0, Math.floor(streak.sum))} сахара`;
+    const got = Math.max(0, Math.floor(streak.sum));
+    sumEl.textContent = got > 0 ? `Серия ×${P.combo} · +${got} сахара` : `Серия ×${P.combo}`; // a streak of bonuses only brought no sugar: no «+0»
     sumEl.classList.add('on');
     streak.sumT = 2;
   }

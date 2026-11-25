@@ -582,9 +582,9 @@ test('streak: a bonus pickup is a streak step', async () => {
     k.food.length = 0;
     // every other blob is parked far from the player (and from the bot below) before each take, so none can win the overlap
     let bot = null; const away = () => { for (const b of k.blobs) if (b !== P && b !== bot) { b.x = b.hx = P.x < 2000 ? 3700 : 300; b.y = b.hy = P.y < 2000 ? 3700 : 300; b.resetPoints(); } };
-    const pick = (combo, comboT) => { away(); k.food.length = 0; k.stamps.length = 0; P.combo = combo; P.comboT = comboT;
+    const pick = (combo, comboT) => { away(); k.food.length = 0; k.stamps.length = 0; k.texts.length = 0; P.combo = combo; P.comboT = comboT;
       const pk = { type: 'speed', x: P.x, y: P.y, t: 0 }; k.pickups.length = 0; k.pickups.push(pk); k.update(1/60); // the game may spawn its own random pickup meanwhile: look for ours
-      return { taken: !k.pickups.includes(pk), combo: P.combo, comboT: P.comboT, words: k.stamps.map((s) => s.txt), chip: document.querySelector('#sugar .mult').textContent }; };
+      return { taken: !k.pickups.includes(pk), combo: P.combo, comboT: P.comboT, words: k.stamps.map((s) => s.txt), chip: document.querySelector('#sugar .mult').textContent, texts: k.texts.filter((t) => t.t < t.T).map((t) => t.s) }; };
     out.a = pick(0, 0); out.b = pick(1, 2); out.c = pick(4, 0.2);
     // a controlled bot: alive, still, home point fixed, sitting right on the pickup, taken in the very next frame
     bot = k.spawnBot(100); away(); bot.ai = null; bot.spawnT = 0; bot.x = bot.hx = P.x < 2000 ? P.x + 1500 : P.x - 1500; bot.y = bot.hy = P.y; bot.resetPoints();
@@ -594,12 +594,25 @@ test('streak: a bonus pickup is a streak step', async () => {
     // the pickup's own mission payout is old; the streak must add nothing on top of it, deep in a streak or not
     const paid = (combo, comboT) => { away(); k.pickups.length = 0; k.pickups.push({ type: 'speed', x: P.x, y: P.y, t: 0 }); P.combo = combo; P.comboT = comboT; const s0 = k.run.sugar; k.update(1/60); return +(k.run.sugar - s0).toFixed(3); };
     out.e = { cold: paid(0, 0), deep: paid(6, 3) };
+    // the camera kick and the last spot point at the bonus: here it lies straight above the player
+    away(); k.pickups.length = 0; P.combo = 1; P.comboT = 2; k.cam.kx = k.cam.ky = k.cam.kvx = k.cam.kvy = 0; const up = { type: 'speed', x: P.x, y: P.y - P.Rs * 0.6, t: 0 }; k.pickups.push(up); k.update(1/60);
+    out.f = { taken: !k.pickups.includes(up), kick: Math.atan2(k.cam.kvy, k.cam.kvx), moved: Math.hypot(k.cam.kvx, k.cam.kvy) > 1, woundAbove: k.streak.lastWound.y < P.y - P.Rs * 0.3 };
+    // a streak made of bonuses only brought no sugar: its summary must not brag about +0
+    const sum = document.querySelector('#streakSum'); sum.classList.remove('on'); k.streak.sumT = 0;
+    P.combo = 0; P.comboT = 0; P.biteCd = 999; k.pickups.length = 0; k.pickups.push({ type: 'shield', x: P.x, y: P.y, t: 0 }); k.update(1/60);
+    k.pickups.push({ type: 'magnet', x: P.x, y: P.y, t: 0 }); k.update(1/60); out.g = { combo: P.combo };
+    for (let i = 0; i < 268; i++) { away(); k.pickups.length = 0; P.biteCd = 999; k.update(1/60); }
+    out.g.sum = sum.textContent; out.g.on = sum.classList.contains('on');
     return out; })()`);
   assert(r.a.taken && r.b.taken && r.c.taken, `the player's own pickup was not collected (a stray blob won the overlap): ${JSON.stringify([r.a, r.b, r.c])}`);
   assert(r.a.combo === 1 && r.a.words.length === 0 && Math.abs(r.a.comboT - 4) < 0.05, `a first pickup must start a streak at 1 with no word: ${JSON.stringify(r.a)}`);
   assert(r.b.combo === 2 && r.b.words.join() === 'Кусь-кусь!' && r.b.chip === '×2', `a pickup inside a streak must make ×2 and stamp the word: ${JSON.stringify(r.b)}`);
   assert(r.c.combo === 5 && r.c.words.join() === 'Хрум-хрум!', `a pickup at the last moment must make ×5 Хрум-хрум!, never На волоске!: ${JSON.stringify(r.c)}`);
   assert(r.d.taken && r.d.same, `a bot taking a bonus must not touch the player's streak: ${JSON.stringify(r.d)}`);
+  assert(r.a.texts.includes('Скорость!'), `a pickup that only starts a streak still names the bonus over the candy: ${JSON.stringify(r.a.texts)}`);
+  assert(!r.b.texts.includes('Скорость!') && !r.c.texts.includes('Скорость!'), `inside a streak the stamp talks, the bonus name must not float over the candy: ${JSON.stringify([r.b.texts, r.c.texts])}`);
+  assert(r.f.taken && r.f.moved && Math.abs(r.f.kick + Math.PI / 2) < 0.35 && r.f.woundAbove, `the kick and the last spot must point at a bonus above the player: ${JSON.stringify(r.f)}`);
+  assert(r.g.combo === 2 && r.g.on && r.g.sum === 'Серия ×2', `a bonus-only streak sums up without «+0 сахара»: ${JSON.stringify(r.g)}`);
   assert(r.e.cold === r.e.deep, `a streak pickup must pay no sugar beyond the old pickup payout: ${JSON.stringify(r.e)}`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();

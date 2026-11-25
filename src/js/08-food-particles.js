@@ -37,22 +37,24 @@ function removeFood(i) {
   food[i] = food[food.length - 1];
   food.pop();
 }
-function grant(b, type) {
+function grant(b, type, px, py) {
+  // px, py: where the bonus lay (the player's streak kicks the camera toward it and remembers it as the last spot)
   const d = PICK[type][1];
   if (type === 'speed') b.pSpeed = d;
   else if (type === 'shield') b.pShield = d;
   else b.pMagnet = d;
   parts.push({ ring: true, x: b.x, y: b.y, vx: 0, vy: 0, r: b.Rs, t: 0, T: 0.4, c: PICK[type][2] });
   if (b.isPlayer) {
-    floatText(b.x, b.y - b.Rs - 30 / cam.z, PICK[type][0] + '!', PICK[type][2], 24);
+    const inStreak = b.comboT > 0; // the pickup steps a live streak: its stamp does the talking, the HUD coin names the bonus
+    if (!inStreak) floatText(b.x, b.y - b.Rs - 30 / cam.z, PICK[type][0] + '!', PICK[type][2], 24);
     Sfx.power();
     haptic(12);
     mission('pickup', 1);
     // a bonus builds the streak like a bite, but pays no sugar and is never «На волоске!»
-    b.combo = b.comboT > 0 ? (b.combo || 0) + 1 : 1;
+    b.combo = inStreak ? (b.combo || 0) + 1 : 1;
     b.comboT = STREAK.win;
     mission('combo', b.combo, true);
-    onStreakBite(b, b, b.x, b.y, 0, false);
+    onStreakBite(b, b, px === undefined ? b.x : px, py === undefined ? b.y : py, 0, false);
     hudT = 0;
   }
 }
@@ -81,7 +83,7 @@ function updatePickups(dt) {
         dy = p.y - b.y,
         r = b.Rs * 0.9 + 18;
       if (dx * dx + dy * dy < r * r) {
-        grant(b, p.type);
+        grant(b, p.type, p.x, p.y);
         pickups.splice(i, 1);
         break;
       }
