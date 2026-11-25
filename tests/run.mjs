@@ -311,12 +311,14 @@ test('wrapper: a ×5 streak in a clean run drops a wrapper that pays when caught
   const r = await g.page.evaluate(`(() => { ${QUIET} const out = {}; k.M.act.length = 0; /* no mission prize sugar */
     P.mass = 120; for (let i = 0; i < 40; i++) k.update(1/60);
     const V = k.spawnBot(400); V.ai = null; V.spawnT = 0; for (let i = 0; i < 30; i++) k.update(1/60);
-    // between the scripted bites nothing else earns sugar or bites
-    const tick = (n) => { for (let i = 0; i < n; i++) { k.food.length = 0; k.pickups.length = 0; P.biteCd = 999; V.biteCd = 999; k.update(1/60); } };
-    const bite = () => { k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; V.mass = 400; P.biteCd = 0;
+    // between the scripted bites nothing else earns sugar or bites; bots the live field sends in (a hedgehog, say) are removed, or they bite and shove V
+    const clear = () => { for (const o of k.blobs) if (o !== P && o !== V && o.alive && Math.hypot(o.x - P.x, o.y - P.y) < 900) o.alive = false; };
+    const tick = (n) => { for (let i = 0; i < n; i++) { clear(); k.food.length = 0; k.pickups.length = 0; P.biteCd = 999; V.biteCd = 999; k.update(1/60); } };
+    // P stays at 120: fifteen bites would grow it past 400 and it would swallow V whole
+    const bite = () => { P.mass = 120; k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; V.mass = 400; P.biteCd = 0;
       const n0 = P.stats.bites; let f = 0;
       // a slow bite (a stage event in the way) must not let the streak lapse: hold the window open until it lands
-      while (f < 180 && P.stats.bites === n0) { if (P.combo > 0) P.comboT = Math.max(P.comboT, 1); P.tx = V.x; P.ty = V.y; V.tx = V.x; V.ty = V.y; V.biteCd = 9; k.update(1/60); f++; }
+      while (f < 180 && P.stats.bites === n0) { if (P.combo > 0) P.comboT = Math.max(P.comboT, 1); P.tx = V.x; P.ty = V.y; V.tx = V.x; V.ty = V.y; V.biteCd = 9; clear(); k.update(1/60); f++; }
       P.biteCd = 999; V.biteCd = 999; };
     const streak5 = () => { P.combo = 0; P.comboT = 0; for (let n = 0; n < 5; n++) bite(); return P.combo; };
     out.combo = streak5();
@@ -1215,10 +1217,14 @@ test('hud: cream pills fit phones; the stage pill fills and its jaws chomp when 
       const coins = fx.querySelectorAll('.coin[data-k=magnet]');
       out.coins = coins.length; out.t = coins.length ? parseFloat(coins[0].style.getPropertyValue('--t')) : -1; out.fxText = fx.textContent.trim();
       out.streakChip = fx.textContent.includes('Серия');
-      // all three buffs at once: the column stays capped and never reaches the table, each label stays beside its coin
+      // all three buffs at once under the tallest table (the player out of the top five adds a gap row and its own row):
+      // the coins never reach the table, each label stays beside its coin. The coins are measured, not #fx: its box is its max-width once they wrap
+      let tall = 0; for (const b of k.blobs) if (b !== P && b.alive && tall < 6) { b.mass = 500 + tall * 10; tall++; }
       P.pSpeed = 9; P.pShield = 9; P.pMagnet = 9; run(0.5);
-      const r3 = fx.getBoundingClientRect(), s3 = document.getElementById('score').getBoundingClientRect();
-      out.n3 = fx.querySelectorAll('.coin').length; out.fxRight = r3.right; out.fxHit = r3.right > br.left && r3.bottom > br.top && r3.top < br.bottom;
+      const b3 = document.getElementById('board').getBoundingClientRect(), us = [...fx.querySelectorAll('.fxu')].map((u) => u.getBoundingClientRect());
+      out.rows = [...document.querySelectorAll('#lb li')].filter((li) => li.offsetHeight).length;
+      out.n3 = fx.querySelectorAll('.coin').length; out.fxRight = Math.max(...us.map((u) => u.right));
+      out.fxHit = us.some((u) => u.right > b3.left && u.bottom > b3.top && u.top < b3.bottom);
       out.split = [...fx.querySelectorAll('.fxu')].some((u) => u.querySelector('b').getBoundingClientRect().top > u.querySelector('.coin').getBoundingClientRect().bottom);
       P.pSpeed = 0; P.pShield = 0;
       P.stats.maxMass = 150; let f = 0; for (; f < 4 && !(S().cur && S().cur.k === 'pir'); f++) run(1 / 60);
@@ -1232,6 +1238,7 @@ test('hud: cream pills fit phones; the stage pill fills and its jaws chomp when 
     assert(Math.abs(r.p - 0.9) <= 0.02 && r.ic, `${w}: --p ${r.p}, icon ${r.ic}`);
     assert(r.right <= 216 && !r.hit, `${w}: the HUD column ends at ${r.right}px or runs into the table`);
     assert(r.n3 === 3 && r.fxRight <= 216 && !r.fxHit && !r.split, `${w}: three buffs: ${JSON.stringify([r.n3, r.fxRight, r.fxHit, r.split])}`);
+    assert(r.rows === 7 || opt.height < 520, `${w}: the setup needs the tall table, it has ${r.rows} rows`);
     assert(r.started && r.late <= 2 && r.chomp && !r.hungry2, `${w}: the jaws must chomp within 2 frames of the raid start (${JSON.stringify(r)})`);
     assert(!r.chomp1, `${w}: the chomp must stop after about 0.64 s`);
     assert(
