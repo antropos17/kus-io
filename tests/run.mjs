@@ -267,9 +267,10 @@ test('streak: label, fuse, stamps and the summary when it lapses', async () => {
     // one bite on V; hold: keep comboT at that value until the bite lands
     const bite = (hold) => { k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; V.mass = 400; P.biteCd = 0;
       const n0 = P.stats.bites; let f = 0;
-      while (f < 90 && P.stats.bites === n0) { if (hold) P.comboT = hold; P.tx = V.x; P.ty = V.y; V.tx = V.x; V.ty = V.y; V.biteCd = 9; k.update(1/60); out.maxStamps = Math.max(out.maxStamps, k.stamps.length); f++; }
+      while (f < 90 && P.stats.bites === n0) { k.pickups.length = 0; if (hold) P.comboT = hold; P.tx = V.x; P.ty = V.y; V.tx = V.x; V.ty = V.y; V.biteCd = 9; k.update(1/60); out.maxStamps = Math.max(out.maxStamps, k.stamps.length); f++; }
       P.biteCd = 999; V.biteCd = 999; /* only the scripted bites land */ };
     for (let n = 1; n <= 5; n++) { bite(0);
+      if (n === 2) out.word2 = words();
       if (n === 3) out.word3 = words();
       if (n === 5) { out.word5 = words(); out.f = parseFloat(dash.style.getPropertyValue('--f')); out.victim = k.streak.lastVictim === V;
         out.wound = Math.hypot(k.streak.lastWound.x - V.x, k.streak.lastWound.y - V.y) < V.Rs * 1.6;
@@ -280,12 +281,13 @@ test('streak: label, fuse, stamps and the summary when it lapses', async () => {
     P.comboT = 0.7; k.update(1/60); k.render(); // the last 0.8 s: the fuse blinks and the button says ещё кусь!
     out.low = dash.classList.contains('low'); out.more = getComputedStyle(dash, '::after').content;
     bite(0.3); out.close = words(); out.combo = P.combo; P.biteCd = 999; V.biteCd = 999; // no seventh bite: the streak must lapse
-    for (let i = 0; i < 220; i++) { k.update(1/60); if (i % 30 === 0) k.render(); }
+    for (let i = 0; i < 268; i++) { k.update(1/60); if (i % 30 === 0) k.render(); }
     out.sum = sum.textContent; out.sumOn = sum.classList.contains('on') && getComputedStyle(sum).visibility === 'visible';
     out.fx = document.getElementById('fx').textContent;
     out.chipGone = !chip.classList.contains('on'); out.fuseGone = !dash.classList.contains('fuse'); out.rushGone = !document.querySelector('#vig').classList.contains('rush');
     for (let i = 0; i < 150; i++) k.update(1/60);
     out.sumGone = !sum.classList.contains('on'); return out; })()`);
+  assert(r.word2.join() === 'Кусь-кусь!', `bite 2 must stamp Кусь-кусь! alone: ${r.word2}`);
   assert(r.word3.join() === 'Ням!', `bite 3 must stamp Ням! alone: ${r.word3}`);
   assert(r.word5.join() === 'Хрум-хрум!', `bite 5 must stamp Хрум-хрум! alone: ${r.word5}`);
   assert(r.maxStamps <= 1, `only one stamp may be visible at a time, saw ${r.maxStamps}`);
@@ -323,12 +325,12 @@ test('wrapper: a ×5 streak in a clean run drops a wrapper that pays when caught
     const streak5 = () => { P.combo = 0; P.comboT = 0; for (let n = 0; n < 5; n++) bite(); return P.combo; };
     out.combo = streak5();
     let born = -1, ran = -1;
-    for (let f = 0; f < 240; f++) { tick(1); if (k.wrap && born < 0) born = f; if (k.wrap && k.wrap.state === 'run' && ran < 0) ran = f; }
+    for (let f = 0; f < 288; f++) { tick(1); if (k.wrap && born < 0) born = f; if (k.wrap && k.wrap.state === 'run' && ran < 0) ran = f; }
     out.born = born; out.ran = ran; out.alive = !!k.wrap;
     // a second ×5 streak lapses while the first wrapper still runs: the same single wrapper
     const w1 = k.wrap; if (w1) { w1.life = 99; w1.x = 3500; w1.y = 3300; }
     const sumEl = document.querySelector('#streakSum'); sumEl.textContent = ''; // only this lapse can write the summary now
-    out.combo2 = streak5(); tick(210); out.same = !!w1 && k.wrap === w1;
+    out.combo2 = streak5(); tick(258); out.same = !!w1 && k.wrap === w1;
     out.lapsed2 = P.comboT <= 0 && /^Серия ×5 · \\+\\d+ сахара$/.test(sumEl.textContent); out.sum2 = sumEl.textContent;
     // catch it
     const w = k.wrap; if (w) k.place(P, w.x, w.y, 0);
@@ -338,7 +340,7 @@ test('wrapper: a ×5 streak in a clean run drops a wrapper that pays when caught
     tick(185); out.gain = k.run.sugar - s0; out.amt = k.WRAP.amt[out.f]; out.sum = document.querySelector('#streakSum').textContent; out.revealGone = k.reveal === null;
     // a cheat on: the next ×5 streak lapses without a wrapper
     k.CHEAT.god = true; tick(2); out.combo3 = streak5(); let any = false;
-    for (let f = 0; f < 240; f++) { tick(1); if (k.wrap || k.reveal) any = true; }
+    for (let f = 0; f < 288; f++) { tick(1); if (k.wrap || k.reveal) any = true; }
     out.cheatWrap = any; out.cheated = P.cheated; return out; })()`);
   assert(r.combo === 5 && r.combo2 === 5 && r.combo3 === 5, `the scripted streaks must reach ×5 (${r.combo}, ${r.combo2}, ${r.combo3})`);
   assert(r.born >= 0 && r.alive, `a wrapper must appear when a ×5 streak lapses and still run after 3 s (born ${r.born}, alive ${r.alive})`);
@@ -569,6 +571,36 @@ test('streak: swallowing whole counts as a streak bite', async () => {
   assert(r.combos.join() === '1,2,3', `swallows in a row must count 1,2,3, got ${r.combos}`);
   assert(r.words.join() === 'Ням!' && r.chip === '×3', `the third swallow must stamp Ням! and show ×3: ${r.words} ${r.chip}`);
   assert(r.sum > 0, 'the swallows must add their sugar to the streak sum');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+// A bonus pickup is a streak step for the player (no sugar, never «На волоске!»); a bot taking one leaves the player's streak alone.
+test('streak: a bonus pickup is a streak step', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} const out = {};
+    k.food.length = 0;
+    // every other blob is parked far from the player (and from the bot below) before each take, so none can win the overlap
+    let bot = null; const away = () => { for (const b of k.blobs) if (b !== P && b !== bot) { b.x = b.hx = P.x < 2000 ? 3700 : 300; b.y = b.hy = P.y < 2000 ? 3700 : 300; b.resetPoints(); } };
+    const pick = (combo, comboT) => { away(); k.food.length = 0; k.stamps.length = 0; P.combo = combo; P.comboT = comboT;
+      const pk = { type: 'speed', x: P.x, y: P.y, t: 0 }; k.pickups.length = 0; k.pickups.push(pk); k.update(1/60); // the game may spawn its own random pickup meanwhile: look for ours
+      return { taken: !k.pickups.includes(pk), combo: P.combo, comboT: P.comboT, words: k.stamps.map((s) => s.txt), chip: document.querySelector('#sugar .mult').textContent }; };
+    out.a = pick(0, 0); out.b = pick(1, 2); out.c = pick(4, 0.2);
+    // a controlled bot: alive, still, home point fixed, sitting right on the pickup, taken in the very next frame
+    bot = k.spawnBot(100); away(); bot.ai = null; bot.spawnT = 0; bot.x = bot.hx = P.x < 2000 ? P.x + 1500 : P.x - 1500; bot.y = bot.hy = P.y; bot.resetPoints();
+    P.combo = 3; P.comboT = 2; k.stamps.length = 0; k.pickups.length = 0; const pkb = { type: 'speed', x: bot.x, y: bot.y, t: 0 }; k.pickups.push(pkb);
+    const c0 = P.combo, t0 = P.comboT, before = { alive: bot.alive, listed: k.blobs.includes(bot) }; k.update(1/60);
+    out.d = { same: P.combo === c0 && k.stamps.length === 0 && P.comboT < t0, taken: !k.pickups.includes(pkb), before, after: { alive: bot.alive, x: Math.round(bot.x), y: Math.round(bot.y) } };
+    // the pickup's own mission payout is old; the streak must add nothing on top of it, deep in a streak or not
+    const paid = (combo, comboT) => { away(); k.pickups.length = 0; k.pickups.push({ type: 'speed', x: P.x, y: P.y, t: 0 }); P.combo = combo; P.comboT = comboT; const s0 = k.run.sugar; k.update(1/60); return +(k.run.sugar - s0).toFixed(3); };
+    out.e = { cold: paid(0, 0), deep: paid(6, 3) };
+    return out; })()`);
+  assert(r.a.taken && r.b.taken && r.c.taken, `the player's own pickup was not collected (a stray blob won the overlap): ${JSON.stringify([r.a, r.b, r.c])}`);
+  assert(r.a.combo === 1 && r.a.words.length === 0 && Math.abs(r.a.comboT - 4) < 0.05, `a first pickup must start a streak at 1 with no word: ${JSON.stringify(r.a)}`);
+  assert(r.b.combo === 2 && r.b.words.join() === 'Кусь-кусь!' && r.b.chip === '×2', `a pickup inside a streak must make ×2 and stamp the word: ${JSON.stringify(r.b)}`);
+  assert(r.c.combo === 5 && r.c.words.join() === 'Хрум-хрум!', `a pickup at the last moment must make ×5 Хрум-хрум!, never На волоске!: ${JSON.stringify(r.c)}`);
+  assert(r.d.taken && r.d.same, `a bot taking a bonus must not touch the player's streak: ${JSON.stringify(r.d)}`);
+  assert(r.e.cold === r.e.deep, `a streak pickup must pay no sugar beyond the old pickup payout: ${JSON.stringify(r.e)}`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
 });

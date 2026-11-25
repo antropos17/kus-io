@@ -2947,6 +2947,11 @@ function grant(b, type) {
     Sfx.power();
     haptic(12);
     mission('pickup', 1);
+    // a bonus builds the streak like a bite, but pays no sugar and is never «На волоске!»
+    b.combo = b.comboT > 0 ? (b.combo || 0) + 1 : 1;
+    b.comboT = STREAK.win;
+    mission('combo', b.combo, true);
+    onStreakBite(b, b, b.x, b.y, 0, false);
     hudT = 0;
   }
 }
@@ -5571,8 +5576,8 @@ function secondShift() {
 }
 
 // ---------- streak juice: ×N over the candy, fuses, stamps, sugar rush and the summary ----------
-// A streak is player.combo while player.comboT (the 3.2 s window) is still running. doBite calls onStreakBite, updateBlob calls onStreakEnd.
-const STREAK = { win: 3.2, close: 0.45, low: 0.8, words: { 3: 'Ням!', 5: 'Хрум-хрум!', 7: 'Обжора!' } };
+// A streak is player.combo while player.comboT (the 4 s window) is still running. doBite calls onStreakBite, updateBlob calls onStreakEnd.
+const STREAK = { win: 4, close: 0.45, low: 0.8, words: { 2: 'Кусь-кусь!', 3: 'Ням!', 5: 'Хрум-хрум!', 7: 'Обжора!' } };
 const STREAK_COL = ['', '#9be15d', '#ff9a3c', '#ff4f7b']; // the colour of each step
 // 0: no streak (combo < 2), 1: ×2, 2: ×3-4, 3: ×5 and up
 const streakLevel = (combo) => (combo < 2 ? 0 : combo < 3 ? 1 : combo < 5 ? 2 : 3);
@@ -5765,7 +5770,7 @@ function streakTick(dt) {
 
 // ---- drawing ----
 function drawStreakFuse(z) {
-  // a ring on the tray under the player that burns down with the 3.2 s window
+  // a ring on the tray under the player that burns down with the 4 s window
   const P = player;
   if (!P || !P.alive || !(P.comboT > 0) || streakLevel(P.combo || 0) < 1) return;
   const R = P.Rs,

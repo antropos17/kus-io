@@ -48,6 +48,11 @@ function grant(b, type) {
     Sfx.power();
     haptic(12);
     mission('pickup', 1);
+    // a bonus builds the streak like a bite, but pays no sugar and is never «На волоске!»
+    b.combo = b.comboT > 0 ? (b.combo || 0) + 1 : 1;
+    b.comboT = STREAK.win;
+    mission('combo', b.combo, true);
+    onStreakBite(b, b, b.x, b.y, 0, false);
     hudT = 0;
   }
 }
