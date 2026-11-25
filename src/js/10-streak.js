@@ -1,6 +1,6 @@
 // ---------- streak juice: ×N over the candy, fuses, stamps, sugar rush and the summary ----------
-// A streak is player.combo while player.comboT (the 2.6 s window) is still running. doBite calls onStreakBite, updateBlob calls onStreakEnd.
-const STREAK = { win: 2.6, close: 0.45, low: 0.8, words: { 3: 'Ням!', 5: 'Хрум-хрум!', 7: 'Обжора!' } };
+// A streak is player.combo while player.comboT (the 3.2 s window) is still running. doBite calls onStreakBite, updateBlob calls onStreakEnd.
+const STREAK = { win: 3.2, close: 0.45, low: 0.8, words: { 3: 'Ням!', 5: 'Хрум-хрум!', 7: 'Обжора!' } };
 const STREAK_COL = ['', '#9be15d', '#ff9a3c', '#ff4f7b']; // the colour of each step
 // 0: no streak (combo < 2), 1: ×2, 2: ×3-4, 3: ×5 and up
 const streakLevel = (combo) => (combo < 2 ? 0 : combo < 3 ? 1 : combo < 5 ? 2 : 3);
@@ -192,7 +192,7 @@ function streakTick(dt) {
 
 // ---- drawing ----
 function drawStreakFuse(z) {
-  // a ring on the tray under the player that burns down with the 2.6 s window
+  // a ring on the tray under the player that burns down with the 3.2 s window
   const P = player;
   if (!P || !P.alive || !(P.comboT > 0) || streakLevel(P.combo || 0) < 1) return;
   const R = P.Rs,

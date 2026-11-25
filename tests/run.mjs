@@ -280,7 +280,7 @@ test('streak: label, fuse, stamps and the summary when it lapses', async () => {
     P.comboT = 0.7; k.update(1/60); k.render(); // the last 0.8 s: the fuse blinks and the button says ещё кусь!
     out.low = dash.classList.contains('low'); out.more = getComputedStyle(dash, '::after').content;
     bite(0.3); out.close = words(); out.combo = P.combo; P.biteCd = 999; V.biteCd = 999; // no seventh bite: the streak must lapse
-    for (let i = 0; i < 180; i++) { k.update(1/60); if (i % 30 === 0) k.render(); }
+    for (let i = 0; i < 220; i++) { k.update(1/60); if (i % 30 === 0) k.render(); }
     out.sum = sum.textContent; out.sumOn = sum.classList.contains('on') && getComputedStyle(sum).visibility === 'visible';
     out.fx = document.getElementById('fx').textContent;
     out.chipGone = !chip.classList.contains('on'); out.fuseGone = !dash.classList.contains('fuse'); out.rushGone = !document.querySelector('#vig').classList.contains('rush');
@@ -323,12 +323,12 @@ test('wrapper: a ×5 streak in a clean run drops a wrapper that pays when caught
     const streak5 = () => { P.combo = 0; P.comboT = 0; for (let n = 0; n < 5; n++) bite(); return P.combo; };
     out.combo = streak5();
     let born = -1, ran = -1;
-    for (let f = 0; f < 180; f++) { tick(1); if (k.wrap && born < 0) born = f; if (k.wrap && k.wrap.state === 'run' && ran < 0) ran = f; }
+    for (let f = 0; f < 240; f++) { tick(1); if (k.wrap && born < 0) born = f; if (k.wrap && k.wrap.state === 'run' && ran < 0) ran = f; }
     out.born = born; out.ran = ran; out.alive = !!k.wrap;
     // a second ×5 streak lapses while the first wrapper still runs: the same single wrapper
     const w1 = k.wrap; if (w1) { w1.life = 99; w1.x = 3500; w1.y = 3300; }
     const sumEl = document.querySelector('#streakSum'); sumEl.textContent = ''; // only this lapse can write the summary now
-    out.combo2 = streak5(); tick(170); out.same = !!w1 && k.wrap === w1;
+    out.combo2 = streak5(); tick(210); out.same = !!w1 && k.wrap === w1;
     out.lapsed2 = P.comboT <= 0 && /^Серия ×5 · \\+\\d+ сахара$/.test(sumEl.textContent); out.sum2 = sumEl.textContent;
     // catch it
     const w = k.wrap; if (w) k.place(P, w.x, w.y, 0);
@@ -338,7 +338,7 @@ test('wrapper: a ×5 streak in a clean run drops a wrapper that pays when caught
     tick(185); out.gain = k.run.sugar - s0; out.amt = k.WRAP.amt[out.f]; out.sum = document.querySelector('#streakSum').textContent; out.revealGone = k.reveal === null;
     // a cheat on: the next ×5 streak lapses without a wrapper
     k.CHEAT.god = true; tick(2); out.combo3 = streak5(); let any = false;
-    for (let f = 0; f < 200; f++) { tick(1); if (k.wrap || k.reveal) any = true; }
+    for (let f = 0; f < 240; f++) { tick(1); if (k.wrap || k.reveal) any = true; }
     out.cheatWrap = any; out.cheated = P.cheated; return out; })()`);
   assert(r.combo === 5 && r.combo2 === 5 && r.combo3 === 5, `the scripted streaks must reach ×5 (${r.combo}, ${r.combo2}, ${r.combo3})`);
   assert(r.born >= 0 && r.alive, `a wrapper must appear when a ×5 streak lapses and still run after 3 s (born ${r.born}, alive ${r.alive})`);
@@ -553,6 +553,22 @@ const EAT = `const eat = (name) => { const S = k.spawnBot(20); S.name = name; S.
     for (let i = 0; i < 120 && P.stats.kills === k0; i++) { P.tx = S.x; P.ty = S.y; k.update(1/60); }
     for (let i = 0; i < 10; i++) k.update(1/60);
     return P.stats.kills - k0; };`;
+
+// A big candy eats small ones in one bite each: those swallows must build the streak like ordinary bites.
+test('streak: swallowing whole counts as a streak bite', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} ${EAT} const out = { combos: [], kills: 0 };
+    P.combo = 0; P.comboT = 0; k.stamps.length = 0;
+    for (let n = 0; n < 3; n++) { out.kills += eat('Тест' + n); out.combos.push(P.combo); }
+    out.words = k.stamps.map((s) => s.txt); out.chip = document.querySelector('#sugar .mult').textContent; out.sum = k.streak.sum;
+    return out; })()`);
+  assert(r.kills === 3, `all three small candies must be swallowed whole, got ${r.kills}`);
+  assert(r.combos.join() === '1,2,3', `swallows in a row must count 1,2,3, got ${r.combos}`);
+  assert(r.words.join() === 'Ням!' && r.chip === '×3', `the third swallow must stamp Ням! and show ×3: ${r.words} ${r.chip}`);
+  assert(r.sum > 0, 'the swallows must add their sugar to the streak sum');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
 
 test('album: a bot swallowed whole opens its sticker, a repeat only counts, the end screen says so', async () => {
   const g = await open({ play: false });

@@ -567,7 +567,14 @@ function swallowWhole(A, B) {
   feedKill(A, B);
   if (B.boss) bossDown(A);
   if (A.isPlayer) {
+    // a swallow is the bite that finished it: it builds the streak like any other bite
+    const close = A.comboT > 0 && A.comboT < STREAK.close;
+    A.combo = A.comboT > 0 ? (A.combo || 0) + 1 : 1;
+    A.comboT = STREAK.win;
+    mission('combo', A.combo, true);
+    const sugar0 = run.sugar;
     mission('kills', 1);
+    onStreakBite(A, B, B.x, B.y, run.sugar - sugar0, close);
     albumEat(B);
     if (B.kind === 'piranha') mission('piranha', 1);
     floatText(A.x, A.y - A.Rs - 30 / cam.z, 'ням! +' + Math.round(gain), '#ffd23f', 28);
