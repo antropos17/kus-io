@@ -112,3 +112,10 @@ The tests do not see the picture and do not hear the sound. Check the look with 
 
 - Multiplayer: it needs a server, for now all rivals are bots.
 - Telegram Mini App: the code detects running inside Telegram, but no bot has been created.
+
+## Progress tracker
+
+Руслан and Сеймур follow this project on a shared tracker, and Claude posts every finished stage there. The protocol is in `tools/tracker/README.md`.
+
+- Before starting a change that is visible on screen, take a "before" screenshot of the affected screen: `node tools/tracker/report.mjs shot <url> .claude/shots/<slug>-before.png`. After the change is verified, take the "after" shot of the same screen, size and state.
+- After a `git push` or a finished, verified stage, post the stage with both screenshots, its section and the change lines (`+` new, `~` changed, `!` fixed, `-` removed).

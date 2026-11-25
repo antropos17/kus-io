@@ -1,0 +1,9 @@
+{
+  "project": "kus",
+  "tracker": "https://antropos17.github.io/sualver-toilet-tracker/",
+  "preview": {
+    "start": "python -m http.server 4173 --bind 127.0.0.1",
+    "url": "http://127.0.0.1:4173/",
+    "note": "index.html в корне собирается из src/: npm run build"
+  }
+}
