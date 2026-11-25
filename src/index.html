@@ -91,7 +91,10 @@ document.getElementById('nojs').style.display = 'none';
       <section class="sec later" id="secMis"><button class="sh" type="button" aria-expanded="false" aria-controls="secMisB"><span class="sk">Задания</span><span class="sv" id="sumMis"></span></button><div class="sb" id="secMisB">
         <div class="pk" id="mis"><span class="pl" id="misT">Задания</span><div id="misList"></div></div>
       </div></section>
-      <section class="sec later" id="secSet"><button class="sh" type="button" aria-expanded="false" aria-controls="secSetB"><span class="sk">Настройки</span><span class="sv" id="sumSet"></span></button><div class="sb" id="secSetB"></div></section>
+      <section class="sec later" id="secSet"><button class="sh" type="button" aria-expanded="false" aria-controls="secSetB"><span class="sk">Настройки</span><span class="sv" id="sumSet"></span></button><div class="sb" id="secSetB"><!-- the language row stays here, never on the pause card: switching reloads the page -->
+    <div class="grp lng" data-t="set.lang">Язык</div>
+    <div class="seg2 lng" id="langSeg"><button type="button" data-v="ru" lang="ru">Русский</button><button type="button" data-v="en" lang="en">English</button></div>
+      </div></section>
       <section class="sec later" id="secHelp"><button class="sh" type="button" aria-expanded="false" aria-controls="secHelpB"><span class="sk">Как играть</span><span class="sv">управление и советы</span></button><div class="sb" id="secHelpB">
     <ul class="help">
       <li class="kb"><span><b>Мышь</b>: куда смотрит пасть</span></li>

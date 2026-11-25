@@ -12,6 +12,7 @@ const LANG = (() => {
 // key → [Russian, English]; a value is a string or a function of the arguments t() gets (templates, numbers)
 const STR = {
   title: ['КУСЬ.io — мягкие конфеты кусают друг друга', 'KUS.io — soft candies bite each other'],
+  'set.lang': ['Язык', 'Language'],
 };
 function t(key, ...args) {
   const e = STR[key];

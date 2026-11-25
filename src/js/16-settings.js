@@ -30,6 +30,15 @@ function setHome(inMenu) {
   if (inMenu) $('secSetB').appendChild(setBox);
   else pauseEl.querySelector('.card').insertBefore(setBox, $('resume'));
 }
+for (const b of $('langSeg').children) b.setAttribute('aria-pressed', String(b.dataset.v === LANG));
+$('langSeg').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b || b.dataset.v === LANG) return;
+  try {
+    localStorage.setItem('kus.lang', b.dataset.v);
+  } catch (e) {}
+  location.reload();
+});
 function openPause() {
   if (state !== 'play' || !player || !player.alive || paused) return;
   paused = true;

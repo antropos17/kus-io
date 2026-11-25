@@ -1696,6 +1696,30 @@ test('lang: phone language picks ru or en; a saved choice wins; junk and blocked
   assert(blocked.lang === 'en' && blocked.errors.length === 0, `blocked storage: ${JSON.stringify(blocked)}`);
 });
 
+test('lang: the settings switch saves the choice and reloads; not on the pause card; a challenge link survives', async () => {
+  const g = await open({ returning: true, play: false });
+  await g.page.goto(URL + '?c=143&n=' + encodeURIComponent('Сеня'));
+  await g.page.waitForTimeout(500);
+  await g.page.evaluate(() => document.querySelector('#secSet .sh').click());
+  await g.page.waitForTimeout(200);
+  await Promise.all([g.page.waitForNavigation(), g.page.click('#langSeg [data-v="en"]')]);
+  await g.page.waitForTimeout(500);
+  const a = await g.page.evaluate(() => ({
+    lang: window.__kus.LANG,
+    saved: localStorage.getItem('kus.lang'),
+    q: location.search,
+    pressed: (document.querySelector('#langSeg [aria-pressed="true"]') || {}).dataset,
+  }));
+  assert(a.lang === 'en' && a.saved === 'en' && a.pressed && a.pressed.v === 'en' && a.q.includes('c=143'), `after the switch: ${JSON.stringify(a)}`);
+  await g.page.click('#play');
+  await g.page.waitForTimeout(300);
+  await g.page.evaluate(() => document.getElementById('pauseBtn').click());
+  await g.page.waitForTimeout(100);
+  const shown = await g.page.evaluate(() => [...document.querySelectorAll('.lng')].filter((e) => e.offsetParent !== null).length);
+  assert(shown === 0, `the language row shows on the pause card (${shown} visible)`);
+  await g.close();
+});
+
 for (const [name, fn] of tests) {
   if (only && !name.includes(only)) continue;
   const t0 = Date.now();
