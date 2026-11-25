@@ -2,14 +2,14 @@
 // One three-minute run a day with a twist that is the same for everyone on that date. The twist comes from the local date alone, no server.
 const DAILY = [
   // id, name, one line of explanation
-  ['hedge', 'День ежей', 'Ежей на поле вдвое больше. Кусай их в морду, со спины колются'],
-  ['double', 'Двойная посыпка', 'Каждая посыпка весит вдвое больше, растут все'],
-  ['tiny', 'Кроха', 'Ты начинаешь крошечным, и после каждого раза тоже'],
-  ['piranha', 'Пираньи', 'Стаи пираний с первых секунд и вдвое чаще'],
-  ['magnet', 'Магнитный день', 'Все бонусы — магниты, и падают они чаще'],
-  ['cake', 'Торт с утра', 'Торт на поле с самого начала. Кусай в вишенку'],
-  ['small', 'Мелюзга', 'Все соперники мелкие, крупных сегодня нет'],
-  ['quick', 'Быстрые зубы', 'Твой рывок с укусом перезаряжается вдвое быстрее'],
+  ['hedge', t('day.hedge'), t('day.hedge.n')],
+  ['double', t('day.double'), t('day.double.n')],
+  ['tiny', t('day.tiny'), t('day.tiny.n')],
+  ['piranha', t('day.piranha'), t('day.piranha.n')],
+  ['magnet', t('day.magnet'), t('day.magnet.n')],
+  ['cake', t('day.cake'), t('day.cake.n')],
+  ['small', t('day.small'), t('day.small.n')],
+  ['quick', t('day.quick'), t('day.quick.n')],
 ];
 let day = null, // id of the twist in force during a candy-of-the-day run
   dayForce = null; // tests and balance runs pin a twist by id
@@ -47,9 +47,9 @@ function dailyOf(k) {
   const t = DAILY[p[num - blk * n]];
   return { key: k, id: t[0], name: t[1], note: t[2] };
 }
-const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-const keyText = (k) => `${k % 100} ${MONTHS[(Math.floor(k / 100) % 100) - 1]}`;
-const daysWord = (n) => (n % 10 === 1 && n % 100 !== 11 ? 'день' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'дня' : 'дней');
+const MONTHS = t('months').split(' ');
+const keyText = (k) => t('date', k % 100, MONTHS[(Math.floor(k / 100) % 100) - 1]);
+const daysWord = (n) => t('days', n);
 
 // kus.daily: the last day played, the best of that day, days in a row, the longest run of days
 let dailyRec = { d: 0, best: 0, streak: 0, top: 0 };
@@ -74,11 +74,11 @@ function dailySave(k, score) {
 }
 const chalToday = () => !!(challenge && challenge.d && challenge.d === todayKey()); // a challenge for today's candy
 function renderDaily() {
-  const t = dailyOf(todayKey()),
-    b = dailyBest(t.key),
+  const dt = dailyOf(todayKey()),
+    b = dailyBest(dt.key),
     btn = $('modeSeg').querySelector('[data-m=daily]');
-  btn.innerHTML = `<b>Конфета дня</b><small>${t.name}${b ? ` · ${b}` : ''}</small>`;
-  btn.title = t.note;
+  btn.innerHTML = `<b>${t('mode.daily')}</b><small>${dt.name}${b ? ` · ${b}` : ''}</small>`;
+  btn.title = dt.note;
   $('dif').classList.toggle('fixed', mode === 'daily');
 }
 function startDaily() {

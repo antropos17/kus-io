@@ -43,31 +43,31 @@ const PALS = FLAVORS.map((f) => makePal(f[0], f[1], f[2], f[3]));
 const PAL_HEDGE = makePal('Ёж', 28, 44, 46),
   PAL_PIR = makePal('Пиранья', 206, 32, 62),
   PAL_CAKE = makePal('Торт', 36, 86, 82);
-const PICK = { speed: ['Скорость', 6, '#ffd23f'], shield: ['Щит', 5, '#7ad7ff'], magnet: ['Магнит', 8, '#ff7aa2'] }; // bonus sweets: name, seconds, colour
+const PICK = { speed: [t('pick.speed'), 6, '#ffd23f'], shield: [t('pick.shield'), 5, '#7ad7ff'], magnet: [t('pick.magnet'), 8, '#ff7aa2'] }; // bonus sweets: name, seconds, colour
 const flesh = (p, a) => hsl(p.fl[0], p.fl[1], p.fl[2], a);
 const pore = (p, a) => hsl(p.po[0], p.po[1], p.po[2], a);
 const HATS = [
-  { id: 'none', name: 'Без шапки', need: 0 },
-  { id: 'bow', name: 'Бантик', need: 80 },
-  { id: 'crown', name: 'Корона', need: 250 },
-  { id: 'chef', name: 'Колпак', need: 500 },
-  { id: 'horns', name: 'Рожки', need: 900 },
+  { id: 'none', name: t('hat.none'), need: 0 },
+  { id: 'bow', name: t('hat.bow'), need: 80 },
+  { id: 'crown', name: t('hat.crown'), need: 250 },
+  { id: 'chef', name: t('hat.chef'), need: 500 },
+  { id: 'horns', name: t('hat.horns'), need: 900 },
 ];
 const SKINS = [
-  ['plain', 'Гладкая'],
-  ['stripes', 'Полоски'],
-  ['dots', 'Горошек'],
-  ['swirl', 'Леденец'],
-  ['waffle', 'Вафля'],
-  ['hearts', 'Сердечки'],
-  ['stars', 'Звёздочки'],
-  ['tiger', 'Тигр'],
-  ['cow', 'Пятнышки'],
-  ['glaze', 'Глазурь'],
-  ['rainbow', 'Радуга'],
-  ['bubbles', 'Пузыри'],
-  ['zigzag', 'Зигзаг'],
-  ['galaxy', 'Космос'],
+  ['plain', t('skin.plain')],
+  ['stripes', t('skin.stripes')],
+  ['dots', t('skin.dots')],
+  ['swirl', t('skin.swirl')],
+  ['waffle', t('skin.waffle')],
+  ['hearts', t('skin.hearts')],
+  ['stars', t('skin.stars')],
+  ['tiger', t('skin.tiger')],
+  ['cow', t('skin.cow')],
+  ['glaze', t('skin.glaze')],
+  ['rainbow', t('skin.rainbow')],
+  ['bubbles', t('skin.bubbles')],
+  ['zigzag', t('skin.zigzag')],
+  ['galaxy', t('skin.galaxy')],
 ];
 const FREE_SKINS = 4; // the rest are prizes for missions
 const SKIN_PRICE = (i) => 150 + (i - FREE_SKINS) * 100; // or bought with sugar, dearer further down the list

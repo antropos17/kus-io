@@ -1782,6 +1782,51 @@ test('lang: names are English on screen, the album still counts by the Russian k
   await g.close();
 });
 
+// visible Russian left on the page: text, aria-label, title, placeholder, CSS content; 'Kusь' is the brand and allowed
+const CYR = `(() => {
+  const out = new Set(), cyr = /[А-Яа-яЁё]/, strip = (s) => (s || '').replace(/kusь/gi, '');
+  const vis = (e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden';
+  for (const e of document.querySelectorAll('body *')) {
+    if (e.tagName === 'SCRIPT' || e.tagName === 'STYLE' || !vis(e) || e.closest('[lang="ru"]')) continue; // «Русский» on the language switch is Russian on purpose
+    for (const n of e.childNodes) if (n.nodeType === 3 && cyr.test(strip(n.textContent))) out.add(n.textContent.trim());
+    for (const a of ['aria-label', 'title', 'placeholder']) if (cyr.test(strip(e.getAttribute(a)))) out.add(a + ': ' + e.getAttribute(a));
+    for (const p of ['::before', '::after']) { const c = getComputedStyle(e, p).content; if (c && c !== 'none' && cyr.test(strip(c))) out.add(p + ' ' + c); }
+  }
+  return [...out];
+})()`;
+
+test('lang: no Russian left in the English menu, sections, help, pause and admin panel', async () => {
+  for (const [w, h] of [
+    [360, 640],
+    [844, 390],
+    [1200, 720],
+  ]) {
+    const touch = w < 900;
+    const first = await open({ width: w, height: h, play: false, locale: 'en-US', touch });
+    let left = await first.page.evaluate(CYR);
+    assert(!left.length, `${w}x${h} first-visit menu: ${left.join(' | ')}`);
+    await first.close();
+    const g = await open({ width: w, height: h, play: false, returning: true, locale: 'en-US', touch });
+    for (const id of ['secMode', 'secLook', 'secMis', 'secSet', 'secHelp']) {
+      await g.page.evaluate((i) => document.querySelector('#' + i + ' .sh').click(), id);
+      await g.page.waitForTimeout(150);
+      left = await g.page.evaluate(CYR);
+      assert(!left.length, `${w}x${h} section ${id}: ${left.join(' | ')}`);
+    }
+    await g.page.evaluate(() => document.getElementById('play').click());
+    await g.page.waitForTimeout(300);
+    await g.page.evaluate(() => document.getElementById('pauseBtn').click());
+    await g.page.waitForTimeout(100);
+    left = await g.page.evaluate(CYR);
+    assert(!left.length, `${w}x${h} pause: ${left.join(' | ')}`);
+    await g.page.evaluate(() => document.getElementById('pAdmin').click());
+    await g.page.waitForTimeout(100);
+    left = await g.page.evaluate(CYR);
+    assert(!left.length, `${w}x${h} admin: ${left.join(' | ')}`);
+    await g.close();
+  }
+});
+
 for (const [name, fn] of tests) {
   if (only && !name.includes(only)) continue;
   const t0 = Date.now();

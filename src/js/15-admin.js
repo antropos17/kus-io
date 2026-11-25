@@ -5,13 +5,13 @@ const admEl = $('adm'),
   admA = $('admA'),
   cheatTag = $('cheatTag');
 const TOGGLES = [
-  ['god', 'Бессмертие'],
-  ['mega', 'Мега-укус и язык'],
-  ['cd', 'Без перезарядки'],
-  ['peace', 'Боты меня не трогают'],
-  ['magnet', 'Магнит для еды'],
-  ['heal', 'Раны сразу заживают'],
-  ['slow', 'Замедление времени'],
+  ['god', t('cheat.god')],
+  ['mega', t('cheat.mega')],
+  ['cd', t('cheat.cd')],
+  ['peace', t('cheat.peace')],
+  ['magnet', t('cheat.magnet')],
+  ['heal', t('cheat.heal')],
+  ['slow', t('cheat.slow')],
 ];
 const near = (b, d) => blobs.filter((o) => o.ai && o.alive && Math.hypot(o.x - b.x, o.y - b.y) < d);
 const putNear = (b, mass, dist) => {
@@ -37,44 +37,44 @@ const placeAt = (o, x, y) => {
 };
 const ACTIONS = [
   [
-    '+100 массы',
+    t('act.0'),
     (P) => {
       P.mass += 100;
     },
   ],
   [
-    '+1000 массы',
+    t('act.1'),
     (P) => {
       P.mass += 1000;
     },
   ],
   [
-    'Масса как на старте',
+    t('act.2'),
     (P) => {
       P.mass = DIFFS[diff].start;
     },
   ],
   [
-    'Залечить раны',
+    t('act.3'),
     (P) => {
       P.wounds.length = 0;
     },
   ],
   [
-    'Мелочь вокруг',
+    t('act.4'),
     (P) => {
       for (let i = 0; i < 8; i++) putNear(P, rand(12, 28), P.Rs + rand(160, 380));
     },
   ],
   [
-    'Гигант рядом',
+    t('act.5'),
     (P) => {
       putNear(P, 1400, P.Rs + 560);
     },
     'red',
   ],
   [
-    'Гора посыпки',
+    t('act.6'),
     (P) => {
       for (let i = 0; i < 160; i++) {
         const a = rand(TAU),
@@ -87,7 +87,7 @@ const ACTIONS = [
     },
   ],
   [
-    'Кусь по округе',
+    t('act.7'),
     (P) => {
       for (const o of near(P, 750)) {
         const a = Math.atan2(P.y - o.y, P.x - o.x),
@@ -103,21 +103,21 @@ const ACTIONS = [
     'red',
   ],
   [
-    'Съесть всех рядом',
+    t('act.8'),
     (P) => {
       for (const o of near(P, 900)) swallowWhole(P, o);
     },
     'red',
   ],
   [
-    'Ёж рядом',
+    t('act.9'),
     (P) => {
       const a = rand(TAU);
       for (const o of spawnSpecial('hedgehog')) placeAt(o, P.x + Math.cos(a) * (P.Rs + 300), P.y + Math.sin(a) * (P.Rs + 300));
     },
   ],
   [
-    'Стая пираний',
+    t('act.10'),
     (P) => {
       const a = rand(TAU);
       for (const o of spawnSpecial('piranha'))
@@ -125,14 +125,14 @@ const ACTIONS = [
     },
   ],
   [
-    'Торт рядом',
+    t('act.11'),
     (P) => {
       const a = rand(TAU);
       for (const o of spawnSpecial('cake')) placeAt(o, P.x + Math.cos(a) * (P.Rs + 640), P.y + Math.sin(a) * (P.Rs + 640));
     },
   ],
   [
-    'Бонусы вокруг',
+    t('act.12'),
     (P) => {
       ['speed', 'shield', 'magnet'].forEach((t, i) => {
         const a = (i * TAU) / 3 + rand(1);
@@ -146,14 +146,14 @@ const ACTIONS = [
     },
   ],
   [
-    'Открыть все узоры',
+    t('act.13'),
     () => {
       for (const k of SKINS) if (!M.open.includes(k[0])) M.open.push(k[0]);
       saveM();
     },
   ],
   [
-    'Очистить карту',
+    t('act.14'),
     (P) => {
       for (const o of blobs)
         if (o.ai) {
@@ -172,8 +172,8 @@ function renderAdmin() {
 }
 function updateCheatTag() {
   const on = TOGGLES.filter(([k]) => CHEAT[k]).map(([, n]) => n.toLowerCase());
-  if (CHEAT.speed !== 1) on.push('скорость ×' + CHEAT.speed);
-  cheatTag.textContent = on.length ? 'Читы: ' + on.join(', ') : '';
+  if (CHEAT.speed !== 1) on.push(t('cheat.speed', CHEAT.speed));
+  cheatTag.textContent = on.length ? t('cheat.tag', on.join(', ')) : '';
 }
 function openAdmin() {
   if (state !== 'play' || !player || !player.alive) return;

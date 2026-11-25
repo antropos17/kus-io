@@ -17,7 +17,7 @@ function addFeed(html, ms) {
   }, ms || 3600);
 }
 function feedKill(A, B) {
-  if (A.isPlayer) addFeed(`Ты съедаешь <b>${esc(accOf(B))}</b> целиком`);
+  if (A.isPlayer) addFeed(t('feed.youAte', `<b>${esc(accOf(B))}</b>`));
   else if (
     !tutor && // the first run's lesson is not pushed out by other candies' meals
     !B.isPlayer &&
@@ -26,23 +26,23 @@ function feedKill(A, B) {
     player.alive &&
     (Math.hypot(A.x - player.x, A.y - player.y) < (Math.max(W, H) / cam.z) * 0.6 || A === biggest())
   )
-    addFeed(`<b>${esc(A.isPlayer ? A.name : nameOf(A.name))}</b> съедает <b>${esc(accOf(B))}</b>`);
+    addFeed(t('feed.ate', `<b>${esc(A.isPlayer ? A.name : nameOf(A.name))}</b>`, `<b>${esc(accOf(B))}</b>`));
 }
 const MTYPES = [
   // [key, wording, first target]; only real actions in a clean run count
-  ['bites', 'Откуси кусков', 10],
-  ['food', 'Собери посыпки', 60],
-  ['kills', 'Съешь конфет целиком', 3],
-  ['mass', 'Набери массу за одну жизнь', 150],
-  ['wound', 'Укуси в свежую ранку', 4],
-  ['tongue', 'Поймай конфет языком', 5],
-  ['time', 'Проживи секунд за одну жизнь', 60],
-  ['pickup', 'Подбери бонусов', 3],
-  ['piranha', 'Проглоти пираний', 4],
-  ['hedge', 'Укуси ежа в морду', 2],
-  ['cake', 'Укуси торт в вишенку', 3],
-  ['combo', 'Сделай серию укусов подряд', 3],
-  ['top', 'Побудь лидером рейтинга, секунд', 10],
+  ['bites', t('mis.bites'), 10],
+  ['food', t('mis.food'), 60],
+  ['kills', t('mis.kills'), 3],
+  ['mass', t('mis.mass'), 150],
+  ['wound', t('mis.wound'), 4],
+  ['tongue', t('mis.tongue'), 5],
+  ['time', t('mis.time'), 60],
+  ['pickup', t('mis.pickup'), 3],
+  ['piranha', t('mis.piranha'), 4],
+  ['hedge', t('mis.hedge'), 2],
+  ['cake', t('mis.cake'), 3],
+  ['combo', t('mis.combo'), 3],
+  ['top', t('mis.top'), 10],
 ];
 const skinOpen = (id) => SKINS.findIndex((k) => k[0] === id) < FREE_SKINS || M.open.includes(id);
 const nextPrize = () => SKINS.find((k, i) => i >= FREE_SKINS && !M.open.includes(k[0]));
@@ -73,20 +73,25 @@ function mission(type, n, absolute) {
       const pz = nextPrize();
       if (pz) {
         M.open.push(pz[0]);
-        m.prize = pz[1];
-        addFeed(`Задание выполнено. Новый узор: <b>${pz[1]}</b>`);
-      } else addFeed('Задание выполнено');
+        m.prize = pz[0]; // the pattern's id: the name is shown in the language of the moment
+        addFeed(t('mis.donePrize', pz[1]));
+      } else addFeed(t('mis.done'));
       Sfx.power();
       saveM();
     }
   }
 }
+// a mission's prize: a pattern id, or its Russian name in a save from before the English version
+const skinName = (p) => {
+  const id = SKINS.some((s) => s[0] === p) ? p : (Object.keys(STR).find((k) => k.startsWith('skin.') && STR[k][0] === p) || '').slice(5);
+  return id ? t('skin.' + id) : p;
+};
 const missionRows = () =>
   M.act
     .map((m) => {
-      const t = MTYPES.find((x) => x[0] === m.type),
+      const mt = MTYPES.find((x) => x[0] === m.type),
         done = m.got >= m.need;
-      return `<div class="mi${done ? ' ok' : ''}"><span class="mt">${t[1]}${done ? (m.prize ? `: открыт узор «${m.prize}»` : ': готово') : ''}</span><span class="mv">${Math.floor(m.got)} / ${m.need}</span><div class="mb"><i style="width:${Math.round((100 * m.got) / m.need)}%"></i></div></div>`;
+      return `<div class="mi${done ? ' ok' : ''}"><span class="mt">${mt[1]}${done ? (m.prize ? t('mis.prize', skinName(m.prize)) : t('mis.ok')) : ''}</span><span class="mv">${Math.floor(m.got)} / ${m.need}</span><div class="mb"><i style="width:${Math.round((100 * m.got) / m.need)}%"></i></div></div>`;
     })
     .join('');
 // ---------- sugar ----------
@@ -122,16 +127,16 @@ function nearText(m, score) {
   const out = [],
     t3 = m === 't3';
   if (!run.cheated) {
-    if (m === 'daily' && score < run.dayPrev) out.push(`До лучшего за сегодня не хватило ${run.dayPrev - score}`);
-    if (t3 && score < best3) out.push(`До рекорда на 3 минуты не хватило ${best3 - score}`);
-    if (m === 'free' && score < best) out.push(`До рекорда не хватило ${best - score}`);
+    if (m === 'daily' && score < run.dayPrev) out.push(t('near.day', run.dayPrev - score));
+    if (t3 && score < best3) out.push(t('near.t3', best3 - score));
+    if (m === 'free' && score < best) out.push(t('near.rec', best - score));
     const h = HATS.find((x) => x.need > best);
-    if (m === 'free' && h) out.push(`До шапки «${h.name}» ещё ${h.need - best} массы`);
+    if (m === 'free' && h) out.push(t('near.hat', h.name, h.need - best));
   }
   const al = run.cheated ? '' : albumNear();
   if (al) out.splice(1, 0, al); // a row one or two stickers short comes right after the record
   const s = cheapestSkin();
-  if (s && !al) out.push(sugar >= s.price ? `Сахара хватает на узор «${s.name}», он в меню` : `До узора «${s.name}» ещё ${s.price - sugar} сахара`);
+  if (s && !al) out.push(sugar >= s.price ? t('near.skinCan', s.name) : t('near.skin', s.name, s.price - sugar));
   return out.slice(0, 2).join('. ');
 }
 function renderSweet(m, score) {
@@ -141,13 +146,13 @@ function renderSweet(m, score) {
   $('near').textContent = nearText(m, score);
   if (!got) return;
   countUp($('sweetN'), got);
-  $('sweetBank').textContent = `в копилке ${sugar}`;
-  $('chestT').textContent = 'Выбери конфету: в одной много сахара';
-  $('chestRow').innerHTML = [0, 1, 2].map((i) => `<button type="button" data-i="${i}" aria-label="Конфета ${i + 1}">?</button>`).join('');
+  $('sweetBank').textContent = t('sweet.bank', sugar);
+  $('chestT').textContent = t('chest.t');
+  $('chestRow').innerHTML = [0, 1, 2].map((i) => `<button type="button" data-i="${i}" aria-label="${t('chest.a', i + 1)}">?</button>`).join('');
 }
 $('chestRow').addEventListener('click', (e) => {
-  const t = e.target.closest('button');
-  if (!t || !run.chest) return;
+  const pick = e.target.closest('button');
+  if (!pick || !run.chest) return;
   run.chest = false;
   const base = clamp(Math.round(run.got * 0.3), 3, 40),
     prizes = [base, base * 2, base * 5];
@@ -155,22 +160,22 @@ $('chestRow').addEventListener('click', (e) => {
     const j = Math.floor(Math.random() * (i + 1));
     [prizes[i], prizes[j]] = [prizes[j], prizes[i]];
   }
-  const won = prizes[+t.dataset.i];
+  const won = prizes[+pick.dataset.i];
   sugar += won;
   saveSugar();
   [...$('chestRow').children].forEach((b, i) => {
     b.textContent = '+' + prizes[i];
     b.disabled = true;
-    b.classList.add(b === t ? 'got' : 'open');
+    b.classList.add(b === pick ? 'got' : 'open');
   });
-  $('chestT').textContent = won === base * 5 ? `Самая сладкая! +${won} сахара` : `+${won} сахара`;
-  $('sweetBank').textContent = `в копилке ${sugar}`;
+  $('chestT').textContent = t(won === base * 5 ? 'chest.top' : 'chest.got', won);
+  $('sweetBank').textContent = t('sweet.bank', sugar);
   $('near').textContent = nearText(mode, Math.round(run.max));
   Sfx.power();
   haptic(won === base * 5 ? 30 : 12);
 });
 function renderMissions() {
-  $('misT').textContent = nextPrize() ? 'Задания: за каждое новый узор' : 'Задания (все узоры уже открыты)';
+  $('misT').textContent = nextPrize() ? t('mis.head') : t('mis.headAll');
   $('misList').innerHTML = missionRows();
   renderSecs();
 }
@@ -255,10 +260,10 @@ function startGame() {
   feedEl.innerHTML = '';
   hudT = 0;
   if (touchMode) {
-    addFeed(SET.lefty ? 'Справа води пальцем, слева <b>Кусь</b> и <b>Язык</b>' : 'Слева води пальцем, справа <b>Кусь</b> и <b>Язык</b>');
-    if (!tutor) addFeed('<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты'); // the first run tells this after the first bite
-  } else if (tutor) addFeed('Веди мышью: пасть смотрит на курсор');
-  else addFeed('<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты');
+    addFeed(SET.lefty ? t('tip.touchL') : t('tip.touchR'));
+    if (!tutor) addFeed(t('tip.colorsT')); // the first run tells this after the first bite
+  } else if (tutor) addFeed(t('tip.mouse'));
+  else addFeed(t('tip.colorsM'));
   if (day) {
     if (tutor)
       run.dayNote = true; // a newcomer learns to steer and bite first, the twist is told after that
@@ -318,7 +323,7 @@ function die(by) {
   killer = by;
   if (timed() && runActive && timeLeft > 0) {
     run.deaths++;
-    addFeed('Тебя съели. Сейчас вернёшься на поле');
+    addFeed(t('feed.back'));
     return;
   } // the clock keeps running
   finishRun();
@@ -379,15 +384,15 @@ function showOver() {
     secs = Math.max(0, Math.round(time - run.t0)),
     score = Math.round(run.max);
   const won = run.won,
-    shift = run.lap ? `Смена ${run.lap + 1}. ` : '';
+    shift = run.lap ? t('shift', run.lap + 1) + '. ' : '';
   const card = overEl.querySelector('.card');
   card.classList.toggle('trophy', !!won); // the trophy look and its record pill belong to a win only
   card.classList.toggle('rec', !!(won && won.rec));
   $('overWrap').classList.toggle('trophy', !!won);
-  $('overT').textContent = won ? 'Торт съеден!' : t3 ? 'Время вышло' : 'Тебя доели';
+  $('overT').textContent = t(won ? 'over.won' : t3 ? 'over.time' : 'over.t');
   const rec = $('trRec'),
     tiles = $('trTiles').querySelectorAll('b');
-  rec.textContent = won && won.rec ? (won.prev ? `Новый рекорд, было ${mmss(won.prev)}` : 'Первая победа!') : '';
+  rec.textContent = won && won.rec ? (won.prev ? t('tr.rec', mmss(won.prev)) : t('tr.first')) : '';
   rec.classList.toggle('hidden', !rec.textContent);
   if (won) {
     tiles[0].textContent = score;
@@ -395,20 +400,20 @@ function showOver() {
     tiles[2].textContent = run.got;
   }
   whoEl.innerHTML = won
-    ? `${won.lap ? `Смена ${won.lap + 1}` : 'Первая смена'} за <b>${mmss(won.secs)}</b>`
+    ? t('tr.who', won.lap ? t('shift', won.lap + 1) : t('shift1'), `<b>${mmss(won.secs)}</b>`)
     : (shift ? esc(shift) : '') +
       (daily
-        ? `Конфета дня «${esc(run.rule.name)}»`
+        ? t('who.daily', esc(run.rule.name))
         : t3
-          ? 'Три минуты позади. В зачёт идёт самая большая масса.'
+          ? t('who.t3')
           : killer
-            ? `Последний кусь: <b>${esc(nameOf(killer.name))}</b>`
-            : 'Тебя растащили по кусочкам');
+            ? t('who.killer', `<b>${esc(nameOf(killer.name))}</b>`)
+            : t('who.torn'));
   $('sMax').textContent = score;
   $('sBites').textContent = run.bites;
   $('sKills').textContent = run.kills;
   $('sTime').textContent = t3 ? run.deaths : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
-  $('sTimeL').textContent = t3 ? 'раз тебя съели' : 'время в игре';
+  $('sTimeL').textContent = t(t3 ? 'st.deaths' : 'st.time');
   $('overMis').innerHTML = missionRows();
   renderSweet(mode, score);
   renderAlbumLine();
@@ -416,34 +421,34 @@ function showOver() {
   const streak = daily ? dailyStreak(run.day) : 0;
   bestEl.textContent = run.cheated
     ? daily
-      ? 'С читами результат дня и задания не засчитаны'
-      : 'С читами рекорд и задания не засчитаны'
+      ? t('best.cheatDay')
+      : t('best.cheat')
     : daily
-      ? `${score > run.dayPrev && run.dayPrev ? 'Новый лучший' : 'Лучший'} за сегодня: ${dailyBest(run.day)}. ` +
-        (streak > 1 ? `${streak} ${daysWord(streak)} подряд` : 'Первый день серии') +
-        (dailyRec.top > streak ? `, рекорд ${dailyRec.top}` : '')
+      ? t(score > run.dayPrev && run.dayPrev ? 'best.dayNew' : 'best.day', dailyBest(run.day)) +
+        (streak > 1 ? t('best.streak', streak, daysWord(streak)) : t('best.streak1')) +
+        (dailyRec.top > streak ? t('best.streakTop', dailyRec.top) : '')
       : t3
         ? best3 > prevBest3
-          ? `Новый рекорд на 3 минуты: ${best3}`
-          : `Рекорд на 3 минуты: ${best3}`
-        : (best > prevBest ? `Новый рекорд: ${best}` : `Рекорд: ${best}`) + (fresh.length ? `. Открыта шапка: ${fresh.join(', ')}` : '');
+          ? t('best.t3New', best3)
+          : t('best.t3', best3)
+        : (best > prevBest ? t('best.recNew', best) : t('rec', best)) + (fresh.length ? t('best.hat', fresh.join(', ')) : '');
   if (won && !run.cheated)
     bestEl.textContent = won.lap
-      ? `Время второй смены не идёт в рекорд. Лучшее прохождение: ${mmss(clearRec.best)}`
-      : `${won.rec ? 'Новый рекорд' : 'Рекорд'} прохождения: ${mmss(clearRec.best)}. Побед: ${clearRec.wins}`;
-  else if (won) bestEl.textContent = 'С читами победа и рекорд не засчитаны';
-  $('again').textContent = won ? (won.lap ? `Смена ${won.lap + 2}` : 'Вторая смена') : 'Ещё кусь';
+      ? t('best.lap', mmss(clearRec.best))
+      : t(won.rec ? 'best.clearNew' : 'best.clear', mmss(clearRec.best), clearRec.wins);
+  else if (won) bestEl.textContent = t('best.cheatWin');
+  $('again').textContent = won ? (won.lap ? t('shift', won.lap + 2) : t('shift2')) : t('over.again');
   $('chalRes').textContent =
     !challenge || (t3 && !(daily && challenge.d === run.day)) || (!t3 && challenge.d) || run.cheated
       ? ''
       : daily
-        ? `${score > challenge.c ? 'Вызов побит' : 'Вызов'}: ${challenge.n} ${challenge.c}, ты ${score}.`
+        ? t(score > challenge.c ? 'chal.dayWon' : 'chal.day', challenge.n, challenge.c, score)
         : score > challenge.c
-          ? `Вызов побит: у игрока ${challenge.n} было ${challenge.c}, у тебя ${score}.`
-          : `Вызов от игрока ${challenge.n}: ${challenge.c}. Твой результат: ${score}.`;
+          ? t('chal.won', challenge.n, challenge.c, score)
+          : t('chal.res', challenge.n, challenge.c, score);
   card.classList.toggle('chal', !!$('chalRes').textContent); // on short screens the challenge line takes the "so close" line's place
   $('chalBtn').classList.toggle('hidden', (t3 && !daily) || run.cheated || score < 1);
-  $('chalBtn').textContent = daily || won ? 'Поделиться' : 'Бросить вызов другу';
+  $('chalBtn').textContent = t(daily || won ? 'over.share' : 'over.chal');
   $('chalLink').classList.add('hidden');
   overEl.classList.remove('hidden');
   hudEl.classList.add('hidden');
@@ -582,13 +587,13 @@ function updateHUD(dt) {
     mission('time', time - player.stats.t0, true);
   }
   const tl = Math.ceil(timeLeft);
-  $('timer').textContent = runActive && timed() ? `осталось ${Math.floor(tl / 60)}:${String(tl % 60).padStart(2, '0')}` : '';
+  $('timer').textContent = runActive && timed() ? t('hud.left', `${Math.floor(tl / 60)}:${String(tl % 60).padStart(2, '0')}`) : '';
   $('goal').textContent = !runActive
     ? ''
     : day
-      ? `конфета дня: ${run.rule.name}${challenge && challenge.d === run.day ? ` · побей ${challenge.c}` : ''}`
+      ? t('hud.daily', run.rule.name) + (challenge && challenge.d === run.day ? t('hud.beat', challenge.c) : '')
       : challenge && !challenge.d && mode === 'free'
-        ? `цель: ${challenge.c}`
+        ? t('hud.goal', challenge.c)
         : '';
   renderStage();
   renderFx();
@@ -599,7 +604,7 @@ function updateHUD(dt) {
   if (player && player.alive && state === 'play') {
     if (leader === player) {
       mission('top', 0.25);
-      if (was !== player) addFeed('Ты теперь <b>самый сладкий</b>. За укус лидера дают больше, береги спину', 5200);
+      if (was !== player) addFeed(t('feed.leader'), 5200);
     }
     const view = (Math.max(W, H) / cam.z) * 0.5; // explain each new thing the first time it comes into view
     const hint = (key, html) => {
@@ -616,20 +621,8 @@ function updateHUD(dt) {
       if (player.stats.bites > 0 || !q.alive || time - run.t0 > 30) {
         q.tame = false;
         tutor = null;
-        if (player.stats.bites > 0)
-          addFeed(
-            touchMode
-              ? '<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты'
-              : '<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты',
-            5200,
-          );
-      } else if (Math.hypot(q.x - player.x, q.y - player.y) - q.Rs - player.Rs < 50)
-        hint(
-          'bite',
-          touchMode
-            ? 'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Кусь</b>: рывок с укусом'
-            : 'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Клик</b>: рывок с укусом',
-        );
+        if (player.stats.bites > 0) addFeed(touchMode ? t('tip.colorsT') : t('tip.colorsM'), 5200);
+      } else if (Math.hypot(q.x - player.x, q.y - player.y) - q.Rs - player.Rs < 50) hint('bite', touchMode ? t('tip.biteT') : t('tip.biteM'));
     }
     if (run.dayNote && !tutor) {
       let live = 0;
@@ -640,14 +633,14 @@ function updateHUD(dt) {
       // the first run's lesson goes first, these wait until it is over
       for (const b of blobs) {
         if (!b.kind || !b.alive || seen[b.kind] || Math.abs(b.x - player.x) > view + b.Rs || Math.abs(b.y - player.y) > view + b.Rs) continue;
-        if (b.kind === 'hedgehog') hint('hedgehog', '<b>Ёж</b>: со спины колется. Кусай его в морду');
-        else if (b.kind === 'cake') hint('cake', '<b>Торт</b>: корка твёрдая. Кусай в вишенку на спине');
-        else hint('piranha', '<b>Пираньи</b>: мелкие, но нападают стаей. Глотай по одной');
+        if (b.kind === 'hedgehog') hint('hedgehog', t('tip.hedgehog'));
+        else if (b.kind === 'cake') hint('cake', t('tip.cake'));
+        else hint('piranha', t('tip.piranha'));
       }
     if (!seen.pickup && !tutor)
       for (const q of pickups)
         if (Math.abs(q.x - player.x) < view && Math.abs(q.y - player.y) < view) {
-          hint('pickup', '<b>Бонус</b>: наедь на него, чтобы подобрать');
+          hint('pickup', t('tip.pickup'));
           break;
         }
   }

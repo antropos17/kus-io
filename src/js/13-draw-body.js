@@ -510,7 +510,7 @@ function drawStick() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle = 'rgba(255,241,220,0.85)';
-    ctx.fillText('води пальцем', bx, by + STICK_R + 10);
+    ctx.fillText(t('stick.hint'), bx, by + STICK_R + 10);
   }
 }
 function render() {

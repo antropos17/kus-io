@@ -63,7 +63,7 @@ function sugarSync() {
   if (v === sugShown) return;
   sugShown = v;
   sugOdo.set(v);
-  sugarEl.setAttribute('aria-label', `сахар ${v}`);
+  sugarEl.setAttribute('aria-label', t('a.sugar', v));
 }
 function sugarFly(wx, wy, value, n) {
   // a world point, the value split over n cubes. Order: the caller adds the value to run.sugar (earn) FIRST, then calls this
@@ -136,7 +136,7 @@ function sugarReset() {
   sugShown = 0;
   sugOdo.set(0, true);
   sugBox.x = 0; // the HUD is about to show and may have moved: measure again at the first flight
-  sugarEl.setAttribute('aria-label', 'сахар 0');
+  sugarEl.setAttribute('aria-label', t('a.sugar', 0));
 }
 function drawSugarCubes() {
   if (!sugImg.complete) return;
@@ -215,15 +215,15 @@ function renderFx() {
   }
   for (const f of fxLive) {
     const v = Math.max(0, player[f.prop]),
-      t = Math.round(clamp(v / PICK[f.k][1], 0, 1) * 100) / 100,
+      fill = Math.round(clamp(v / PICK[f.k][1], 0, 1) * 100) / 100,
       s = Math.ceil(v);
-    if (t !== f.t) {
-      f.t = t;
-      f.coin.style.setProperty('--t', t);
+    if (fill !== f.t) {
+      f.t = fill;
+      f.coin.style.setProperty('--t', fill);
     }
     if (s !== f.s) {
       f.s = s;
-      f.b.textContent = s + ' с';
+      f.b.textContent = s + t('unit.s');
     }
   }
 }

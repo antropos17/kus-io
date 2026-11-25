@@ -90,17 +90,17 @@ function albumEat(B) {
   if (!s) return;
   const had = hasSticker(s);
   album.c[s.id] = (album.c[s.id] || 0) + 1;
-  if (!had && !hasSticker(s)) addFeed(`Наклейка «${esc(nameOf(s.name))}»: ${album.c[s.id]} из ${need(s)}`, 3200);
+  if (!had && !hasSticker(s)) addFeed(t('al.progress', esc(nameOf(s.name)), album.c[s.id], need(s)), 3200);
   else if (!had) {
     if (!run.stk) run.stk = [];
     run.stk.push(s.name);
-    addFeed(`Новая наклейка: <b>${esc(nameOf(s.name))}</b>`, 4200);
+    addFeed(t('al.new', `<b>${esc(nameOf(s.name))}</b>`), 4200);
     if (!rowMissing(s.row).length && !album.r.includes(s.row)) {
       album.r.push(s.row);
       sugar += ROW_SUGAR;
       saveSugar();
       run.rowDone = t('row.' + s.row);
-      addFeed(`Ряд «${esc(run.rowDone)}» собран: <b>+${ROW_SUGAR} сахара</b>`, 5000);
+      addFeed(t('al.rowFeed', esc(run.rowDone), ROW_SUGAR), 5000);
       Sfx.power();
       haptic(25);
     }
@@ -117,10 +117,8 @@ function albumLine() {
   if (!got.length || run.cheated) return null;
   const names = got.map(nameOf).join(', ');
   return [
-    run.rowDone
-      ? `Ряд «${run.rowDone}» собран, +${ROW_SUGAR} сахара. Новые: ${names}`
-      : `${got.length > 1 ? 'Новые наклейки' : 'Новая наклейка'}: ${names}`,
-    `${albumCount()} из ${STICKERS.length}`,
+    run.rowDone ? t('al.rowLine', run.rowDone, ROW_SUGAR, names) : t(got.length > 1 ? 'al.news' : 'al.new', names),
+    t('al.of', albumCount(), STICKERS.length),
   ];
 }
 function renderAlbumLine() {
@@ -145,7 +143,7 @@ function albumNear() {
     const miss = rowMissing(rid);
     if (miss.length && miss.length <= 2 && (!best || miss.length < best[1].length)) best = [t('row.' + rid), miss];
   }
-  return best ? `До ряда «${best[0]}» не хватает: ${best[1].map((s) => nameOf(s.name)).join(', ')}` : '';
+  return best ? t('al.near', best[0], best[1].map((s) => nameOf(s.name)).join(', ')) : '';
 }
 
 // ---------- stickers: the game's own drawing code on a stand-in candy, painted once into a small canvas ----------
@@ -190,7 +188,7 @@ const albumEl = $('album'),
 let albumBuilt = false,
   albumDirty = false;
 function renderAlbumBtn() {
-  albumBtn.innerHTML = `Альбом <b>${albumCount()} / ${STICKERS.length}</b>`;
+  albumBtn.innerHTML = `${t('album.t')} <b>${albumCount()} / ${STICKERS.length}</b>`;
 }
 function buildAlbum() {
   // the grid and its stickers are made once; later openings only update who is collected
@@ -218,22 +216,22 @@ function buildAlbum() {
 function fillAlbum() {
   const n = albumCount();
   $('albumN').textContent = `${n} / ${STICKERS.length}`;
-  $('albumSub').textContent = `Проглоти конфету целиком, и её наклейка твоя; редкую — ${NEED[1]} раза. За полный ряд ${ROW_SUGAR} сахара`;
+  $('albumSub').textContent = t('al.sub', NEED[1], ROW_SUGAR);
   for (const sec of $('albumRows').children) {
     const rid = sec.dataset.r,
       have = STICKERS.filter((s) => s.row === rid && hasSticker(s)).length,
       all = STICKERS.filter((s) => s.row === rid).length,
       done = album.r.includes(rid);
     sec.classList.toggle('done', done);
-    sec.querySelector('.ah span').textContent = done ? `собран, +${ROW_SUGAR} сахара` : `${have} / ${all}`;
+    sec.querySelector('.ah span').textContent = done ? t('al.rowDone', ROW_SUGAR) : `${have} / ${all}`;
     for (const btn of sec.querySelectorAll('.st')) {
       const s = STICKERS.find((x) => x.id === btn.dataset.id),
         c = album.c[s.id] || 0,
-        nm = s.id,
+        nm = nameOf(s.name),
         got = hasSticker(s);
       btn.classList.toggle('no', !got);
-      btn.lastChild.textContent = got ? (c > 1 ? '×' + c : '') : c ? `${c} из ${need(s)}` : '';
-      btn.setAttribute('aria-label', got ? `${nm}: съедено ${c}` : c ? `${nm}: съедено ${c} из ${need(s)}` : `${nm}: ещё не съедено`);
+      btn.lastChild.textContent = got ? (c > 1 ? '×' + c : '') : c ? t('al.of', c, need(s)) : '';
+      btn.setAttribute('aria-label', got ? t('al.aGot', nm, c) : c ? t('al.aPart', nm, c, need(s)) : t('al.aNone', nm));
     }
   }
   albumDirty = false;
@@ -253,15 +251,15 @@ const albumOpen = () => !albumEl.classList.contains('hidden');
 albumBtn.addEventListener('click', openAlbum);
 $('albumX').addEventListener('click', closeAlbum);
 $('albumRows').addEventListener('click', (e) => {
-  const t = e.target.closest('.st');
-  if (!t) return;
-  const s = STICKERS.find((x) => x.id === t.dataset.id),
+  const st = e.target.closest('.st');
+  if (!st) return;
+  const s = STICKERS.find((x) => x.id === st.dataset.id),
     c = album.c[s.id] || 0;
   $('albumCap').textContent =
     !hasSticker(s) && c
-      ? `${nameOf(s.name)}: съедено ${c} из ${need(s)}, наклейка откроется на ${need(s)}-й`
+      ? t('al.capPart', nameOf(s.name), c, need(s))
       : c
-        ? `${nameOf(s.name)}: съедено целиком ${c} ${c % 10 === 1 && c % 100 !== 11 ? 'раз' : c % 10 >= 2 && c % 10 <= 4 && (c % 100 < 12 || c % 100 > 14) ? 'раза' : 'раз'}`
-        : `${nameOf(s.name)}: ещё не съедено. Ищи на поле и проглоти целиком${need(s) > 1 ? ` ${need(s)} раза` : ''}`;
+        ? t('al.capGot', nameOf(s.name), c)
+        : t('al.capNone', nameOf(s.name), need(s));
 });
 renderAlbumBtn();

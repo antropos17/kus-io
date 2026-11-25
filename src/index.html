@@ -51,104 +51,104 @@ document.getElementById('nojs').style.display = 'none';
   window.addEventListener('unhandledrejection', function (e) { show(String(e.reason && e.reason.message || e.reason || '')); });
 })();
 </script>
-<canvas id="c" aria-label="Игровое поле"></canvas>
+<canvas id="c" aria-label="Игровое поле" data-ta="a.field"></canvas>
 <div id="vig"></div>
 <div id="safe"></div>
 
 <div id="hud" class="hidden">
-  <div id="score"><div id="mass">0</div><div class="lbl">масса</div><div id="sugar" aria-label="сахар 0"><span class="sock"><svg viewBox="0 0 24 24"><path d="M12 2.5 21 7.2 12 11.9 3 7.2Z" fill="#fffaf0" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M3 7.2 12 11.9V21.5L3 16.8Z" fill="#efe1c8" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M21 7.2 12 11.9V21.5L21 16.8Z" fill="#d6bd95" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><circle cx="9.5" cy="6.6" r=".9" fill="#fff"/><circle cx="14.2" cy="7.6" r=".7" fill="#fff"/><circle cx="6.5" cy="12" r=".6" fill="#fff"/></svg></span><span class="num"></span><span class="mult"></span></div><div id="timer"></div><div id="goal"></div><div id="stage" class="off"><span class="fill"></span><span class="t"></span><b></b></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="streakSum" role="status"></div><div id="feed" aria-live="polite"></div></div>
-  <button id="pauseBtn" type="button" aria-label="Пауза" title="Пауза (Esc)"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
-  <button id="dash" type="button" aria-label="Рывок с укусом"><span><b>Кусь</b><small>пробел</small></span></button>
-  <button id="dodge" type="button" aria-label="Язык-присоска"><span><b>Язык</b><small>shift</small></span></button>
+  <div id="score"><div id="mass">0</div><div class="lbl" data-t="hud.mass">масса</div><div id="sugar" aria-label="сахар 0"><span class="sock"><svg viewBox="0 0 24 24"><path d="M12 2.5 21 7.2 12 11.9 3 7.2Z" fill="#fffaf0" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M3 7.2 12 11.9V21.5L3 16.8Z" fill="#efe1c8" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M21 7.2 12 11.9V21.5L21 16.8Z" fill="#d6bd95" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><circle cx="9.5" cy="6.6" r=".9" fill="#fff"/><circle cx="14.2" cy="7.6" r=".7" fill="#fff"/><circle cx="6.5" cy="12" r=".6" fill="#fff"/></svg></span><span class="num"></span><span class="mult"></span></div><div id="timer"></div><div id="goal"></div><div id="stage" class="off"><span class="fill"></span><span class="t"></span><b></b></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="streakSum" role="status"></div><div id="feed" aria-live="polite"></div></div>
+  <button id="pauseBtn" type="button" aria-label="Пауза" title="Пауза (Esc)" data-ta="pause" data-tt="pause.tip"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
+  <button id="dash" type="button" aria-label="Рывок с укусом" data-ta="a.dash" data-tc="dash.low"><span><b data-t="btn.kus">Кусь</b><small data-t="btn.space">пробел</small></span></button>
+  <button id="dodge" type="button" aria-label="Язык-присоска" data-ta="a.tongue"><span><b data-t="btn.tongue">Язык</b><small>shift</small></span></button>
 </div>
 
-<div id="board"><div class="bt">Самые сладкие</div><ol id="lb"></ol></div>
+<div id="board"><div class="bt" data-t="board.t">Самые сладкие</div><ol id="lb"></ol></div>
 
-<button id="mute" type="button" aria-label="Выключить звук" title="Звук (M)">
+<button id="mute" type="button" aria-label="Выключить звук" title="Звук (M)" data-ta="a.mute" data-tt="mute.tip">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5v14l-4.5-4.5H4z" fill="currentColor"/><path class="on" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="off" d="M16 9.5l5 5m0-5l-5 5"/></svg>
 </button>
 
 <div id="menu" class="ov">
   <div class="wrap"><div class="card">
     <div class="top">
-    <h1 class="logo">КУСЬ<span>.io</span></h1>
-    <p class="tag">Откусывай куски от других конфет и расти.</p>
-    <input id="nick" maxlength="14" placeholder="Твоё имя" autocomplete="off" spellcheck="false" aria-label="Имя">
+    <h1 class="logo" data-th="logo">КУСЬ<span>.io</span></h1>
+    <p class="tag" data-t="menu.tag">Откусывай куски от других конфет и расти.</p>
+    <input id="nick" maxlength="14" placeholder="Твоё имя" autocomplete="off" spellcheck="false" aria-label="Имя" data-tp="nick.ph" data-ta="a.nick">
     <div class="bankRow later"><p id="bank" aria-live="polite"></p><button id="albumBtn" class="btn2" type="button"></button></div>
     </div>
     <p id="chal" class="hidden"></p>
     <div class="secs"><!-- folding sections: the head says what is chosen, one opens at a time -->
-      <section class="sec later" id="secMode"><button class="sh" type="button" aria-expanded="false" aria-controls="secModeB"><span class="sk">Режим</span><span class="sv" id="sumMode"></span></button><div class="sb" id="secModeB">
-        <div class="pk"><div class="seg2" id="modeSeg" role="group" aria-label="Режим"><button type="button" data-m="free">Свободная игра</button><button type="button" data-m="t3">3 минуты на счёт</button><button type="button" data-m="daily">Конфета дня</button></div></div>
-        <div class="pk" id="dif"><span class="pl">Сложность</span><div class="segN" id="diffSeg" role="group" aria-label="Сложность"><button type="button" data-v="easy">Лёгкая</button><button type="button" data-v="normal">Обычная</button><button type="button" data-v="hard">Жёсткая</button><button type="button" data-v="extreme">Экстрим</button></div></div>
+      <section class="sec later" id="secMode"><button class="sh" type="button" aria-expanded="false" aria-controls="secModeB"><span class="sk" data-t="sec.mode">Режим</span><span class="sv" id="sumMode"></span></button><div class="sb" id="secModeB">
+        <div class="pk"><div class="seg2" id="modeSeg" role="group" aria-label="Режим" data-ta="sec.mode"><button type="button" data-m="free" data-t="mode.free">Свободная игра</button><button type="button" data-m="t3" data-t="mode.t3">3 минуты на счёт</button><button type="button" data-m="daily" data-t="mode.daily">Конфета дня</button></div></div>
+        <div class="pk" id="dif"><span class="pl" data-t="dif" data-tc="dif.fixed">Сложность</span><div class="segN" id="diffSeg" role="group" aria-label="Сложность" data-ta="dif"><button type="button" data-v="easy" data-t="dif.easy">Лёгкая</button><button type="button" data-v="normal" data-t="dif.normal">Обычная</button><button type="button" data-v="hard" data-t="dif.hard">Жёсткая</button><button type="button" data-v="extreme" data-t="dif.extreme">Экстрим</button></div></div>
       </div></section>
-      <section class="sec" id="secLook"><button class="sh" type="button" aria-expanded="false" aria-controls="secLookB"><span class="sk">Конфета</span><span class="sv" id="sumLook"></span></button><div class="sb" id="secLookB">
-        <div class="pk"><span class="pl">Вкус</span><div id="sw" class="pr" role="radiogroup" aria-label="Вкус"></div></div>
-        <div class="pk later"><span class="pl">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор"></div></div>
-        <div class="pk later"><span class="pl">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка"></div></div>
+      <section class="sec" id="secLook"><button class="sh" type="button" aria-expanded="false" aria-controls="secLookB"><span class="sk" data-t="sec.look">Конфета</span><span class="sv" id="sumLook"></span></button><div class="sb" id="secLookB">
+        <div class="pk"><span class="pl" data-t="look.flavor">Вкус</span><div id="sw" class="pr" role="radiogroup" aria-label="Вкус" data-ta="look.flavor"></div></div>
+        <div class="pk later"><span class="pl" data-t="look.skin">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор" data-ta="look.skin"></div></div>
+        <div class="pk later"><span class="pl" data-t="look.hat">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка" data-ta="look.hat"></div></div>
         <p class="best later" id="rec"></p>
       </div></section>
-      <section class="sec later" id="secMis"><button class="sh" type="button" aria-expanded="false" aria-controls="secMisB"><span class="sk">Задания</span><span class="sv" id="sumMis"></span></button><div class="sb" id="secMisB">
-        <div class="pk" id="mis"><span class="pl" id="misT">Задания</span><div id="misList"></div></div>
+      <section class="sec later" id="secMis"><button class="sh" type="button" aria-expanded="false" aria-controls="secMisB"><span class="sk" data-t="sec.mis">Задания</span><span class="sv" id="sumMis"></span></button><div class="sb" id="secMisB">
+        <div class="pk" id="mis"><span class="pl" id="misT" data-t="sec.mis">Задания</span><div id="misList"></div></div>
       </div></section>
-      <section class="sec later" id="secSet"><button class="sh" type="button" aria-expanded="false" aria-controls="secSetB"><span class="sk">Настройки</span><span class="sv" id="sumSet"></span></button><div class="sb" id="secSetB"><!-- the language row stays here, never on the pause card: switching reloads the page -->
+      <section class="sec later" id="secSet"><button class="sh" type="button" aria-expanded="false" aria-controls="secSetB"><span class="sk" data-t="sec.set">Настройки</span><span class="sv" id="sumSet"></span></button><div class="sb" id="secSetB"><!-- the language row stays here, never on the pause card: switching reloads the page -->
     <div class="grp lng" data-t="set.lang">Язык</div>
     <div class="seg2 lng" id="langSeg"><button type="button" data-v="ru" lang="ru">Русский</button><button type="button" data-v="en" lang="en">English</button></div>
       </div></section>
-      <section class="sec later" id="secHelp"><button class="sh" type="button" aria-expanded="false" aria-controls="secHelpB"><span class="sk">Как играть</span><span class="sv">управление и советы</span></button><div class="sb" id="secHelpB">
+      <section class="sec later" id="secHelp"><button class="sh" type="button" aria-expanded="false" aria-controls="secHelpB"><span class="sk" data-t="sec.help">Как играть</span><span class="sv" data-t="help.sub">управление и советы</span></button><div class="sb" id="secHelpB">
     <ul class="help">
-      <li class="kb"><span><b>Мышь</b>: куда смотрит пасть</span></li>
-      <li class="kb"><span><b>Пробел, клик или «Кусь»</b>: рывок с укусом посильнее</span></li>
-      <li class="kb"><span><b>Shift, правый клик или «Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
-      <li class="tc"><span><b>Води пальцем по экрану</b>: под ним появится джойстик</span></li>
-      <li class="tc"><span><b>«Кусь»</b>: рывок с укусом посильнее, можно держать</span></li>
-      <li class="tc"><span><b>«Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
-      <li><span>Кусает только пасть, так что заходи со спины</span></li>
-      <li><span>Тебя тоже будут кусать: ранки затянутся, а есть можно дальше</span></li>
-      <li><span>На поле лежат бонусы: скорость, щит и магнит</span></li>
-      <li><span>Ёж колется со спины, кусай его в морду. Торт кусай в вишенку</span></li>
-      <li><span>Свежие ранки замедляют и сыплют крошками, добивай подранков</span></li>
-      <li><span>Укус в свежую ранку отрывает на треть больше</span></li>
+      <li class="kb"><span data-th="help.mouse"><b>Мышь</b>: куда смотрит пасть</span></li>
+      <li class="kb"><span data-th="help.space"><b>Пробел, клик или «Кусь»</b>: рывок с укусом посильнее</span></li>
+      <li class="kb"><span data-th="help.shift"><b>Shift, правый клик или «Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
+      <li class="tc"><span data-th="help.finger"><b>Води пальцем по экрану</b>: под ним появится джойстик</span></li>
+      <li class="tc"><span data-th="help.kus"><b>«Кусь»</b>: рывок с укусом посильнее, можно держать</span></li>
+      <li class="tc"><span data-th="help.tongue"><b>«Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
+      <li><span data-th="help.t1">Кусает только пасть, так что заходи со спины</span></li>
+      <li><span data-th="help.t2">Тебя тоже будут кусать: ранки затянутся, а есть можно дальше</span></li>
+      <li><span data-th="help.t3">На поле лежат бонусы: скорость, щит и магнит</span></li>
+      <li><span data-th="help.t4">Ёж колется со спины, кусай его в морду. Торт кусай в вишенку</span></li>
+      <li><span data-th="help.t5">Свежие ранки замедляют и сыплют крошками, добивай подранков</span></li>
+      <li><span data-th="help.t6">Укус в свежую ранку отрывает на треть больше</span></li>
     </ul>
       </div></section>
     </div>
-    <div class="go"><button id="play" class="btn" type="button">Играть</button></div>
+    <div class="go"><button id="play" class="btn" type="button" data-t="menu.play">Играть</button></div>
   </div></div>
 </div>
 
-<div id="adm" class="ov center hidden" role="dialog" aria-label="Админ-панель">
-  <div class="wrap"><button class="x" id="admX" type="button" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
-    <h2 class="dead">Админ-панель</h2>
-    <p class="tag">Игра стоит на паузе, пока панель открыта. С включёнными читами рекорд не засчитывается.</p>
-    <div class="grp">Читы</div><div class="tgs" id="admT"></div>
-    <div class="grp">Скорость конфеты</div><div class="seg" id="admS"></div>
-    <div class="grp">Действия</div><div class="acts" id="admA"></div>
-    <button id="admClose" class="btn" type="button">Продолжить</button>
+<div id="adm" class="ov center hidden" role="dialog" aria-label="Админ-панель" data-ta="adm.title">
+  <div class="wrap"><button class="x" id="admX" type="button" aria-label="Закрыть" title="Закрыть" data-ta="a.close" data-tt="a.close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
+    <h2 class="dead" data-t="adm.title">Админ-панель</h2>
+    <p class="tag" data-t="adm.tag">Игра стоит на паузе, пока панель открыта. С включёнными читами рекорд не засчитывается.</p>
+    <div class="grp" data-t="adm.cheats">Читы</div><div class="tgs" id="admT"></div>
+    <div class="grp" data-t="adm.speed">Скорость конфеты</div><div class="seg" id="admS"></div>
+    <div class="grp" data-t="adm.acts">Действия</div><div class="acts" id="admA"></div>
+    <button id="admClose" class="btn" type="button" data-t="btn.resume">Продолжить</button>
   </div></div>
 </div>
 
 <div id="over" class="ov center hidden">
-  <div class="wrap" id="overWrap"><button class="x" id="overX" type="button" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
+  <div class="wrap" id="overWrap"><button class="x" id="overX" type="button" aria-label="Закрыть" title="Закрыть" data-ta="a.close" data-tt="a.close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
     <svg id="trMedal" viewBox="-40 -40 80 80" aria-hidden="true"><circle r="36" fill="#ffe3ea" stroke="#ffc3d2" stroke-width="3"/><ellipse cy="22" rx="30" ry="6" fill="#f0d3b2"/><rect x="-25" y="-4" width="50" height="26" rx="6" fill="#7a3f26"/><rect x="-25" y="6" width="50" height="5" fill="#ff8fb0"/><g fill="#fff6e8"><rect x="-27" y="-11" width="54" height="12" rx="6"/><path d="M-20.2 1a3.2 3.2 0 006.4 0zM-7.2 1a3.2 3.2 0 006.4 0zM7.8 1a3.2 3.2 0 006.4 0zM16.8 1a3.2 3.2 0 006.4 0z"/><rect x="-20.2" y="-2" width="6.4" height="3"/><rect x="-7.2" y="-2" width="6.4" height="3"/><rect x="7.8" y="-2" width="6.4" height="3"/><rect x="16.8" y="-2" width="6.4" height="3"/></g><g stroke-width="2" stroke-linecap="round"><path stroke="#ff5d8f" d="M-18.3 -7L-13.7 -5"/><path stroke="#ffd23f" d="M-4.5 -10L-7.5 -6"/><path stroke="#7ad7ff" d="M4.6 -7.1L7.4 -2.9"/><path stroke="#9be15d" d="M18.4 -8.8L13.6 -7.2"/><path stroke="#c49bff" d="M-10.9 -5.5L-11.1 -0.5"/><path stroke="#fff6e8" d="M9.5 -2.5L14.5 -1.5"/></g><path d="M0-18Q2-27 8-30" fill="none" stroke="#5a8a2a" stroke-width="2"/><circle cy="-15" r="7.5" fill="#e8274b"/><circle cx="-2.6" cy="-18" r="2.2" fill="#fff" fill-opacity=".75"/></svg>
-    <h2 class="dead" id="overT">Тебя доели</h2>
+    <h2 class="dead" id="overT" data-t="over.t">Тебя доели</h2>
     <p class="tag" id="who"></p>
     <p id="trRec" class="hidden"></p>
-    <div id="trTiles"><div><b></b><span>масса</span></div><div><b></b><span>укусов</span></div><div><b></b><span>сахара</span></div></div>
+    <div id="trTiles"><div><b></b><span data-t="hud.mass">масса</span></div><div><b></b><span data-t="st.bites">укусов</span></div><div><b></b><span data-t="st.sugar">сахара</span></div></div>
     <div class="stats">
-      <div><b id="sMax">0</b><span>макс. масса</span></div>
-      <div><b id="sBites">0</b><span>укусов</span></div>
-      <div><b id="sKills">0</b><span>съедено целиком</span></div>
-      <div><b id="sTime">0:00</b><span id="sTimeL">время в игре</span></div>
+      <div><b id="sMax">0</b><span data-t="st.max">макс. масса</span></div>
+      <div><b id="sBites">0</b><span data-t="st.bites">укусов</span></div>
+      <div><b id="sKills">0</b><span data-t="st.kills">съедено целиком</span></div>
+      <div><b id="sTime">0:00</b><span id="sTimeL" data-t="st.time">время в игре</span></div>
     </div>
     <div id="sweet" class="hidden">
-      <div class="sw1"><b id="sweetN">+0</b><span>сахара за раунд</span><span id="sweetBank"></span></div>
+      <div class="sw1"><b id="sweetN">+0</b><span data-t="sweet.round">сахара за раунд</span><span id="sweetBank"></span></div>
       <p id="chestT"></p>
-      <div id="chestRow" role="group" aria-label="Три конфеты"></div>
+      <div id="chestRow" role="group" aria-label="Три конфеты" data-ta="a.chest"></div>
     </div>
     <div id="overMis"></div>
-    <button id="again" class="btn" type="button">Ещё кусь</button>
-    <div class="row2"><button id="chalBtn" class="btn2" type="button">Бросить вызов другу</button><button id="toMenu" class="btn2" type="button">В меню</button></div>
-    <input id="chalLink" class="hidden" readonly aria-label="Ссылка-вызов">
+    <button id="again" class="btn" type="button" data-t="over.again">Ещё кусь</button>
+    <div class="row2"><button id="chalBtn" class="btn2" type="button" data-t="over.chal">Бросить вызов другу</button><button id="toMenu" class="btn2" type="button" data-t="over.menu">В меню</button></div>
+    <input id="chalLink" class="hidden" readonly aria-label="Ссылка-вызов" data-ta="a.chalLink">
     <p id="chalRes"></p>
     <p class="best" id="best"></p>
     <p class="best" id="stk"></p>
@@ -156,30 +156,30 @@ document.getElementById('nojs').style.display = 'none';
   </div><canvas id="trophyFx" aria-hidden="true"></canvas></div>
 </div>
 
-<div id="album" class="ov center hidden" role="dialog" aria-label="Альбом">
-  <div class="wrap"><button class="x" id="albumX" type="button" aria-label="Закрыть" title="Закрыть (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
-    <h2 class="dead">Альбом <span id="albumN"></span></h2>
+<div id="album" class="ov center hidden" role="dialog" aria-label="Альбом" data-ta="album.t">
+  <div class="wrap"><button class="x" id="albumX" type="button" aria-label="Закрыть" title="Закрыть (Esc)" data-ta="a.close" data-tt="a.closeEsc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
+    <h2 class="dead"><span data-t="album.t">Альбом</span> <span id="albumN"></span></h2>
     <p class="tag" id="albumSub"></p>
     <div id="albumRows"></div>
     <p class="best" id="albumCap" aria-live="polite"></p>
   </div></div>
 </div>
 
-<div id="pause" class="ov center hidden" role="dialog" aria-label="Пауза">
-  <div class="wrap"><button class="x" id="pauseX" type="button" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
-    <h2 class="dead">Пауза</h2>
+<div id="pause" class="ov center hidden" role="dialog" aria-label="Пауза" data-ta="pause">
+  <div class="wrap"><button class="x" id="pauseX" type="button" aria-label="Закрыть" title="Закрыть" data-ta="a.close" data-tt="a.close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
+    <h2 class="dead" data-t="pause">Пауза</h2>
     <div id="setBox"><!-- moves into the menu's settings section while the menu is open -->
-    <div class="grp tch">Кнопки на экране</div>
-    <div class="seg2 tch" id="handSeg"><button type="button" data-v="0">Справа</button><button type="button" data-v="1">Слева</button></div>
-    <div class="grp tch">Размер кнопок</div>
-    <div class="seg3 tch" id="sizeSeg"><button type="button" data-v="0.85">Мелкие</button><button type="button" data-v="1">Средние</button><button type="button" data-v="1.18">Крупные</button></div>
-    <div class="grp">Графика</div>
-    <div class="seg3" id="gfxSeg"><button type="button" data-v="auto">Авто</button><button type="button" data-v="low">Лёгкая</button><button type="button" data-v="high">Полная</button></div>
-    <div class="seg2" id="fpsSeg" role="group" aria-label="Счётчик кадров"><button type="button" data-v="0">Без счётчика кадров</button><button type="button" data-v="1">Показывать FPS</button></div>
+    <div class="grp tch" data-t="set.hand">Кнопки на экране</div>
+    <div class="seg2 tch" id="handSeg"><button type="button" data-v="0" data-t="set.right">Справа</button><button type="button" data-v="1" data-t="set.left">Слева</button></div>
+    <div class="grp tch" data-t="set.size">Размер кнопок</div>
+    <div class="seg3 tch" id="sizeSeg"><button type="button" data-v="0.85" data-t="set.s">Мелкие</button><button type="button" data-v="1" data-t="set.m">Средние</button><button type="button" data-v="1.18" data-t="set.l">Крупные</button></div>
+    <div class="grp" data-t="set.gfx">Графика</div>
+    <div class="seg3" id="gfxSeg"><button type="button" data-v="auto" data-t="set.auto">Авто</button><button type="button" data-v="low" data-t="set.low">Лёгкая</button><button type="button" data-v="high" data-t="set.high">Полная</button></div>
+    <div class="seg2" id="fpsSeg" role="group" aria-label="Счётчик кадров" data-ta="set.fps"><button type="button" data-v="0" data-t="set.fps0">Без счётчика кадров</button><button type="button" data-v="1" data-t="set.fps1">Показывать FPS</button></div>
     </div>
-    <button id="resume" class="btn" type="button">Продолжить</button>
-    <button id="pAdmin" class="btn2" type="button">Админ-панель</button>
-    <button id="pMenu" class="btn2" type="button">Выйти в меню</button>
+    <button id="resume" class="btn" type="button" data-t="btn.resume">Продолжить</button>
+    <button id="pAdmin" class="btn2" type="button" data-t="adm.title">Админ-панель</button>
+    <button id="pMenu" class="btn2" type="button" data-t="pause.menu">Выйти в меню</button>
   </div></div>
 </div>
 

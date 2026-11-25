@@ -139,7 +139,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #dash:before{content:"";position:absolute;left:-9px;top:-9px;right:-9px;bottom:-9px;border-radius:50%;background:conic-gradient(var(--fc,#9be15d) calc(var(--f,0)*360deg),rgba(0,0,0,.4) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));opacity:0;pointer-events:none}
 #dash.fuse:before{opacity:1}
 #dash.low:before{animation:fuseBlink .2s linear infinite alternate}
-#dash.low:after{content:"ещё кусь!";position:absolute;left:50%;bottom:calc(100% + 14px);transform:translateX(-50%);font:900 12px/1 var(--font);color:var(--lemon);text-shadow:0 2px 0 rgba(0,0,0,.6);white-space:nowrap;pointer-events:none;animation:fuseBlink .2s linear infinite alternate}
+#dash.low:after{content:attr(data-c);position:absolute;left:50%;bottom:calc(100% + 14px);transform:translateX(-50%);font:900 12px/1 var(--font);color:var(--lemon);text-shadow:0 2px 0 rgba(0,0,0,.6);white-space:nowrap;pointer-events:none;animation:fuseBlink .2s linear infinite alternate}
 #dash .spr{position:absolute;left:50%;top:50%;width:0;height:0;opacity:0;pointer-events:none;animation:sprSpin 9s linear infinite paused}
 #dash.s3 .spr{opacity:1;animation-play-state:running}
 #dash .spr u{position:absolute;left:-4px;top:-1.5px;width:8px;height:3px;border-radius:2px;background:var(--c);transform:rotate(var(--a)) translateX(var(--sr,56px)) rotate(90deg)}
@@ -204,7 +204,7 @@ body.touch.lefty #dash.low:after{right:auto;left:calc(100% + 12px)}
 #modeSeg [data-m=daily]{grid-column:1/-1;grid-row:1;display:flex;align-items:baseline;align-content:center;justify-content:center;gap:0 8px;flex-wrap:wrap}
 #modeSeg [data-m=daily] small{font:700 13px/1.2 var(--font);color:#7a5a49}
 #dif.fixed .segN{opacity:.45;pointer-events:none}
-#dif.fixed .pl::after{content:': в конфете дня обычная'}
+#dif.fixed .pl::after{content:attr(data-c)}
 .row2{display:flex;gap:8px}
 .row2 .btn2{flex:1 1 0;min-width:0}
 #pause .grp{font:900 15px/1.2 var(--font);margin:14px 0 8px;color:var(--ink)}
