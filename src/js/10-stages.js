@@ -128,7 +128,7 @@ function beginEvent(k) {
     c.m0 = m;
     c.esc = 0;
     c.phT = BOSS.face;
-    announce(`<b>${esc(b.name)}</b> идёт за тобой. Корка твёрдая, кусай вишенку на спине`, 'Большой Торт!');
+    announce(`<b>${esc(nameOf(b.name))}</b> идёт за тобой. Корка твёрдая, кусай вишенку на спине`, 'Большой Торт!');
   }
   stg.cur = c;
 }

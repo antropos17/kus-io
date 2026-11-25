@@ -645,6 +645,13 @@ const STR = {
   'set.lang': ['Язык', 'Language'],
   defName: ['Кусака', 'Kusaka'], // the name of a player who typed none; never saved, so it follows the language
   friend: ['Друг', 'Friend'], // a challenge link without a name
+  // album rows by id (ALBUM_ROWS)
+  'row.airy': ['Воздушные', 'Airy'],
+  'row.chewy': ['Тягучие', 'Chewy'],
+  'row.home': ['С кухни', 'Homemade'],
+  'row.rascal': ['Шалуны', 'Rascals'],
+  'row.east': ['Восточные', 'Eastern'],
+  'row.baku': ['Из Баку', 'From Baku'],
 };
 function t(key, ...args) {
   const e = STR[key];
@@ -657,8 +664,60 @@ function t(key, ...args) {
 }
 const isDefName = (s) => s === STR.defName[0] || s === STR.defName[1];
 // candy names are save keys (album, tools, tests) and stay Russian; the screen shows them through nameOf
-const EN_NAMES = {};
-const nameOf = (name) => (LANG === 'en' ? EN_NAMES[name] || name : name);
+const EN_NAMES = {
+  // bots (BOT_NAMES)
+  Зефирка: 'Marshmallow',
+  Суфле: 'Soufflé',
+  Мармеладка: 'Gummy',
+  Жвачка: 'Gumdrop',
+  Пастила: 'Pastille',
+  Желешка: 'Jelly',
+  Тянучка: 'Taffy',
+  Ириска: 'Toffee',
+  Безе: 'Meringue',
+  Пахлава: 'Baklava',
+  Шекербура: 'Shekerbura',
+  Мочи: 'Mochi',
+  Пудинг: 'Pudding',
+  Пончик: 'Donut',
+  Халва: 'Halva',
+  Карамелька: 'Caramel',
+  Нуга: 'Nougat',
+  'Чак-чак': 'Chak-chak',
+  Лукум: 'Lokum',
+  Бадамбура: 'Badambura',
+  Мусс: 'Mousse',
+  Щербет: 'Sherbet',
+  Кисель: 'Custard',
+  Ватрушка: 'Cheese Bun',
+  Чавкин: 'Chomper',
+  Нямка: 'Yummy',
+  Хрумка: 'Crunchy',
+  'Бабл-гам': 'Bubble Gum', // a bot and a flavour
+  Гогал: 'Gogal',
+  Медовик: 'Honey Cake',
+  // flavours (FLAVORS)
+  Клубника: 'Strawberry',
+  Лайм: 'Lime',
+  Апельсин: 'Orange',
+  Черника: 'Blueberry',
+  Виноград: 'Grape',
+  Мята: 'Mint',
+  Лимон: 'Lemon',
+  Голубика: 'Bilberry',
+  Вишня: 'Cherry',
+  // special enemies
+  Ёж: 'Hedgehog',
+  Пиранья: 'Piranha',
+  Торт: 'Cake',
+  'Большой Торт': 'Big Cake',
+};
+const nameOf = (name) => {
+  if (LANG !== 'en') return name;
+  if (EN_NAMES[name]) return EN_NAMES[name];
+  const m = /^(.+) (\d+)$/.exec(name); // «Большой Торт 2» on the second shift
+  return m && EN_NAMES[m[1]] ? EN_NAMES[m[1]] + ' ' + m[2] : name;
+};
 const accOf = (b) => (LANG === 'en' ? nameOf(b.name) : b.acc); // the object form: Russian declines, English does not
 function applyLang(root = document) {
   // markup: data-t → text, data-th → html, data-ta → aria-label (and title when the element has one)
@@ -4027,16 +4086,16 @@ function albumEat(B) {
   if (!s) return;
   const had = hasSticker(s);
   album.c[s.id] = (album.c[s.id] || 0) + 1;
-  if (!had && !hasSticker(s)) addFeed(`Наклейка «${esc(s.name)}»: ${album.c[s.id]} из ${need(s)}`, 3200);
+  if (!had && !hasSticker(s)) addFeed(`Наклейка «${esc(nameOf(s.name))}»: ${album.c[s.id]} из ${need(s)}`, 3200);
   else if (!had) {
     if (!run.stk) run.stk = [];
     run.stk.push(s.name);
-    addFeed(`Новая наклейка: <b>${esc(s.name)}</b>`, 4200);
+    addFeed(`Новая наклейка: <b>${esc(nameOf(s.name))}</b>`, 4200);
     if (!rowMissing(s.row).length && !album.r.includes(s.row)) {
       album.r.push(s.row);
       sugar += ROW_SUGAR;
       saveSugar();
-      run.rowDone = rowOf(s.row)[1];
+      run.rowDone = t('row.' + s.row);
       addFeed(`Ряд «${esc(run.rowDone)}» собран: <b>+${ROW_SUGAR} сахара</b>`, 5000);
       Sfx.power();
       haptic(25);
@@ -4052,7 +4111,7 @@ function albumLine() {
   // one row: what is new (cut short with an ellipsis if it is long) and the total, which always shows
   const got = run.stk || [];
   if (!got.length || run.cheated) return null;
-  const names = got.join(', ');
+  const names = got.map(nameOf).join(', ');
   return [
     run.rowDone
       ? `Ряд «${run.rowDone}» собран, +${ROW_SUGAR} сахара. Новые: ${names}`
@@ -4077,12 +4136,12 @@ function renderAlbumLine() {
 function albumNear() {
   // a row short of one or two stickers is a goal worth naming
   let best = null;
-  for (const [rid, title] of ALBUM_ROWS) {
+  for (const [rid] of ALBUM_ROWS) {
     if (album.r.includes(rid)) continue;
     const miss = rowMissing(rid);
-    if (miss.length && miss.length <= 2 && (!best || miss.length < best[1].length)) best = [title, miss];
+    if (miss.length && miss.length <= 2 && (!best || miss.length < best[1].length)) best = [t('row.' + rid), miss];
   }
-  return best ? `До ряда «${best[0]}» не хватает: ${best[1].map((s) => s.name).join(', ')}` : '';
+  return best ? `До ряда «${best[0]}» не хватает: ${best[1].map((s) => nameOf(s.name)).join(', ')}` : '';
 }
 
 // ---------- stickers: the game's own drawing code on a stand-in candy, painted once into a small canvas ----------
@@ -4134,11 +4193,13 @@ function buildAlbum() {
   const dpr = Math.min(3, Math.max(1, window.devicePixelRatio || 1)),
     px = Math.round(52 * dpr);
   $('albumRows').innerHTML = ALBUM_ROWS.map(
-    ([rid, title]) =>
-      `<section class="arow" data-r="${rid}"><div class="ah"><b>${title}</b><span></span></div><div class="ag">${STICKERS.filter((s) => s.row === rid)
+    ([rid]) =>
+      `<section class="arow" data-r="${rid}"><div class="ah"><b>${t('row.' + rid)}</b><span></span></div><div class="ag">${STICKERS.filter(
+        (s) => s.row === rid,
+      )
         .map(
           (s) =>
-            `<button type="button" class="st" data-id="${esc(s.id)}"><canvas width="${px}" height="${px}"></canvas><span class="sn">${esc(SHY[s.name] || s.name)}</span><i></i></button>`,
+            `<button type="button" class="st" data-id="${esc(s.id)}"><canvas width="${px}" height="${px}"></canvas><span class="sn">${esc(LANG === 'en' ? nameOf(s.name) : SHY[s.name] || s.name)}</span><i></i></button>`,
         )
         .join('')}</div></section>`,
   ).join('');
@@ -4194,10 +4255,10 @@ $('albumRows').addEventListener('click', (e) => {
     c = album.c[s.id] || 0;
   $('albumCap').textContent =
     !hasSticker(s) && c
-      ? `${s.name}: съедено ${c} из ${need(s)}, наклейка откроется на ${need(s)}-й`
+      ? `${nameOf(s.name)}: съедено ${c} из ${need(s)}, наклейка откроется на ${need(s)}-й`
       : c
-        ? `${s.name}: съедено целиком ${c} ${c % 10 === 1 && c % 100 !== 11 ? 'раз' : c % 10 >= 2 && c % 10 <= 4 && (c % 100 < 12 || c % 100 > 14) ? 'раза' : 'раз'}`
-        : `${s.name}: ещё не съедено. Ищи на поле и проглоти целиком${need(s) > 1 ? ` ${need(s)} раза` : ''}`;
+        ? `${nameOf(s.name)}: съедено целиком ${c} ${c % 10 === 1 && c % 100 !== 11 ? 'раз' : c % 10 >= 2 && c % 10 <= 4 && (c % 100 < 12 || c % 100 > 14) ? 'раза' : 'раз'}`
+        : `${nameOf(s.name)}: ещё не съедено. Ищи на поле и проглоти целиком${need(s) > 1 ? ` ${need(s)} раза` : ''}`;
 });
 renderAlbumBtn();
 
@@ -4318,7 +4379,7 @@ function addFeed(html, ms) {
   }, ms || 3600);
 }
 function feedKill(A, B) {
-  if (A.isPlayer) addFeed(`Ты съедаешь <b>${esc(B.acc)}</b> целиком`);
+  if (A.isPlayer) addFeed(`Ты съедаешь <b>${esc(accOf(B))}</b> целиком`);
   else if (
     !tutor && // the first run's lesson is not pushed out by other candies' meals
     !B.isPlayer &&
@@ -4327,7 +4388,7 @@ function feedKill(A, B) {
     player.alive &&
     (Math.hypot(A.x - player.x, A.y - player.y) < (Math.max(W, H) / cam.z) * 0.6 || A === biggest())
   )
-    addFeed(`<b>${esc(A.name)}</b> съедает <b>${esc(B.acc)}</b>`);
+    addFeed(`<b>${esc(A.isPlayer ? A.name : nameOf(A.name))}</b> съедает <b>${esc(accOf(B))}</b>`);
 }
 const MTYPES = [
   // [key, wording, first target]; only real actions in a clean run count
@@ -4703,7 +4764,7 @@ function showOver() {
         : t3
           ? 'Три минуты позади. В зачёт идёт самая большая масса.'
           : killer
-            ? `Последний кусь: <b>${esc(killer.name)}</b>`
+            ? `Последний кусь: <b>${esc(nameOf(killer.name))}</b>`
             : 'Тебя растащили по кусочкам');
   $('sMax').textContent = score;
   $('sBites').textContent = run.bites;
@@ -4850,7 +4911,7 @@ function bumpMass() {
     });
 }
 function lbRow(n, b) {
-  return `<li class="${b.isPlayer ? 'me' : ''}"><span class="n">${n}</span><i style="background:${b.pal.base}"></i><span class="nm">${esc(b.name)}</span><span class="m">${Math.round(b.mass)}</span></li>`;
+  return `<li class="${b.isPlayer ? 'me' : ''}"><span class="n">${n}</span><i style="background:${b.pal.base}"></i><span class="nm">${esc(b.isPlayer ? b.name : nameOf(b.name))}</span><span class="m">${Math.round(b.mass)}</span></li>`;
 }
 function updateHUD(dt) {
   const pct = player && player.alive ? clamp(1 - player.dashCd / 1.5, 0, 1) : 1;
@@ -5423,7 +5484,7 @@ function beginEvent(k) {
     c.m0 = m;
     c.esc = 0;
     c.phT = BOSS.face;
-    announce(`<b>${esc(b.name)}</b> идёт за тобой. Корка твёрдая, кусай вишенку на спине`, 'Большой Торт!');
+    announce(`<b>${esc(nameOf(b.name))}</b> идёт за тобой. Корка твёрдая, кусай вишенку на спине`, 'Большой Торт!');
   }
   stg.cur = c;
 }
@@ -7666,7 +7727,7 @@ function drawName(b) {
   if (sr < (lod ? 16 : 10) && !b.isPlayer) return;
   const fs = clamp(sr * 0.3, 11, 17) / z;
   let y = b.y - b.Rs * (b.hat !== 'none' && sr >= 8 ? 1.55 : 1.04) - 6 / z,
-    L = labelFor(b.name, b.isPlayer || !!b.boss),
+    L = labelFor(b.isPlayer ? b.name : nameOf(b.name), b.isPlayer || !!b.boss),
     k = fs / 34;
   const sk = streakStep(b);
   if (sk) {
@@ -8237,7 +8298,7 @@ skinsEl.addEventListener('click', (e) => {
 function renderSwatches() {
   swEl.innerHTML = PALS.map(
     (p, i) =>
-      `<button type="button" role="radio" aria-checked="${i === chosen}" aria-label="${p.name}" title="${p.name}" data-i="${i}" style="background:${p.base}"></button>`,
+      `<button type="button" role="radio" aria-checked="${i === chosen}" aria-label="${nameOf(p.name)}" title="${nameOf(p.name)}" data-i="${i}" style="background:${p.base}"></button>`,
   ).join('');
 }
 swEl.addEventListener('click', (e) => {
@@ -8293,7 +8354,7 @@ function renderSecs() {
   const pal = PALS[chosen],
     skin = SKINS.find((k) => k[0] === chosenSkin),
     hat = HATS.find((h) => h.id === chosenHat),
-    look = [pal.name, skin && skin[1], hat && hat.id !== 'none' && hat.name].filter(Boolean).join(' · ');
+    look = [nameOf(pal.name), skin && skin[1], hat && hat.id !== 'none' && hat.name].filter(Boolean).join(' · ');
   $('sumLook').innerHTML = `<i style="background:${pal.base}"></i>${look}`;
   $('sumMode').textContent =
     `${{ free: 'Свободная', t3: '3 минуты', daily: 'Конфета дня' }[mode]} · ${mode === 'daily' ? 'Обычная' : pressedText('diffSeg')}`;
@@ -9605,6 +9666,8 @@ window.__kus = {
   albumCount,
   STICKERS,
   ALBUM_ROWS,
+  BOT_NAMES,
+  FLAVORS,
   NEED,
   openAlbum,
   closeAlbum,

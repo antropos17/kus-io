@@ -90,16 +90,16 @@ function albumEat(B) {
   if (!s) return;
   const had = hasSticker(s);
   album.c[s.id] = (album.c[s.id] || 0) + 1;
-  if (!had && !hasSticker(s)) addFeed(`Наклейка «${esc(s.name)}»: ${album.c[s.id]} из ${need(s)}`, 3200);
+  if (!had && !hasSticker(s)) addFeed(`Наклейка «${esc(nameOf(s.name))}»: ${album.c[s.id]} из ${need(s)}`, 3200);
   else if (!had) {
     if (!run.stk) run.stk = [];
     run.stk.push(s.name);
-    addFeed(`Новая наклейка: <b>${esc(s.name)}</b>`, 4200);
+    addFeed(`Новая наклейка: <b>${esc(nameOf(s.name))}</b>`, 4200);
     if (!rowMissing(s.row).length && !album.r.includes(s.row)) {
       album.r.push(s.row);
       sugar += ROW_SUGAR;
       saveSugar();
-      run.rowDone = rowOf(s.row)[1];
+      run.rowDone = t('row.' + s.row);
       addFeed(`Ряд «${esc(run.rowDone)}» собран: <b>+${ROW_SUGAR} сахара</b>`, 5000);
       Sfx.power();
       haptic(25);
@@ -115,7 +115,7 @@ function albumLine() {
   // one row: what is new (cut short with an ellipsis if it is long) and the total, which always shows
   const got = run.stk || [];
   if (!got.length || run.cheated) return null;
-  const names = got.join(', ');
+  const names = got.map(nameOf).join(', ');
   return [
     run.rowDone
       ? `Ряд «${run.rowDone}» собран, +${ROW_SUGAR} сахара. Новые: ${names}`
@@ -140,12 +140,12 @@ function renderAlbumLine() {
 function albumNear() {
   // a row short of one or two stickers is a goal worth naming
   let best = null;
-  for (const [rid, title] of ALBUM_ROWS) {
+  for (const [rid] of ALBUM_ROWS) {
     if (album.r.includes(rid)) continue;
     const miss = rowMissing(rid);
-    if (miss.length && miss.length <= 2 && (!best || miss.length < best[1].length)) best = [title, miss];
+    if (miss.length && miss.length <= 2 && (!best || miss.length < best[1].length)) best = [t('row.' + rid), miss];
   }
-  return best ? `До ряда «${best[0]}» не хватает: ${best[1].map((s) => s.name).join(', ')}` : '';
+  return best ? `До ряда «${best[0]}» не хватает: ${best[1].map((s) => nameOf(s.name)).join(', ')}` : '';
 }
 
 // ---------- stickers: the game's own drawing code on a stand-in candy, painted once into a small canvas ----------
@@ -197,11 +197,13 @@ function buildAlbum() {
   const dpr = Math.min(3, Math.max(1, window.devicePixelRatio || 1)),
     px = Math.round(52 * dpr);
   $('albumRows').innerHTML = ALBUM_ROWS.map(
-    ([rid, title]) =>
-      `<section class="arow" data-r="${rid}"><div class="ah"><b>${title}</b><span></span></div><div class="ag">${STICKERS.filter((s) => s.row === rid)
+    ([rid]) =>
+      `<section class="arow" data-r="${rid}"><div class="ah"><b>${t('row.' + rid)}</b><span></span></div><div class="ag">${STICKERS.filter(
+        (s) => s.row === rid,
+      )
         .map(
           (s) =>
-            `<button type="button" class="st" data-id="${esc(s.id)}"><canvas width="${px}" height="${px}"></canvas><span class="sn">${esc(SHY[s.name] || s.name)}</span><i></i></button>`,
+            `<button type="button" class="st" data-id="${esc(s.id)}"><canvas width="${px}" height="${px}"></canvas><span class="sn">${esc(LANG === 'en' ? nameOf(s.name) : SHY[s.name] || s.name)}</span><i></i></button>`,
         )
         .join('')}</div></section>`,
   ).join('');
@@ -257,9 +259,9 @@ $('albumRows').addEventListener('click', (e) => {
     c = album.c[s.id] || 0;
   $('albumCap').textContent =
     !hasSticker(s) && c
-      ? `${s.name}: съедено ${c} из ${need(s)}, наклейка откроется на ${need(s)}-й`
+      ? `${nameOf(s.name)}: съедено ${c} из ${need(s)}, наклейка откроется на ${need(s)}-й`
       : c
-        ? `${s.name}: съедено целиком ${c} ${c % 10 === 1 && c % 100 !== 11 ? 'раз' : c % 10 >= 2 && c % 10 <= 4 && (c % 100 < 12 || c % 100 > 14) ? 'раза' : 'раз'}`
-        : `${s.name}: ещё не съедено. Ищи на поле и проглоти целиком${need(s) > 1 ? ` ${need(s)} раза` : ''}`;
+        ? `${nameOf(s.name)}: съедено целиком ${c} ${c % 10 === 1 && c % 100 !== 11 ? 'раз' : c % 10 >= 2 && c % 10 <= 4 && (c % 100 < 12 || c % 100 > 14) ? 'раза' : 'раз'}`
+        : `${nameOf(s.name)}: ещё не съедено. Ищи на поле и проглоти целиком${need(s) > 1 ? ` ${need(s)} раза` : ''}`;
 });
 renderAlbumBtn();

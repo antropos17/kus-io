@@ -17,7 +17,7 @@ function addFeed(html, ms) {
   }, ms || 3600);
 }
 function feedKill(A, B) {
-  if (A.isPlayer) addFeed(`Ты съедаешь <b>${esc(B.acc)}</b> целиком`);
+  if (A.isPlayer) addFeed(`Ты съедаешь <b>${esc(accOf(B))}</b> целиком`);
   else if (
     !tutor && // the first run's lesson is not pushed out by other candies' meals
     !B.isPlayer &&
@@ -26,7 +26,7 @@ function feedKill(A, B) {
     player.alive &&
     (Math.hypot(A.x - player.x, A.y - player.y) < (Math.max(W, H) / cam.z) * 0.6 || A === biggest())
   )
-    addFeed(`<b>${esc(A.name)}</b> съедает <b>${esc(B.acc)}</b>`);
+    addFeed(`<b>${esc(A.isPlayer ? A.name : nameOf(A.name))}</b> съедает <b>${esc(accOf(B))}</b>`);
 }
 const MTYPES = [
   // [key, wording, first target]; only real actions in a clean run count
@@ -402,7 +402,7 @@ function showOver() {
         : t3
           ? 'Три минуты позади. В зачёт идёт самая большая масса.'
           : killer
-            ? `Последний кусь: <b>${esc(killer.name)}</b>`
+            ? `Последний кусь: <b>${esc(nameOf(killer.name))}</b>`
             : 'Тебя растащили по кусочкам');
   $('sMax').textContent = score;
   $('sBites').textContent = run.bites;
@@ -549,7 +549,7 @@ function bumpMass() {
     });
 }
 function lbRow(n, b) {
-  return `<li class="${b.isPlayer ? 'me' : ''}"><span class="n">${n}</span><i style="background:${b.pal.base}"></i><span class="nm">${esc(b.name)}</span><span class="m">${Math.round(b.mass)}</span></li>`;
+  return `<li class="${b.isPlayer ? 'me' : ''}"><span class="n">${n}</span><i style="background:${b.pal.base}"></i><span class="nm">${esc(b.isPlayer ? b.name : nameOf(b.name))}</span><span class="m">${Math.round(b.mass)}</span></li>`;
 }
 function updateHUD(dt) {
   const pct = player && player.alive ? clamp(1 - player.dashCd / 1.5, 0, 1) : 1;

@@ -1741,6 +1741,41 @@ test('lang: a saved default name follows the language and is not saved again', a
   await ctx.close();
 });
 
+test('lang: every string has both languages; every candy name has a unique English name', async () => {
+  const g = await open({ play: false });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      bad = [];
+    for (const [key, v] of Object.entries(k.STR)) if (!Array.isArray(v) || v.length !== 2 || !v[0] || !v[1]) bad.push(key);
+    const names = [...k.BOT_NAMES.map((n) => n[0]), ...k.FLAVORS.map((f) => f[0]), 'Ёж', 'Пиранья', 'Торт', 'Большой Торт'];
+    const miss = names.filter((n) => !k.EN_NAMES[n]);
+    const en = Object.values(k.EN_NAMES),
+      dup = en.filter((v, i) => en.indexOf(v) !== i),
+      cyr = en.filter((v) => /[А-Яа-яЁё]/.test(v));
+    const rows = k.ALBUM_ROWS.filter(([id]) => !k.STR['row.' + id]).map(([id]) => id);
+    return { bad, miss, dup, cyr, rows };
+  });
+  assert(!r.bad.length && !r.miss.length && !r.dup.length && !r.cyr.length && !r.rows.length, JSON.stringify(r));
+  await g.close();
+});
+
+test('lang: names are English on screen, the album still counts by the Russian key', async () => {
+  const g = await open({ play: false, locale: 'en-US' });
+  const r = await g.page.evaluate(`(() => { const k0 = window.__kus; k0.pause(true); k0.setMode('t3'); k0.startGame(); ${QUIET} ${EAT}
+    const out = { en: k.EN_NAMES['Зефирка'] }, feed = () => document.getElementById('feed').textContent;
+    out.ate = eat('Зефирка'); out.feed = feed();
+    out.saved = JSON.parse(localStorage.getItem('kus.album')).c['Зефирка'];
+    out.board = document.getElementById('lb') ? document.getElementById('lb').textContent : '';
+    k.setTimeLeft(0.001); for (let i = 0; i < 90; i++) k.update(1/60);
+    out.line = document.getElementById('stk').textContent;
+    return out; })()`);
+  assert(r.en && r.ate === 1 && r.saved === 1, `swallow ${r.ate}, saved under the Russian key ${r.saved}, English name ${r.en}`);
+  assert(r.feed.includes(r.en) && !/Зефирк/.test(r.feed), `the feed: "${r.feed}"`);
+  assert(r.line.includes(r.en) && !/Зефирк/.test(r.line), `the end line: "${r.line}"`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 for (const [name, fn] of tests) {
   if (only && !name.includes(only)) continue;
   const t0 = Date.now();

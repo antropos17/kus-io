@@ -274,7 +274,7 @@ skinsEl.addEventListener('click', (e) => {
 function renderSwatches() {
   swEl.innerHTML = PALS.map(
     (p, i) =>
-      `<button type="button" role="radio" aria-checked="${i === chosen}" aria-label="${p.name}" title="${p.name}" data-i="${i}" style="background:${p.base}"></button>`,
+      `<button type="button" role="radio" aria-checked="${i === chosen}" aria-label="${nameOf(p.name)}" title="${nameOf(p.name)}" data-i="${i}" style="background:${p.base}"></button>`,
   ).join('');
 }
 swEl.addEventListener('click', (e) => {
@@ -330,7 +330,7 @@ function renderSecs() {
   const pal = PALS[chosen],
     skin = SKINS.find((k) => k[0] === chosenSkin),
     hat = HATS.find((h) => h.id === chosenHat),
-    look = [pal.name, skin && skin[1], hat && hat.id !== 'none' && hat.name].filter(Boolean).join(' · ');
+    look = [nameOf(pal.name), skin && skin[1], hat && hat.id !== 'none' && hat.name].filter(Boolean).join(' · ');
   $('sumLook').innerHTML = `<i style="background:${pal.base}"></i>${look}`;
   $('sumMode').textContent =
     `${{ free: 'Свободная', t3: '3 минуты', daily: 'Конфета дня' }[mode]} · ${mode === 'daily' ? 'Обычная' : pressedText('diffSeg')}`;

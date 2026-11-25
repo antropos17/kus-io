@@ -322,6 +322,8 @@ window.__kus = {
   albumCount,
   STICKERS,
   ALBUM_ROWS,
+  BOT_NAMES,
+  FLAVORS,
   NEED,
   openAlbum,
   closeAlbum,

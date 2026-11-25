@@ -15,6 +15,13 @@ const STR = {
   'set.lang': ['Язык', 'Language'],
   defName: ['Кусака', 'Kusaka'], // the name of a player who typed none; never saved, so it follows the language
   friend: ['Друг', 'Friend'], // a challenge link without a name
+  // album rows by id (ALBUM_ROWS)
+  'row.airy': ['Воздушные', 'Airy'],
+  'row.chewy': ['Тягучие', 'Chewy'],
+  'row.home': ['С кухни', 'Homemade'],
+  'row.rascal': ['Шалуны', 'Rascals'],
+  'row.east': ['Восточные', 'Eastern'],
+  'row.baku': ['Из Баку', 'From Baku'],
 };
 function t(key, ...args) {
   const e = STR[key];
@@ -27,8 +34,60 @@ function t(key, ...args) {
 }
 const isDefName = (s) => s === STR.defName[0] || s === STR.defName[1];
 // candy names are save keys (album, tools, tests) and stay Russian; the screen shows them through nameOf
-const EN_NAMES = {};
-const nameOf = (name) => (LANG === 'en' ? EN_NAMES[name] || name : name);
+const EN_NAMES = {
+  // bots (BOT_NAMES)
+  Зефирка: 'Marshmallow',
+  Суфле: 'Soufflé',
+  Мармеладка: 'Gummy',
+  Жвачка: 'Gumdrop',
+  Пастила: 'Pastille',
+  Желешка: 'Jelly',
+  Тянучка: 'Taffy',
+  Ириска: 'Toffee',
+  Безе: 'Meringue',
+  Пахлава: 'Baklava',
+  Шекербура: 'Shekerbura',
+  Мочи: 'Mochi',
+  Пудинг: 'Pudding',
+  Пончик: 'Donut',
+  Халва: 'Halva',
+  Карамелька: 'Caramel',
+  Нуга: 'Nougat',
+  'Чак-чак': 'Chak-chak',
+  Лукум: 'Lokum',
+  Бадамбура: 'Badambura',
+  Мусс: 'Mousse',
+  Щербет: 'Sherbet',
+  Кисель: 'Custard',
+  Ватрушка: 'Cheese Bun',
+  Чавкин: 'Chomper',
+  Нямка: 'Yummy',
+  Хрумка: 'Crunchy',
+  'Бабл-гам': 'Bubble Gum', // a bot and a flavour
+  Гогал: 'Gogal',
+  Медовик: 'Honey Cake',
+  // flavours (FLAVORS)
+  Клубника: 'Strawberry',
+  Лайм: 'Lime',
+  Апельсин: 'Orange',
+  Черника: 'Blueberry',
+  Виноград: 'Grape',
+  Мята: 'Mint',
+  Лимон: 'Lemon',
+  Голубика: 'Bilberry',
+  Вишня: 'Cherry',
+  // special enemies
+  Ёж: 'Hedgehog',
+  Пиранья: 'Piranha',
+  Торт: 'Cake',
+  'Большой Торт': 'Big Cake',
+};
+const nameOf = (name) => {
+  if (LANG !== 'en') return name;
+  if (EN_NAMES[name]) return EN_NAMES[name];
+  const m = /^(.+) (\d+)$/.exec(name); // «Большой Торт 2» on the second shift
+  return m && EN_NAMES[m[1]] ? EN_NAMES[m[1]] + ' ' + m[2] : name;
+};
 const accOf = (b) => (LANG === 'en' ? nameOf(b.name) : b.acc); // the object form: Russian declines, English does not
 function applyLang(root = document) {
   // markup: data-t → text, data-th → html, data-ta → aria-label (and title when the element has one)
