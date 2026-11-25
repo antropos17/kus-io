@@ -4558,6 +4558,8 @@ function paintSticker(cv, s) {
 }
 
 // ---------- the album page ----------
+// English names that need the same soft hyphen on a 360 px phone
+const SHY_EN = { Зефирка: 'Marsh­mallow', Шекербура: 'Sheker­bura', Бадамбура: 'Badam­bura' };
 const SHY = {
   Мармеладка: 'Марме­ладка',
   Карамелька: 'Кара­мелька',
@@ -4587,7 +4589,7 @@ function buildAlbum() {
       )
         .map(
           (s) =>
-            `<button type="button" class="st" data-id="${esc(s.id)}"><canvas width="${px}" height="${px}"></canvas><span class="sn">${esc(LANG === 'en' ? nameOf(s.name) : SHY[s.name] || s.name)}</span><i></i></button>`,
+            `<button type="button" class="st" data-id="${esc(s.id)}"><canvas width="${px}" height="${px}"></canvas><span class="sn">${esc(LANG === 'en' ? SHY_EN[s.name] || nameOf(s.name) : SHY[s.name] || s.name)}</span><i></i></button>`,
         )
         .join('')}</div></section>`,
   ).join('');

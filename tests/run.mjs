@@ -62,7 +62,9 @@ test('boot: menu and a new game start without errors (desktop and phone)', async
 });
 
 test('first visit: short menu fits 360x640, one tap plays, a snack waits; full menu after a finished run', async () => {
-  const g = await open({ width: 360, height: 640, touch: true, dpr: 2, play: false });
+  for (const locale of ['ru-RU', 'en-US'])
+    try {
+  const g = await open({ locale, width: 360, height: 640, touch: true, dpr: 2, play: false });
   const menu = () =>
     g.page.evaluate(() => {
       const c = document.querySelector('#menu .card'),
@@ -96,7 +98,7 @@ test('first visit: short menu fits 360x640, one tap plays, a snack waits; full m
       small: q && q.mass < P.mass / 2,
     };
   });
-  assert(p.state === 'play' && p.name === 'Кусака', `Play with an empty name: state ${p.state}, name ${p.name}`);
+  assert(p.state === 'play' && p.name === (locale === 'en-US' ? 'Kusaka' : 'Кусака'), `Play with an empty name: state ${p.state}, name ${p.name}`);
   assert(p.diff === 'normal' && p.mode === 'free', `first run must be normal and free, got ${p.diff}/${p.mode}`);
   assert(p.gap !== null && p.gap < 120 && p.small, `no small snack in front of the new player (gap ${p.gap})`);
   await g.page.tap('#pauseBtn');
@@ -111,15 +113,20 @@ test('first visit: short menu fits 360x640, one tap plays, a snack waits; full m
   assert(!(await menu()).first, 'the full menu was not remembered');
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
+    } catch (e) {
+      throw new Error(locale + ': ' + e.message);
+    }
 });
 
 test('menu: sections and Play fit the screen, nothing overlaps, targets are 44px; an opened section scrolls into view', async () => {
+  for (const locale of ['ru-RU', 'en-US'])
+    try {
   for (const [w, h, touch] of [
     [1280, 720, false],
     [360, 640, true],
     [844, 390, true],
   ]) {
-    const g = await open({ width: w, height: h, touch, dpr: 2, play: false, returning: true });
+    const g = await open({ locale, width: w, height: h, touch, dpr: 2, play: false, returning: true });
     const tag = `${w}x${h}`;
     const r = await g.page.evaluate(() => {
       const vis = (e) => e.offsetWidth > 0 && e.offsetHeight > 0,
@@ -187,15 +194,20 @@ test('menu: sections and Play fit the screen, nothing overlaps, targets are 44px
     assert(!(await g.page.evaluate(() => document.querySelector('#menu .sec.open'))), `${tag}: a second tap must fold the section`);
     await g.close();
   }
+    } catch (e) {
+      throw new Error(locale + ': ' + e.message);
+    }
 });
 
 test('phone: play controls stay inside the screen', async () => {
+  for (const locale of ['ru-RU', 'en-US'])
+    try {
   for (const [width, height] of [
     [390, 844],
     [360, 640],
     [844, 390],
   ]) {
-    const g = await open({ width, height, touch: true, dpr: 2 });
+    const g = await open({ locale, width, height, touch: true, dpr: 2 });
     const r = await g.page.evaluate(() =>
       ['dash', 'dodge'].map((id) => {
         const b = document.getElementById(id).getBoundingClientRect();
@@ -205,6 +217,9 @@ test('phone: play controls stay inside the screen', async () => {
     assert(r.every(Boolean), `bite/tongue buttons off screen at ${width}x${height}`);
     await g.close();
   }
+    } catch (e) {
+      throw new Error(locale + ': ' + e.message);
+    }
 });
 
 test('bite rules: hedgehog spines, cake cherry, shield', async () => {
@@ -706,11 +721,13 @@ test('album: no sticker with cheats; a full row pays sugar once', async () => {
 });
 
 test('album: the end screen with new stickers and a full row still fits phones without scrolling', async () => {
+  for (const locale of ['ru-RU', 'en-US'])
+    try {
   for (const [w, h] of [
     [360, 640],
     [844, 390],
   ]) {
-    const g = await open({ width: w, height: h, touch: true, dpr: 2, play: false, returning: true });
+    const g = await open({ locale, width: w, height: h, touch: true, dpr: 2, play: false, returning: true });
     const r = await g.page.evaluate(() => {
       const k = window.__kus;
       for (const n of ['Мармеладка', 'Желешка', 'Жвачка', 'Тянучка']) k.album.c[n] = 1;
@@ -730,21 +747,26 @@ test('album: the end screen with new stickers and a full row still fits phones w
       };
     });
     assert(
-      r.shown && r.line.includes('Ряд «Тягучие» собран') && r.line.includes('9 из 30'),
+      r.shown && r.line.includes(locale === 'en-US' ? 'Row “Chewy” complete' : 'Ряд «Тягучие» собран') && r.line.includes(locale === 'en-US' ? '9 of 30' : '9 из 30'),
       `${w}x${h}: sticker line "${r.line}" (shown ${r.shown})`,
     );
     assert(r.over <= 1, `${w}x${h}: the end screen scrolls by ${r.over}px with "${r.line}"`);
     assert(g.errors.length === 0, g.errors.join(' | '));
     await g.close();
   }
+    } catch (e) {
+      throw new Error(locale + ': ' + e.message);
+    }
 });
 
 test('album: the page opens and closes, fits phones, stickers are big enough to tap', async () => {
+  for (const locale of ['ru-RU', 'en-US'])
+    try {
   for (const [w, h] of [
     [360, 640],
     [844, 390],
   ]) {
-    const g = await open({ width: w, height: h, touch: true, dpr: 2, play: false, returning: true });
+    const g = await open({ locale, width: w, height: h, touch: true, dpr: 2, play: false, returning: true });
     const row = await g.page.evaluate(() => document.querySelector('.bankRow').getBoundingClientRect().height);
     await g.page.tap('#albumBtn');
     await g.page.waitForTimeout(150);
@@ -786,10 +808,13 @@ test('album: the page opens and closes, fits phones, stickers are big enough to 
     assert(g.errors.length === 0, g.errors.join(' | '));
     await g.close();
   }
-  const f = await open({ width: 360, height: 640, touch: true, dpr: 2, play: false });
+  const f = await open({ locale, width: 360, height: 640, touch: true, dpr: 2, play: false });
   const first = await f.page.evaluate(() => document.getElementById('albumBtn').offsetHeight);
   assert(first === 0, 'the album button must wait until the first run is over');
   await f.close();
+    } catch (e) {
+      throw new Error(locale + ': ' + e.message);
+    }
 });
 
 // Candy of the day: the clock is pinned through Date.now, which is all the game reads the date from.
@@ -1127,11 +1152,13 @@ test('stages: beating the boss ends the run with a record, not with cheats; the 
 });
 
 test('stages: the trophy card fits a phone: close button out of the bitten corner, the card scrolls in landscape', async () => {
+  for (const locale of ['ru-RU', 'en-US'])
+    try {
   for (const [w, h] of [
     [390, 844],
     [844, 390],
   ]) {
-    const g = await open({ width: w, height: h, touch: true, play: false, returning: true });
+    const g = await open({ locale, width: w, height: h, touch: true, play: false, returning: true });
     const r = await g.page.evaluate(`(() => { ${STG}
       const P = free(); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1); const B = S().cur.b; B.spawnT = 0; B.ai = null; B.mass = 60;
       k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
@@ -1148,6 +1175,9 @@ test('stages: the trophy card fits a phone: close button out of the bitten corne
     assert(g.errors.length === 0, g.errors.join(' | '));
     await g.close();
   }
+    } catch (e) {
+      throw new Error(locale + ': ' + e.message);
+    }
 });
 
 test('trophy: the glaze runs only while the win card is shown', async () => {
@@ -1266,11 +1296,13 @@ test('stages: the HUD stage line stays clear of the table on phones, next to a c
 });
 
 test('hud: cream pills fit phones; the stage pill fills and its jaws chomp when the event starts', async () => {
+  for (const locale of ['ru-RU', 'en-US'])
+    try {
   for (const opt of [
     { width: 360, height: 640, touch: true, dpr: 2 },
     { width: 844, height: 390, touch: true, dpr: 2 },
   ]) {
-    const g = await open({ ...opt, play: false, returning: true });
+    const g = await open({ locale, ...opt, play: false, returning: true });
     const r = await g.page.evaluate(`(() => { ${STG} const out = {};
       const P = free(); P.stats.maxMass = 135; P.mass = 135; P.pMagnet = 4.9; run(1 / 30);
       const st = document.getElementById('stage'), fx = document.getElementById('fx');
@@ -1281,7 +1313,7 @@ test('hud: cream pills fit phones; the stage pill fills and its jaws chomp when 
       out.right = sr.right; out.hit = sr.right > br.left && sr.bottom > br.top && sr.top < br.bottom;
       const coins = fx.querySelectorAll('.coin[data-k=magnet]');
       out.coins = coins.length; out.t = coins.length ? parseFloat(coins[0].style.getPropertyValue('--t')) : -1; out.fxText = fx.textContent.trim();
-      out.streakChip = fx.textContent.includes('Серия');
+      out.streakChip = /Серия|Streak/.test(fx.textContent);
       // all three buffs at once under the tallest table (the player out of the top five adds a gap row and its own row):
       // the coins never reach the table, each label stays beside its coin. The coins are measured, not #fx: its box is its max-width once they wrap
       let tall = 0; for (const b of k.blobs) if (b !== P && b.alive && tall < 6) { b.mass = 500 + tall * 10; tall++; }
@@ -1307,12 +1339,15 @@ test('hud: cream pills fit phones; the stage pill fills and its jaws chomp when 
     assert(r.started && r.late <= 2 && r.chomp && !r.hungry2, `${w}: the jaws must chomp within 2 frames of the raid start (${JSON.stringify(r)})`);
     assert(!r.chomp1, `${w}: the chomp must stop after about 0.64 s`);
     assert(
-      r.coins === 1 && r.t > 0.55 && r.t < 0.65 && r.fxText === '5 с' && !r.streakChip,
+      r.coins === 1 && r.t > 0.55 && r.t < 0.65 && r.fxText === (locale === 'en-US' ? '5 s' : '5 с') && !r.streakChip,
       `${w}: buff coin ${JSON.stringify([r.coins, r.t, r.fxText])}`,
     );
     assert(g.errors.length === 0, g.errors.join(' | '));
     await g.close();
   }
+    } catch (e) {
+      throw new Error(locale + ': ' + e.message);
+    }
 });
 
 // smarter bots: a scene with the player and a few bots, everything else parked far away
@@ -1899,6 +1934,17 @@ test('lang: no Russian left in an English run, end card, album page, trophy, can
   assert(!Object.keys(seen).length, 'Russian on screen: ' + JSON.stringify(seen));
   assert(!canvas.length, 'Russian drawn on the canvas: ' + canvas.join(' | '));
   assert(!shared.length, 'Russian in the share text: ' + shared.join(' | '));
+});
+
+test('lang: sticker names fit their tiles on a 360x640 phone in both languages', async () => {
+  for (const locale of ['ru-RU', 'en-US']) {
+    const g = await open({ width: 360, height: 640, touch: true, play: false, returning: true, locale });
+    await g.page.evaluate(() => document.getElementById('albumBtn').click());
+    await g.page.waitForTimeout(300);
+    const cut = await g.page.evaluate(() => [...document.querySelectorAll('#albumRows .sn')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent));
+    assert(!cut.length, `${locale}: names cut off: ${cut.join(', ')}`);
+    await g.close();
+  }
 });
 
 for (const [name, fn] of tests) {
