@@ -121,6 +121,23 @@ Against the ordinary fight the boss fight is +6% (PC) and +12% (phone) at the me
 
 The game's own FPS tag (pause → «Показывать FPS») over real frames gave script time 1.9–2.6 ms in ordinary play, 1.8–2.6 ms in the rain and 2.1–3.7 ms in the boss fight; worst frame 8–13 ms, 9–13 ms and 13–17 ms.
 
+## Фантик
+
+The runaway wrapper (`WRAP` in `src/js/02-tuning.js`, logic in `src/js/10-streak.js`) pops out after a ×5+ bite streak lapses in a clean run and pays `WRAP.amt[final tier]` sugar if caught within `WRAP.life` (5 s). Aim: wrappers pay 15–25% of an average run's sugar (`run.got`).
+
+`node tools/wrap-curve.mjs 30 normal`: the autopilot, fresh-page free runs of up to 180 game seconds (`PAR=8` pages at once, `OUT=file.json` saves the runs, a third argument changes the limit, `SET='{"v1":0.4}'` tries other `WRAP` values without a build). A run ends at the first death or, at the limit, through `toMenu()`, so `run.got` is the game's own number; wrapper sugar is counted at each reveal's payout. The output also has a `diag` block per wrapper: start distance, chase latency, closest approach, how it ended.
+
+Diagnosis: the autopilot switched to chasing within 0.1 s and nothing overrode it, but it caught only 10% (closest approach about 330 px). It aimed at the wrapper itself, so the arrival slowdown in `updateBlob` cut its speed near the target, and it never dashed: it moved at about 0.7 of `maxSpeed()` while the wrapper ran at 1.25 to 0.7 of it. The fix is in the autopilot's `wrap` path only: it aims 200 px past the wrapper (no slowdown) and dashes when the wrapper is within `Rs + 150` and ahead, as a player would. It then moves at about 0.8 of `maxSpeed()` (turning and wounds take the rest). The wrapper now runs at 1.1 → 0.4 of `maxSpeed()` over 1.2 s, life 5 s.
+
+| Build | Runs | Wrappers | Caught (catch rate) | Wrapper sugar | Runs' sugar | Share | Share at 60% catch |
+|---|---|---|---|---|---|---|---|
+| old chase and speeds, amt 20 / 45 / 120 | 30 | 10 | 1 (10%) | 45 | 7334 | 0.6% | 3.6% |
+| new chase and speeds, amt 20 / 45 / 120 | 150 | 83 | 61 (73.5%) | 3545 | 47272 | 7.5% | 6.1% |
+| new chase and speeds, amt 60 / 135 / 360 | 150 | 92 | 61 (66%) | 9210 | 52099 | 17.7% | 16.0% |
+| same, a short sample | 30 | 8 | 4 (50%) | 840 | 8635 | 9.7% | 11.6% |
+
+The amounts were scaled by 3 (0.20 / 0.075, with room for the larger run sugar) and rounded to 5. A 30-run sample holds only 4–5 catches and jumps between 10% and 16%; the 150-run line is the one to trust.
+
 ## What was not checked
 
 - The autopilot is not a live player: whether the boss reads well and feels fair to a person is not known.

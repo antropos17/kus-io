@@ -337,6 +337,7 @@ function checkBites(b, dt) {
   else if (tgt && (b.spawnT <= 0 || tgt.tame) && b.biteCd < 0.25 && gap < mR * 0.7 + 30 + b.Rs * 0.6)
     b.mouthWant = 0.62 + 0.07 * Math.sin(time * 24 + b.phase); // jaws tremble with hunger
   else b.mouthWant = b.snackT > 0 ? 0.4 : 0;
+  if (!c && b.isPlayer && b.comboT > 0 && b.combo > 1) b.mouthWant += 0.08 * Math.min(b.combo, 6); // a streak keeps the mouth hungrily open
   // the first run's snack can be bitten even while the newcomer is still shielded after spawning, and never bites back
   if (tgt && b.biteCd <= 0 && (b.spawnT <= 0 || tgt.tame) && !b.tame && gap < mR * 0.7) {
     if (c) c.finish();
@@ -470,13 +471,15 @@ function doBite(A, B, ang, dashBite) {
   const r0 = B.Rs * (1 - B.dentAt(ang) * 0.6),
     bx = B.x + nx * r0,
     by = B.y + ny * r0;
-  let gain = bite * 0.84;
+  let gain = bite * 0.84,
+    streakClose = false;
   const king = B === leader && A !== leader;
   if (king) gain *= 1.25; // a bite off the leader is worth more
   if (A.isPlayer) {
     // bites landed in quick succession pay a little extra each time
+    streakClose = A.comboT > 0 && A.comboT < STREAK.close; // the bite lands just before the window shuts
     A.combo = A.comboT > 0 ? (A.combo || 0) + 1 : 1;
-    A.comboT = 2.6;
+    A.comboT = STREAK.win;
     gain *= 1 + Math.min(A.combo - 1, 5) * 0.08;
     mission('combo', A.combo, true);
   }
@@ -522,8 +525,9 @@ function doBite(A, B, ang, dashBite) {
     if (intoWound) floatText(bx, ty - 28 / cam.z, 'в ранку!', '#ff8fb0', 18);
     if (weak) floatText(bx, ty - 28 / cam.z, 'слабое место!', '#ff8fb0', 18);
     else if (king) floatText(bx, ty - 28 / cam.z, 'кусь лидера!', '#ffd23f', 18);
-    else if (A.combo > 1 && !intoWound) floatText(bx, ty - 28 / cam.z, 'серия ×' + A.combo, '#9be15d', 18);
+    const sugar0 = run.sugar;
     mission('bites', 1);
+    onStreakBite(A, B, bx, by, run.sugar - sugar0, streakClose);
     if (intoWound) mission('wound', 1);
     if (weak) mission('cake', 1);
     if (B.kind === 'hedgehog') mission('hedge', 1);
@@ -563,7 +567,14 @@ function swallowWhole(A, B) {
   feedKill(A, B);
   if (B.boss) bossDown(A);
   if (A.isPlayer) {
+    // a swallow is the bite that finished it: it builds the streak like any other bite
+    const close = A.comboT > 0 && A.comboT < STREAK.close;
+    A.combo = A.comboT > 0 ? (A.combo || 0) + 1 : 1;
+    A.comboT = STREAK.win;
+    mission('combo', A.combo, true);
+    const sugar0 = run.sugar;
     mission('kills', 1);
+    onStreakBite(A, B, B.x, B.y, run.sugar - sugar0, close);
     albumEat(B);
     if (B.kind === 'piranha') mission('piranha', 1);
     floatText(A.x, A.y - A.Rs - 30 / cam.z, 'ням! +' + Math.round(gain), '#ffd23f', 28);

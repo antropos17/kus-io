@@ -91,14 +91,9 @@ const missionRows = () =>
     .join('');
 // ---------- sugar ----------
 const sugarEl = $('sugar');
-let shownSugar = -1;
 function earn(n) {
   run.sugar += n;
-  const v = Math.floor(run.sugar);
-  if (v === shownSugar) return;
-  shownSugar = v;
-  sugarEl.textContent = `сахар ${v}`;
-  if (!calm && sugarEl.animate) sugarEl.animate([{ transform: 'scale(1.25)' }, { transform: 'scale(1)' }], { duration: 220, easing: 'ease-out' });
+  sugarSync(); // flying cubes hold their share back until they land
 }
 function saveSugar() {
   try {
@@ -226,6 +221,7 @@ function spawnPlayer(spawnT) {
   input.dashHeld = false;
 }
 function startGame() {
+  trophyStop(); // the win card's glaze, for «Вторая смена» and a new game alike
   if (state === 'won') return secondShift(); // the win screen's main button carries on
   if (state === 'play' || (state === 'dead' && overEl.classList.contains('hidden'))) return;
   Sfx.init();
@@ -242,8 +238,8 @@ function startGame() {
   rollMissions();
   saveM();
   run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0 };
-  shownSugar = -1;
-  sugarEl.textContent = '';
+  clearWrap();
+  sugarReset();
   runActive = true;
   timeLeft = timed() ? 180 : 0;
   day = null;
@@ -281,6 +277,8 @@ function tally() {
   if (player.cheated) run.cheated = true;
 }
 function finishRun() {
+  clearWrap(); // a wrapper still running or in its reveal pays nothing
+  sugarSettle();
   runActive = false;
   document.body.classList.remove('playing');
   prevBest = best;
@@ -309,6 +307,7 @@ function finishRun() {
   }
 }
 function die(by) {
+  clearWrap();
   tally();
   stick.id = -1;
   stick.on = false;
@@ -338,6 +337,8 @@ function endTimed() {
   finishRun();
 }
 function toMenu() {
+  clearWrap();
+  sugarSettle();
   if (state === 'play' && player && player.alive) {
     tally();
     player.alive = false;
@@ -348,6 +349,7 @@ function toMenu() {
     spawnDust(player.x, player.y, player.pal, 0, 0, 12);
   } // the run was paid out when the cake fell
   stageStop();
+  trophyStop();
   state = 'menu';
   paused = false;
   runActive = false;
@@ -377,9 +379,22 @@ function showOver() {
     score = Math.round(run.max);
   const won = run.won,
     shift = run.lap ? `Смена ${run.lap + 1}. ` : '';
-  $('overT').innerHTML = won ? `Победа!<small> Торт за ${mmss(won.secs)}</small>` : t3 ? 'Время вышло' : 'Тебя доели'; // the clear time joins the title where the line under it is hidden
+  const card = overEl.querySelector('.card');
+  card.classList.toggle('trophy', !!won); // the trophy look and its record pill belong to a win only
+  card.classList.toggle('rec', !!(won && won.rec));
+  $('overWrap').classList.toggle('trophy', !!won);
+  $('overT').textContent = won ? 'Торт съеден!' : t3 ? 'Время вышло' : 'Тебя доели';
+  const rec = $('trRec'),
+    tiles = $('trTiles').querySelectorAll('b');
+  rec.textContent = won && won.rec ? (won.prev ? `Новый рекорд, было ${mmss(won.prev)}` : 'Первая победа!') : '';
+  rec.classList.toggle('hidden', !rec.textContent);
+  if (won) {
+    tiles[0].textContent = score;
+    tiles[1].textContent = run.bites;
+    tiles[2].textContent = run.got;
+  }
   whoEl.innerHTML = won
-    ? `${won.lap ? `Смена ${won.lap + 1}: т` : 'Т'}орт за <b>${mmss(won.secs)}</b>`
+    ? `${won.lap ? `Смена ${won.lap + 1}` : 'Первая смена'} за <b>${mmss(won.secs)}</b>`
     : (shift ? esc(shift) : '') +
       (daily
         ? `Конфета дня «${esc(run.rule.name)}»`
@@ -425,12 +440,15 @@ function showOver() {
         : score > challenge.c
           ? `Вызов побит: у игрока ${challenge.n} было ${challenge.c}, у тебя ${score}.`
           : `Вызов от игрока ${challenge.n}: ${challenge.c}. Твой результат: ${score}.`;
-  overEl.querySelector('.card').classList.toggle('chal', !!$('chalRes').textContent); // on short screens the challenge line takes the "so close" line's place
+  card.classList.toggle('chal', !!$('chalRes').textContent); // on short screens the challenge line takes the "so close" line's place
   $('chalBtn').classList.toggle('hidden', (t3 && !daily) || run.cheated || score < 1);
   $('chalBtn').textContent = daily || won ? 'Поделиться' : 'Бросить вызов другу';
   $('chalLink').classList.add('hidden');
   overEl.classList.remove('hidden');
   hudEl.classList.add('hidden');
+  // the glaze frame goes on after the card is shown: it is measured on the card
+  if (won) trophyStart(card);
+  else trophyStop();
   setTimeout(() => $('again').focus({ preventScroll: true }), 50);
 }
 
@@ -572,19 +590,7 @@ function updateHUD(dt) {
         ? `цель: ${challenge.c}`
         : '';
   renderStage();
-  let fx = '';
-  if (player && player.alive)
-    for (const [k, prop] of [
-      ['speed', 'pSpeed'],
-      ['shield', 'pShield'],
-      ['magnet', 'pMagnet'],
-    ])
-      if (player[prop] > 0) fx += `<span style="background:${PICK[k][2]}">${PICK[k][0]} ${Math.ceil(player[prop])}</span>`;
-  if (player && player.alive && player.comboT > 0 && player.combo > 1) fx += `<span style="background:#9be15d">Серия ×${player.combo}</span>`;
-  if (fx !== lastFx) {
-    $('fx').innerHTML = fx;
-    lastFx = fx;
-  }
+  renderFx();
   const list = blobs.filter((b) => b.alive && !b.kind).sort((a, b) => b.mass - a.mass),
     top = list.slice(0, H < 520 ? 3 : W < 600 ? 5 : 8);
   const was = leader;
@@ -660,6 +666,7 @@ function updateHUD(dt) {
 
 function update(dt) {
   time += dt;
+  sugarTick(dt);
   flashT = Math.max(0, flashT - dt);
   if (player && player.alive && state === 'play' && player.ai) botSteer(player, dt);
   else if (player && player.alive && state === 'play') {
@@ -749,6 +756,7 @@ function update(dt) {
     } // timed mode: back on the field
     else if (deadT > 1.1 && overEl.classList.contains('hidden')) showOver();
   }
+  streakTick(dt);
   updateCamera(dt);
   updateHUD(dt);
 }

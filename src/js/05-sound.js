@@ -225,6 +225,12 @@ const Sfx = {
     this.tone(t, 'sine', f * 2.76, f * 2.76, 0.035, 0.16, 0.003);
     this.tone(t, 'sine', f * 5.4, f * 5.4, 0.012, 0.06, 0.002);
   },
+  tick(step = 0) {
+    // a sugar cube lands in the pill: a tiny bright tick, a semitone higher for each cube in a row
+    if (!this.ok()) return;
+    const f = 1568 * Math.pow(2, clamp(step, 0, 7) / 12);
+    this.tone(this.ac.currentTime, 'sine', f, f, 0.04, 0.04, 0.003);
+  },
   hurt() {
     if (!this.ok() || this.play('hurt', 1, rand(0.96, 1.04))) return;
     const t = this.ac.currentTime;
@@ -284,5 +290,32 @@ const Sfx = {
     if (!this.ok() || this.play('dash', 1, rand(0.96, 1.04))) return;
     const t = this.ac.currentTime;
     this.hiss(t, 260, 1700, 0.7, 0.24, 0.22);
+  },
+  // the runaway wrapper (synth only): it pops out with a chirp, scurries, is caught with a blip, grows a tier with a chord, pays with an arpeggio
+  wrapPop() {
+    if (!this.ok()) return;
+    const t = this.ac.currentTime;
+    this.tone(t, 'square', 880, 880, 0.05, 0.08, 0.004);
+    this.tone(t + 0.07, 'square', 1175, 1175, 0.05, 0.1, 0.004);
+  },
+  wrapStep() {
+    if (!this.ok()) return;
+    this.tone(this.ac.currentTime, 'square', 1320, 1320, 0.022, 0.04, 0.003);
+  },
+  wrapCatch() {
+    if (!this.ok()) return;
+    this.tone(this.ac.currentTime, 'square', 523, 523, 0.07, 0.08, 0.004);
+  },
+  wrapUp(tier) {
+    if (!this.ok()) return;
+    const t = this.ac.currentTime,
+      f = 784 * Math.pow(2, (tier * 4) / 12);
+    for (const r of [1, 1.26, 1.5]) this.tone(t, 'sine', f * r, f * r, 0.07, 0.25, 0.006);
+  },
+  wrapPay(jackpot) {
+    if (!this.ok()) return;
+    const t = this.ac.currentTime,
+      notes = jackpot ? [523.25, 659.25, 783.99, 1046.5] : [523.25, 659.25, 783.99];
+    notes.forEach((f, i) => this.tone(t + i * 0.08, 'sine', f, f, 0.12, 0.25 + (i === notes.length - 1 ? 0.12 : 0), 0.006));
   },
 };

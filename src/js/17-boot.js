@@ -248,6 +248,31 @@ window.__kus = {
     return chunks;
   },
   spawnBot,
+  get streak() {
+    return streak;
+  },
+  get stamps() {
+    return stamps;
+  },
+  get wrap() {
+    return wrap;
+  },
+  get reveal() {
+    return reveal;
+  },
+  spawnWrap,
+  clearWrap,
+  WRAP,
+  sugarFly,
+  hud: {
+    get sugarShown() {
+      return sugShown;
+    },
+    get air() {
+      return hudSugar.air;
+    },
+    sugarSettle,
+  },
   startGame,
   newAI,
   CHEAT,
@@ -312,7 +337,16 @@ window.__kus = {
     renderMode();
   },
   toMenu,
+  trophy: {
+    get running() {
+      return tr.running;
+    },
+    get frames() {
+      return tr.frames;
+    },
+  },
   stages: {
+    kind: stageKind,
     get stg() {
       return stg;
     },

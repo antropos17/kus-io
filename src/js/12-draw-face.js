@@ -387,7 +387,9 @@ function drawFace(b) {
     c = b.chunk && !b.chunk.dead ? b.chunk : null;
   const fierce = !!b.bite || !!(c && c.state === 'held'),
     yum = b.happyT > 0 || b.chewT > 0 || !!(c && c.state === 'chew'),
-    er = R * (fierce ? 0.175 : 0.16);
+    hot = streakStep(b), // a streak makes the player hungry: bigger eyes, hearts at step 3, a drool drop
+    big = hot >= 2 ? 1.25 : 1,
+    er = R * (fierce ? 0.175 : 0.16) * big;
   const look = Math.hypot(b.tx - b.x, b.ty - b.y) > 2 ? Math.atan2(b.ty - b.y, b.tx - b.x) : f,
     lx = Math.cos(look),
     ly = Math.sin(look);
@@ -406,6 +408,18 @@ function drawFace(b) {
       ctx.moveTo(ex + fx * s * 0.75 + px * sg * s * 0.55, ey + fy * s * 0.75 + py * sg * s * 0.55);
       ctx.lineTo(ex - px * sg * s * 0.45, ey - py * sg * s * 0.45);
       ctx.lineTo(ex - fx * s * 0.75 + px * sg * s * 0.55, ey - fy * s * 0.75 + py * sg * s * 0.55);
+      ctx.stroke();
+    } else if (hot === 3) {
+      // heart eyes, a gentle pulse
+      const k = er * 1.05 * (calm ? 1 : 1 + 0.1 * Math.sin(time * 8));
+      ctx.beginPath();
+      ctx.moveTo(ex, ey + k * 0.9);
+      ctx.bezierCurveTo(ex - k * 1.4, ey - k * 0.1, ex - k * 0.7, ey - k * 1.2, ex, ey - k * 0.4);
+      ctx.bezierCurveTo(ex + k * 0.7, ey - k * 1.2, ex + k * 1.4, ey - k * 0.1, ex, ey + k * 0.9);
+      ctx.fillStyle = '#ff4f7b';
+      ctx.fill();
+      ctx.lineWidth = er * 0.16;
+      ctx.strokeStyle = '#c8264f';
       ctx.stroke();
     } else if (yum) {
       // happy arcs while it chews
@@ -449,7 +463,7 @@ function drawFace(b) {
       ctx.fill(); // iris in the body's flavour
       ctx.fillStyle = '#1a0b07';
       ctx.beginPath();
-      ctx.arc(qx, qy, er * (b.wowT > 0 ? 0.48 : b.tongue || fierce ? 0.26 : 0.36), 0, TAU);
+      ctx.arc(qx, qy, er * (b.wowT > 0 ? 0.48 : b.tongue || fierce ? 0.26 : 0.36) * big, 0, TAU);
       ctx.fill();
       ctx.fillStyle = '#fff';
       ctx.beginPath();
@@ -474,6 +488,14 @@ function drawFace(b) {
         ctx.stroke();
       }
     }
+  }
+  if (hot === 3 && lod < 2 && R * cam.z > 16 && b.hurtT <= 0) {
+    // a drop of drool hangs from the corner of the mouth
+    const dl = R * (calm ? 0.1 : 0.1 + 0.05 * Math.sin(time * 3));
+    ctx.fillStyle = 'rgba(200,230,255,0.85)';
+    ctx.beginPath();
+    ctx.ellipse(b.x + fx * R * 0.8 + px * R * 0.24, b.y + fy * R * 0.8 + py * R * 0.24 + dl, R * 0.036, R * 0.05 + dl * 0.25, 0, 0, TAU);
+    ctx.fill();
   }
   if (yum && lod < 2 && R * cam.z > 16 && b.hurtT <= 0) {
     // a blush on both cheeks while it enjoys the bite

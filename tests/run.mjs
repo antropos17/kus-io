@@ -256,6 +256,134 @@ test('streak, jelly wobble and swallowing whole', async () => {
   await g.close();
 });
 
+test('streak: label, fuse, stamps and the summary when it lapses', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} const out = {};
+    P.mass = 120; for (let i = 0; i < 40; i++) k.update(1/60);
+    const V = k.spawnBot(400); V.ai = null; V.spawnT = 0; for (let i = 0; i < 30; i++) k.update(1/60);
+    P.combo = 0; P.comboT = 0; k.stamps.length = 0;
+    const dash = document.querySelector('#dash'), sum = document.querySelector('#streakSum'), chip = document.querySelector('#sugar .mult');
+    const words = () => k.stamps.map((s) => s.txt); out.maxStamps = 0;
+    // one bite on V; hold: keep comboT at that value until the bite lands
+    const bite = (hold) => { k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; V.mass = 400; P.biteCd = 0;
+      const n0 = P.stats.bites; let f = 0;
+      while (f < 90 && P.stats.bites === n0) { if (hold) P.comboT = hold; P.tx = V.x; P.ty = V.y; V.tx = V.x; V.ty = V.y; V.biteCd = 9; k.update(1/60); out.maxStamps = Math.max(out.maxStamps, k.stamps.length); f++; }
+      P.biteCd = 999; V.biteCd = 999; /* only the scripted bites land */ };
+    for (let n = 1; n <= 5; n++) { bite(0);
+      if (n === 3) out.word3 = words();
+      if (n === 5) { out.word5 = words(); out.f = parseFloat(dash.style.getPropertyValue('--f')); out.victim = k.streak.lastVictim === V;
+        out.wound = Math.hypot(k.streak.lastWound.x - V.x, k.streak.lastWound.y - V.y) < V.Rs * 1.6;
+        out.fuse = dash.classList.contains('fuse') && dash.classList.contains('s3'); out.rush = document.querySelector('#vig').classList.contains('rush');
+        out.chip = chip.textContent; out.chipOn = chip.classList.contains('on'); out.air = k.hud.air > 0; out.start = k.streak.start; out.sugar = k.run.sugar; } }
+    for (let i = 0; i < 20; i++) { k.update(1/60); k.render(); }
+    out.lowEarly = dash.classList.contains('low'); // 0.3 s in: the window is far from shutting
+    P.comboT = 0.7; k.update(1/60); k.render(); // the last 0.8 s: the fuse blinks and the button says ещё кусь!
+    out.low = dash.classList.contains('low'); out.more = getComputedStyle(dash, '::after').content;
+    bite(0.3); out.close = words(); out.combo = P.combo; P.biteCd = 999; V.biteCd = 999; // no seventh bite: the streak must lapse
+    for (let i = 0; i < 220; i++) { k.update(1/60); if (i % 30 === 0) k.render(); }
+    out.sum = sum.textContent; out.sumOn = sum.classList.contains('on') && getComputedStyle(sum).visibility === 'visible';
+    out.fx = document.getElementById('fx').textContent;
+    out.chipGone = !chip.classList.contains('on'); out.fuseGone = !dash.classList.contains('fuse'); out.rushGone = !document.querySelector('#vig').classList.contains('rush');
+    for (let i = 0; i < 150; i++) k.update(1/60);
+    out.sumGone = !sum.classList.contains('on'); return out; })()`);
+  assert(r.word3.join() === 'Ням!', `bite 3 must stamp Ням! alone: ${r.word3}`);
+  assert(r.word5.join() === 'Хрум-хрум!', `bite 5 must stamp Хрум-хрум! alone: ${r.word5}`);
+  assert(r.maxStamps <= 1, `only one stamp may be visible at a time, saw ${r.maxStamps}`);
+  assert(!r.lowEarly && r.low && r.more.includes('ещё кусь!'), `the last 0.8 s must show low + «ещё кусь!» (${r.lowEarly}, ${r.low}, ${r.more})`);
+  assert(r.victim && r.wound, `the last victim and wound must be remembered (${r.victim}, ${r.wound})`);
+  assert(r.f >= 0.9 && r.f <= 1, `the fuse ring on the bite button must be full after a bite, --f is ${r.f}`);
+  assert(r.fuse && r.rush, 'step 3 must light the button fuse with sprinkles and the sugar rush edge');
+  assert(r.chip === '×5' && r.chipOn, `the sugar chip must read ×5, got "${r.chip}"`);
+  assert(r.air, 'a streak bite must send cubes to the sugar pill');
+  assert(r.combo === 6 && r.close.join() === 'На волоске!', `a bite in the last 0.45 s must stamp На волоске! (combo ${r.combo}, ${r.close})`);
+  assert(/^Серия ×6 · \+\d+ сахара$/.test(r.sum) && r.sumOn, `the summary must show when the streak lapses: "${r.sum}" ${r.sumOn}`);
+  assert(!r.fx.includes('Серия'), 'the streak must not be a buff coin');
+  assert(r.chipGone && r.fuseGone && r.rushGone, 'chip, fuse and rush must go when the streak lapses');
+  assert(r.sumGone, 'the summary must slide away after about 2 s');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+// After a ×5 streak lapses in a clean run, a wrapped candy pops out of the last wound and runs; caught, it pays WRAP.amt[final].
+test('wrapper: a ×5 streak in a clean run drops a wrapper that pays when caught, nothing with cheats', async () => {
+  const g = await open();
+  await g.page.mouse.move(600, 360); // the pointer in the middle of the screen: the player stands still
+  const r = await g.page.evaluate(`(() => { ${QUIET} const out = {}; k.M.act.length = 0; /* no mission prize sugar */
+    P.mass = 120; for (let i = 0; i < 40; i++) k.update(1/60);
+    const V = k.spawnBot(400); V.ai = null; V.spawnT = 0; for (let i = 0; i < 30; i++) k.update(1/60);
+    // between the scripted bites nothing else earns sugar or bites; bots the live field sends in (a hedgehog, say) are removed, or they bite and shove V
+    const clear = () => { for (const o of k.blobs) if (o !== P && o !== V && o.alive && Math.hypot(o.x - P.x, o.y - P.y) < 900) o.alive = false; };
+    const tick = (n) => { for (let i = 0; i < n; i++) { clear(); k.food.length = 0; k.pickups.length = 0; P.biteCd = 999; V.biteCd = 999; k.update(1/60); } };
+    // P stays at 120: fifteen bites would grow it past 400 and it would swallow V whole
+    const bite = () => { P.mass = 120; k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; V.mass = 400; P.biteCd = 0;
+      const n0 = P.stats.bites; let f = 0;
+      // a slow bite (a stage event in the way) must not let the streak lapse: hold the window open until it lands
+      while (f < 180 && P.stats.bites === n0) { if (P.combo > 0) P.comboT = Math.max(P.comboT, 1); P.tx = V.x; P.ty = V.y; V.tx = V.x; V.ty = V.y; V.biteCd = 9; clear(); k.update(1/60); f++; }
+      P.biteCd = 999; V.biteCd = 999; };
+    const streak5 = () => { P.combo = 0; P.comboT = 0; for (let n = 0; n < 5; n++) bite(); return P.combo; };
+    out.combo = streak5();
+    let born = -1, ran = -1;
+    for (let f = 0; f < 240; f++) { tick(1); if (k.wrap && born < 0) born = f; if (k.wrap && k.wrap.state === 'run' && ran < 0) ran = f; }
+    out.born = born; out.ran = ran; out.alive = !!k.wrap;
+    // a second ×5 streak lapses while the first wrapper still runs: the same single wrapper
+    const w1 = k.wrap; if (w1) { w1.life = 99; w1.x = 3500; w1.y = 3300; }
+    const sumEl = document.querySelector('#streakSum'); sumEl.textContent = ''; // only this lapse can write the summary now
+    out.combo2 = streak5(); tick(210); out.same = !!w1 && k.wrap === w1;
+    out.lapsed2 = P.comboT <= 0 && /^Серия ×5 · \\+\\d+ сахара$/.test(sumEl.textContent); out.sum2 = sumEl.textContent;
+    // catch it
+    const w = k.wrap; if (w) k.place(P, w.x, w.y, 0);
+    const s0 = k.run.sugar; let caught = -1;
+    for (let f = 0; f < 2; f++) { tick(1); if (k.reveal && !k.wrap && caught < 0) caught = f; }
+    out.caught = caught; out.f = k.reveal ? k.reveal.final : -1;
+    tick(185); out.gain = k.run.sugar - s0; out.amt = k.WRAP.amt[out.f]; out.sum = document.querySelector('#streakSum').textContent; out.revealGone = k.reveal === null;
+    // a cheat on: the next ×5 streak lapses without a wrapper
+    k.CHEAT.god = true; tick(2); out.combo3 = streak5(); let any = false;
+    for (let f = 0; f < 240; f++) { tick(1); if (k.wrap || k.reveal) any = true; }
+    out.cheatWrap = any; out.cheated = P.cheated; return out; })()`);
+  assert(r.combo === 5 && r.combo2 === 5 && r.combo3 === 5, `the scripted streaks must reach ×5 (${r.combo}, ${r.combo2}, ${r.combo3})`);
+  assert(r.born >= 0 && r.alive, `a wrapper must appear when a ×5 streak lapses and still run after 3 s (born ${r.born}, alive ${r.alive})`);
+  assert(r.ran >= r.born && r.ran - r.born <= 30, `the wrapper must start running within 0.5 s (born ${r.born}, ran ${r.ran})`);
+  assert(r.lapsed2, `the second ×5 streak must have lapsed (summary "${r.sum2}")`);
+  assert(r.same, 'a second lapse while a wrapper runs must not make another one');
+  assert(r.caught >= 0, 'touching the wrapper must catch it within 2 frames (reveal on, wrapper gone)');
+  assert(r.f >= 0 && Math.abs(r.gain - r.amt) < 1e-6, `a caught wrapper must pay exactly WRAP.amt[${r.f}] = ${r.amt}, paid ${r.gain}`);
+  assert(/^Фантик пойман · \+\d+ сахара$/.test(r.sum), `the summary pill must say the wrapper was caught: "${r.sum}"`);
+  assert(r.revealGone, 'the reveal must be over 3 s after the catch');
+  assert(r.cheated && !r.cheatWrap, `no wrapper in a run with cheats (cheated ${r.cheated}, wrapper ${r.cheatWrap})`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('wrapper: an uncaught one leaves after 5 s and pays nothing; death and the menu clear it', async () => {
+  const g = await open();
+  await g.page.mouse.move(600, 360);
+  const r = await g.page.evaluate(`(() => { ${QUIET} const out = {}; k.M.act.length = 0;
+    const V = k.spawnBot(400); V.ai = null; V.spawnT = 0; k.place(V, 1000, 1000, 0); k.place(P, 3000, 3000, 0);
+    const tick = (n) => { for (let i = 0; i < n; i++) { const Q = k.player; k.food.length = 0; k.pickups.length = 0; if (Q) Q.biteCd = 999; V.biteCd = 999; k.update(1/60); } };
+    // a running wrapper and a reveal under way at once
+    const both = () => { const Q = k.player; k.spawnWrap(V, Q.x + Q.Rs + 10, Q.y, 0); tick(24); const w = k.wrap; if (w) k.place(Q, w.x, w.y, 0); tick(2);
+      k.spawnWrap(V, Q.x + Q.Rs + 10, Q.y, 1); return !!k.wrap && !!k.reveal; };
+    tick(10); const s0 = k.run.sugar;
+    k.spawnWrap(V, V.x + V.Rs, V.y, 0); out.spawned = !!k.wrap; let rev = false;
+    for (let f = 0; f < 336; f++) { tick(1); if (k.reveal) rev = true; }
+    out.left = k.wrap === null; out.rev = rev; out.gain = k.run.sugar - s0;
+    out.both1 = both(); P.alive = false; tick(120);
+    out.deadClear = k.wrap === null && k.reveal === null; out.deadGain = k.run.sugar - s0;
+    k.toMenu(); k.startGame(); k.player.spawnT = 0; tick(10);
+    out.both2 = both(); k.toMenu(); out.menuClear = k.wrap === null && k.reveal === null;
+    k.startGame(); out.startClear = k.wrap === null && k.reveal === null; tick(60); out.after = k.wrap === null && k.reveal === null; return out; })()`);
+  assert(r.spawned, 'spawnWrap must make a wrapper');
+  assert(
+    r.left && !r.rev && r.gain === 0,
+    `an uncaught wrapper must leave within 5.6 s and pay nothing (gone ${r.left}, reveal ${r.rev}, +${r.gain})`,
+  );
+  assert(r.both1 && r.both2, `the setup needs a wrapper and a reveal at once (${r.both1}, ${r.both2})`);
+  assert(r.deadClear && r.deadGain === 0, `the player's death must clear the wrapper and the reveal unpaid (${r.deadClear}, +${r.deadGain})`);
+  assert(r.menuClear && r.startClear && r.after, `the menu and a new run must clear them (${r.menuClear}, ${r.startClear}, ${r.after})`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 // The mouth sits on the front rim, not in the middle of the body: food must vanish into it, not into thin air.
 test('mouth: on the front rim where the candy looks, food goes into it, a sudden turn is smoothed', async () => {
   const g = await open();
@@ -329,7 +457,7 @@ test('sugar: earned in a clean run, paid at the end, one chest pick, two-tap sho
     k.mission('kills', 1);
     k.mission('mass', 999, true); // progress-type missions never pay sugar by themselves
     out.during = k.run.sugar;
-    out.hud = document.getElementById('sugar').textContent;
+    out.hud = k.hud.sugarShown;
     k.setTimeLeft(0.001);
     for (let i = 0; i < 90; i++) k.update(1 / 60);
     out.over = !document.getElementById('over').classList.contains('hidden');
@@ -358,7 +486,7 @@ test('sugar: earned in a clean run, paid at the end, one chest pick, two-tap sho
     return out;
   });
   assert(r.during === 1 + 4 + 6, `sugar during the run should be 11 (bite, bite ×4 streak, kill), got ${r.during}`);
-  assert(r.hud === 'сахар 11', `HUD shows "${r.hud}"`);
+  assert(r.hud === 11, `HUD shows "${r.hud}"`);
   assert(r.over && r.got >= 11 && r.bank === r.got, `end of run must pay ${r.got} into the bank, bank is ${r.bank}`);
   assert(r.prizes.length === 3 && r.prizes.includes(r.chestWon) && r.chestWon > 0, `chest prizes ${r.prizes}, won ${r.chestWon}`);
   assert(r.twice, 'the chest paid twice');
@@ -368,6 +496,32 @@ test('sugar: earned in a clean run, paid at the end, one chest pick, two-tap sho
   assert(r.bought && r.saved === String(5000 - 150), 'the second tap must buy the pattern and save the bank');
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
+});
+
+test('hud: the sugar pill rolls to earned sugar once the cubes land', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} k.run.sugar = 0; k.hud.sugarSettle();
+    k.run.sugar += 6; k.sugarFly(k.player.x, k.player.y, 6, 3);
+    const mid = k.hud.sugarShown; for (let i = 0; i < 90; i++) k.update(1/60);
+    return { mid, end: k.hud.sugarShown, want: Math.floor(k.run.sugar), air: k.hud.air, label: document.getElementById('sugar').getAttribute('aria-label') }; })()`);
+  // the player may eat a sprinkle during the 90 frames, so compare with run.sugar, not a fixed 6
+  assert(r.mid === 0 && r.end >= 6 && r.end === r.want && r.air === 0, `pill ${r.mid} -> ${r.end} (run ${r.want}), air ${r.air}`);
+  assert(r.label === `сахар ${r.end}`, `aria-label "${r.label}"`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+  // cubes still in flight when the run ends are settled at once
+  // a fresh t3 run: the page above is already in 'play', where startGame does nothing
+  const g2 = await open({ play: false });
+  await g2.page.evaluate(() => {
+    window.__kus.setMode('t3');
+    window.__kus.startGame();
+  });
+  const d = await g2.page.evaluate(`(() => { ${QUIET} k.run.sugar += 10; k.sugarFly(k.player.x, k.player.y, 10, 5); k.setTimeLeft(0.001);
+    for (let i = 0; i < 400 && k.state !== 'dead'; i++) k.update(1/60);
+    return { state: k.state, air: k.hud.air, shown: k.hud.sugarShown, want: Math.floor(k.run.sugar) }; })()`);
+  assert(d.state === 'dead' && d.air === 0 && d.shown === d.want, `settle at the end: ${JSON.stringify(d)}`);
+  assert(g2.errors.length === 0, g2.errors.join(' | '));
+  await g2.close();
 });
 
 test('sugar: none for a run with cheats', async () => {
@@ -399,6 +553,22 @@ const EAT = `const eat = (name) => { const S = k.spawnBot(20); S.name = name; S.
     for (let i = 0; i < 120 && P.stats.kills === k0; i++) { P.tx = S.x; P.ty = S.y; k.update(1/60); }
     for (let i = 0; i < 10; i++) k.update(1/60);
     return P.stats.kills - k0; };`;
+
+// A big candy eats small ones in one bite each: those swallows must build the streak like ordinary bites.
+test('streak: swallowing whole counts as a streak bite', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} ${EAT} const out = { combos: [], kills: 0 };
+    P.combo = 0; P.comboT = 0; k.stamps.length = 0;
+    for (let n = 0; n < 3; n++) { out.kills += eat('Тест' + n); out.combos.push(P.combo); }
+    out.words = k.stamps.map((s) => s.txt); out.chip = document.querySelector('#sugar .mult').textContent; out.sum = k.streak.sum;
+    return out; })()`);
+  assert(r.kills === 3, `all three small candies must be swallowed whole, got ${r.kills}`);
+  assert(r.combos.join() === '1,2,3', `swallows in a row must count 1,2,3, got ${r.combos}`);
+  assert(r.words.join() === 'Ням!' && r.chip === '×3', `the third swallow must stamp Ням! and show ×3: ${r.words} ${r.chip}`);
+  assert(r.sum > 0, 'the swallows must add their sugar to the streak sum');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
 
 test('album: a bot swallowed whole opens its sticker, a repeat only counts, the end screen says so', async () => {
   const g = await open({ play: false });
@@ -848,6 +1018,9 @@ test('stages: beating the boss ends the run with a record, not with cheats; the 
     out.best = document.getElementById('best').textContent; out.again = document.getElementById('again').textContent;
     out.share = document.getElementById('chalBtn').textContent; out.clear = JSON.parse(localStorage.getItem('kus.clear'));
     out.got = k.run.got; out.over = !document.getElementById('over').classList.contains('hidden');
+    { const cd = document.querySelector('#over .card'); out.trophy = cd.classList.contains('trophy'); out.rec = cd.classList.contains('rec');
+      out.recText = document.getElementById('trRec').textContent; out.tiles = [...document.querySelectorAll('#trTiles b')].map((e) => e.textContent);
+      out.bites = k.run.bites; const cr = document.getElementById('chestRow'); out.chest = !document.getElementById('sweet').classList.contains('hidden') && cr.children.length > 0; }
     const wm = k.stages.stg.wonMass, x = P.x, y = P.y; run(3); out.safe = P.alive && P.safe;
     document.getElementById('again').click();
     out.shift = { state: k.state, same: k.player === P, mass: Math.abs(P.mass - wm) < 0.01, place: Math.round(Math.hypot(P.x - x, P.y - y)),
@@ -866,11 +1039,17 @@ test('stages: beating the boss ends the run with a record, not with cheats; the 
     const card = document.getElementById('over');
     for (let f = 0; card.classList.contains('hidden') && f < 5 * 60; f++) k.update(1 / 60);
     out.shiftOver = [k.state, document.getElementById('overT').textContent, document.getElementById('who').textContent];
+    out.shiftCard = [card.querySelector('.card').classList.contains('trophy'), card.querySelector('.card').classList.contains('rec')];
     k.toMenu(); k.setMode('free');
     beat(true); out.cheatState = k.state; out.cheatClear = JSON.parse(localStorage.getItem('kus.clear')); out.cheatBest = document.getElementById('best').textContent;
+    { const cd = document.querySelector('#over .card'); out.cheatCard = [cd.classList.contains('trophy'), cd.classList.contains('rec')]; out.cheatGot = k.run.got;
+      out.cheatTile = document.querySelectorAll('#trTiles b')[2].textContent; }
     return out; })()`);
-  assert(r.state === 'won' && r.over && r.title.startsWith('Победа!'), `state ${r.state} after ${r.frames} frames, title "${r.title}"`);
-  assert(/^Торт за \d:\d\d$/.test(r.who), `win line "${r.who}"`);
+  assert(r.state === 'won' && r.over && r.title === 'Торт съеден!', `state ${r.state} after ${r.frames} frames, title "${r.title}"`);
+  assert(/^Первая смена за \d:\d\d$/.test(r.who), `win line "${r.who}"`);
+  assert(r.trophy && r.rec && r.recText === 'Первая победа!', `trophy ${r.trophy}, rec ${r.rec}, pill "${r.recText}"`);
+  assert(r.tiles[1] === String(r.bites) && r.tiles[2] === String(r.got), `tiles ${JSON.stringify(r.tiles)}`);
+  assert(r.chest && r.share === 'Поделиться', 'the chest pick and the share button stay');
   assert(
     r.clear && r.clear.wins === 1 && r.clear.best > 0 && r.best.startsWith('Новый рекорд прохождения'),
     `kus.clear ${JSON.stringify(r.clear)}, "${r.best}"`,
@@ -885,12 +1064,96 @@ test('stages: beating the boss ends the run with a record, not with cheats; the 
     r.shiftOver[0] === 'dead' && r.shiftOver[1] === 'Тебя доели' && r.shiftOver[2].startsWith('Смена 2'),
     `second-shift death screen: ${r.shiftOver}`,
   );
+  assert(r.shiftCard[0] === false && r.shiftCard[1] === false, `a death must clear trophy and rec: ${r.shiftCard}`);
+  assert(
+    r.cheatCard[0] && !r.cheatCard[1] && r.cheatTile === String(r.cheatGot) && r.cheatGot === 0,
+    `a cheated win: trophy without rec, no sugar: ${JSON.stringify([r.cheatCard, r.cheatTile, r.cheatGot])}`,
+  );
   assert(
     r.cheatState === 'won' && r.cheatClear.wins === 2 && r.cheatBest.includes('С читами'),
     `a cheated win counted: ${JSON.stringify(r.cheatClear)}, "${r.cheatBest}"`,
   );
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
+});
+
+test('stages: the trophy card fits a phone: close button out of the bitten corner, the card scrolls in landscape', async () => {
+  for (const [w, h] of [
+    [390, 844],
+    [844, 390],
+  ]) {
+    const g = await open({ width: w, height: h, touch: true, play: false, returning: true });
+    const r = await g.page.evaluate(`(() => { ${STG}
+      const P = free(); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1); const B = S().cur.b; B.spawnT = 0; B.ai = null; B.mass = 60;
+      k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
+      while (k.state === 'play' && f++ < 400) { P.tx = B.x; P.ty = B.y; B.tx = B.x; B.ty = B.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); }
+      const c = document.querySelector('#over .card'), cr = c.getBoundingClientRect(), x = document.getElementById('overX').getBoundingClientRect();
+      const again = document.getElementById('again'); again.scrollIntoView(); const ar = again.getBoundingClientRect();
+      return { trophy: c.classList.contains('trophy'), x: [x.left, x.top, x.right, x.bottom], card: [cr.left, cr.top, cr.right, cr.bottom],
+        scrolls: c.scrollHeight > c.clientHeight, againIn: ar.top >= 0 && ar.bottom <= innerHeight, w: innerWidth, h: innerHeight }; })()`);
+    const [xl, xt, xr, xb] = r.x;
+    assert(r.trophy, `${w}x${h}: no trophy`);
+    assert(xl >= 0 && xt >= 0 && xr <= r.w && xb <= r.h, `${w}x${h}: close button off screen ${r.x}`);
+    assert(!(xr > r.card[2] - 60 && xt < r.card[1] + 60), `${w}x${h}: close button in the bitten corner ${r.x} card ${r.card}`);
+    assert(r.againIn, `${w}x${h}: the main button cannot be reached`);
+    assert(g.errors.length === 0, g.errors.join(' | '));
+    await g.close();
+  }
+});
+
+test('trophy: the glaze runs only while the win card is shown', async () => {
+  const WIN = `const beat = () => { const P = free(); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1); const B = S().cur.b; B.spawnT = 0; B.ai = null; B.mass = 60;
+      k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
+      while (k.state === 'play' && f++ < 400) { P.tx = B.x; P.ty = B.y; B.tx = B.x; B.ty = B.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); } };
+    const raf = (n) => new Promise((res) => { const s = () => (n-- > 0 ? requestAnimationFrame(s) : res()); s(); });
+    const fx = () => document.getElementById('trophyFx');
+    const shown = () => { const c = fx(); return !!c && getComputedStyle(c).display !== 'none' && c.getBoundingClientRect().width > 0; };`;
+  const g = await open({ width: 390, height: 844, touch: true, dpr: 2, play: false, returning: true });
+  const r = await g.page.evaluate(`(async () => { ${STG} ${WIN} const out = {};
+    out.before = !!k.trophy && k.trophy.running;
+    beat(); out.state = k.state;
+    await new Promise((res) => setTimeout(res, 1500));
+    out.running = k.trophy.running; out.frames = k.trophy.frames; out.shown = shown();
+    { const c = fx(), card = document.querySelector('#over .card'), cr = c.getBoundingClientRect(), kr = card.getBoundingClientRect();
+      out.size = [cr.left - kr.left, cr.top - kr.top, cr.width - kr.width, cr.height - kr.height].map((v) => Math.round(v));
+      out.px = [c.width, c.height, Math.round((card.offsetWidth + 48) * devicePixelRatio), Math.round((card.offsetHeight + 48) * devicePixelRatio)];
+      out.cardT = card.style.transform; }
+    document.getElementById('again').click(); await raf(2);
+    out.afterShift = k.trophy.running; const f0 = k.trophy.frames; await raf(30); out.grew = k.trophy.frames - f0; out.shownShift = shown();
+    // die in the second shift: the death card has no glaze
+    const Q = k.player, G = k.spawnBot(3000); G.spawnT = 0; G.ai = null; Q.mass = 20; Q.spawnT = 0;
+    k.place(G, 2600, 2600, 0); k.place(Q, 2600 + G.Rs + Q.Rs - 6, 2600, 0);
+    for (let f = 0; Q.alive && f < 20 * 60; f++) { G.biteCd = Math.min(G.biteCd, 0); Q.graceT = 99; G.tx = Q.x; G.ty = Q.y; k.update(1 / 60); }
+    for (let f = 0; document.getElementById('over').classList.contains('hidden') && f < 5 * 60; f++) k.update(1 / 60);
+    await raf(3); out.dead = [k.state, k.trophy.running, shown()];
+    // a win, then «В меню»; a win, then a new game from the menu: each stops it
+    k.toMenu(); beat(); await raf(3); out.win2 = k.trophy.running; document.getElementById('toMenu').click(); await raf(2); out.menu = [k.state, k.trophy.running, shown()];
+    beat(); await raf(3); k.toMenu(); k.startGame(); await raf(2); out.newGame = [k.state, k.trophy.running, shown()];
+    return out; })()`);
+  assert(r.before === false, `no glaze before a win: ${r.before}`);
+  assert(r.state === 'won' && r.running && r.frames > 30 && r.shown, `the glaze on the win card: ${JSON.stringify(r)}`);
+  assert(r.size.join() === '-24,-24,48,48', `the canvas is the card + 24 px: ${r.size}`);
+  assert(r.px[0] === r.px[2] && r.px[1] === r.px[3], `the canvas follows the pixel ratio: ${r.px}`);
+  assert(!r.cardT || r.cardT === 'none', `the pop-in must end at rest: "${r.cardT}"`);
+  assert(r.afterShift === false && r.grew === 0 && !r.shownShift, `«Вторая смена» stops it: ${JSON.stringify([r.afterShift, r.grew, r.shownShift])}`);
+  assert(r.dead[0] === 'dead' && r.dead[1] === false && r.dead[2] === false, `the death card has no glaze: ${r.dead}`);
+  assert(r.win2 && r.menu[0] === 'menu' && !r.menu[1] && !r.menu[2], `«В меню» stops it: ${JSON.stringify([r.win2, r.menu])}`);
+  assert(r.newGame[0] === 'play' && !r.newGame[1] && !r.newGame[2], `a new game stops it: ${r.newGame}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+  // calm: the frame is drawn once, whole and still, with no loop
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.addInitScript(() => localStorage.getItem('kus.best') === null && localStorage.setItem('kus.best', '0'));
+  await page.goto(URL);
+  await page.waitForTimeout(600);
+  const c = await page.evaluate(`(async () => { ${STG} ${WIN} beat(); await raf(20);
+    return { state: k.state, running: k.trophy.running, frames: k.trophy.frames, shown: shown(), t: document.querySelector('#over .card').style.transform }; })()`);
+  assert(c.state === 'won' && !c.running && c.frames === 1 && c.shown && !c.t, `calm: one still frame ${JSON.stringify(c)}`);
+  assert(errors.length === 0, errors.join(' | '));
+  await ctx.close();
 });
 
 test('stages: the 3-minute mode and the candy of the day keep their cake and piranhas', async () => {
@@ -948,6 +1211,56 @@ test('stages: the HUD stage line stays clear of the table on phones, next to a c
       assert(x.text && x.goal.includes('9999'), `${w}x${h}: stage "${x.text}", goal "${x.goal}"`);
       assert(!x.hit && !x.cut, `${w}x${h}: stage line "${x.text}" runs under the table or is cut`);
     }
+    assert(g.errors.length === 0, g.errors.join(' | '));
+    await g.close();
+  }
+});
+
+test('hud: cream pills fit phones; the stage pill fills and its jaws chomp when the event starts', async () => {
+  for (const opt of [
+    { width: 360, height: 640, touch: true, dpr: 2 },
+    { width: 844, height: 390, touch: true, dpr: 2 },
+  ]) {
+    const g = await open({ ...opt, play: false, returning: true });
+    const r = await g.page.evaluate(`(() => { ${STG} const out = {};
+      const P = free(); P.stats.maxMass = 135; P.mass = 135; P.pMagnet = 4.9; run(1 / 30);
+      const st = document.getElementById('stage'), fx = document.getElementById('fx');
+      out.hungry = st.classList.contains('hungry'); out.chomp0 = st.classList.contains('chomp');
+      out.p = parseFloat(st.style.getPropertyValue('--p')); out.ic = !!st.querySelector('svg.ic'); out.kind = k.stages.kind();
+      document.getElementById('feed').innerHTML = ''; // hints are wider than the column by design: measure the pills
+      const sr = document.getElementById('score').getBoundingClientRect(), br = document.getElementById('board').getBoundingClientRect();
+      out.right = sr.right; out.hit = sr.right > br.left && sr.bottom > br.top && sr.top < br.bottom;
+      const coins = fx.querySelectorAll('.coin[data-k=magnet]');
+      out.coins = coins.length; out.t = coins.length ? parseFloat(coins[0].style.getPropertyValue('--t')) : -1; out.fxText = fx.textContent.trim();
+      out.streakChip = fx.textContent.includes('Серия');
+      // all three buffs at once under the tallest table (the player out of the top five adds a gap row and its own row):
+      // the coins never reach the table, each label stays beside its coin. The coins are measured, not #fx: its box is its max-width once they wrap
+      let tall = 0; for (const b of k.blobs) if (b !== P && b.alive && tall < 6) { b.mass = 500 + tall * 10; tall++; }
+      P.pSpeed = 9; P.pShield = 9; P.pMagnet = 9; run(0.5);
+      const b3 = document.getElementById('board').getBoundingClientRect(), us = [...fx.querySelectorAll('.fxu')].map((u) => u.getBoundingClientRect());
+      out.rows = [...document.querySelectorAll('#lb li')].filter((li) => li.offsetHeight).length;
+      out.n3 = fx.querySelectorAll('.coin').length; out.fxRight = Math.max(...us.map((u) => u.right));
+      out.fxHit = us.some((u) => u.right > b3.left && u.bottom > b3.top && u.top < b3.bottom);
+      out.split = [...fx.querySelectorAll('.fxu')].some((u) => u.querySelector('b').getBoundingClientRect().top > u.querySelector('.coin').getBoundingClientRect().bottom);
+      P.pSpeed = 0; P.pShield = 0;
+      P.stats.maxMass = 150; let f = 0; for (; f < 4 && !(S().cur && S().cur.k === 'pir'); f++) run(1 / 60);
+      out.started = !!(S().cur && S().cur.k === 'pir');
+      let late = 0; for (; late < 3 && !st.classList.contains('chomp'); late++) run(1 / 60);
+      out.late = late; out.chomp = st.classList.contains('chomp'); out.hungry2 = st.classList.contains('hungry');
+      run(1); out.chomp1 = st.classList.contains('chomp');
+      return out; })()`);
+    const w = `${opt.width}x${opt.height}`;
+    assert(r.hungry && !r.chomp0 && r.kind === 'pir', `${w}: waiting at p~0.9 must be hungry, not chomping (${JSON.stringify(r)})`);
+    assert(Math.abs(r.p - 0.9) <= 0.02 && r.ic, `${w}: --p ${r.p}, icon ${r.ic}`);
+    assert(r.right <= 216 && !r.hit, `${w}: the HUD column ends at ${r.right}px or runs into the table`);
+    assert(r.n3 === 3 && r.fxRight <= 216 && !r.fxHit && !r.split, `${w}: three buffs: ${JSON.stringify([r.n3, r.fxRight, r.fxHit, r.split])}`);
+    assert(r.rows === 7 || opt.height < 520, `${w}: the setup needs the tall table, it has ${r.rows} rows`);
+    assert(r.started && r.late <= 2 && r.chomp && !r.hungry2, `${w}: the jaws must chomp within 2 frames of the raid start (${JSON.stringify(r)})`);
+    assert(!r.chomp1, `${w}: the chomp must stop after about 0.64 s`);
+    assert(
+      r.coins === 1 && r.t > 0.55 && r.t < 0.65 && r.fxText === '5 с' && !r.streakChip,
+      `${w}: buff coin ${JSON.stringify([r.coins, r.t, r.fxText])}`,
+    );
     assert(g.errors.length === 0, g.errors.join(' | '));
     await g.close();
   }
@@ -1114,6 +1427,11 @@ test('sound: every effect plays without throwing', async () => {
       ['squelch', []],
       ['power', []],
       ['dash', []],
+      ['wrapPop', []],
+      ['wrapStep', []],
+      ['wrapCatch', []],
+      ['wrapUp', [2]],
+      ['wrapPay', [true]],
     ];
     // every embedded take must decode; then each effect plays from its takes and, with them switched off, from the synth
     const failed = await S.ready;
