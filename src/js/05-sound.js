@@ -225,6 +225,12 @@ const Sfx = {
     this.tone(t, 'sine', f * 2.76, f * 2.76, 0.035, 0.16, 0.003);
     this.tone(t, 'sine', f * 5.4, f * 5.4, 0.012, 0.06, 0.002);
   },
+  tick(step = 0) {
+    // a sugar cube lands in the pill: a tiny bright tick, a semitone higher for each cube in a row
+    if (!this.ok()) return;
+    const f = 1568 * Math.pow(2, clamp(step, 0, 7) / 12);
+    this.tone(this.ac.currentTime, 'sine', f, f, 0.04, 0.04, 0.003);
+  },
   hurt() {
     if (!this.ok() || this.play('hurt', 1, rand(0.96, 1.04))) return;
     const t = this.ac.currentTime;

@@ -131,8 +131,14 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #chalLink{display:block;width:100%;margin-top:8px;font:700 13px var(--font);padding:9px 10px;border:2px solid #ead2b9;border-radius:10px;background:#fff;color:var(--ink);-webkit-user-select:text;user-select:text}
 #overMis{margin:0 0 14px}
 #overT small{display:none}
-#sugar{display:inline-block;transform-origin:0 50%;margin-top:4px;font:900 14px/1 var(--font);color:var(--ink);background:var(--lemon);padding:4px 9px;border-radius:99px;font-variant-numeric:tabular-nums}
-#sugar:empty{display:none}
+#sugar{position:relative;display:inline-flex;align-items:center;gap:7px;margin-top:8px;height:32px;padding:0 13px 0 3px;border-radius:99px;background:var(--cream);color:var(--ink);box-shadow:0 4px 0 rgba(0,0,0,.4);font:900 19px/1 var(--font)}
+#sugar .sock{width:26px;height:26px;border-radius:50%;background:var(--lemon);box-shadow:inset 0 -3px 0 rgba(0,0,0,.14);display:grid;place-items:center}
+#sugar .sock svg{width:17px;height:17px}
+#sugar .num{display:inline-flex;font-variant-numeric:tabular-nums;line-height:1}
+#sugar .c{display:inline-block;height:1.16em;overflow:hidden;margin:-.08em 0}
+#sugar .s{display:flex;flex-direction:column;transition:transform .55s cubic-bezier(.22,1.35,.4,1)}
+#sugar .s span{height:1.16em;line-height:1.16em;text-align:center}
+#sugar .mult{position:absolute;right:-30px;top:-9px;transform:scale(0)}
 #bank{margin:8px 0 0;font:800 14px/1.3 var(--font);color:#7a5a49;font-variant-numeric:tabular-nums}
 .bankRow{display:flex;align-items:center;gap:10px;margin:8px 0 0}
 .bankRow #bank{margin:0;flex:1 1 auto}
@@ -400,7 +406,7 @@ document.getElementById('nojs').style.display = 'none';
 <div id="safe"></div>
 
 <div id="hud" class="hidden">
-  <div id="score"><div id="mass">0</div><div class="lbl">масса</div><div id="sugar"></div><div id="timer"></div><div id="goal"></div><div id="stage"></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="feed" aria-live="polite"></div></div>
+  <div id="score"><div id="mass">0</div><div class="lbl">масса</div><div id="sugar" aria-label="сахар 0"><span class="sock"><svg viewBox="0 0 24 24"><path d="M12 2.5 21 7.2 12 11.9 3 7.2Z" fill="#fffaf0" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M3 7.2 12 11.9V21.5L3 16.8Z" fill="#efe1c8" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M21 7.2 12 11.9V21.5L21 16.8Z" fill="#d6bd95" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><circle cx="9.5" cy="6.6" r=".9" fill="#fff"/><circle cx="14.2" cy="7.6" r=".7" fill="#fff"/><circle cx="6.5" cy="12" r=".6" fill="#fff"/></svg></span><span class="num"></span><span class="mult"></span></div><div id="timer"></div><div id="goal"></div><div id="stage"></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="feed" aria-live="polite"></div></div>
   <button id="pauseBtn" type="button" aria-label="Пауза" title="Пауза (Esc)"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
   <button id="dash" type="button" aria-label="Рывок с укусом"><span><b>Кусь</b><small>пробел</small></span></button>
   <button id="dodge" type="button" aria-label="Язык-присоска"><span><b>Язык</b><small>shift</small></span></button>
@@ -1394,6 +1400,12 @@ const Sfx = {
     this.tone(t, 'sine', f, f, 0.14, 0.4, 0.004);
     this.tone(t, 'sine', f * 2.76, f * 2.76, 0.035, 0.16, 0.003);
     this.tone(t, 'sine', f * 5.4, f * 5.4, 0.012, 0.06, 0.002);
+  },
+  tick(step = 0) {
+    // a sugar cube lands in the pill: a tiny bright tick, a semitone higher for each cube in a row
+    if (!this.ok()) return;
+    const f = 1568 * Math.pow(2, clamp(step, 0, 7) / 12);
+    this.tone(this.ac.currentTime, 'sine', f, f, 0.04, 0.04, 0.003);
   },
   hurt() {
     if (!this.ok() || this.play('hurt', 1, rand(0.96, 1.04))) return;
@@ -4193,14 +4205,9 @@ const missionRows = () =>
     .join('');
 // ---------- sugar ----------
 const sugarEl = $('sugar');
-let shownSugar = -1;
 function earn(n) {
   run.sugar += n;
-  const v = Math.floor(run.sugar);
-  if (v === shownSugar) return;
-  shownSugar = v;
-  sugarEl.textContent = `сахар ${v}`;
-  if (!calm && sugarEl.animate) sugarEl.animate([{ transform: 'scale(1.25)' }, { transform: 'scale(1)' }], { duration: 220, easing: 'ease-out' });
+  sugarSync(); // flying cubes hold their share back until they land
 }
 function saveSugar() {
   try {
@@ -4344,8 +4351,7 @@ function startGame() {
   rollMissions();
   saveM();
   run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0 };
-  shownSugar = -1;
-  sugarEl.textContent = '';
+  sugarReset();
   runActive = true;
   timeLeft = timed() ? 180 : 0;
   day = null;
@@ -4383,6 +4389,7 @@ function tally() {
   if (player.cheated) run.cheated = true;
 }
 function finishRun() {
+  sugarSettle();
   runActive = false;
   document.body.classList.remove('playing');
   prevBest = best;
@@ -4440,6 +4447,7 @@ function endTimed() {
   finishRun();
 }
 function toMenu() {
+  sugarSettle();
   if (state === 'play' && player && player.alive) {
     tally();
     player.alive = false;
@@ -4762,6 +4770,7 @@ function updateHUD(dt) {
 
 function update(dt) {
   time += dt;
+  sugarTick(dt);
   flashT = Math.max(0, flashT - dt);
   if (player && player.alive && state === 'play' && player.ai) botSteer(player, dt);
   else if (player && player.alive && state === 'play') {
@@ -4854,6 +4863,169 @@ function update(dt) {
   updateCamera(dt);
   updateHUD(dt);
 }
+
+// ---------- HUD: the sugar pill, its odometer and the cubes that fly into it ----------
+// odometer: one column of digits 0-9 per figure; a figure rolls by moving its column (-d * 1.16em)
+function odometer(el) {
+  const st = { len: 0 };
+  st.set = (n, snap) => {
+    const s = String(Math.max(0, Math.floor(n)));
+    if (s.length !== st.len) {
+      el.innerHTML = s
+        .split('')
+        .map(
+          () =>
+            '<span class="c"><span class="s">' +
+            '0123456789'
+              .split('')
+              .map((d) => '<span>' + d + '</span>')
+              .join('') +
+            '</span></span>',
+        )
+        .join('');
+      st.len = s.length;
+      const c = el.querySelectorAll('.s');
+      for (let i = 0; i < c.length; i++) {
+        c[i].style.transition = 'none';
+        c[i].style.transform = `translateY(${-s[i] * 1.16}em)`;
+        c[i].offsetHeight; // commit the start position, then let the next change animate
+        c[i].style.transition = '';
+      }
+      return;
+    }
+    const c = el.querySelectorAll('.s');
+    for (let i = 0; i < c.length; i++) {
+      c[i].style.transition = snap || calm ? 'none' : ''; // calm: no rolling overshoot, the figure just changes
+      c[i].style.transform = `translateY(${-s[i] * 1.16}em)`;
+    }
+  };
+  return st;
+}
+const hudSugar = { air: 0 }; // sugar already earned but still flying to the pill
+const SUG_POOL = 24,
+  SUG_FLY = 0.56,
+  sugCubes = Array.from({ length: SUG_POOL }, () => ({ on: false, x0: 0, y0: 0, mx: 0, my: 0, tx: 0, ty: 0, t: 0, d: 0, v: 0 }));
+const sugSock = sugarEl.querySelector('.sock'),
+  sugOdo = odometer(sugarEl.querySelector('.num')),
+  sugImg = new Image(),
+  sugBox = { x: 0, y: 0 };
+let sugShown = -1,
+  sugStep = 0,
+  sugStepT = -9;
+sugImg.src =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"><path d="M12 2.5 21 7.2 12 11.9 3 7.2Z" fill="#fffaf0" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M3 7.2 12 11.9V21.5L3 16.8Z" fill="#efe1c8" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M21 7.2 12 11.9V21.5L21 16.8Z" fill="#d6bd95" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><circle cx="9.5" cy="6.6" r=".9" fill="#fff"/><circle cx="14.2" cy="7.6" r=".7" fill="#fff"/><circle cx="6.5" cy="12" r=".6" fill="#fff"/></svg>',
+  );
+function sugSockBox() {
+  // the centre of the socket in screen pixels; cached, refreshed on resize and at the start of a run
+  const r = sugSock.getBoundingClientRect();
+  sugBox.x = r.left + r.width / 2;
+  sugBox.y = r.top + r.height / 2;
+}
+function sugarSync() {
+  // the pill shows what has landed: the earned sugar minus what is still in the air
+  const v = Math.max(0, Math.floor(run.sugar - hudSugar.air));
+  if (v === sugShown) return;
+  sugShown = v;
+  sugOdo.set(v);
+  sugarEl.setAttribute('aria-label', `сахар ${v}`);
+}
+function sugarFly(wx, wy, value, n) {
+  // a world point, the value split over n cubes. Order: the caller adds the value to run.sugar (earn) FIRST, then calls this
+  if (!(value > 0)) return;
+  if (calm || state === 'menu') return sugarSync(); // no flight: the value lands at once
+  n = Math.max(1, lod === 1 ? Math.ceil(n / 2) : lod === 2 ? Math.ceil(n / 4) : Math.floor(n));
+  if (!(sugBox.x > 0)) sugSockBox(); // the cache is empty (HUD was hidden): measure once
+  if (!(sugBox.x > 0)) return sugarSync(); // the HUD is hidden: nothing to fly to
+  const z = cam.z,
+    [fo, go] = focusOffset(),
+    sx = wx * z + (W / 2 + fo - cam.x * z + cam.kx),
+    sy = wy * z + (H / 2 + go - cam.y * z + cam.ky);
+  let q = 0;
+  for (let i = 0; i < SUG_POOL && q < n; i++) {
+    const c = sugCubes[i];
+    if (c.on) continue;
+    c.on = true;
+    c.v = value / n;
+    c.x0 = sx + rand(-12, 12);
+    c.y0 = sy + rand(-7, 7);
+    c.tx = sugBox.x;
+    c.ty = sugBox.y;
+    c.mx = (c.x0 + c.tx) / 2 + 20;
+    c.my = Math.min(c.y0, c.ty) - 40;
+    c.t = 0;
+    c.d = q * 0.07;
+    hudSugar.air += c.v;
+    q++;
+  }
+  sugarSync(); // a full pool holds nothing back: the cubes not started land with the rest at once
+}
+function sugarTick(dt) {
+  let live = false;
+  for (let i = 0; i < SUG_POOL; i++) {
+    const c = sugCubes[i];
+    if (!c.on) continue;
+    live = true;
+    if (c.d > 0) {
+      c.d -= dt;
+      continue;
+    }
+    c.t += dt;
+    if (c.t < SUG_FLY) continue;
+    c.on = false;
+    hudSugar.air = Math.max(0, hudSugar.air - c.v);
+    sugarSync();
+    if (!calm && sugSock.animate)
+      sugSock.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.28)', offset: 0.4 }, { transform: 'scale(1)' }], {
+        duration: 280,
+        easing: 'cubic-bezier(.3,1.6,.5,1)',
+      });
+    sugStep = time - sugStepT < 0.3 ? Math.min(sugStep + 1, 7) : 0;
+    sugStepT = time;
+    Sfx.tick(sugStep);
+  }
+  if (live && !sugCubes.some((c) => c.on)) {
+    hudSugar.air = 0; // no float dust left behind
+    sugarSync();
+  }
+}
+function sugarSettle() {
+  // every cube lands now, silently: the end of a run must not leave sugar in the air
+  for (let i = 0; i < SUG_POOL; i++) sugCubes[i].on = false;
+  hudSugar.air = 0;
+  sugarSync();
+}
+function sugarReset() {
+  // a new run or shift: the pill starts again from 0 without rolling
+  sugarSettle();
+  sugShown = 0;
+  sugOdo.set(0, true);
+  sugBox.x = 0; // the HUD is about to show and may have moved: measure again at the first flight
+  sugarEl.setAttribute('aria-label', 'сахар 0');
+}
+function drawSugarCubes() {
+  if (!sugImg.complete) return;
+  for (let i = 0; i < SUG_POOL; i++) {
+    const c = sugCubes[i];
+    if (!c.on || c.d > 0) continue;
+    const e = c.t / SUG_FLY,
+      p = e * e * (3 - 2 * e),
+      u = 1 - p,
+      // a quadratic curve bent so that it passes through (mx, my) in the middle
+      cx = 2 * c.mx - (c.x0 + c.tx) / 2,
+      cy = 2 * c.my - (c.y0 + c.ty) / 2,
+      x = u * u * c.x0 + 2 * u * p * cx + p * p * c.tx,
+      y = u * u * c.y0 + 2 * u * p * cy + p * p * c.ty,
+      s = (0.9 * u * u + 2 * u * p * 1.4 + 0.55 * p * p) * 11;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.translate(x, y);
+    ctx.rotate(p * 5.6);
+    ctx.drawImage(sugImg, -s, -s, s * 2, s * 2);
+  }
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+addEventListener('resize', sugSockBox);
 
 // ---------- run stages (free play only) ----------
 // A free run has an arc: a piranha raid, a sweet rain, then the Big Cake. Beating the cake ends the run with a win screen;
@@ -5150,8 +5322,7 @@ function secondShift() {
   rollMissions();
   saveM();
   run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0, lap: stg.lap + 1 };
-  shownSugar = -1;
-  sugarEl.textContent = '';
+  sugarReset();
   runActive = true;
   state = 'play';
   P.safe = false;
@@ -6746,6 +6917,7 @@ function render() {
   for (const b of vis) drawName(b);
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   drawTexts(ox, oy, z);
+  drawSugarCubes();
   if (player && player.alive && state === 'play') {
     for (const b of blobs) {
       if (b === player || !b.alive || !lethalFor(player.mass, biteOf(b.mass, false))) continue;
@@ -7754,6 +7926,16 @@ window.__kus = {
     return chunks;
   },
   spawnBot,
+  sugarFly,
+  hud: {
+    get sugarShown() {
+      return sugShown;
+    },
+    get air() {
+      return hudSugar.air;
+    },
+    sugarSettle,
+  },
   startGame,
   newAI,
   CHEAT,

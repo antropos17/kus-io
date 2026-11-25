@@ -248,6 +248,16 @@ window.__kus = {
     return chunks;
   },
   spawnBot,
+  sugarFly,
+  hud: {
+    get sugarShown() {
+      return sugShown;
+    },
+    get air() {
+      return hudSugar.air;
+    },
+    sugarSettle,
+  },
   startGame,
   newAI,
   CHEAT,

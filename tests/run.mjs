@@ -329,7 +329,7 @@ test('sugar: earned in a clean run, paid at the end, one chest pick, two-tap sho
     k.mission('kills', 1);
     k.mission('mass', 999, true); // progress-type missions never pay sugar by themselves
     out.during = k.run.sugar;
-    out.hud = document.getElementById('sugar').textContent;
+    out.hud = k.hud.sugarShown;
     k.setTimeLeft(0.001);
     for (let i = 0; i < 90; i++) k.update(1 / 60);
     out.over = !document.getElementById('over').classList.contains('hidden');
@@ -358,7 +358,7 @@ test('sugar: earned in a clean run, paid at the end, one chest pick, two-tap sho
     return out;
   });
   assert(r.during === 1 + 4 + 6, `sugar during the run should be 11 (bite, bite ×4 streak, kill), got ${r.during}`);
-  assert(r.hud === 'сахар 11', `HUD shows "${r.hud}"`);
+  assert(r.hud === 11, `HUD shows "${r.hud}"`);
   assert(r.over && r.got >= 11 && r.bank === r.got, `end of run must pay ${r.got} into the bank, bank is ${r.bank}`);
   assert(r.prizes.length === 3 && r.prizes.includes(r.chestWon) && r.chestWon > 0, `chest prizes ${r.prizes}, won ${r.chestWon}`);
   assert(r.twice, 'the chest paid twice');
@@ -366,6 +366,24 @@ test('sugar: earned in a clean run, paid at the end, one chest pick, two-tap sho
   assert(r.poor, 'a pattern was sold without enough sugar');
   assert(r.asked, 'the first tap must only ask');
   assert(r.bought && r.saved === String(5000 - 150), 'the second tap must buy the pattern and save the bank');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('hud: the sugar pill rolls to earned sugar once the cubes land', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} k.run.sugar = 0; k.hud.sugarSettle();
+    k.run.sugar += 6; k.sugarFly(k.player.x, k.player.y, 6, 3);
+    const mid = k.hud.sugarShown; for (let i = 0; i < 90; i++) k.update(1/60);
+    return { mid, end: k.hud.sugarShown, want: Math.floor(k.run.sugar), air: k.hud.air, label: document.getElementById('sugar').getAttribute('aria-label') }; })()`);
+  // the player may eat a sprinkle during the 90 frames, so compare with run.sugar, not a fixed 6
+  assert(r.mid === 0 && r.end >= 6 && r.end === r.want && r.air === 0, `pill ${r.mid} -> ${r.end} (run ${r.want}), air ${r.air}`);
+  assert(r.label === `сахар ${r.end}`, `aria-label "${r.label}"`);
+  // cubes still in flight when the run ends are settled at once
+  const d = await g.page.evaluate(`(() => { ${QUIET} k.setMode('t3'); k.startGame(); k.player.spawnT = 0; k.run.sugar += 10; k.sugarFly(k.player.x, k.player.y, 10, 5); k.setTimeLeft(0.001);
+    for (let i = 0; i < 400 && k.state !== 'dead'; i++) k.update(1/60);
+    return { state: k.state, air: k.hud.air, shown: k.hud.sugarShown, want: Math.floor(k.run.sugar) }; })()`);
+  assert(d.state === 'dead' && d.air === 0 && d.shown === d.want, `settle at the end: ${JSON.stringify(d)}`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
 });

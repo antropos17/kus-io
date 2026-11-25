@@ -293,8 +293,7 @@ function secondShift() {
   rollMissions();
   saveM();
   run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0, lap: stg.lap + 1 };
-  shownSugar = -1;
-  sugarEl.textContent = '';
+  sugarReset();
   runActive = true;
   state = 'play';
   P.safe = false;

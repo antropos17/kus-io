@@ -91,14 +91,9 @@ const missionRows = () =>
     .join('');
 // ---------- sugar ----------
 const sugarEl = $('sugar');
-let shownSugar = -1;
 function earn(n) {
   run.sugar += n;
-  const v = Math.floor(run.sugar);
-  if (v === shownSugar) return;
-  shownSugar = v;
-  sugarEl.textContent = `сахар ${v}`;
-  if (!calm && sugarEl.animate) sugarEl.animate([{ transform: 'scale(1.25)' }, { transform: 'scale(1)' }], { duration: 220, easing: 'ease-out' });
+  sugarSync(); // flying cubes hold their share back until they land
 }
 function saveSugar() {
   try {
@@ -242,8 +237,7 @@ function startGame() {
   rollMissions();
   saveM();
   run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0 };
-  shownSugar = -1;
-  sugarEl.textContent = '';
+  sugarReset();
   runActive = true;
   timeLeft = timed() ? 180 : 0;
   day = null;
@@ -281,6 +275,7 @@ function tally() {
   if (player.cheated) run.cheated = true;
 }
 function finishRun() {
+  sugarSettle();
   runActive = false;
   document.body.classList.remove('playing');
   prevBest = best;
@@ -338,6 +333,7 @@ function endTimed() {
   finishRun();
 }
 function toMenu() {
+  sugarSettle();
   if (state === 'play' && player && player.alive) {
     tally();
     player.alive = false;
@@ -660,6 +656,7 @@ function updateHUD(dt) {
 
 function update(dt) {
   time += dt;
+  sugarTick(dt);
   flashT = Math.max(0, flashT - dt);
   if (player && player.alive && state === 'play' && player.ai) botSteer(player, dt);
   else if (player && player.alive && state === 'play') {

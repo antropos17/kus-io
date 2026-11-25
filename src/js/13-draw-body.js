@@ -627,6 +627,7 @@ function render() {
   for (const b of vis) drawName(b);
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   drawTexts(ox, oy, z);
+  drawSugarCubes();
   if (player && player.alive && state === 'play') {
     for (const b of blobs) {
       if (b === player || !b.alive || !lethalFor(player.mass, biteOf(b.mass, false))) continue;
