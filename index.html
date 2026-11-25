@@ -252,6 +252,20 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 .x:active{transform:translateY(3px);box-shadow:0 1px 0 #a01525}
 .x:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .card{background:var(--cream);color:var(--ink);border-radius:28px;padding:28px 26px 22px;max-height:calc(100vh - 48px);max-height:calc(100svh - 48px);overflow:auto;-webkit-mask:radial-gradient(circle at calc(100% + 6px) -6px,#0000 52px,#000 53px);mask:radial-gradient(circle at calc(100% + 6px) -6px,#0000 52px,#000 53px)}
+/* trophy card: the bitten corner gets a big bite and four tooth marks; the medal and the three tiles take the stats' place */
+.card.trophy{-webkit-mask:radial-gradient(circle at calc(100% + 4px) -4px,#0000 38px,#000 38.5px),radial-gradient(circle at calc(100% + 4px - 7.4px) calc(37.3px - 4px),#0000 9px,#000 9.5px),radial-gradient(circle at calc(100% + 4px - 21.1px) calc(31.6px - 4px),#0000 9px,#000 9.5px),radial-gradient(circle at calc(100% + 4px - 31.6px) calc(21.1px - 4px),#0000 9px,#000 9.5px),radial-gradient(circle at calc(100% + 4px - 37.3px) calc(7.4px - 4px),#0000 9px,#000 9.5px);-webkit-mask-composite:source-in;mask:radial-gradient(circle at calc(100% + 4px) -4px,#0000 38px,#000 38.5px),radial-gradient(circle at calc(100% + 4px - 7.4px) calc(37.3px - 4px),#0000 9px,#000 9.5px),radial-gradient(circle at calc(100% + 4px - 21.1px) calc(31.6px - 4px),#0000 9px,#000 9.5px),radial-gradient(circle at calc(100% + 4px - 31.6px) calc(21.1px - 4px),#0000 9px,#000 9.5px),radial-gradient(circle at calc(100% + 4px - 37.3px) calc(7.4px - 4px),#0000 9px,#000 9.5px);mask-composite:intersect;text-align:center}
+#over .wrap.trophy .x{left:2px;right:auto}
+#trMedal{display:none;width:72px;height:72px;margin:0 auto 6px}
+.card.trophy #trMedal{display:block}
+.card.trophy .stats{display:none}
+#trRec{display:table;margin:0 auto 12px;padding:5px 14px;border-radius:99px;background:var(--lemon);font:800 13px/1.2 var(--font);color:var(--ink)}
+#trTiles{display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 14px}
+.card.trophy #trTiles{display:grid}
+#trTiles div{background:#f6e0c4;border-radius:14px;padding:9px 4px 8px}
+#trTiles b{display:block;font:900 20px/1.15 var(--font);font-variant-numeric:tabular-nums}
+#trTiles span{font:700 11px/1.2 var(--font);color:#8a6a58}
+.card.trophy h2.dead{font-size:clamp(28px,5.5vw,34px)}
+.card.trophy .tag{margin:6px 0 10px;font-size:14px;color:#8a6a58}
 .logo{margin:0 0 4px;font:400 clamp(48px,9vw,66px)/1 "Rubik Bubbles","Nunito",var(--font);color:var(--berry);text-shadow:0 4px 0 var(--berry2)}
 .logo span{color:#f4a91f;text-shadow:0 3px 0 #b9770c;font-size:.55em}
 h2.dead{margin:0;font:900 clamp(32px,6vw,42px)/1.05 var(--font);letter-spacing:-.01em;color:var(--berry2)}
@@ -383,6 +397,11 @@ body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))}
   #over .card.paid .best{margin-top:3px;font-size:13px}
   #over .card.paid .btn2{margin-top:5px;padding:8px}
   #over .card.paid #chalRes{margin-top:5px}
+  #over .card.trophy .tag{display:block;margin:2px 0 6px}
+  #trMedal{width:48px;height:48px;margin-bottom:2px}
+  .card.trophy h2.dead{font-size:24px}
+  #trRec{margin-bottom:8px}
+  #trTiles{margin-bottom:8px}
   .btn2{margin-top:6px;padding:9px}
   #nick{min-height:44px;padding:9px 12px;font-size:16px}
   body.first #menu .tag{display:block;margin:4px 0 10px;font-size:15px}
@@ -517,9 +536,12 @@ document.getElementById('nojs').style.display = 'none';
 </div>
 
 <div id="over" class="ov center hidden">
-  <div class="wrap"><button class="x" id="overX" type="button" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
+  <div class="wrap" id="overWrap"><button class="x" id="overX" type="button" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
+    <svg id="trMedal" viewBox="-40 -40 80 80" aria-hidden="true"><circle r="36" fill="#ffe3ea" stroke="#ffc3d2" stroke-width="3"/><ellipse cy="22" rx="30" ry="6" fill="#f0d3b2"/><rect x="-25" y="-4" width="50" height="26" rx="6" fill="#7a3f26"/><rect x="-25" y="6" width="50" height="5" fill="#ff8fb0"/><g fill="#fff6e8"><rect x="-27" y="-11" width="54" height="12" rx="6"/><path d="M-20.2 1a3.2 3.2 0 006.4 0zM-7.2 1a3.2 3.2 0 006.4 0zM7.8 1a3.2 3.2 0 006.4 0zM16.8 1a3.2 3.2 0 006.4 0z"/><rect x="-20.2" y="-2" width="6.4" height="3"/><rect x="-7.2" y="-2" width="6.4" height="3"/><rect x="7.8" y="-2" width="6.4" height="3"/><rect x="16.8" y="-2" width="6.4" height="3"/></g><g stroke-width="2" stroke-linecap="round"><path stroke="#ff5d8f" d="M-18.3 -7L-13.7 -5"/><path stroke="#ffd23f" d="M-4.5 -10L-7.5 -6"/><path stroke="#7ad7ff" d="M4.6 -7.1L7.4 -2.9"/><path stroke="#9be15d" d="M18.4 -8.8L13.6 -7.2"/><path stroke="#c49bff" d="M-10.9 -5.5L-11.1 -0.5"/><path stroke="#fff6e8" d="M9.5 -2.5L14.5 -1.5"/></g><path d="M0-18Q2-27 8-30" fill="none" stroke="#5a8a2a" stroke-width="2"/><circle cy="-15" r="7.5" fill="#e8274b"/><circle cx="-2.6" cy="-18" r="2.2" fill="#fff" fill-opacity=".75"/></svg>
     <h2 class="dead" id="overT">Тебя доели</h2>
     <p class="tag" id="who"></p>
+    <p id="trRec" class="hidden"></p>
+    <div id="trTiles"><div><b></b><span>масса</span></div><div><b></b><span>укусов</span></div><div><b></b><span>сахара</span></div></div>
     <div class="stats">
       <div><b id="sMax">0</b><span>макс. масса</span></div>
       <div><b id="sBites">0</b><span>укусов</span></div>
@@ -4587,9 +4609,22 @@ function showOver() {
     score = Math.round(run.max);
   const won = run.won,
     shift = run.lap ? `Смена ${run.lap + 1}. ` : '';
-  $('overT').innerHTML = won ? `Победа!<small> Торт за ${mmss(won.secs)}</small>` : t3 ? 'Время вышло' : 'Тебя доели'; // the clear time joins the title where the line under it is hidden
+  const card = overEl.querySelector('.card');
+  card.classList.toggle('trophy', !!won); // the trophy look and its record pill belong to a win only
+  card.classList.toggle('rec', !!(won && won.rec));
+  $('overWrap').classList.toggle('trophy', !!won);
+  $('overT').textContent = won ? 'Торт съеден!' : t3 ? 'Время вышло' : 'Тебя доели';
+  const rec = $('trRec'),
+    tiles = $('trTiles').querySelectorAll('b');
+  rec.textContent = won && won.rec ? (won.prev ? `Новый рекорд, было ${mmss(won.prev)}` : 'Первая победа!') : '';
+  rec.classList.toggle('hidden', !rec.textContent);
+  if (won) {
+    tiles[0].textContent = score;
+    tiles[1].textContent = run.bites;
+    tiles[2].textContent = run.got;
+  }
   whoEl.innerHTML = won
-    ? `${won.lap ? `Смена ${won.lap + 1}: т` : 'Т'}орт за <b>${mmss(won.secs)}</b>`
+    ? `${won.lap ? `Смена ${won.lap + 1}` : 'Первая смена'} за <b>${mmss(won.secs)}</b>`
     : (shift ? esc(shift) : '') +
       (daily
         ? `Конфета дня «${esc(run.rule.name)}»`
@@ -4635,7 +4670,7 @@ function showOver() {
         : score > challenge.c
           ? `Вызов побит: у игрока ${challenge.n} было ${challenge.c}, у тебя ${score}.`
           : `Вызов от игрока ${challenge.n}: ${challenge.c}. Твой результат: ${score}.`;
-  overEl.querySelector('.card').classList.toggle('chal', !!$('chalRes').textContent); // on short screens the challenge line takes the "so close" line's place
+  card.classList.toggle('chal', !!$('chalRes').textContent); // on short screens the challenge line takes the "so close" line's place
   $('chalBtn').classList.toggle('hidden', (t3 && !daily) || run.cheated || score < 1);
   $('chalBtn').textContent = daily || won ? 'Поделиться' : 'Бросить вызов другу';
   $('chalLink').classList.add('hidden');
@@ -5472,7 +5507,7 @@ function stageWin() {
     first = stg.lap === 0;
   earn(BOSS.sugar); // once for each cake beaten; finishRun pays it only for a clean run
   tally();
-  run.won = { secs, lap: stg.lap, rec: false };
+  run.won = { secs, lap: stg.lap, rec: false, prev: clearRec.best || 0 }; // prev: the record before this win, for the trophy card
   if (!run.cheated && first) {
     run.won.rec = !clearRec.best || secs < clearRec.best;
     if (run.won.rec) clearRec.best = Math.round(secs * 10) / 10;

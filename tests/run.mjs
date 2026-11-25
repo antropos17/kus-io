@@ -993,6 +993,9 @@ test('stages: beating the boss ends the run with a record, not with cheats; the 
     out.best = document.getElementById('best').textContent; out.again = document.getElementById('again').textContent;
     out.share = document.getElementById('chalBtn').textContent; out.clear = JSON.parse(localStorage.getItem('kus.clear'));
     out.got = k.run.got; out.over = !document.getElementById('over').classList.contains('hidden');
+    { const cd = document.querySelector('#over .card'); out.trophy = cd.classList.contains('trophy'); out.rec = cd.classList.contains('rec');
+      out.recText = document.getElementById('trRec').textContent; out.tiles = [...document.querySelectorAll('#trTiles b')].map((e) => e.textContent);
+      out.bites = k.run.bites; const cr = document.getElementById('chestRow'); out.chest = !document.getElementById('sweet').classList.contains('hidden') && cr.children.length > 0; }
     const wm = k.stages.stg.wonMass, x = P.x, y = P.y; run(3); out.safe = P.alive && P.safe;
     document.getElementById('again').click();
     out.shift = { state: k.state, same: k.player === P, mass: Math.abs(P.mass - wm) < 0.01, place: Math.round(Math.hypot(P.x - x, P.y - y)),
@@ -1011,11 +1014,17 @@ test('stages: beating the boss ends the run with a record, not with cheats; the 
     const card = document.getElementById('over');
     for (let f = 0; card.classList.contains('hidden') && f < 5 * 60; f++) k.update(1 / 60);
     out.shiftOver = [k.state, document.getElementById('overT').textContent, document.getElementById('who').textContent];
+    out.shiftCard = [card.querySelector('.card').classList.contains('trophy'), card.querySelector('.card').classList.contains('rec')];
     k.toMenu(); k.setMode('free');
     beat(true); out.cheatState = k.state; out.cheatClear = JSON.parse(localStorage.getItem('kus.clear')); out.cheatBest = document.getElementById('best').textContent;
+    { const cd = document.querySelector('#over .card'); out.cheatCard = [cd.classList.contains('trophy'), cd.classList.contains('rec')]; out.cheatGot = k.run.got;
+      out.cheatTile = document.querySelectorAll('#trTiles b')[2].textContent; }
     return out; })()`);
-  assert(r.state === 'won' && r.over && r.title.startsWith('Победа!'), `state ${r.state} after ${r.frames} frames, title "${r.title}"`);
-  assert(/^Торт за \d:\d\d$/.test(r.who), `win line "${r.who}"`);
+  assert(r.state === 'won' && r.over && r.title === 'Торт съеден!', `state ${r.state} after ${r.frames} frames, title "${r.title}"`);
+  assert(/^Первая смена за \d:\d\d$/.test(r.who), `win line "${r.who}"`);
+  assert(r.trophy && r.rec && r.recText === 'Первая победа!', `trophy ${r.trophy}, rec ${r.rec}, pill "${r.recText}"`);
+  assert(r.tiles[1] === String(r.bites) && r.tiles[2] === String(r.got), `tiles ${JSON.stringify(r.tiles)}`);
+  assert(r.chest && r.share === 'Поделиться', 'the chest pick and the share button stay');
   assert(
     r.clear && r.clear.wins === 1 && r.clear.best > 0 && r.best.startsWith('Новый рекорд прохождения'),
     `kus.clear ${JSON.stringify(r.clear)}, "${r.best}"`,
@@ -1030,12 +1039,41 @@ test('stages: beating the boss ends the run with a record, not with cheats; the 
     r.shiftOver[0] === 'dead' && r.shiftOver[1] === 'Тебя доели' && r.shiftOver[2].startsWith('Смена 2'),
     `second-shift death screen: ${r.shiftOver}`,
   );
+  assert(r.shiftCard[0] === false && r.shiftCard[1] === false, `a death must clear trophy and rec: ${r.shiftCard}`);
+  assert(
+    r.cheatCard[0] && !r.cheatCard[1] && r.cheatTile === String(r.cheatGot) && r.cheatGot === 0,
+    `a cheated win: trophy without rec, no sugar: ${JSON.stringify([r.cheatCard, r.cheatTile, r.cheatGot])}`,
+  );
   assert(
     r.cheatState === 'won' && r.cheatClear.wins === 2 && r.cheatBest.includes('С читами'),
     `a cheated win counted: ${JSON.stringify(r.cheatClear)}, "${r.cheatBest}"`,
   );
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
+});
+
+test('stages: the trophy card fits a phone: close button out of the bitten corner, the card scrolls in landscape', async () => {
+  for (const [w, h] of [
+    [390, 844],
+    [844, 390],
+  ]) {
+    const g = await open({ width: w, height: h, touch: true, play: false, returning: true });
+    const r = await g.page.evaluate(`(() => { ${STG}
+      const P = free(); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1); const B = S().cur.b; B.spawnT = 0; B.ai = null; B.mass = 60;
+      k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
+      while (k.state === 'play' && f++ < 400) { P.tx = B.x; P.ty = B.y; B.tx = B.x; B.ty = B.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); }
+      const c = document.querySelector('#over .card'), cr = c.getBoundingClientRect(), x = document.getElementById('overX').getBoundingClientRect();
+      const again = document.getElementById('again'); again.scrollIntoView(); const ar = again.getBoundingClientRect();
+      return { trophy: c.classList.contains('trophy'), x: [x.left, x.top, x.right, x.bottom], card: [cr.left, cr.top, cr.right, cr.bottom],
+        scrolls: c.scrollHeight > c.clientHeight, againIn: ar.top >= 0 && ar.bottom <= innerHeight, w: innerWidth, h: innerHeight }; })()`);
+    const [xl, xt, xr, xb] = r.x;
+    assert(r.trophy, `${w}x${h}: no trophy`);
+    assert(xl >= 0 && xt >= 0 && xr <= r.w && xb <= r.h, `${w}x${h}: close button off screen ${r.x}`);
+    assert(!(xr > r.card[2] - 60 && xt < r.card[1] + 60), `${w}x${h}: close button in the bitten corner ${r.x} card ${r.card}`);
+    assert(r.againIn, `${w}x${h}: the main button cannot be reached`);
+    assert(g.errors.length === 0, g.errors.join(' | '));
+    await g.close();
+  }
 });
 
 test('stages: the 3-minute mode and the candy of the day keep their cake and piranhas', async () => {

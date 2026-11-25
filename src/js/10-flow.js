@@ -377,9 +377,22 @@ function showOver() {
     score = Math.round(run.max);
   const won = run.won,
     shift = run.lap ? `Смена ${run.lap + 1}. ` : '';
-  $('overT').innerHTML = won ? `Победа!<small> Торт за ${mmss(won.secs)}</small>` : t3 ? 'Время вышло' : 'Тебя доели'; // the clear time joins the title where the line under it is hidden
+  const card = overEl.querySelector('.card');
+  card.classList.toggle('trophy', !!won); // the trophy look and its record pill belong to a win only
+  card.classList.toggle('rec', !!(won && won.rec));
+  $('overWrap').classList.toggle('trophy', !!won);
+  $('overT').textContent = won ? 'Торт съеден!' : t3 ? 'Время вышло' : 'Тебя доели';
+  const rec = $('trRec'),
+    tiles = $('trTiles').querySelectorAll('b');
+  rec.textContent = won && won.rec ? (won.prev ? `Новый рекорд, было ${mmss(won.prev)}` : 'Первая победа!') : '';
+  rec.classList.toggle('hidden', !rec.textContent);
+  if (won) {
+    tiles[0].textContent = score;
+    tiles[1].textContent = run.bites;
+    tiles[2].textContent = run.got;
+  }
   whoEl.innerHTML = won
-    ? `${won.lap ? `Смена ${won.lap + 1}: т` : 'Т'}орт за <b>${mmss(won.secs)}</b>`
+    ? `${won.lap ? `Смена ${won.lap + 1}` : 'Первая смена'} за <b>${mmss(won.secs)}</b>`
     : (shift ? esc(shift) : '') +
       (daily
         ? `Конфета дня «${esc(run.rule.name)}»`
@@ -425,7 +438,7 @@ function showOver() {
         : score > challenge.c
           ? `Вызов побит: у игрока ${challenge.n} было ${challenge.c}, у тебя ${score}.`
           : `Вызов от игрока ${challenge.n}: ${challenge.c}. Твой результат: ${score}.`;
-  overEl.querySelector('.card').classList.toggle('chal', !!$('chalRes').textContent); // on short screens the challenge line takes the "so close" line's place
+  card.classList.toggle('chal', !!$('chalRes').textContent); // on short screens the challenge line takes the "so close" line's place
   $('chalBtn').classList.toggle('hidden', (t3 && !daily) || run.cheated || score < 1);
   $('chalBtn').textContent = daily || won ? 'Поделиться' : 'Бросить вызов другу';
   $('chalLink').classList.add('hidden');

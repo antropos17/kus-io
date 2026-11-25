@@ -287,7 +287,7 @@ function stageWin() {
     first = stg.lap === 0;
   earn(BOSS.sugar); // once for each cake beaten; finishRun pays it only for a clean run
   tally();
-  run.won = { secs, lap: stg.lap, rec: false };
+  run.won = { secs, lap: stg.lap, rec: false, prev: clearRec.best || 0 }; // prev: the record before this win, for the trophy card
   if (!run.cheated && first) {
     run.won.rec = !clearRec.best || secs < clearRec.best;
     if (run.won.rec) clearRec.best = Math.round(secs * 10) / 10;
