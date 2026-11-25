@@ -277,7 +277,7 @@ function trGlaze(g, ign, spec) {
   g.globalCompositeOperation = 'lighter';
   g.globalAlpha = 0.22;
   g.strokeStyle = g.shadowColor = pal[2];
-  g.shadowBlur = 16;
+  g.shadowBlur = lod ? 0 : 16; // a blurred 340-point stroke every frame is too much for weaker phones
   g.lineWidth = 11;
   trPath(g, k, full, 0);
   g.stroke();

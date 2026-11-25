@@ -40,14 +40,15 @@ function streakWrapHook(P) {
 // the page side of a live streak: the chip, the fuse round the bite button, the sugar rush on the edges
 function streakDom(P, lvl) {
   const f = clamp(P.comboT / STREAK.win, 0, 1),
-    q = Math.round(f * 200) / 200,
+    q = Math.round(f * 60) / 60, // the fuse ring needs about 6 degrees of resolution: no style write every frame
     low = P.comboT < STREAK.low;
   if (q !== domF) {
     domF = q;
     dashEl.style.setProperty('--f', q);
   }
   if (lvl !== domLvl) {
-    if (lvl === 3 && domLvl < 3) dashEl.style.setProperty('--sr', dashEl.offsetWidth / 2 + 13 + 'px');
+    if (lvl === 3 && domLvl < 3)
+      dashEl.style.setProperty('--sr', dashEl.offsetWidth / 2 + (document.body.classList.contains('touch') ? 10 : 13) + 'px'); // on phones the ring must stay clear of «Язык» just above
     domLvl = lvl;
     dashEl.style.setProperty('--fc', STREAK_COL[lvl] || STREAK_COL[1]);
     dashEl.classList.toggle('fuse', lvl > 0);
@@ -108,8 +109,9 @@ function onStreakBite(P, B, wx, wy, add, close) {
 }
 function onStreakEnd(P) {
   // comboT ran out with a streak of two or more bites: show what it was worth, then let Task 4 react
-  if (runActive && P === player) {
-    sumEl.textContent = `Серия ×${P.combo} · +${Math.max(0, Math.floor(run.sugar - streak.start))} сахара`;
+  // the wrapper's payout pill, if it is still up, is not replaced
+  if (runActive && P === player && !(streak.sumT > 0 && sumEl.textContent.startsWith('Фантик'))) {
+    sumEl.textContent = `Серия ×${P.combo} · +${Math.max(0, Math.floor(streak.sum))} сахара`;
     sumEl.classList.add('on');
     streak.sumT = 2;
   }

@@ -202,7 +202,7 @@ function renderFx() {
     let html = '';
     for (const [k, prop] of FX_LIST)
       if (key.includes(k + ',')) {
-        html += `<span class="coin" data-k="${k}">${FX_ICON[k]}</span><b></b>`;
+        html += `<span class="fxu"><span class="coin" data-k="${k}">${FX_ICON[k]}</span><b></b></span>`;
         fxLive.push({ k, prop, coin: null, b: null, t: -1, s: -1 });
       }
     el.innerHTML = html;

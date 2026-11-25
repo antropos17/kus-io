@@ -505,14 +505,21 @@ test('hud: the sugar pill rolls to earned sugar once the cubes land', async () =
   // the player may eat a sprinkle during the 90 frames, so compare with run.sugar, not a fixed 6
   assert(r.mid === 0 && r.end >= 6 && r.end === r.want && r.air === 0, `pill ${r.mid} -> ${r.end} (run ${r.want}), air ${r.air}`);
   assert(r.label === `сахар ${r.end}`, `aria-label "${r.label}"`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
   // cubes still in flight when the run ends are settled at once
-  const d = await g.page
-    .evaluate(`(() => { ${QUIET} k.setMode('t3'); k.startGame(); k.player.spawnT = 0; k.run.sugar += 10; k.sugarFly(k.player.x, k.player.y, 10, 5); k.setTimeLeft(0.001);
+  // a fresh t3 run: the page above is already in 'play', where startGame does nothing
+  const g2 = await open({ play: false });
+  await g2.page.evaluate(() => {
+    window.__kus.setMode('t3');
+    window.__kus.startGame();
+  });
+  const d = await g2.page.evaluate(`(() => { ${QUIET} k.run.sugar += 10; k.sugarFly(k.player.x, k.player.y, 10, 5); k.setTimeLeft(0.001);
     for (let i = 0; i < 400 && k.state !== 'dead'; i++) k.update(1/60);
     return { state: k.state, air: k.hud.air, shown: k.hud.sugarShown, want: Math.floor(k.run.sugar) }; })()`);
   assert(d.state === 'dead' && d.air === 0 && d.shown === d.want, `settle at the end: ${JSON.stringify(d)}`);
-  assert(g.errors.length === 0, g.errors.join(' | '));
-  await g.close();
+  assert(g2.errors.length === 0, g2.errors.join(' | '));
+  await g2.close();
 });
 
 test('sugar: none for a run with cheats', async () => {
@@ -1208,6 +1215,12 @@ test('hud: cream pills fit phones; the stage pill fills and its jaws chomp when 
       const coins = fx.querySelectorAll('.coin[data-k=magnet]');
       out.coins = coins.length; out.t = coins.length ? parseFloat(coins[0].style.getPropertyValue('--t')) : -1; out.fxText = fx.textContent.trim();
       out.streakChip = fx.textContent.includes('Серия');
+      // all three buffs at once: the column stays capped and never reaches the table, each label stays beside its coin
+      P.pSpeed = 9; P.pShield = 9; P.pMagnet = 9; run(0.5);
+      const r3 = fx.getBoundingClientRect(), s3 = document.getElementById('score').getBoundingClientRect();
+      out.n3 = fx.querySelectorAll('.coin').length; out.fxRight = r3.right; out.fxHit = r3.right > br.left && r3.bottom > br.top && r3.top < br.bottom;
+      out.split = [...fx.querySelectorAll('.fxu')].some((u) => u.querySelector('b').getBoundingClientRect().top > u.querySelector('.coin').getBoundingClientRect().bottom);
+      P.pSpeed = 0; P.pShield = 0;
       P.stats.maxMass = 150; let f = 0; for (; f < 4 && !(S().cur && S().cur.k === 'pir'); f++) run(1 / 60);
       out.started = !!(S().cur && S().cur.k === 'pir');
       let late = 0; for (; late < 3 && !st.classList.contains('chomp'); late++) run(1 / 60);
@@ -1218,6 +1231,7 @@ test('hud: cream pills fit phones; the stage pill fills and its jaws chomp when 
     assert(r.hungry && !r.chomp0 && r.kind === 'pir', `${w}: waiting at p~0.9 must be hungry, not chomping (${JSON.stringify(r)})`);
     assert(Math.abs(r.p - 0.9) <= 0.02 && r.ic, `${w}: --p ${r.p}, icon ${r.ic}`);
     assert(r.right <= 216 && !r.hit, `${w}: the HUD column ends at ${r.right}px or runs into the table`);
+    assert(r.n3 === 3 && r.fxRight <= 216 && !r.fxHit && !r.split, `${w}: three buffs: ${JSON.stringify([r.n3, r.fxRight, r.fxHit, r.split])}`);
     assert(r.started && r.late <= 2 && r.chomp && !r.hungry2, `${w}: the jaws must chomp within 2 frames of the raid start (${JSON.stringify(r)})`);
     assert(!r.chomp1, `${w}: the chomp must stop after about 0.64 s`);
     assert(

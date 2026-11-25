@@ -75,7 +75,7 @@ A frame: `frame` → `update(dt)` (bots, bodies, collisions, bites, food, rings 
 
 A bite step by step (`checkBites`): wind-up → snap → `doBite` → the piece is held in the teeth and stretches on a strand → chewing → `Chunk.finish` (the mass is added).
 
-`window.__kus` in `17-boot` gives the tests the state and functions (`player`, `blobs`, `update`, `render`, `place`, `spawnBot`, `spawnSpecial`, `Sfx`, `cam`, `CHEAT`, `pause`, `setLod`). The easiest way to test a new mechanic is through it.
+`window.__kus` in `17-boot` gives the tests the state and functions (`player`, `blobs`, `update`, `render`, `place`, `spawnBot`, `spawnSpecial`, `Sfx`, `cam`, `CHEAT`, `pause`, `setLod`, and for the HUD, streak, wrapper and trophy work: `streak`, `stamps`, `wrap`, `reveal`, `spawnWrap`, `clearWrap`, `WRAP`, `sugarFly`, `hud` (`sugarShown`, `air`, `sugarSettle`), `trophy`, `stages.kind`). The easiest way to test a new mechanic is through it.
 
 Saves in `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.best`, `kus.best3`, `kus.mode`, `kus.diff`, `kus.set`, `kus.m` (missions and unlocked patterns), `kus.seen` (hints already shown), `kus.cheat`, `kus.lbmin`, `kus.daily` (candy of the day: date `d` like 20261123, best of the day `best`, days in a row `streak`, longest streak `top`), `kus.album` (album: `c` — times each sticker was swallowed whole, `r` — ids of rows already paid), `kus.albumOld` (ids of stickers opened before `NEED`, written once so they stay open), `kus.clear` (free-play wins: the fastest first-shift clear `best` in seconds, the number of clears `wins`).
 
@@ -111,7 +111,7 @@ A sticker opens when the player has swallowed that bot whole `NEED[tier]` times 
 
 ## Tests
 
-`tests/run.mjs` checks: startup on PC and phone, buttons within the screen, bite rules (hedgehog, cake, shield), the streak and the jelly, difficulty and graphics, every sound, a three-minute autopilot run on ragged frames (NaN, leaving the field, position jumps, stuck states). Add a check for a new mechanic there too.
+`tests/run.mjs` checks: startup on PC and phone, buttons within the screen, bite rules (hedgehog, cake, shield), the streak and the jelly (the streak's label, fuse, stamps and summary; the runaway wrapper, its reveal and payout; the cream-pill HUD on both phone sizes; the trophy card and its glaze), difficulty and graphics, every sound, a three-minute autopilot run on ragged frames (NaN, leaving the field, position jumps, stuck states). Add a check for a new mechanic there too.
 
 The tests do not see the picture and do not hear the sound. Check the look with screenshots; nobody has checked the game automatically on a real iPhone.
 
