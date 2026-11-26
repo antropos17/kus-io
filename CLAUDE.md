@@ -19,6 +19,7 @@ npm run format     prettier over src/js, tools, tests
 node tests/run.mjs soak    only the tests whose name contains "soak" (no build: run npm run build first)
 node tools/wrap-curve.mjs 30 normal    the autopilot's runaway-wrapper catch rate and its share of a run's sugar (see docs/stages.md «Фантик»)
 node tools/announce-curve.mjs 20 normal    how often each word of swallows in a row comes per run (add weak, or daily=<twist>)
+node tools/perf.mjs 6 3    frame cost on an emulated phone (CPU x6, 390x844): first frame, real-loop fps, style/layout per second, update/render ms
 npm run check      exit with an error if index.html does not match src/
 npm run og         rebuild og.png, the 1200×630 link preview picture, from a real frame of the game
 npm run shots      rebuild the README screenshots in docs/media/ from real frames of the game

@@ -80,11 +80,17 @@ let fpsN = 0,
 const tick = new Float32Array(15).fill(1 / 60),
   tickS = new Float32Array(15);
 let tickI = 0,
-  fp = 1 / 60;
+  fp = 1 / 60,
+  liteLod = -1;
 function frame(now) {
   const raw = (now - last) / 1000;
   last = now;
   adapt(raw);
+  if (lod !== liteLod) {
+    // less detail also stops the HUD's endless animations: while the canvas draws every frame the page restyles each running one
+    liteLod = lod;
+    document.body.classList.toggle('lite', lod > 0);
+  }
   // a steady clock. The display ticks at a fixed rate while timers jitter around it (Safari rounds to whole milliseconds), so each frame
   // is snapped to a whole number of display ticks: bodies and camera then move by even steps instead of shivering
   let dt = raw > 0 ? raw : fp;
@@ -215,7 +221,7 @@ function start(data) {
   applySet();
   for (let i = 0; i < FOOD_TARGET; i++) addSprinkle();
   for (let i = 0; i < BOT_TARGET; i++) spawnBot(randomBotMass(true)).spawnT = 0;
-  for (let i = 0; i < 150; i++) update(1 / 60); // let the arena get messy before the first frame
+  for (let i = 0; i < 50; i++) update(1 / 20); // 2.5 s of the arena before the first frame, in the largest step frame() allows
   menuTarget = pickMenuTarget();
   menuSwitchT = 14;
   if (menuTarget) {
@@ -319,6 +325,9 @@ window.__kus = {
     lod = v;
     stepOff.lod = 1e9;
     upOffUntil = 1e9;
+  },
+  get hudBox() {
+    return { boardBottom, boardLeft, btnTop }; // where the minimap takes the table's and the buttons' places from
   },
   get quality() {
     return quality;

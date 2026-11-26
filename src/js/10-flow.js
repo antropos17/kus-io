@@ -559,6 +559,11 @@ function bumpMass() {
 function lbRow(n, b) {
   return `<li class="${b.isPlayer ? 'me' : ''}"><span class="n">${n}</span><i style="background:${b.pal.base}"></i><span class="nm">${esc(b.isPlayer ? b.name : nameOf(b.name))}</span><span class="m">${Math.round(b.mass)}</span></li>`;
 }
+function setText(el, s) {
+  if (el.textContent !== s) el.textContent = s; // the same text written again still costs a layout
+}
+let hudBoxKey = ''; // what the table and the buttons were last measured for: their boxes move only when this changes
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => (hudBoxKey = '')); // the real typeface changes the table's height
 function updateHUD(dt) {
   const pct = player && player.alive ? clamp(1 - player.dashCd / 1.5, 0, 1) : 1;
   if (Math.abs(pct - lastDashPct) > 0.04 || (pct === 1 && lastDashPct !== 1)) {
@@ -590,14 +595,17 @@ function updateHUD(dt) {
     mission('time', time - player.stats.t0, true);
   }
   const tl = Math.ceil(timeLeft);
-  $('timer').textContent = runActive && timed() ? t('hud.left', `${Math.floor(tl / 60)}:${String(tl % 60).padStart(2, '0')}`) : '';
-  $('goal').textContent = !runActive
-    ? ''
-    : day
-      ? t('hud.daily', run.rule.name) + (challenge && challenge.d === run.day ? t('hud.beat', challenge.c) : '')
-      : challenge && !challenge.d && mode === 'free'
-        ? t('hud.goal', challenge.c)
-        : '';
+  setText($('timer'), runActive && timed() ? t('hud.left', `${Math.floor(tl / 60)}:${String(tl % 60).padStart(2, '0')}`) : '');
+  setText(
+    $('goal'),
+    !runActive
+      ? ''
+      : day
+        ? t('hud.daily', run.rule.name) + (challenge && challenge.d === run.day ? t('hud.beat', challenge.c) : '')
+        : challenge && !challenge.d && mode === 'free'
+          ? t('hud.goal', challenge.c)
+          : '',
+  );
   renderStage();
   renderFx();
   const list = blobs.filter((b) => b.alive && !b.kind).sort((a, b) => b.mass - a.mass),
@@ -647,18 +655,25 @@ function updateHUD(dt) {
           break;
         }
   }
+  const gap = player && player.alive && !top.includes(player);
   let html = top.map((b, i) => lbRow(i + 1, b)).join('');
-  if (player && player.alive && !top.includes(player)) html += '<li class="gap">…</li>' + lbRow(list.indexOf(player) + 1, player);
+  if (gap) html += '<li class="gap">…</li>' + lbRow(list.indexOf(player) + 1, player);
   if (html !== lastLb) {
     lbEl.innerHTML = html;
     lastLb = html;
   }
-  {
+  // the rows have a fixed height, so the table moves only with their count; the buttons with the screen, its insets and their size
+  const boxKey = [W, H, safe.t, safe.r, safe.b, safe.l, state, touchMode, SET.lefty, SET.bs, $('board').className, top.length + (gap ? 2 : 0)].join(
+    '|',
+  );
+  if (boxKey !== hudBoxKey) {
+    // reading a box right after the writes above forces a layout: only when the table or the buttons can have moved
+    hudBoxKey = boxKey;
     const br = $('board').getBoundingClientRect();
     boardBottom = br.bottom;
     boardLeft = br.left;
+    btnTop = touchMode && state === 'play' ? dodgeEl.getBoundingClientRect().top : H;
   }
-  btnTop = touchMode && state === 'play' ? dodgeEl.getBoundingClientRect().top : H;
 }
 
 function update(dt) {
