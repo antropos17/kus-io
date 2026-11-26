@@ -372,9 +372,9 @@ function bounceBite(A, B, ang, shield) {
     });
   if (shield) {
     if (A.isPlayer) {
-      floatText(x, y - 30 / cam.z, 'щит', '#7ad7ff', 20);
+      floatText(x, y - 30 / cam.z, t('float.shield'), '#7ad7ff', 20);
       Sfx.snap(0.7);
-    } else if (B.isPlayer) floatText(B.x, B.y - B.Rs - 26 / cam.z, 'щит спас', '#7ad7ff', 20);
+    } else if (B.isPlayer) floatText(B.x, B.y - B.Rs - 26 / cam.z, t('float.shieldSaved'), '#7ad7ff', 20);
     return;
   }
   A.hurtT = 0.5;
@@ -384,7 +384,7 @@ function bounceBite(A, B, ang, shield) {
     spawnCrumbs(A.x + nx * A.Rs * 0.3, A.y + ny * A.Rs * 0.3, m * 0.8, A.pal, nx, ny, A);
   }
   if (A.isPlayer) {
-    floatText(A.x, A.y - A.Rs - 26 / cam.z, 'ай, колючки!', '#ff7a9c', 22);
+    floatText(A.x, A.y - A.Rs - 26 / cam.z, t('float.spines'), '#ff7a9c', 22);
     Sfx.hurt();
     haptic(30);
     flashT = 0.2;
@@ -429,7 +429,7 @@ function doBite(A, B, ang, dashBite) {
       ny = Math.sin(ang);
     A.vx += nx * 160;
     A.vy += ny * 160;
-    floatText(B.x, B.y - B.Rs, 'бессмертие', '#ffd23f', 16);
+    floatText(B.x, B.y - B.Rs, t('float.immortal'), '#ffd23f', 16);
     return;
   }
   let saved = false;
@@ -450,7 +450,7 @@ function doBite(A, B, ang, dashBite) {
     B.vx -= nx * 520;
     B.vy -= ny * 520;
     A.biteCd = 1.1;
-    floatText(B.x, B.y - B.Rs - 30 / cam.z, 'вырвался!', '#7cf08c', 22);
+    floatText(B.x, B.y - B.Rs - 30 / cam.z, t('float.free'), '#7cf08c', 22);
   }
   B.hurtT = 0.5;
   const chunkR = massToR(bite) * 0.9,
@@ -522,9 +522,9 @@ function doBite(A, B, ang, dashBite) {
       ['#ffd23f', '#ffc53f', '#ffb347', '#ff9a52', '#ff8370', '#ff6fa0'][step - 1],
       24 + Math.min(10, gain * 0.07) + (step - 1) * 2,
     );
-    if (intoWound) floatText(bx, ty - 28 / cam.z, 'в ранку!', '#ff8fb0', 18);
-    if (weak) floatText(bx, ty - 28 / cam.z, 'слабое место!', '#ff8fb0', 18);
-    else if (king) floatText(bx, ty - 28 / cam.z, 'кусь лидера!', '#ffd23f', 18);
+    if (intoWound) floatText(bx, ty - 28 / cam.z, t('float.wound'), '#ff8fb0', 18);
+    if (weak) floatText(bx, ty - 28 / cam.z, t('float.weak'), '#ff8fb0', 18);
+    else if (king) floatText(bx, ty - 28 / cam.z, t('float.king'), '#ffd23f', 18);
     const sugar0 = run.sugar;
     mission('bites', 1);
     onStreakBite(A, B, bx, by, run.sugar - sugar0, streakClose);
@@ -577,7 +577,7 @@ function swallowWhole(A, B) {
     onStreakBite(A, B, B.x, B.y, run.sugar - sugar0, close);
     albumEat(B);
     if (B.kind === 'piranha') mission('piranha', 1);
-    floatText(A.x, A.y - A.Rs - 30 / cam.z, (A.combo > 1 ? '+' : 'ням! +') + Math.round(gain), '#ffd23f', 28); // in a streak its stamps do the talking
+    floatText(A.x, A.y - A.Rs - 30 / cam.z, (A.combo > 1 ? '+' : t('float.yum') + '+') + Math.round(gain), '#ffd23f', 28); // in a streak its stamps do the talking
     Sfx.gulp(1);
     cam.shake = Math.max(cam.shake, 7);
     if (!calm && !B.boss) {

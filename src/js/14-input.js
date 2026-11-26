@@ -135,7 +135,7 @@ addEventListener('keydown', (e) => {
 function toggleMute() {
   Sfx.on = !Sfx.on;
   muteEl.classList.toggle('muted', !Sfx.on);
-  muteEl.setAttribute('aria-label', Sfx.on ? 'Выключить звук' : 'Включить звук');
+  muteEl.setAttribute('aria-label', t(Sfx.on ? 'a.mute' : 'a.unmute'));
 }
 muteEl.addEventListener('click', () => {
   Sfx.init();
@@ -147,9 +147,9 @@ function renderHats() {
   if (!HATS.some((h) => h.id === chosenHat && h.need <= best)) chosenHat = 'none';
   hatsEl.innerHTML = HATS.map((h) => {
     const lock = h.need > best;
-    return `<button type="button" role="radio" aria-checked="${h.id === chosenHat}" data-h="${h.id}"${lock ? ' disabled' : ''}>${h.name}${lock ? ` <small>с ${h.need}</small>` : ''}</button>`;
+    return `<button type="button" role="radio" aria-checked="${h.id === chosenHat}" data-h="${h.id}"${lock ? ' disabled' : ''}>${h.name}${lock ? ` <small>${t('hat.from', h.need)}</small>` : ''}</button>`;
   }).join('');
-  recEl.textContent = best ? `Рекорд: ${best}` : 'Шапки открываются за рекорд по массе';
+  recEl.textContent = best ? t('rec', best) : t('rec.none');
   renderSecs();
 }
 hatsEl.addEventListener('click', (e) => {
@@ -167,7 +167,7 @@ let askSkin = null,
 function renderBank(msg) {
   // the sugar balance; a message replaces it for a few seconds
   clearTimeout(bankT);
-  bankEl.textContent = msg || `Сахар: ${sugar}`;
+  bankEl.textContent = msg || t('bank', sugar);
   if (msg) bankT = setTimeout(() => renderBank(), 3200);
 }
 function renderSkins() {
@@ -179,9 +179,9 @@ function renderSkins() {
       tag = !lock
         ? ''
         : askSkin === id
-          ? '<small class="pz ask">купить</small>'
+          ? `<small class="pz ask">${t('skin.buy')}</small>`
           : `<small class="pz${sugar >= price ? ' can' : ''}">${price}</small>`,
-      why = lock ? `: за задание или за ${price} сахара` : '';
+      why = lock ? t('skin.why', price) : '';
     return `<button type="button" role="radio" aria-checked="${id === chosenSkin}" aria-label="${name}${why}" title="${name}${why}" data-s="${id}"${lock ? ' class="lock"' : ''}><canvas width="92" height="92"></canvas>${tag}</button>`;
   }).join('');
   renderSecs();
@@ -232,21 +232,21 @@ function renderSkins() {
   }
 }
 skinsEl.addEventListener('click', (e) => {
-  const t = e.target.closest('button');
-  if (!t) return;
-  const id = t.dataset.s,
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  const id = btn.dataset.s,
     i = SKINS.findIndex((k) => k[0] === id),
     price = SKIN_PRICE(i),
     name = SKINS[i][1],
     wasAsk = askSkin;
-  if (t.classList.contains('lock')) {
+  if (btn.classList.contains('lock')) {
     // a locked pattern is bought with two taps, so a stray tap never spends sugar
     if (sugar < price) {
       askSkin = null;
-      renderBank(`«${name}»: ${price} сахара, у тебя ${sugar}`);
+      renderBank(t('skin.short', name, price, sugar));
     } else if (askSkin !== id) {
       askSkin = id;
-      renderBank(`Ещё раз: купить «${name}» за ${price}`);
+      renderBank(t('skin.ask', name, price));
     } else {
       sugar -= price;
       saveSugar();
@@ -258,7 +258,7 @@ skinsEl.addEventListener('click', (e) => {
       Sfx.power();
       haptic(20);
       renderMissions();
-      renderBank(`Узор «${name}» твой`);
+      renderBank(t('skin.got', name));
     }
     if (wasAsk !== askSkin || chosenSkin === id) renderSkins();
     const el = skinsEl.querySelector(`[data-s="${id}"]`);
@@ -274,7 +274,7 @@ skinsEl.addEventListener('click', (e) => {
 function renderSwatches() {
   swEl.innerHTML = PALS.map(
     (p, i) =>
-      `<button type="button" role="radio" aria-checked="${i === chosen}" aria-label="${p.name}" title="${p.name}" data-i="${i}" style="background:${p.base}"></button>`,
+      `<button type="button" role="radio" aria-checked="${i === chosen}" aria-label="${nameOf(p.name)}" title="${nameOf(p.name)}" data-i="${i}" style="background:${p.base}"></button>`,
   ).join('');
 }
 swEl.addEventListener('click', (e) => {
@@ -330,12 +330,11 @@ function renderSecs() {
   const pal = PALS[chosen],
     skin = SKINS.find((k) => k[0] === chosenSkin),
     hat = HATS.find((h) => h.id === chosenHat),
-    look = [pal.name, skin && skin[1], hat && hat.id !== 'none' && hat.name].filter(Boolean).join(' · ');
+    look = [nameOf(pal.name), skin && skin[1], hat && hat.id !== 'none' && hat.name].filter(Boolean).join(' · ');
   $('sumLook').innerHTML = `<i style="background:${pal.base}"></i>${look}`;
-  $('sumMode').textContent =
-    `${{ free: 'Свободная', t3: '3 минуты', daily: 'Конфета дня' }[mode]} · ${mode === 'daily' ? 'Обычная' : pressedText('diffSeg')}`;
+  $('sumMode').textContent = `${t('sum.' + mode)} · ${mode === 'daily' ? t('dif.normal') : pressedText('diffSeg')}`;
   const mis = $('misList').children,
     done = $('misList').querySelectorAll('.mi.ok').length;
-  $('sumMis').textContent = mis.length ? `готово ${done} из ${mis.length}` : '';
-  $('sumSet').textContent = `графика: ${pressedText('gfxSeg').toLowerCase()}`;
+  $('sumMis').textContent = mis.length ? t('sum.mis', done, mis.length) : '';
+  $('sumSet').textContent = t('sum.set', pressedText('gfxSeg').toLowerCase());
 }

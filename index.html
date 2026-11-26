@@ -172,7 +172,7 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #dash:before{content:"";position:absolute;left:-9px;top:-9px;right:-9px;bottom:-9px;border-radius:50%;background:conic-gradient(var(--fc,#9be15d) calc(var(--f,0)*360deg),rgba(0,0,0,.4) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));opacity:0;pointer-events:none}
 #dash.fuse:before{opacity:1}
 #dash.low:before{animation:fuseBlink .2s linear infinite alternate}
-#dash.low:after{content:"ещё кусь!";position:absolute;left:50%;bottom:calc(100% + 14px);transform:translateX(-50%);font:900 12px/1 var(--font);color:var(--lemon);text-shadow:0 2px 0 rgba(0,0,0,.6);white-space:nowrap;pointer-events:none;animation:fuseBlink .2s linear infinite alternate}
+#dash.low:after{content:attr(data-c);position:absolute;left:50%;bottom:calc(100% + 14px);transform:translateX(-50%);font:900 12px/1 var(--font);color:var(--lemon);text-shadow:0 2px 0 rgba(0,0,0,.6);white-space:nowrap;pointer-events:none;animation:fuseBlink .2s linear infinite alternate}
 #dash .spr{position:absolute;left:50%;top:50%;width:0;height:0;opacity:0;pointer-events:none;animation:sprSpin 9s linear infinite paused}
 #dash.s3 .spr{opacity:1;animation-play-state:running}
 #dash .spr u{position:absolute;left:-4px;top:-1.5px;width:8px;height:3px;border-radius:2px;background:var(--c);transform:rotate(var(--a)) translateX(var(--sr,56px)) rotate(90deg)}
@@ -237,7 +237,7 @@ body.touch.lefty #dash.low:after{right:auto;left:calc(100% + 12px)}
 #modeSeg [data-m=daily]{grid-column:1/-1;grid-row:1;display:flex;align-items:baseline;align-content:center;justify-content:center;gap:0 8px;flex-wrap:wrap}
 #modeSeg [data-m=daily] small{font:700 13px/1.2 var(--font);color:#7a5a49}
 #dif.fixed .segN{opacity:.45;pointer-events:none}
-#dif.fixed .pl::after{content:': в конфете дня обычная'}
+#dif.fixed .pl::after{content:attr(data-c)}
 .row2{display:flex;gap:8px}
 .row2 .btn2{flex:1 1 0;min-width:0}
 #pause .grp{font:900 15px/1.2 var(--font);margin:14px 0 8px;color:var(--ink)}
@@ -311,6 +311,7 @@ body:not(.first) #menu .tag{display:none} /* the one line about the game is for 
 #rec{margin:12px 0 0}
 #menu .grp{font:800 13px/1.2 var(--font);color:#7a5a49;margin:12px 0 6px}
 #menu .grp:first-child{margin-top:2px}
+#menu #langSeg{margin-bottom:12px} /* the shared settings below start with a first-child heading (2px): keep the usual 12px after the language row */
 #menu #fpsSeg{margin:8px 0 0}
 body:not(.touch) #menu .tch{display:none} /* thumb-button settings mean nothing with a mouse */
 body:not(.touch) #menu #gfxSeg{margin-bottom:0}
@@ -468,101 +469,104 @@ document.getElementById('nojs').style.display = 'none';
   window.addEventListener('unhandledrejection', function (e) { show(String(e.reason && e.reason.message || e.reason || '')); });
 })();
 </script>
-<canvas id="c" aria-label="Игровое поле"></canvas>
+<canvas id="c" aria-label="Игровое поле" data-ta="a.field"></canvas>
 <div id="vig"></div>
 <div id="safe"></div>
 
 <div id="hud" class="hidden">
-  <div id="score"><div id="mass">0</div><div class="lbl">масса</div><div id="sugar" aria-label="сахар 0"><span class="sock"><svg viewBox="0 0 24 24"><path d="M12 2.5 21 7.2 12 11.9 3 7.2Z" fill="#fffaf0" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M3 7.2 12 11.9V21.5L3 16.8Z" fill="#efe1c8" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M21 7.2 12 11.9V21.5L21 16.8Z" fill="#d6bd95" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><circle cx="9.5" cy="6.6" r=".9" fill="#fff"/><circle cx="14.2" cy="7.6" r=".7" fill="#fff"/><circle cx="6.5" cy="12" r=".6" fill="#fff"/></svg></span><span class="num"></span><span class="mult"></span></div><div id="timer"></div><div id="goal"></div><div id="stage" class="off"><span class="fill"></span><span class="t"></span><b></b></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="streakSum" role="status"></div><div id="feed" aria-live="polite"></div></div>
-  <button id="pauseBtn" type="button" aria-label="Пауза" title="Пауза (Esc)"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
-  <button id="dash" type="button" aria-label="Рывок с укусом"><span><b>Кусь</b><small>пробел</small></span></button>
-  <button id="dodge" type="button" aria-label="Язык-присоска"><span><b>Язык</b><small>shift</small></span></button>
+  <div id="score"><div id="mass">0</div><div class="lbl" data-t="hud.mass">масса</div><div id="sugar" aria-label="сахар 0"><span class="sock"><svg viewBox="0 0 24 24"><path d="M12 2.5 21 7.2 12 11.9 3 7.2Z" fill="#fffaf0" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M3 7.2 12 11.9V21.5L3 16.8Z" fill="#efe1c8" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M21 7.2 12 11.9V21.5L21 16.8Z" fill="#d6bd95" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><circle cx="9.5" cy="6.6" r=".9" fill="#fff"/><circle cx="14.2" cy="7.6" r=".7" fill="#fff"/><circle cx="6.5" cy="12" r=".6" fill="#fff"/></svg></span><span class="num"></span><span class="mult"></span></div><div id="timer"></div><div id="goal"></div><div id="stage" class="off"><span class="fill"></span><span class="t"></span><b></b></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="streakSum" role="status"></div><div id="feed" aria-live="polite"></div></div>
+  <button id="pauseBtn" type="button" aria-label="Пауза" title="Пауза (Esc)" data-ta="pause" data-tt="pause.tip"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
+  <button id="dash" type="button" aria-label="Рывок с укусом" data-ta="a.dash" data-tc="dash.low"><span><b data-t="btn.kus">Кусь</b><small data-t="btn.space">пробел</small></span></button>
+  <button id="dodge" type="button" aria-label="Язык-присоска" data-ta="a.tongue"><span><b data-t="btn.tongue">Язык</b><small>shift</small></span></button>
 </div>
 
-<div id="board"><div class="bt">Самые сладкие</div><ol id="lb"></ol></div>
+<div id="board"><div class="bt" data-t="board.t">Самые сладкие</div><ol id="lb"></ol></div>
 
-<button id="mute" type="button" aria-label="Выключить звук" title="Звук (M)">
+<button id="mute" type="button" aria-label="Выключить звук" title="Звук (M)" data-ta="a.mute" data-tt="mute.tip">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5v14l-4.5-4.5H4z" fill="currentColor"/><path class="on" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="off" d="M16 9.5l5 5m0-5l-5 5"/></svg>
 </button>
 
 <div id="menu" class="ov">
   <div class="wrap"><div class="card">
     <div class="top">
-    <h1 class="logo">КУСЬ<span>.io</span></h1>
-    <p class="tag">Откусывай куски от других конфет и расти.</p>
-    <input id="nick" maxlength="14" placeholder="Твоё имя" autocomplete="off" spellcheck="false" aria-label="Имя">
+    <h1 class="logo" data-th="logo">КУСЬ<span>.io</span></h1>
+    <p class="tag" data-t="menu.tag">Откусывай куски от других конфет и расти.</p>
+    <input id="nick" maxlength="14" placeholder="Твоё имя" autocomplete="off" spellcheck="false" aria-label="Имя" data-tp="nick.ph" data-ta="a.nick">
     <div class="bankRow later"><p id="bank" aria-live="polite"></p><button id="albumBtn" class="btn2" type="button"></button></div>
     </div>
     <p id="chal" class="hidden"></p>
     <div class="secs"><!-- folding sections: the head says what is chosen, one opens at a time -->
-      <section class="sec later" id="secMode"><button class="sh" type="button" aria-expanded="false" aria-controls="secModeB"><span class="sk">Режим</span><span class="sv" id="sumMode"></span></button><div class="sb" id="secModeB">
-        <div class="pk"><div class="seg2" id="modeSeg" role="group" aria-label="Режим"><button type="button" data-m="free">Свободная игра</button><button type="button" data-m="t3">3 минуты на счёт</button><button type="button" data-m="daily">Конфета дня</button></div></div>
-        <div class="pk" id="dif"><span class="pl">Сложность</span><div class="segN" id="diffSeg" role="group" aria-label="Сложность"><button type="button" data-v="easy">Лёгкая</button><button type="button" data-v="normal">Обычная</button><button type="button" data-v="hard">Жёсткая</button><button type="button" data-v="extreme">Экстрим</button></div></div>
+      <section class="sec later" id="secMode"><button class="sh" type="button" aria-expanded="false" aria-controls="secModeB"><span class="sk" data-t="sec.mode">Режим</span><span class="sv" id="sumMode"></span></button><div class="sb" id="secModeB">
+        <div class="pk"><div class="seg2" id="modeSeg" role="group" aria-label="Режим" data-ta="sec.mode"><button type="button" data-m="free" data-t="mode.free">Свободная игра</button><button type="button" data-m="t3" data-t="mode.t3">3 минуты на счёт</button><button type="button" data-m="daily" data-t="mode.daily">Конфета дня</button></div></div>
+        <div class="pk" id="dif"><span class="pl" data-t="dif" data-tc="dif.fixed">Сложность</span><div class="segN" id="diffSeg" role="group" aria-label="Сложность" data-ta="dif"><button type="button" data-v="easy" data-t="dif.easy">Лёгкая</button><button type="button" data-v="normal" data-t="dif.normal">Обычная</button><button type="button" data-v="hard" data-t="dif.hard">Жёсткая</button><button type="button" data-v="extreme" data-t="dif.extreme">Экстрим</button></div></div>
       </div></section>
-      <section class="sec" id="secLook"><button class="sh" type="button" aria-expanded="false" aria-controls="secLookB"><span class="sk">Конфета</span><span class="sv" id="sumLook"></span></button><div class="sb" id="secLookB">
-        <div class="pk"><span class="pl">Вкус</span><div id="sw" class="pr" role="radiogroup" aria-label="Вкус"></div></div>
-        <div class="pk later"><span class="pl">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор"></div></div>
-        <div class="pk later"><span class="pl">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка"></div></div>
+      <section class="sec" id="secLook"><button class="sh" type="button" aria-expanded="false" aria-controls="secLookB"><span class="sk" data-t="sec.look">Конфета</span><span class="sv" id="sumLook"></span></button><div class="sb" id="secLookB">
+        <div class="pk"><span class="pl" data-t="look.flavor">Вкус</span><div id="sw" class="pr" role="radiogroup" aria-label="Вкус" data-ta="look.flavor"></div></div>
+        <div class="pk later"><span class="pl" data-t="look.skin">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор" data-ta="look.skin"></div></div>
+        <div class="pk later"><span class="pl" data-t="look.hat">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка" data-ta="look.hat"></div></div>
         <p class="best later" id="rec"></p>
       </div></section>
-      <section class="sec later" id="secMis"><button class="sh" type="button" aria-expanded="false" aria-controls="secMisB"><span class="sk">Задания</span><span class="sv" id="sumMis"></span></button><div class="sb" id="secMisB">
-        <div class="pk" id="mis"><span class="pl" id="misT">Задания</span><div id="misList"></div></div>
+      <section class="sec later" id="secMis"><button class="sh" type="button" aria-expanded="false" aria-controls="secMisB"><span class="sk" data-t="sec.mis">Задания</span><span class="sv" id="sumMis"></span></button><div class="sb" id="secMisB">
+        <div class="pk" id="mis"><span class="pl" id="misT" data-t="sec.mis">Задания</span><div id="misList"></div></div>
       </div></section>
-      <section class="sec later" id="secSet"><button class="sh" type="button" aria-expanded="false" aria-controls="secSetB"><span class="sk">Настройки</span><span class="sv" id="sumSet"></span></button><div class="sb" id="secSetB"></div></section>
-      <section class="sec later" id="secHelp"><button class="sh" type="button" aria-expanded="false" aria-controls="secHelpB"><span class="sk">Как играть</span><span class="sv">управление и советы</span></button><div class="sb" id="secHelpB">
+      <section class="sec later" id="secSet"><button class="sh" type="button" aria-expanded="false" aria-controls="secSetB"><span class="sk" data-t="sec.set">Настройки</span><span class="sv" id="sumSet"></span></button><div class="sb" id="secSetB"><!-- the language row stays here, never on the pause card: switching reloads the page -->
+    <div class="grp lng" data-t="set.lang">Язык</div>
+    <div class="seg2 lng" id="langSeg"><button type="button" data-v="ru" lang="ru">Русский</button><button type="button" data-v="en" lang="en">English</button></div>
+      </div></section>
+      <section class="sec later" id="secHelp"><button class="sh" type="button" aria-expanded="false" aria-controls="secHelpB"><span class="sk" data-t="sec.help">Как играть</span><span class="sv" data-t="help.sub">управление и советы</span></button><div class="sb" id="secHelpB">
     <ul class="help">
-      <li class="kb"><span><b>Мышь</b>: куда смотрит пасть</span></li>
-      <li class="kb"><span><b>Пробел, клик или «Кусь»</b>: рывок с укусом посильнее</span></li>
-      <li class="kb"><span><b>Shift, правый клик или «Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
-      <li class="tc"><span><b>Води пальцем по экрану</b>: под ним появится джойстик</span></li>
-      <li class="tc"><span><b>«Кусь»</b>: рывок с укусом посильнее, можно держать</span></li>
-      <li class="tc"><span><b>«Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
-      <li><span>Кусает только пасть, так что заходи со спины</span></li>
-      <li><span>Тебя тоже будут кусать: ранки затянутся, а есть можно дальше</span></li>
-      <li><span>На поле лежат бонусы: скорость, щит и магнит</span></li>
-      <li><span>Ёж колется со спины, кусай его в морду. Торт кусай в вишенку</span></li>
-      <li><span>Свежие ранки замедляют и сыплют крошками, добивай подранков</span></li>
-      <li><span>Укус в свежую ранку отрывает на треть больше</span></li>
+      <li class="kb"><span data-th="help.mouse"><b>Мышь</b>: куда смотрит пасть</span></li>
+      <li class="kb"><span data-th="help.space"><b>Пробел, клик или «Кусь»</b>: рывок с укусом посильнее</span></li>
+      <li class="kb"><span data-th="help.shift"><b>Shift, правый клик или «Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
+      <li class="tc"><span data-th="help.finger"><b>Води пальцем по экрану</b>: под ним появится джойстик</span></li>
+      <li class="tc"><span data-th="help.kus"><b>«Кусь»</b>: рывок с укусом посильнее, можно держать</span></li>
+      <li class="tc"><span data-th="help.tongue"><b>«Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
+      <li><span data-th="help.t1">Кусает только пасть, так что заходи со спины</span></li>
+      <li><span data-th="help.t2">Тебя тоже будут кусать: ранки затянутся, а есть можно дальше</span></li>
+      <li><span data-th="help.t3">На поле лежат бонусы: скорость, щит и магнит</span></li>
+      <li><span data-th="help.t4">Ёж колется со спины, кусай его в морду. Торт кусай в вишенку</span></li>
+      <li><span data-th="help.t5">Свежие ранки замедляют и сыплют крошками, добивай подранков</span></li>
+      <li><span data-th="help.t6">Укус в свежую ранку отрывает на треть больше</span></li>
     </ul>
       </div></section>
     </div>
-    <div class="go"><button id="play" class="btn" type="button">Играть</button></div>
+    <div class="go"><button id="play" class="btn" type="button" data-t="menu.play">Играть</button></div>
   </div></div>
 </div>
 
-<div id="adm" class="ov center hidden" role="dialog" aria-label="Админ-панель">
-  <div class="wrap"><button class="x" id="admX" type="button" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
-    <h2 class="dead">Админ-панель</h2>
-    <p class="tag">Игра стоит на паузе, пока панель открыта. С включёнными читами рекорд не засчитывается.</p>
-    <div class="grp">Читы</div><div class="tgs" id="admT"></div>
-    <div class="grp">Скорость конфеты</div><div class="seg" id="admS"></div>
-    <div class="grp">Действия</div><div class="acts" id="admA"></div>
-    <button id="admClose" class="btn" type="button">Продолжить</button>
+<div id="adm" class="ov center hidden" role="dialog" aria-label="Админ-панель" data-ta="adm.title">
+  <div class="wrap"><button class="x" id="admX" type="button" aria-label="Закрыть" title="Закрыть" data-ta="a.close" data-tt="a.close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
+    <h2 class="dead" data-t="adm.title">Админ-панель</h2>
+    <p class="tag" data-t="adm.tag">Игра стоит на паузе, пока панель открыта. С включёнными читами рекорд не засчитывается.</p>
+    <div class="grp" data-t="adm.cheats">Читы</div><div class="tgs" id="admT"></div>
+    <div class="grp" data-t="adm.speed">Скорость конфеты</div><div class="seg" id="admS"></div>
+    <div class="grp" data-t="adm.acts">Действия</div><div class="acts" id="admA"></div>
+    <button id="admClose" class="btn" type="button" data-t="btn.resume">Продолжить</button>
   </div></div>
 </div>
 
 <div id="over" class="ov center hidden">
-  <div class="wrap" id="overWrap"><button class="x" id="overX" type="button" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
+  <div class="wrap" id="overWrap"><button class="x" id="overX" type="button" aria-label="Закрыть" title="Закрыть" data-ta="a.close" data-tt="a.close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
     <svg id="trMedal" viewBox="-40 -40 80 80" aria-hidden="true"><circle r="36" fill="#ffe3ea" stroke="#ffc3d2" stroke-width="3"/><ellipse cy="22" rx="30" ry="6" fill="#f0d3b2"/><rect x="-25" y="-4" width="50" height="26" rx="6" fill="#7a3f26"/><rect x="-25" y="6" width="50" height="5" fill="#ff8fb0"/><g fill="#fff6e8"><rect x="-27" y="-11" width="54" height="12" rx="6"/><path d="M-20.2 1a3.2 3.2 0 006.4 0zM-7.2 1a3.2 3.2 0 006.4 0zM7.8 1a3.2 3.2 0 006.4 0zM16.8 1a3.2 3.2 0 006.4 0z"/><rect x="-20.2" y="-2" width="6.4" height="3"/><rect x="-7.2" y="-2" width="6.4" height="3"/><rect x="7.8" y="-2" width="6.4" height="3"/><rect x="16.8" y="-2" width="6.4" height="3"/></g><g stroke-width="2" stroke-linecap="round"><path stroke="#ff5d8f" d="M-18.3 -7L-13.7 -5"/><path stroke="#ffd23f" d="M-4.5 -10L-7.5 -6"/><path stroke="#7ad7ff" d="M4.6 -7.1L7.4 -2.9"/><path stroke="#9be15d" d="M18.4 -8.8L13.6 -7.2"/><path stroke="#c49bff" d="M-10.9 -5.5L-11.1 -0.5"/><path stroke="#fff6e8" d="M9.5 -2.5L14.5 -1.5"/></g><path d="M0-18Q2-27 8-30" fill="none" stroke="#5a8a2a" stroke-width="2"/><circle cy="-15" r="7.5" fill="#e8274b"/><circle cx="-2.6" cy="-18" r="2.2" fill="#fff" fill-opacity=".75"/></svg>
-    <h2 class="dead" id="overT">Тебя доели</h2>
+    <h2 class="dead" id="overT" data-t="over.t">Тебя доели</h2>
     <p class="tag" id="who"></p>
     <p id="trRec" class="hidden"></p>
-    <div id="trTiles"><div><b></b><span>масса</span></div><div><b></b><span>укусов</span></div><div><b></b><span>сахара</span></div></div>
+    <div id="trTiles"><div><b></b><span data-t="hud.mass">масса</span></div><div><b></b><span data-t="st.bites">укусов</span></div><div><b></b><span data-t="st.sugar">сахара</span></div></div>
     <div class="stats">
-      <div><b id="sMax">0</b><span>макс. масса</span></div>
-      <div><b id="sBites">0</b><span>укусов</span></div>
-      <div><b id="sKills">0</b><span>съедено целиком</span></div>
-      <div><b id="sTime">0:00</b><span id="sTimeL">время в игре</span></div>
+      <div><b id="sMax">0</b><span data-t="st.max">макс. масса</span></div>
+      <div><b id="sBites">0</b><span data-t="st.bites">укусов</span></div>
+      <div><b id="sKills">0</b><span data-t="st.kills">съедено целиком</span></div>
+      <div><b id="sTime">0:00</b><span id="sTimeL" data-t="st.time">время в игре</span></div>
     </div>
     <div id="sweet" class="hidden">
-      <div class="sw1"><b id="sweetN">+0</b><span>сахара за раунд</span><span id="sweetBank"></span></div>
+      <div class="sw1"><b id="sweetN">+0</b><span data-t="sweet.round">сахара за раунд</span><span id="sweetBank"></span></div>
       <p id="chestT"></p>
-      <div id="chestRow" role="group" aria-label="Три конфеты"></div>
+      <div id="chestRow" role="group" aria-label="Три конфеты" data-ta="a.chest"></div>
     </div>
     <div id="overMis"></div>
-    <button id="again" class="btn" type="button">Ещё кусь</button>
-    <div class="row2"><button id="chalBtn" class="btn2" type="button">Бросить вызов другу</button><button id="toMenu" class="btn2" type="button">В меню</button></div>
-    <input id="chalLink" class="hidden" readonly aria-label="Ссылка-вызов">
+    <button id="again" class="btn" type="button" data-t="over.again">Ещё кусь</button>
+    <div class="row2"><button id="chalBtn" class="btn2" type="button" data-t="over.chal">Бросить вызов другу</button><button id="toMenu" class="btn2" type="button" data-t="over.menu">В меню</button></div>
+    <input id="chalLink" class="hidden" readonly aria-label="Ссылка-вызов" data-ta="a.chalLink">
     <p id="chalRes"></p>
     <p class="best" id="best"></p>
     <p class="best" id="stk"></p>
@@ -570,30 +574,30 @@ document.getElementById('nojs').style.display = 'none';
   </div><canvas id="trophyFx" aria-hidden="true"></canvas></div>
 </div>
 
-<div id="album" class="ov center hidden" role="dialog" aria-label="Альбом">
-  <div class="wrap"><button class="x" id="albumX" type="button" aria-label="Закрыть" title="Закрыть (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
-    <h2 class="dead">Альбом <span id="albumN"></span></h2>
+<div id="album" class="ov center hidden" role="dialog" aria-label="Альбом" data-ta="album.t">
+  <div class="wrap"><button class="x" id="albumX" type="button" aria-label="Закрыть" title="Закрыть (Esc)" data-ta="a.close" data-tt="a.closeEsc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
+    <h2 class="dead"><span data-t="album.t">Альбом</span> <span id="albumN"></span></h2>
     <p class="tag" id="albumSub"></p>
     <div id="albumRows"></div>
     <p class="best" id="albumCap" aria-live="polite"></p>
   </div></div>
 </div>
 
-<div id="pause" class="ov center hidden" role="dialog" aria-label="Пауза">
-  <div class="wrap"><button class="x" id="pauseX" type="button" aria-label="Закрыть" title="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
-    <h2 class="dead">Пауза</h2>
+<div id="pause" class="ov center hidden" role="dialog" aria-label="Пауза" data-ta="pause">
+  <div class="wrap"><button class="x" id="pauseX" type="button" aria-label="Закрыть" title="Закрыть" data-ta="a.close" data-tt="a.close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
+    <h2 class="dead" data-t="pause">Пауза</h2>
     <div id="setBox"><!-- moves into the menu's settings section while the menu is open -->
-    <div class="grp tch">Кнопки на экране</div>
-    <div class="seg2 tch" id="handSeg"><button type="button" data-v="0">Справа</button><button type="button" data-v="1">Слева</button></div>
-    <div class="grp tch">Размер кнопок</div>
-    <div class="seg3 tch" id="sizeSeg"><button type="button" data-v="0.85">Мелкие</button><button type="button" data-v="1">Средние</button><button type="button" data-v="1.18">Крупные</button></div>
-    <div class="grp">Графика</div>
-    <div class="seg3" id="gfxSeg"><button type="button" data-v="auto">Авто</button><button type="button" data-v="low">Лёгкая</button><button type="button" data-v="high">Полная</button></div>
-    <div class="seg2" id="fpsSeg" role="group" aria-label="Счётчик кадров"><button type="button" data-v="0">Без счётчика кадров</button><button type="button" data-v="1">Показывать FPS</button></div>
+    <div class="grp tch" data-t="set.hand">Кнопки на экране</div>
+    <div class="seg2 tch" id="handSeg"><button type="button" data-v="0" data-t="set.right">Справа</button><button type="button" data-v="1" data-t="set.left">Слева</button></div>
+    <div class="grp tch" data-t="set.size">Размер кнопок</div>
+    <div class="seg3 tch" id="sizeSeg"><button type="button" data-v="0.85" data-t="set.s">Мелкие</button><button type="button" data-v="1" data-t="set.m">Средние</button><button type="button" data-v="1.18" data-t="set.l">Крупные</button></div>
+    <div class="grp" data-t="set.gfx">Графика</div>
+    <div class="seg3" id="gfxSeg"><button type="button" data-v="auto" data-t="set.auto">Авто</button><button type="button" data-v="low" data-t="set.low">Лёгкая</button><button type="button" data-v="high" data-t="set.high">Полная</button></div>
+    <div class="seg2" id="fpsSeg" role="group" aria-label="Счётчик кадров" data-ta="set.fps"><button type="button" data-v="0" data-t="set.fps0">Без счётчика кадров</button><button type="button" data-v="1" data-t="set.fps1">Показывать FPS</button></div>
     </div>
-    <button id="resume" class="btn" type="button">Продолжить</button>
-    <button id="pAdmin" class="btn2" type="button">Админ-панель</button>
-    <button id="pMenu" class="btn2" type="button">Выйти в меню</button>
+    <button id="resume" class="btn" type="button" data-t="btn.resume">Продолжить</button>
+    <button id="pAdmin" class="btn2" type="button" data-t="adm.title">Админ-панель</button>
+    <button id="pMenu" class="btn2" type="button" data-t="pause.menu">Выйти в меню</button>
   </div></div>
 </div>
 
@@ -624,6 +628,501 @@ const vnoise = (x) => {
 };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const FONT = '"Nunito", ui-rounded, "Arial Rounded MT Bold", "Segoe UI", system-ui, sans-serif';
+
+// ---------- language ----------
+// The game speaks Russian or English. The saved choice (kus.lang) wins over the phone's language; ru, be and kk phones get Russian.
+// Switching reloads the page, so everything is drawn once in one language and nothing needs re-rendering.
+const LANG = (() => {
+  try {
+    const s = localStorage.getItem('kus.lang');
+    if (s === 'ru' || s === 'en') return s;
+  } catch (e) {}
+  const nav = (navigator.languages && navigator.languages[0]) || navigator.language || '';
+  return ['ru', 'be', 'kk'].includes(nav.split('-')[0].toLowerCase()) ? 'ru' : 'en';
+})();
+// key → [Russian, English]; a value is a string or a function of the arguments t() gets (templates, numbers)
+const STR = {
+  title: ['КУСЬ.io — мягкие конфеты кусают друг друга', 'KUS.io — soft candies bite each other'],
+  'set.lang': ['Язык', 'Language'],
+  'dash.low': ['ещё кусь!', 'one more Kusь!'],
+  'dif.fixed': [': в конфете дня обычная', ': normal in the Candy of the Day'],
+  defName: ['Кусака', 'Kusaka'], // the name of a player who typed none; never saved, so it follows the language
+  friend: ['Друг', 'Friend'], // a challenge link without a name
+  // the page markup (data-t, data-th, data-ta, data-tt, data-tp in src/index.html)
+  'a.field': ['Игровое поле', 'Game field'],
+  'hud.mass': ['масса', 'mass'],
+  pause: ['Пауза', 'Pause'],
+  'pause.tip': ['Пауза (Esc)', 'Pause (Esc)'],
+  'a.dash': ['Рывок с укусом', 'Dash and bite'],
+  'btn.kus': ['Кусь', 'Kusь!'],
+  'btn.space': ['пробел', 'space'],
+  'a.tongue': ['Язык-присоска', 'Sticky tongue'],
+  'btn.tongue': ['Язык', 'Tongue'],
+  'board.t': ['Самые сладкие', 'Sweetest'],
+  'mute.tip': ['Звук (M)', 'Sound (M)'],
+  logo: ['КУСЬ<span>.io</span>', 'KUS<span>.io</span>'],
+  'menu.tag': ['Откусывай куски от других конфет и расти.', 'Bite pieces off other candies and grow.'],
+  'nick.ph': ['Твоё имя', 'Your name'],
+  'a.nick': ['Имя', 'Name'],
+  'sec.mode': ['Режим', 'Mode'],
+  'mode.free': ['Свободная игра', 'Free play'],
+  'mode.t3': ['3 минуты на счёт', '3 minutes for score'],
+  'mode.daily': ['Конфета дня', 'Candy of the Day'],
+  dif: ['Сложность', 'Difficulty'],
+  'dif.easy': ['Лёгкая', 'Easy'],
+  'dif.normal': ['Обычная', 'Normal'],
+  'dif.hard': ['Жёсткая', 'Hard'],
+  'dif.extreme': ['Экстрим', 'Extreme'],
+  'sec.look': ['Конфета', 'Candy'],
+  'look.flavor': ['Вкус', 'Flavor'],
+  'look.skin': ['Узор', 'Pattern'],
+  'look.hat': ['Шапка', 'Hat'],
+  'sec.mis': ['Задания', 'Missions'],
+  'sec.set': ['Настройки', 'Settings'],
+  'sec.help': ['Как играть', 'How to play'],
+  'help.sub': ['управление и советы', 'controls and tips'],
+  'help.mouse': ['<b>Мышь</b>: куда смотрит пасть', '<b>Mouse</b>: where the mouth looks'],
+  'help.space': ['<b>Пробел, клик или «Кусь»</b>: рывок с укусом посильнее', '<b>Space, click or “Kusь!”</b>: a dash with a stronger bite'],
+  'help.shift': [
+    '<b>Shift, правый клик или «Язык»</b>: язык-присоска, тянет добычу к пасти',
+    '<b>Shift, right click or “Tongue”</b>: a sticky tongue pulls prey to your mouth',
+  ],
+  'help.finger': ['<b>Води пальцем по экрану</b>: под ним появится джойстик', '<b>Drag a finger on the screen</b>: a joystick appears under it'],
+  'help.kus': ['<b>«Кусь»</b>: рывок с укусом посильнее, можно держать', '<b>“Kusь!”</b>: a dash with a stronger bite, you can hold it'],
+  'help.tongue': ['<b>«Язык»</b>: язык-присоска, тянет добычу к пасти', '<b>“Tongue”</b>: a sticky tongue pulls prey to your mouth'],
+  'help.t1': ['Кусает только пасть, так что заходи со спины', 'Only the mouth bites, so come in from behind'],
+  'help.t2': ['Тебя тоже будут кусать: ранки затянутся, а есть можно дальше', 'You will get bitten too: wounds heal, and you can keep eating'],
+  'help.t3': ['На поле лежат бонусы: скорость, щит и магнит', 'Bonuses lie on the field: speed, shield and magnet'],
+  'help.t4': [
+    'Ёж колется со спины, кусай его в морду. Торт кусай в вишенку',
+    'A hedgehog pricks from behind, bite its face. Bite the cake on its cherry',
+  ],
+  'help.t5': ['Свежие ранки замедляют и сыплют крошками, добивай подранков', 'Fresh wounds slow you down and shed crumbs: finish off the wounded'],
+  'help.t6': ['Укус в свежую ранку отрывает на треть больше', 'A bite into a fresh wound tears off a third more'],
+  'menu.play': ['Играть', 'Play'],
+  'adm.title': ['Админ-панель', 'Admin panel'],
+  'a.close': ['Закрыть', 'Close'],
+  'a.closeEsc': ['Закрыть (Esc)', 'Close (Esc)'],
+  'adm.tag': [
+    'Игра стоит на паузе, пока панель открыта. С включёнными читами рекорд не засчитывается.',
+    'The game is paused while the panel is open. With cheats on, records do not count.',
+  ],
+  'adm.cheats': ['Читы', 'Cheats'],
+  'adm.speed': ['Скорость конфеты', 'Candy speed'],
+  'adm.acts': ['Действия', 'Actions'],
+  'btn.resume': ['Продолжить', 'Resume'],
+  'over.t': ['Тебя доели', 'You got eaten'],
+  'st.bites': ['укусов', 'bites'],
+  'st.sugar': ['сахара', 'sugar'],
+  'st.max': ['макс. масса', 'max mass'],
+  'st.kills': ['съедено целиком', 'swallowed whole'],
+  'st.time': ['время в игре', 'time played'],
+  'sweet.round': ['сахара за раунд', 'sugar this round'],
+  'a.chest': ['Три конфеты', 'Three candies'],
+  'over.again': ['Ещё кусь', 'One more Kusь'],
+  'over.chal': ['Бросить вызов другу', 'Challenge a friend'],
+  'over.menu': ['В меню', 'Menu'],
+  'a.chalLink': ['Ссылка-вызов', 'Challenge link'],
+  'album.t': ['Альбом', 'Album'],
+  'set.hand': ['Кнопки на экране', 'On-screen buttons'],
+  'set.right': ['Справа', 'Right'],
+  'set.left': ['Слева', 'Left'],
+  'set.size': ['Размер кнопок', 'Button size'],
+  'set.s': ['Мелкие', 'Small'],
+  'set.m': ['Средние', 'Medium'],
+  'set.l': ['Крупные', 'Large'],
+  'set.gfx': ['Графика', 'Graphics'],
+  'set.auto': ['Авто', 'Auto'],
+  'set.low': ['Лёгкая', 'Light'],
+  'set.high': ['Полная', 'Full'],
+  'set.fps': ['Счётчик кадров', 'Frame counter'],
+  'set.fps0': ['Без счётчика кадров', 'No frame counter'],
+  'set.fps1': ['Показывать FPS', 'Show FPS'],
+  'pause.menu': ['Выйти в меню', 'Quit to menu'],
+  // the menu, missions, admin panel and candy of the day built in JS
+  'a.mute': ['Выключить звук', 'Mute'],
+  'a.unmute': ['Включить звук', 'Sound on'],
+  'hat.from': [(n) => `с ${n}`, (n) => `at ${n}`],
+  rec: [(n) => `Рекорд: ${n}`, (n) => `Record: ${n}`],
+  'rec.none': ['Шапки открываются за рекорд по массе', 'Hats unlock with your mass record'],
+  bank: [(n) => `Сахар: ${n}`, (n) => `Sugar: ${n}`],
+  'skin.buy': ['купить', 'buy'],
+  'skin.why': [(n) => `: за задание или за ${n} сахара`, (n) => `: for a mission or ${n} sugar`],
+  'skin.short': [(n, p, s) => `«${n}»: ${p} сахара, у тебя ${s}`, (n, p, s) => `“${n}”: ${p} sugar, you have ${s}`],
+  'skin.ask': [(n, p) => `Ещё раз: купить «${n}» за ${p}`, (n, p) => `Tap again: buy “${n}” for ${p}`],
+  'skin.got': [(n) => `Узор «${n}» твой`, (n) => `The “${n}” pattern is yours`],
+  'sum.free': ['Свободная', 'Free play'],
+  'sum.t3': ['3 минуты', '3 minutes'],
+  'sum.daily': ['Конфета дня', 'Candy of the Day'],
+  'sum.mis': [(d, n) => `готово ${d} из ${n}`, (d, n) => `${d} of ${n} done`],
+  'sum.set': [(g) => `графика: ${g}`, (g) => `graphics: ${g}`],
+  'pick.speed': ['Скорость', 'Speed'],
+  'pick.shield': ['Щит', 'Shield'],
+  'pick.magnet': ['Магнит', 'Magnet'],
+  'hat.none': ['Без шапки', 'No hat'],
+  'hat.bow': ['Бантик', 'Bow'],
+  'hat.crown': ['Корона', 'Crown'],
+  'hat.chef': ['Колпак', 'Chef hat'],
+  'hat.horns': ['Рожки', 'Horns'],
+  'skin.plain': ['Гладкая', 'Plain'],
+  'skin.stripes': ['Полоски', 'Stripes'],
+  'skin.dots': ['Горошек', 'Polka dots'],
+  'skin.swirl': ['Леденец', 'Lollipop'],
+  'skin.waffle': ['Вафля', 'Waffle'],
+  'skin.hearts': ['Сердечки', 'Hearts'],
+  'skin.stars': ['Звёздочки', 'Stars'],
+  'skin.tiger': ['Тигр', 'Tiger'],
+  'skin.cow': ['Пятнышки', 'Spots'],
+  'skin.glaze': ['Глазурь', 'Glaze'],
+  'skin.rainbow': ['Радуга', 'Rainbow'],
+  'skin.bubbles': ['Пузыри', 'Bubbles'],
+  'skin.zigzag': ['Зигзаг', 'Zigzag'],
+  'skin.galaxy': ['Космос', 'Galaxy'],
+  'cheat.god': ['Бессмертие', 'Immortal'],
+  'cheat.mega': ['Мега-укус и язык', 'Mega bite and tongue'],
+  'cheat.cd': ['Без перезарядки', 'No cooldown'],
+  'cheat.peace': ['Боты меня не трогают', 'Bots leave me alone'],
+  'cheat.magnet': ['Магнит для еды', 'Food magnet'],
+  'cheat.heal': ['Раны сразу заживают', 'Wounds heal at once'],
+  'cheat.slow': ['Замедление времени', 'Slow motion'],
+  'act.0': ['+100 массы', '+100 mass'],
+  'act.1': ['+1000 массы', '+1000 mass'],
+  'act.2': ['Масса как на старте', 'Start mass again'],
+  'act.3': ['Залечить раны', 'Heal wounds'],
+  'act.4': ['Мелочь вокруг', 'Small fry around'],
+  'act.5': ['Гигант рядом', 'A giant nearby'],
+  'act.6': ['Гора посыпки', 'A heap of sprinkles'],
+  'act.7': ['Кусь по округе', 'Kusь all around'],
+  'act.8': ['Съесть всех рядом', 'Eat everyone near'],
+  'act.9': ['Ёж рядом', 'A hedgehog nearby'],
+  'act.10': ['Стая пираний', 'A piranha pack'],
+  'act.11': ['Торт рядом', 'A cake nearby'],
+  'act.12': ['Бонусы вокруг', 'Bonuses around'],
+  'act.13': ['Открыть все узоры', 'Open all patterns'],
+  'act.14': ['Очистить карту', 'Clear the map'],
+  'cheat.speed': [(v) => `скорость ×${v}`, (v) => `speed ×${v}`],
+  'cheat.tag': [(s) => `Читы: ${s}`, (s) => `Cheats: ${s}`],
+  'day.hedge': ['День ежей', 'Hedgehog Day'],
+  'day.hedge.n': ['Ежей на поле вдвое больше. Кусай их в морду, со спины колются', 'Twice the hedgehogs. Bite their faces, their backs prick'],
+  'day.double': ['Двойная посыпка', 'Double Sprinkles'],
+  'day.double.n': ['Каждая посыпка весит вдвое больше, растут все', 'Every sprinkle weighs double, everyone grows'],
+  'day.tiny': ['Кроха', 'Tiny'],
+  'day.tiny.n': ['Ты начинаешь крошечным, и после каждого раза тоже', 'You start tiny, and every time after too'],
+  'day.piranha': ['Пираньи', 'Piranhas'],
+  'day.piranha.n': ['Стаи пираний с первых секунд и вдвое чаще', 'Piranha packs from the first seconds, twice as often'],
+  'day.magnet': ['Магнитный день', 'Magnet Day'],
+  'day.magnet.n': ['Все бонусы — магниты, и падают они чаще', 'Every bonus is a magnet, and they drop more often'],
+  'day.cake': ['Торт с утра', 'Cake for Breakfast'],
+  'day.cake.n': ['Торт на поле с самого начала. Кусай в вишенку', 'The cake is on the field from the start. Bite its cherry'],
+  'day.small': ['Мелюзга', 'Small Fry'],
+  'day.small.n': ['Все соперники мелкие, крупных сегодня нет', 'All rivals are small, no big ones today'],
+  'day.quick': ['Быстрые зубы', 'Quick Teeth'],
+  'day.quick.n': ['Твой рывок с укусом перезаряжается вдвое быстрее', 'Your dash and bite recharges twice as fast'],
+  months: [
+    'января февраля марта апреля мая июня июля августа сентября октября ноября декабря',
+    'January February March April May June July August September October November December',
+  ],
+  date: [(d, m) => `${d} ${m}`, (d, m) => `${m} ${d}`],
+  days: [
+    (n) => (n % 10 === 1 && n % 100 !== 11 ? 'день' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'дня' : 'дней'),
+    (n) => (n === 1 ? 'day' : 'days'),
+  ],
+  'mis.bites': ['Откуси кусков', 'Bite off pieces'],
+  'mis.food': ['Собери посыпки', 'Collect sprinkles'],
+  'mis.kills': ['Съешь конфет целиком', 'Swallow candies whole'],
+  'mis.mass': ['Набери массу за одну жизнь', 'Reach this mass in one life'],
+  'mis.wound': ['Укуси в свежую ранку', 'Bite into a fresh wound'],
+  'mis.tongue': ['Поймай конфет языком', 'Catch candies with your tongue'],
+  'mis.time': ['Проживи секунд за одну жизнь', 'Survive seconds in one life'],
+  'mis.pickup': ['Подбери бонусов', 'Pick up bonuses'],
+  'mis.piranha': ['Проглоти пираний', 'Swallow piranhas'],
+  'mis.hedge': ['Укуси ежа в морду', 'Bite a hedgehog in the face'],
+  'mis.cake': ['Укуси торт в вишенку', 'Bite the cake on its cherry'],
+  'mis.combo': ['Сделай серию укусов подряд', 'Make a bite streak'],
+  'mis.top': ['Побудь лидером рейтинга, секунд', 'Lead the board, seconds'],
+  'mis.donePrize': [(p) => `Задание выполнено. Новый узор: <b>${p}</b>`, (p) => `Mission done. New pattern: <b>${p}</b>`],
+  'mis.done': ['Задание выполнено', 'Mission done'],
+  'mis.prize': [(p) => `: открыт узор «${p}»`, (p) => `: the “${p}” pattern is open`],
+  'mis.ok': [': готово', ': done'],
+  // the album
+  'al.progress': [(n, c, k) => `Наклейка «${n}»: ${c} из ${k}`, (n, c, k) => `Sticker “${n}”: ${c} of ${k}`],
+  'al.new': [(n) => `Новая наклейка: ${n}`, (n) => `New sticker: ${n}`],
+  'al.rowFeed': [(r, n) => `Ряд «${r}» собран: <b>+${n} сахара</b>`, (r, n) => `Row “${r}” complete: <b>+${n} sugar</b>`],
+  'al.rowLine': [(r, n, s) => `Ряд «${r}» собран, +${n} сахара. Новые: ${s}`, (r, n, s) => `Row “${r}” complete, +${n} sugar. New: ${s}`],
+  'al.news': [(n) => `Новые наклейки: ${n}`, (n) => `New stickers: ${n}`],
+  'al.of': [(a, b) => `${a} из ${b}`, (a, b) => `${a} of ${b}`],
+  'al.near': [(r, s) => `До ряда «${r}» не хватает: ${s}`, (r, s) => `Row “${r}” still needs: ${s}`],
+  'al.sub': [
+    (k, n) => `Проглоти конфету целиком, и её наклейка твоя; редкую — ${k} раза. За полный ряд ${n} сахара`,
+    (k, n) => `Swallow a candy whole and its sticker is yours; a rare one, ${k} times. A full row pays ${n} sugar`,
+  ],
+  'al.rowDone': [(n) => `собран, +${n} сахара`, (n) => `complete, +${n} sugar`],
+  'al.aGot': [(n, c) => `${n}: съедено ${c}`, (n, c) => `${n}: eaten ${c}`],
+  'al.aPart': [(n, c, k) => `${n}: съедено ${c} из ${k}`, (n, c, k) => `${n}: eaten ${c} of ${k}`],
+  'al.aNone': [(n) => `${n}: ещё не съедено`, (n) => `${n}: not eaten yet`],
+  'al.capPart': [
+    (n, c, k) => `${n}: съедено ${c} из ${k}, наклейка откроется на ${k}-й`,
+    (n, c, k) => `${n}: eaten ${c} of ${k}, the sticker opens at ${k}`,
+  ],
+  'al.capGot': [
+    (n, c) =>
+      `${n}: съедено целиком ${c} ${c % 10 === 1 && c % 100 !== 11 ? 'раз' : c % 10 >= 2 && c % 10 <= 4 && (c % 100 < 12 || c % 100 > 14) ? 'раза' : 'раз'}`,
+    (n, c) => `${n}: swallowed whole ${c} ${c === 1 ? 'time' : 'times'}`,
+  ],
+  'al.capNone': [
+    (n, k) => `${n}: ещё не съедено. Ищи на поле и проглоти целиком${k > 1 ? ` ${k} раза` : ''}`,
+    (n, k) => `${n}: not eaten yet. Find it on the field and swallow it whole${k > 1 ? ` ${k} times` : ''}`,
+  ],
+  // a run, its hints and its end card (10-flow)
+  'feed.youAte': [(b) => `Ты съедаешь ${b} целиком`, (b) => `You swallow ${b} whole`],
+  'feed.ate': [(a, b) => `${a} съедает ${b}`, (a, b) => `${a} swallows ${b}`],
+  'near.day': [(n) => `До лучшего за сегодня не хватило ${n}`, (n) => `${n} short of today's best`],
+  'near.t3': [(n) => `До рекорда на 3 минуты не хватило ${n}`, (n) => `${n} short of the 3-minute record`],
+  'near.rec': [(n) => `До рекорда не хватило ${n}`, (n) => `${n} short of the record`],
+  'near.hat': [(h, n) => `До шапки «${h}» ещё ${n} массы`, (h, n) => `The “${h}” hat is ${n} mass away`],
+  'near.skinCan': [(s) => `Сахара хватает на узор «${s}», он в меню`, (s) => `You have sugar for the “${s}” pattern, it is in the menu`],
+  'near.skin': [(s, n) => `До узора «${s}» ещё ${n} сахара`, (s, n) => `The “${s}” pattern is ${n} sugar away`],
+  'sweet.bank': [(n) => `в копилке ${n}`, (n) => `${n} saved`],
+  'chest.t': ['Выбери конфету: в одной много сахара', 'Pick a candy: one holds lots of sugar'],
+  'chest.a': [(n) => `Конфета ${n}`, (n) => `Candy ${n}`],
+  'chest.top': [(n) => `Самая сладкая! +${n} сахара`, (n) => `The sweetest one! +${n} sugar`],
+  'chest.got': [(n) => `+${n} сахара`, (n) => `+${n} sugar`],
+  'mis.head': ['Задания: за каждое новый узор', 'Missions: a new pattern for each'],
+  'mis.headAll': ['Задания (все узоры уже открыты)', 'Missions (all patterns are open)'],
+  'tip.touchL': ['Справа води пальцем, слева <b>Кусь</b> и <b>Язык</b>', 'Drag on the right, <b>Kusь!</b> and <b>Tongue</b> on the left'],
+  'tip.touchR': ['Слева води пальцем, справа <b>Кусь</b> и <b>Язык</b>', 'Drag on the left, <b>Kusь!</b> and <b>Tongue</b> on the right'],
+  'tip.colorsT': ['<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты', 'A <b>red</b> outline will eat you, a <b>green</b> one you can eat'],
+  'tip.mouse': ['Веди мышью: пасть смотрит на курсор', 'Move the mouse: the mouth looks at the cursor'],
+  'tip.colorsM': [
+    '<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты',
+    '<b>Red</b> outline: it swallows you whole. <b>Green</b>: you swallow it',
+  ],
+  'feed.back': ['Тебя съели. Сейчас вернёшься на поле', 'You got eaten. Back on the field in a moment'],
+  shift: [(n) => `Смена ${n}`, (n) => `Shift ${n}`],
+  'over.won': ['Торт съеден!', 'Cake eaten!'],
+  'over.time': ['Время вышло', "Time's up"],
+  'tr.rec': [(p) => `Новый рекорд, было ${p}`, (p) => `New record, was ${p}`],
+  'tr.first': ['Первая победа!', 'First win!'],
+  'tr.who': [(s, m) => `${s} за ${m}`, (s, m) => `${s} in ${m}`],
+  shift1: ['Первая смена', 'First shift'],
+  'who.daily': [(n) => `Конфета дня «${n}»`, (n) => `Candy of the Day “${n}”`],
+  'who.t3': ['Три минуты позади. В зачёт идёт самая большая масса.', 'Three minutes are up. Your biggest mass is the score.'],
+  'who.killer': [(n) => `Последний кусь: ${n}`, (n) => `Last Kusь: ${n}`],
+  'who.torn': ['Тебя растащили по кусочкам', 'You were torn to pieces'],
+  'st.deaths': ['раз тебя съели', 'times eaten'],
+  'best.cheatDay': ['С читами результат дня и задания не засчитаны', "With cheats, the day's score and missions do not count"],
+  'best.cheat': ['С читами рекорд и задания не засчитаны', 'With cheats, the record and missions do not count'],
+  'best.dayNew': [(n) => `Новый лучший за сегодня: ${n}. `, (n) => `New best today: ${n}. `],
+  'best.day': [(n) => `Лучший за сегодня: ${n}. `, (n) => `Today's best: ${n}. `],
+  'best.streak': [(n, w) => `${n} ${w} подряд`, (n, w) => `${n} ${w} in a row`],
+  'best.streak1': ['Первый день серии', 'First day of a streak'],
+  'best.streakTop': [(n) => `, рекорд ${n}`, (n) => `, record ${n}`],
+  'best.t3New': [(n) => `Новый рекорд на 3 минуты: ${n}`, (n) => `New 3-minute record: ${n}`],
+  'best.t3': [(n) => `Рекорд на 3 минуты: ${n}`, (n) => `3-minute record: ${n}`],
+  'best.recNew': [(n) => `Новый рекорд: ${n}`, (n) => `New record: ${n}`],
+  'best.hat': [(h) => `. Открыта шапка: ${h}`, (h) => `. Hat unlocked: ${h}`],
+  'best.lap': [(b) => `Время второй смены не идёт в рекорд. Лучшее прохождение: ${b}`, (b) => `Second-shift time does not count. Best clear: ${b}`],
+  'best.clearNew': [(b, w) => `Новый рекорд прохождения: ${b}. Побед: ${w}`, (b, w) => `New clear record: ${b}. Wins: ${w}`],
+  'best.clear': [(b, w) => `Рекорд прохождения: ${b}. Побед: ${w}`, (b, w) => `Clear record: ${b}. Wins: ${w}`],
+  'best.cheatWin': ['С читами победа и рекорд не засчитаны', 'With cheats, the win and record do not count'],
+  shift2: ['Вторая смена', 'Second shift'],
+  'chal.dayWon': [(n, c, s) => `Вызов побит: ${n} ${c}, ты ${s}.`, (n, c, s) => `Challenge beaten: ${n} ${c}, you ${s}.`],
+  'chal.day': [(n, c, s) => `Вызов: ${n} ${c}, ты ${s}.`, (n, c, s) => `Challenge: ${n} ${c}, you ${s}.`],
+  'chal.won': [(n, c, s) => `Вызов побит: у игрока ${n} было ${c}, у тебя ${s}.`, (n, c, s) => `Challenge beaten: ${n} had ${c}, you have ${s}.`],
+  'chal.res': [(n, c, s) => `Вызов от игрока ${n}: ${c}. Твой результат: ${s}.`, (n, c, s) => `Challenge from ${n}: ${c}. Your score: ${s}.`],
+  'over.share': ['Поделиться', 'Share'],
+  'hud.left': [(s) => `осталось ${s}`, (s) => `${s} left`],
+  'hud.daily': [(n) => `конфета дня: ${n}`, (n) => `candy of the day: ${n}`],
+  'hud.beat': [(n) => ` · побей ${n}`, (n) => ` · beat ${n}`],
+  'hud.goal': [(n) => `цель: ${n}`, (n) => `goal: ${n}`],
+  'feed.leader': [
+    'Ты теперь <b>самый сладкий</b>. За укус лидера дают больше, береги спину',
+    'You are <b>the sweetest</b> now. Biting the leader pays more, watch your back',
+  ],
+  'tip.biteT': [
+    'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Кусь</b>: рывок с укусом',
+    'Reach a <b>green</b> candy with your mouth, it bites by itself. <b>Kusь!</b>: dash and bite',
+  ],
+  'tip.biteM': [
+    'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Клик</b>: рывок с укусом',
+    'Reach a <b>green</b> candy with your mouth, it bites by itself. <b>Click</b>: dash and bite',
+  ],
+  'tip.hedgehog': ['<b>Ёж</b>: со спины колется. Кусай его в морду', '<b>Hedgehog</b>: its back pricks. Bite its face'],
+  'tip.cake': ['<b>Торт</b>: корка твёрдая. Кусай в вишенку на спине', '<b>Cake</b>: the crust is hard. Bite the cherry on its back'],
+  'tip.piranha': [
+    '<b>Пираньи</b>: мелкие, но нападают стаей. Глотай по одной',
+    '<b>Piranhas</b>: small, but they attack in packs. Swallow them one by one',
+  ],
+  'tip.pickup': ['<b>Бонус</b>: наедь на него, чтобы подобрать', '<b>Bonus</b>: run over it to pick it up'],
+  // the HUD, stages, streaks, words on the tray, the challenge banner and sharing
+  'a.sugar': [(n) => `сахар ${n}`, (n) => `sugar ${n}`],
+  'unit.s': [' с', ' s'],
+  'stg.pir': ['пираний', 'piranhas'],
+  'stg.rain': ['сладкого дождя', 'sweet rain'],
+  'stg.boss': ['Большого Торта', 'the Big Cake'],
+  'ann.pir': ['<b>Пираньи!</b> Стая плывёт к тебе. Глотай их по одной', '<b>Piranhas!</b> A pack swims your way. Swallow them one by one'],
+  'ann.pirBig': ['Пираньи!', 'Piranhas!'],
+  'ann.rain': ['<b>Сладкий дождь!</b> Вокруг сыплется посыпка и бонусы', '<b>Sweet rain!</b> Sprinkles and bonuses pour down around you'],
+  'ann.rainBig': ['Сладкий дождь!', 'Sweet rain!'],
+  'ann.boss': [
+    (b) => `${b} идёт за тобой. Корка твёрдая, кусай вишенку на спине`,
+    (b) => `${b} is coming for you. The crust is hard, bite the cherry on its back`,
+  ],
+  'ann.bossBig': ['Большой Торт!', 'Big Cake!'],
+  'feed.retinue': ['<b>Свита торта</b>: пираньи!', "<b>The cake's retinue</b>: piranhas!"],
+  'stg.lap': [(n) => `смена ${n} · `, (n) => `shift ${n} · `],
+  'stg.pirHere': [(n) => `пираньи здесь: ${n}`, (n) => `piranhas here: ${n}`],
+  'stg.rainOn': [(n) => `сладкий дождь ${n} с`, (n) => `sweet rain ${n} s`],
+  'stg.cakeOn': [(n) => `торт: ${n}%`, (n) => `cake: ${n}%`],
+  'stg.next': [(e, n) => `${e} через ${n} с`, (e, n) => `${e} in ${n} s`],
+  'stg.n.boss': ['торт', 'cake'],
+  'stg.n.pir': ['пираньи', 'piranhas'],
+  'stg.n.rain': ['дождь', 'rain'],
+  'stg.to': [(e, n) => `до ${e} ${n}`, (e, n) => `mass to ${e} ${n}`], // the number is mass left, not seconds; it stays last for the pill's number slot
+  'feed.lap': [
+    (n) => `<b>Смена ${n}</b>: пираньи, дождь и торт по кругу, быстрее. Торт сильнее`,
+    (n) => `<b>Shift ${n}</b>: piranhas, rain and cake again, faster. The cake is stronger`,
+  ],
+  'w.2': ['Кусь-кусь!', 'Kusь-kusь!'],
+  'w.3': ['Ням!', 'Yum!'],
+  'w.5': ['Хрум-хрум!', 'Crunch!'],
+  'w.7': ['Обжора!', 'Nom-nom!'],
+  'w.close': ['На волоске!', 'Close call!'],
+  'sum.streakSugar': [(c, n) => `Серия ×${c} · +${n} сахара`, (c, n) => `Streak ×${c} · +${n} sugar`],
+  'sum.streak': [(c) => `Серия ×${c}`, (c) => `Streak ×${c}`],
+  'wrap.rare': ['Редкий!', 'Rare!'],
+  'wrap.jack': ['Джекпот!', 'Jackpot!'],
+  'wrap.word': ['Фантик', 'Wrapper'],
+  'wrap.caught': [(n) => `Фантик пойман · +${n} сахара`, (n) => `Wrapper caught · +${n} sugar`],
+  'wrap.catch': ['Лови!', 'Catch it!'],
+  'float.shield': ['щит', 'shield'],
+  'float.shieldSaved': ['щит спас', 'shield saved you'],
+  'float.spines': ['ай, колючки!', 'ouch, spines!'],
+  'float.immortal': ['бессмертие', 'immortal'],
+  'float.free': ['вырвался!', 'broke free!'],
+  'float.wound': ['в ранку!', 'into the wound!'],
+  'float.weak': ['слабое место!', 'weak spot!'],
+  'float.king': ['кусь лидера!', 'Kusь the leader!'],
+  'float.yum': ['ням! ', 'yum! '],
+  'stick.hint': ['води пальцем', 'drag your finger'],
+  fps: [
+    (f, w, s, d) => `${f} fps · худший ${w} мс · работа ${s} мс · деталь ${d}`,
+    (f, w, s, d) => `${f} fps · worst ${w} ms · script ${s} ms · detail ${d}`,
+  ],
+  'chal.free': [(n, c) => `${n} набрал ${c}. Побей в свободной игре!`, (n, c) => `${n} scored ${c}. Beat it in free play!`],
+  'chal.today': [
+    (n, c, d) => `${n} набрал ${c} в конфете дня «${d}». Побей сегодня`,
+    (n, c, d) => `${n} scored ${c} in the Candy of the Day “${d}”. Beat it today`,
+  ],
+  'chal.ahead': [
+    (k, d) => `Это вызов на конфету за ${k}<span class="lx">, у тебя она ещё не началась</span>. Сегодня «${d}»<span class="lx">, сыграй её</span>`,
+    (k, d) =>
+      `This challenge is for the candy of ${k}<span class="lx">, it has not started for you yet</span>. Today: “${d}”<span class="lx">, play it</span>`,
+  ],
+  'chal.old': [
+    (w, d) => `Это ${w}, она уже закончилась. Сегодня<span class="lx"> новая</span>: «${d}»<span class="lx">, сыграй её</span>`,
+    (w, d) => `This is ${w}, it is over. Today<span class="lx"> there is a new one</span>: “${d}”<span class="lx">, play it</span>`,
+  ],
+  'chal.yesterday': ['вчерашняя конфета', "yesterday's candy"],
+  'chal.dayOf': [(k) => `конфета за ${k}`, (k) => `the candy of ${k}`],
+  'share.daily': [
+    (d, s) => `КУСЬ.io, конфета дня «${d}»: у меня ${s}. Побей до полуночи`,
+    (d, s) => `KUS.io, Candy of the Day “${d}”: I scored ${s}. Beat it before midnight`,
+  ],
+  'share.free': [(s) => `Я набрал ${s} в КУСЬ.io. Побей!`, (s) => `I scored ${s} in KUS.io. Beat it!`],
+  brand: ['КУСЬ.io', 'KUS.io'],
+  'share.copied': ['Ссылка скопирована', 'Link copied'],
+  'share.win': [
+    (m) => `Я съел Большой Торт в КУСЬ.io за ${m}. Сможешь быстрее?`,
+    (m) => `I ate the Big Cake in KUS.io in ${m}. Can you do it faster?`,
+  ],
+  'share.copied2': ['Скопировано', 'Copied'],
+  // album rows by id (ALBUM_ROWS)
+  'row.airy': ['Воздушные', 'Airy'],
+  'row.chewy': ['Тягучие', 'Chewy'],
+  'row.home': ['С кухни', 'Homemade'],
+  'row.rascal': ['Шалуны', 'Rascals'],
+  'row.east': ['Восточные', 'Eastern'],
+  'row.baku': ['Из Баку', 'From Baku'],
+};
+function t(key, ...args) {
+  const e = STR[key];
+  if (!e) {
+    console.warn('no string', key);
+    return key;
+  }
+  const v = e[LANG === 'en' ? 1 : 0];
+  return typeof v === 'function' ? v(...args) : v;
+}
+const isDefName = (s) => s === STR.defName[0] || s === STR.defName[1];
+// candy names are save keys (album, tools, tests) and stay Russian; the screen shows them through nameOf
+const EN_NAMES = {
+  // bots (BOT_NAMES)
+  Зефирка: 'Marshmallow',
+  Суфле: 'Soufflé',
+  Мармеладка: 'Gummy',
+  Жвачка: 'Gumdrop',
+  Пастила: 'Pastille',
+  Желешка: 'Jelly',
+  Тянучка: 'Taffy',
+  Ириска: 'Toffee',
+  Безе: 'Meringue',
+  Пахлава: 'Baklava',
+  Шекербура: 'Shekerbura',
+  Мочи: 'Mochi',
+  Пудинг: 'Pudding',
+  Пончик: 'Donut',
+  Халва: 'Halva',
+  Карамелька: 'Caramel',
+  Нуга: 'Nougat',
+  'Чак-чак': 'Chak-chak',
+  Лукум: 'Lokum',
+  Бадамбура: 'Badambura',
+  Мусс: 'Mousse',
+  Щербет: 'Sherbet',
+  Кисель: 'Custard',
+  Ватрушка: 'Cheese Bun',
+  Чавкин: 'Chomper',
+  Нямка: 'Yummy',
+  Хрумка: 'Crunchy',
+  'Бабл-гам': 'Bubble Gum', // a bot and a flavour
+  Гогал: 'Gogal',
+  Медовик: 'Honey Cake',
+  // flavours (FLAVORS)
+  Клубника: 'Strawberry',
+  Лайм: 'Lime',
+  Апельсин: 'Orange',
+  Черника: 'Blueberry',
+  Виноград: 'Grape',
+  Мята: 'Mint',
+  Лимон: 'Lemon',
+  Голубика: 'Bilberry',
+  Вишня: 'Cherry',
+  // special enemies
+  Ёж: 'Hedgehog',
+  Пиранья: 'Piranha',
+  Торт: 'Cake',
+  'Большой Торт': 'Big Cake',
+};
+const nameOf = (name) => {
+  if (LANG !== 'en') return name;
+  if (EN_NAMES[name]) return EN_NAMES[name];
+  const m = /^(.+) (\d+)$/.exec(name); // «Большой Торт 2» on the second shift
+  return m && EN_NAMES[m[1]] ? EN_NAMES[m[1]] + ' ' + m[2] : name;
+};
+const accOf = (b) => (LANG === 'en' ? nameOf(b.name) : b.acc); // the object form: Russian declines, English does not
+function applyLang(root = document) {
+  // markup: data-t → text, data-th → html, data-ta → aria-label, data-tt → title, data-tp → placeholder, data-tc → data-c for CSS
+  for (const e of root.querySelectorAll('[data-t]')) e.textContent = t(e.dataset.t);
+  for (const e of root.querySelectorAll('[data-th]')) e.innerHTML = t(e.dataset.th);
+  for (const e of root.querySelectorAll('[data-ta]')) e.setAttribute('aria-label', t(e.dataset.ta));
+  for (const e of root.querySelectorAll('[data-tt]')) e.title = t(e.dataset.tt);
+  for (const e of root.querySelectorAll('[data-tp]')) e.placeholder = t(e.dataset.tp);
+  for (const e of root.querySelectorAll('[data-tc]')) e.dataset.c = t(e.dataset.tc); // CSS shows it with content: attr(data-c)
+}
+document.documentElement.lang = LANG;
+document.title = t('title');
+applyLang();
 
 // ---------- tuning ----------
 const WORLD = 4000,
@@ -670,31 +1169,31 @@ const PALS = FLAVORS.map((f) => makePal(f[0], f[1], f[2], f[3]));
 const PAL_HEDGE = makePal('Ёж', 28, 44, 46),
   PAL_PIR = makePal('Пиранья', 206, 32, 62),
   PAL_CAKE = makePal('Торт', 36, 86, 82);
-const PICK = { speed: ['Скорость', 6, '#ffd23f'], shield: ['Щит', 5, '#7ad7ff'], magnet: ['Магнит', 8, '#ff7aa2'] }; // bonus sweets: name, seconds, colour
+const PICK = { speed: [t('pick.speed'), 6, '#ffd23f'], shield: [t('pick.shield'), 5, '#7ad7ff'], magnet: [t('pick.magnet'), 8, '#ff7aa2'] }; // bonus sweets: name, seconds, colour
 const flesh = (p, a) => hsl(p.fl[0], p.fl[1], p.fl[2], a);
 const pore = (p, a) => hsl(p.po[0], p.po[1], p.po[2], a);
 const HATS = [
-  { id: 'none', name: 'Без шапки', need: 0 },
-  { id: 'bow', name: 'Бантик', need: 80 },
-  { id: 'crown', name: 'Корона', need: 250 },
-  { id: 'chef', name: 'Колпак', need: 500 },
-  { id: 'horns', name: 'Рожки', need: 900 },
+  { id: 'none', name: t('hat.none'), need: 0 },
+  { id: 'bow', name: t('hat.bow'), need: 80 },
+  { id: 'crown', name: t('hat.crown'), need: 250 },
+  { id: 'chef', name: t('hat.chef'), need: 500 },
+  { id: 'horns', name: t('hat.horns'), need: 900 },
 ];
 const SKINS = [
-  ['plain', 'Гладкая'],
-  ['stripes', 'Полоски'],
-  ['dots', 'Горошек'],
-  ['swirl', 'Леденец'],
-  ['waffle', 'Вафля'],
-  ['hearts', 'Сердечки'],
-  ['stars', 'Звёздочки'],
-  ['tiger', 'Тигр'],
-  ['cow', 'Пятнышки'],
-  ['glaze', 'Глазурь'],
-  ['rainbow', 'Радуга'],
-  ['bubbles', 'Пузыри'],
-  ['zigzag', 'Зигзаг'],
-  ['galaxy', 'Космос'],
+  ['plain', t('skin.plain')],
+  ['stripes', t('skin.stripes')],
+  ['dots', t('skin.dots')],
+  ['swirl', t('skin.swirl')],
+  ['waffle', t('skin.waffle')],
+  ['hearts', t('skin.hearts')],
+  ['stars', t('skin.stars')],
+  ['tiger', t('skin.tiger')],
+  ['cow', t('skin.cow')],
+  ['glaze', t('skin.glaze')],
+  ['rainbow', t('skin.rainbow')],
+  ['bubbles', t('skin.bubbles')],
+  ['zigzag', t('skin.zigzag')],
+  ['galaxy', t('skin.galaxy')],
 ];
 const FREE_SKINS = 4; // the rest are prizes for missions
 const SKIN_PRICE = (i) => 150 + (i - FREE_SKINS) * 100; // or bought with sugar, dearer further down the list
@@ -1084,7 +1583,7 @@ const challenge = (() => {
       c = parseInt(q.get('c'), 10),
       n = (q.get('n') || '').slice(0, 14);
     const d = parseInt(q.get('d'), 10); // the date of a candy-of-the-day challenge, 20261123
-    return c > 0 && c < 100000 ? { c, n: n || 'Друг', d: d > 20000000 && d < 30000000 ? d : 0 } : null;
+    return c > 0 && c < 100000 ? { c, n: !n ? t('friend') : isDefName(n) ? t('defName') : n, d: d > 20000000 && d < 30000000 ? d : 0 } : null;
   } catch (e) {
     return null;
   }
@@ -2544,9 +3043,9 @@ function bounceBite(A, B, ang, shield) {
     });
   if (shield) {
     if (A.isPlayer) {
-      floatText(x, y - 30 / cam.z, 'щит', '#7ad7ff', 20);
+      floatText(x, y - 30 / cam.z, t('float.shield'), '#7ad7ff', 20);
       Sfx.snap(0.7);
-    } else if (B.isPlayer) floatText(B.x, B.y - B.Rs - 26 / cam.z, 'щит спас', '#7ad7ff', 20);
+    } else if (B.isPlayer) floatText(B.x, B.y - B.Rs - 26 / cam.z, t('float.shieldSaved'), '#7ad7ff', 20);
     return;
   }
   A.hurtT = 0.5;
@@ -2556,7 +3055,7 @@ function bounceBite(A, B, ang, shield) {
     spawnCrumbs(A.x + nx * A.Rs * 0.3, A.y + ny * A.Rs * 0.3, m * 0.8, A.pal, nx, ny, A);
   }
   if (A.isPlayer) {
-    floatText(A.x, A.y - A.Rs - 26 / cam.z, 'ай, колючки!', '#ff7a9c', 22);
+    floatText(A.x, A.y - A.Rs - 26 / cam.z, t('float.spines'), '#ff7a9c', 22);
     Sfx.hurt();
     haptic(30);
     flashT = 0.2;
@@ -2601,7 +3100,7 @@ function doBite(A, B, ang, dashBite) {
       ny = Math.sin(ang);
     A.vx += nx * 160;
     A.vy += ny * 160;
-    floatText(B.x, B.y - B.Rs, 'бессмертие', '#ffd23f', 16);
+    floatText(B.x, B.y - B.Rs, t('float.immortal'), '#ffd23f', 16);
     return;
   }
   let saved = false;
@@ -2622,7 +3121,7 @@ function doBite(A, B, ang, dashBite) {
     B.vx -= nx * 520;
     B.vy -= ny * 520;
     A.biteCd = 1.1;
-    floatText(B.x, B.y - B.Rs - 30 / cam.z, 'вырвался!', '#7cf08c', 22);
+    floatText(B.x, B.y - B.Rs - 30 / cam.z, t('float.free'), '#7cf08c', 22);
   }
   B.hurtT = 0.5;
   const chunkR = massToR(bite) * 0.9,
@@ -2694,9 +3193,9 @@ function doBite(A, B, ang, dashBite) {
       ['#ffd23f', '#ffc53f', '#ffb347', '#ff9a52', '#ff8370', '#ff6fa0'][step - 1],
       24 + Math.min(10, gain * 0.07) + (step - 1) * 2,
     );
-    if (intoWound) floatText(bx, ty - 28 / cam.z, 'в ранку!', '#ff8fb0', 18);
-    if (weak) floatText(bx, ty - 28 / cam.z, 'слабое место!', '#ff8fb0', 18);
-    else if (king) floatText(bx, ty - 28 / cam.z, 'кусь лидера!', '#ffd23f', 18);
+    if (intoWound) floatText(bx, ty - 28 / cam.z, t('float.wound'), '#ff8fb0', 18);
+    if (weak) floatText(bx, ty - 28 / cam.z, t('float.weak'), '#ff8fb0', 18);
+    else if (king) floatText(bx, ty - 28 / cam.z, t('float.king'), '#ffd23f', 18);
     const sugar0 = run.sugar;
     mission('bites', 1);
     onStreakBite(A, B, bx, by, run.sugar - sugar0, streakClose);
@@ -2749,7 +3248,7 @@ function swallowWhole(A, B) {
     onStreakBite(A, B, B.x, B.y, run.sugar - sugar0, close);
     albumEat(B);
     if (B.kind === 'piranha') mission('piranha', 1);
-    floatText(A.x, A.y - A.Rs - 30 / cam.z, (A.combo > 1 ? '+' : 'ням! +') + Math.round(gain), '#ffd23f', 28); // in a streak its stamps do the talking
+    floatText(A.x, A.y - A.Rs - 30 / cam.z, (A.combo > 1 ? '+' : t('float.yum') + '+') + Math.round(gain), '#ffd23f', 28); // in a streak its stamps do the talking
     Sfx.gulp(1);
     cam.shake = Math.max(cam.shake, 7);
     if (!calm && !B.boss) {
@@ -3978,17 +4477,17 @@ function albumEat(B) {
   if (!s) return;
   const had = hasSticker(s);
   album.c[s.id] = (album.c[s.id] || 0) + 1;
-  if (!had && !hasSticker(s)) addFeed(`Наклейка «${esc(s.name)}»: ${album.c[s.id]} из ${need(s)}`, 3200);
+  if (!had && !hasSticker(s)) addFeed(t('al.progress', esc(nameOf(s.name)), album.c[s.id], need(s)), 3200);
   else if (!had) {
     if (!run.stk) run.stk = [];
     run.stk.push(s.name);
-    addFeed(`Новая наклейка: <b>${esc(s.name)}</b>`, 4200);
+    addFeed(t('al.new', `<b>${esc(nameOf(s.name))}</b>`), 4200);
     if (!rowMissing(s.row).length && !album.r.includes(s.row)) {
       album.r.push(s.row);
       sugar += ROW_SUGAR;
       saveSugar();
-      run.rowDone = rowOf(s.row)[1];
-      addFeed(`Ряд «${esc(run.rowDone)}» собран: <b>+${ROW_SUGAR} сахара</b>`, 5000);
+      run.rowDone = t('row.' + s.row);
+      addFeed(t('al.rowFeed', esc(run.rowDone), ROW_SUGAR), 5000);
       Sfx.power();
       haptic(25);
     }
@@ -4003,12 +4502,10 @@ function albumLine() {
   // one row: what is new (cut short with an ellipsis if it is long) and the total, which always shows
   const got = run.stk || [];
   if (!got.length || run.cheated) return null;
-  const names = got.join(', ');
+  const names = got.map(nameOf).join(', ');
   return [
-    run.rowDone
-      ? `Ряд «${run.rowDone}» собран, +${ROW_SUGAR} сахара. Новые: ${names}`
-      : `${got.length > 1 ? 'Новые наклейки' : 'Новая наклейка'}: ${names}`,
-    `${albumCount()} из ${STICKERS.length}`,
+    run.rowDone ? t('al.rowLine', run.rowDone, ROW_SUGAR, names) : t(got.length > 1 ? 'al.news' : 'al.new', names),
+    t('al.of', albumCount(), STICKERS.length),
   ];
 }
 function renderAlbumLine() {
@@ -4028,12 +4525,12 @@ function renderAlbumLine() {
 function albumNear() {
   // a row short of one or two stickers is a goal worth naming
   let best = null;
-  for (const [rid, title] of ALBUM_ROWS) {
+  for (const [rid] of ALBUM_ROWS) {
     if (album.r.includes(rid)) continue;
     const miss = rowMissing(rid);
-    if (miss.length && miss.length <= 2 && (!best || miss.length < best[1].length)) best = [title, miss];
+    if (miss.length && miss.length <= 2 && (!best || miss.length < best[1].length)) best = [t('row.' + rid), miss];
   }
-  return best ? `До ряда «${best[0]}» не хватает: ${best[1].map((s) => s.name).join(', ')}` : '';
+  return best ? t('al.near', best[0], best[1].map((s) => nameOf(s.name)).join(', ')) : '';
 }
 
 // ---------- stickers: the game's own drawing code on a stand-in candy, painted once into a small canvas ----------
@@ -4062,6 +4559,8 @@ function paintSticker(cv, s) {
 }
 
 // ---------- the album page ----------
+// English names that need the same soft hyphen on a 360 px phone
+const SHY_EN = { Зефирка: 'Marsh­mallow', Шекербура: 'Sheker­bura', Бадамбура: 'Badam­bura' };
 const SHY = {
   Мармеладка: 'Марме­ладка',
   Карамелька: 'Кара­мелька',
@@ -4078,18 +4577,20 @@ const albumEl = $('album'),
 let albumBuilt = false,
   albumDirty = false;
 function renderAlbumBtn() {
-  albumBtn.innerHTML = `Альбом <b>${albumCount()} / ${STICKERS.length}</b>`;
+  albumBtn.innerHTML = `${t('album.t')} <b>${albumCount()} / ${STICKERS.length}</b>`;
 }
 function buildAlbum() {
   // the grid and its stickers are made once; later openings only update who is collected
   const dpr = Math.min(3, Math.max(1, window.devicePixelRatio || 1)),
     px = Math.round(52 * dpr);
   $('albumRows').innerHTML = ALBUM_ROWS.map(
-    ([rid, title]) =>
-      `<section class="arow" data-r="${rid}"><div class="ah"><b>${title}</b><span></span></div><div class="ag">${STICKERS.filter((s) => s.row === rid)
+    ([rid]) =>
+      `<section class="arow" data-r="${rid}"><div class="ah"><b>${t('row.' + rid)}</b><span></span></div><div class="ag">${STICKERS.filter(
+        (s) => s.row === rid,
+      )
         .map(
           (s) =>
-            `<button type="button" class="st" data-id="${esc(s.id)}"><canvas width="${px}" height="${px}"></canvas><span class="sn">${esc(SHY[s.name] || s.name)}</span><i></i></button>`,
+            `<button type="button" class="st" data-id="${esc(s.id)}"><canvas width="${px}" height="${px}"></canvas><span class="sn">${esc(LANG === 'en' ? SHY_EN[s.name] || nameOf(s.name) : SHY[s.name] || s.name)}</span><i></i></button>`,
         )
         .join('')}</div></section>`,
   ).join('');
@@ -4104,22 +4605,22 @@ function buildAlbum() {
 function fillAlbum() {
   const n = albumCount();
   $('albumN').textContent = `${n} / ${STICKERS.length}`;
-  $('albumSub').textContent = `Проглоти конфету целиком, и её наклейка твоя; редкую — ${NEED[1]} раза. За полный ряд ${ROW_SUGAR} сахара`;
+  $('albumSub').textContent = t('al.sub', NEED[1], ROW_SUGAR);
   for (const sec of $('albumRows').children) {
     const rid = sec.dataset.r,
       have = STICKERS.filter((s) => s.row === rid && hasSticker(s)).length,
       all = STICKERS.filter((s) => s.row === rid).length,
       done = album.r.includes(rid);
     sec.classList.toggle('done', done);
-    sec.querySelector('.ah span').textContent = done ? `собран, +${ROW_SUGAR} сахара` : `${have} / ${all}`;
+    sec.querySelector('.ah span').textContent = done ? t('al.rowDone', ROW_SUGAR) : `${have} / ${all}`;
     for (const btn of sec.querySelectorAll('.st')) {
       const s = STICKERS.find((x) => x.id === btn.dataset.id),
         c = album.c[s.id] || 0,
-        nm = s.id,
+        nm = nameOf(s.name),
         got = hasSticker(s);
       btn.classList.toggle('no', !got);
-      btn.lastChild.textContent = got ? (c > 1 ? '×' + c : '') : c ? `${c} из ${need(s)}` : '';
-      btn.setAttribute('aria-label', got ? `${nm}: съедено ${c}` : c ? `${nm}: съедено ${c} из ${need(s)}` : `${nm}: ещё не съедено`);
+      btn.lastChild.textContent = got ? (c > 1 ? '×' + c : '') : c ? t('al.of', c, need(s)) : '';
+      btn.setAttribute('aria-label', got ? t('al.aGot', nm, c) : c ? t('al.aPart', nm, c, need(s)) : t('al.aNone', nm));
     }
   }
   albumDirty = false;
@@ -4139,16 +4640,16 @@ const albumOpen = () => !albumEl.classList.contains('hidden');
 albumBtn.addEventListener('click', openAlbum);
 $('albumX').addEventListener('click', closeAlbum);
 $('albumRows').addEventListener('click', (e) => {
-  const t = e.target.closest('.st');
-  if (!t) return;
-  const s = STICKERS.find((x) => x.id === t.dataset.id),
+  const st = e.target.closest('.st');
+  if (!st) return;
+  const s = STICKERS.find((x) => x.id === st.dataset.id),
     c = album.c[s.id] || 0;
   $('albumCap').textContent =
     !hasSticker(s) && c
-      ? `${s.name}: съедено ${c} из ${need(s)}, наклейка откроется на ${need(s)}-й`
+      ? t('al.capPart', nameOf(s.name), c, need(s))
       : c
-        ? `${s.name}: съедено целиком ${c} ${c % 10 === 1 && c % 100 !== 11 ? 'раз' : c % 10 >= 2 && c % 10 <= 4 && (c % 100 < 12 || c % 100 > 14) ? 'раза' : 'раз'}`
-        : `${s.name}: ещё не съедено. Ищи на поле и проглоти целиком${need(s) > 1 ? ` ${need(s)} раза` : ''}`;
+        ? t('al.capGot', nameOf(s.name), c)
+        : t('al.capNone', nameOf(s.name), need(s));
 });
 renderAlbumBtn();
 
@@ -4156,14 +4657,14 @@ renderAlbumBtn();
 // One three-minute run a day with a twist that is the same for everyone on that date. The twist comes from the local date alone, no server.
 const DAILY = [
   // id, name, one line of explanation
-  ['hedge', 'День ежей', 'Ежей на поле вдвое больше. Кусай их в морду, со спины колются'],
-  ['double', 'Двойная посыпка', 'Каждая посыпка весит вдвое больше, растут все'],
-  ['tiny', 'Кроха', 'Ты начинаешь крошечным, и после каждого раза тоже'],
-  ['piranha', 'Пираньи', 'Стаи пираний с первых секунд и вдвое чаще'],
-  ['magnet', 'Магнитный день', 'Все бонусы — магниты, и падают они чаще'],
-  ['cake', 'Торт с утра', 'Торт на поле с самого начала. Кусай в вишенку'],
-  ['small', 'Мелюзга', 'Все соперники мелкие, крупных сегодня нет'],
-  ['quick', 'Быстрые зубы', 'Твой рывок с укусом перезаряжается вдвое быстрее'],
+  ['hedge', t('day.hedge'), t('day.hedge.n')],
+  ['double', t('day.double'), t('day.double.n')],
+  ['tiny', t('day.tiny'), t('day.tiny.n')],
+  ['piranha', t('day.piranha'), t('day.piranha.n')],
+  ['magnet', t('day.magnet'), t('day.magnet.n')],
+  ['cake', t('day.cake'), t('day.cake.n')],
+  ['small', t('day.small'), t('day.small.n')],
+  ['quick', t('day.quick'), t('day.quick.n')],
 ];
 let day = null, // id of the twist in force during a candy-of-the-day run
   dayForce = null; // tests and balance runs pin a twist by id
@@ -4201,9 +4702,9 @@ function dailyOf(k) {
   const t = DAILY[p[num - blk * n]];
   return { key: k, id: t[0], name: t[1], note: t[2] };
 }
-const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-const keyText = (k) => `${k % 100} ${MONTHS[(Math.floor(k / 100) % 100) - 1]}`;
-const daysWord = (n) => (n % 10 === 1 && n % 100 !== 11 ? 'день' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'дня' : 'дней');
+const MONTHS = t('months').split(' ');
+const keyText = (k) => t('date', k % 100, MONTHS[(Math.floor(k / 100) % 100) - 1]);
+const daysWord = (n) => t('days', n);
 
 // kus.daily: the last day played, the best of that day, days in a row, the longest run of days
 let dailyRec = { d: 0, best: 0, streak: 0, top: 0 };
@@ -4228,11 +4729,11 @@ function dailySave(k, score) {
 }
 const chalToday = () => !!(challenge && challenge.d && challenge.d === todayKey()); // a challenge for today's candy
 function renderDaily() {
-  const t = dailyOf(todayKey()),
-    b = dailyBest(t.key),
+  const dt = dailyOf(todayKey()),
+    b = dailyBest(dt.key),
     btn = $('modeSeg').querySelector('[data-m=daily]');
-  btn.innerHTML = `<b>Конфета дня</b><small>${t.name}${b ? ` · ${b}` : ''}</small>`;
-  btn.title = t.note;
+  btn.innerHTML = `<b>${t('mode.daily')}</b><small>${dt.name}${b ? ` · ${b}` : ''}</small>`;
+  btn.title = dt.note;
   $('dif').classList.toggle('fixed', mode === 'daily');
 }
 function startDaily() {
@@ -4269,7 +4770,7 @@ function addFeed(html, ms) {
   }, ms || 3600);
 }
 function feedKill(A, B) {
-  if (A.isPlayer) addFeed(`Ты съедаешь <b>${esc(B.acc)}</b> целиком`);
+  if (A.isPlayer) addFeed(t('feed.youAte', `<b>${esc(accOf(B))}</b>`));
   else if (
     !tutor && // the first run's lesson is not pushed out by other candies' meals
     !B.isPlayer &&
@@ -4278,23 +4779,23 @@ function feedKill(A, B) {
     player.alive &&
     (Math.hypot(A.x - player.x, A.y - player.y) < (Math.max(W, H) / cam.z) * 0.6 || A === biggest())
   )
-    addFeed(`<b>${esc(A.name)}</b> съедает <b>${esc(B.acc)}</b>`);
+    addFeed(t('feed.ate', `<b>${esc(A.isPlayer ? A.name : nameOf(A.name))}</b>`, `<b>${esc(accOf(B))}</b>`));
 }
 const MTYPES = [
   // [key, wording, first target]; only real actions in a clean run count
-  ['bites', 'Откуси кусков', 10],
-  ['food', 'Собери посыпки', 60],
-  ['kills', 'Съешь конфет целиком', 3],
-  ['mass', 'Набери массу за одну жизнь', 150],
-  ['wound', 'Укуси в свежую ранку', 4],
-  ['tongue', 'Поймай конфет языком', 5],
-  ['time', 'Проживи секунд за одну жизнь', 60],
-  ['pickup', 'Подбери бонусов', 3],
-  ['piranha', 'Проглоти пираний', 4],
-  ['hedge', 'Укуси ежа в морду', 2],
-  ['cake', 'Укуси торт в вишенку', 3],
-  ['combo', 'Сделай серию укусов подряд', 3],
-  ['top', 'Побудь лидером рейтинга, секунд', 10],
+  ['bites', t('mis.bites'), 10],
+  ['food', t('mis.food'), 60],
+  ['kills', t('mis.kills'), 3],
+  ['mass', t('mis.mass'), 150],
+  ['wound', t('mis.wound'), 4],
+  ['tongue', t('mis.tongue'), 5],
+  ['time', t('mis.time'), 60],
+  ['pickup', t('mis.pickup'), 3],
+  ['piranha', t('mis.piranha'), 4],
+  ['hedge', t('mis.hedge'), 2],
+  ['cake', t('mis.cake'), 3],
+  ['combo', t('mis.combo'), 3],
+  ['top', t('mis.top'), 10],
 ];
 const skinOpen = (id) => SKINS.findIndex((k) => k[0] === id) < FREE_SKINS || M.open.includes(id);
 const nextPrize = () => SKINS.find((k, i) => i >= FREE_SKINS && !M.open.includes(k[0]));
@@ -4325,20 +4826,25 @@ function mission(type, n, absolute) {
       const pz = nextPrize();
       if (pz) {
         M.open.push(pz[0]);
-        m.prize = pz[1];
-        addFeed(`Задание выполнено. Новый узор: <b>${pz[1]}</b>`);
-      } else addFeed('Задание выполнено');
+        m.prize = pz[0]; // the pattern's id: the name is shown in the language of the moment
+        addFeed(t('mis.donePrize', pz[1]));
+      } else addFeed(t('mis.done'));
       Sfx.power();
       saveM();
     }
   }
 }
+// a mission's prize: a pattern id, or its Russian name in a save from before the English version
+const skinName = (p) => {
+  const id = SKINS.some((s) => s[0] === p) ? p : (Object.keys(STR).find((k) => k.startsWith('skin.') && STR[k][0] === p) || '').slice(5);
+  return id ? t('skin.' + id) : p;
+};
 const missionRows = () =>
   M.act
     .map((m) => {
-      const t = MTYPES.find((x) => x[0] === m.type),
+      const mt = MTYPES.find((x) => x[0] === m.type),
         done = m.got >= m.need;
-      return `<div class="mi${done ? ' ok' : ''}"><span class="mt">${t[1]}${done ? (m.prize ? `: открыт узор «${m.prize}»` : ': готово') : ''}</span><span class="mv">${Math.floor(m.got)} / ${m.need}</span><div class="mb"><i style="width:${Math.round((100 * m.got) / m.need)}%"></i></div></div>`;
+      return `<div class="mi${done ? ' ok' : ''}"><span class="mt">${mt[1]}${done ? (m.prize ? t('mis.prize', skinName(m.prize)) : t('mis.ok')) : ''}</span><span class="mv">${Math.floor(m.got)} / ${m.need}</span><div class="mb"><i style="width:${Math.round((100 * m.got) / m.need)}%"></i></div></div>`;
     })
     .join('');
 // ---------- sugar ----------
@@ -4374,16 +4880,16 @@ function nearText(m, score) {
   const out = [],
     t3 = m === 't3';
   if (!run.cheated) {
-    if (m === 'daily' && score < run.dayPrev) out.push(`До лучшего за сегодня не хватило ${run.dayPrev - score}`);
-    if (t3 && score < best3) out.push(`До рекорда на 3 минуты не хватило ${best3 - score}`);
-    if (m === 'free' && score < best) out.push(`До рекорда не хватило ${best - score}`);
+    if (m === 'daily' && score < run.dayPrev) out.push(t('near.day', run.dayPrev - score));
+    if (t3 && score < best3) out.push(t('near.t3', best3 - score));
+    if (m === 'free' && score < best) out.push(t('near.rec', best - score));
     const h = HATS.find((x) => x.need > best);
-    if (m === 'free' && h) out.push(`До шапки «${h.name}» ещё ${h.need - best} массы`);
+    if (m === 'free' && h) out.push(t('near.hat', h.name, h.need - best));
   }
   const al = run.cheated ? '' : albumNear();
   if (al) out.splice(1, 0, al); // a row one or two stickers short comes right after the record
   const s = cheapestSkin();
-  if (s && !al) out.push(sugar >= s.price ? `Сахара хватает на узор «${s.name}», он в меню` : `До узора «${s.name}» ещё ${s.price - sugar} сахара`);
+  if (s && !al) out.push(sugar >= s.price ? t('near.skinCan', s.name) : t('near.skin', s.name, s.price - sugar));
   return out.slice(0, 2).join('. ');
 }
 function renderSweet(m, score) {
@@ -4393,13 +4899,13 @@ function renderSweet(m, score) {
   $('near').textContent = nearText(m, score);
   if (!got) return;
   countUp($('sweetN'), got);
-  $('sweetBank').textContent = `в копилке ${sugar}`;
-  $('chestT').textContent = 'Выбери конфету: в одной много сахара';
-  $('chestRow').innerHTML = [0, 1, 2].map((i) => `<button type="button" data-i="${i}" aria-label="Конфета ${i + 1}">?</button>`).join('');
+  $('sweetBank').textContent = t('sweet.bank', sugar);
+  $('chestT').textContent = t('chest.t');
+  $('chestRow').innerHTML = [0, 1, 2].map((i) => `<button type="button" data-i="${i}" aria-label="${t('chest.a', i + 1)}">?</button>`).join('');
 }
 $('chestRow').addEventListener('click', (e) => {
-  const t = e.target.closest('button');
-  if (!t || !run.chest) return;
+  const pick = e.target.closest('button');
+  if (!pick || !run.chest) return;
   run.chest = false;
   const base = clamp(Math.round(run.got * 0.3), 3, 40),
     prizes = [base, base * 2, base * 5];
@@ -4407,22 +4913,22 @@ $('chestRow').addEventListener('click', (e) => {
     const j = Math.floor(Math.random() * (i + 1));
     [prizes[i], prizes[j]] = [prizes[j], prizes[i]];
   }
-  const won = prizes[+t.dataset.i];
+  const won = prizes[+pick.dataset.i];
   sugar += won;
   saveSugar();
   [...$('chestRow').children].forEach((b, i) => {
     b.textContent = '+' + prizes[i];
     b.disabled = true;
-    b.classList.add(b === t ? 'got' : 'open');
+    b.classList.add(b === pick ? 'got' : 'open');
   });
-  $('chestT').textContent = won === base * 5 ? `Самая сладкая! +${won} сахара` : `+${won} сахара`;
-  $('sweetBank').textContent = `в копилке ${sugar}`;
+  $('chestT').textContent = t(won === base * 5 ? 'chest.top' : 'chest.got', won);
+  $('sweetBank').textContent = t('sweet.bank', sugar);
   $('near').textContent = nearText(mode, Math.round(run.max));
   Sfx.power();
   haptic(won === base * 5 ? 30 : 12);
 });
 function renderMissions() {
-  $('misT').textContent = nextPrize() ? 'Задания: за каждое новый узор' : 'Задания (все узоры уже открыты)';
+  $('misT').textContent = nextPrize() ? t('mis.head') : t('mis.headAll');
   $('misList').innerHTML = missionRows();
   renderSecs();
 }
@@ -4446,7 +4952,7 @@ function fixDiff() {
 function spawnPlayer(spawnT) {
   const m0 = day === 'tiny' ? 16 : DIFFS[diff].start;
   shownMass = m0;
-  const name = (nick.value || '').trim().slice(0, 14) || 'Кусака',
+  const name = (nick.value || '').trim().slice(0, 14) || t('defName'),
     [x, y] = safeSpawn();
   player = new Blob({
     name,
@@ -4477,9 +4983,10 @@ function startGame() {
   if (state === 'won') return secondShift(); // the win screen's main button carries on
   if (state === 'play' || (state === 'dead' && overEl.classList.contains('hidden'))) return;
   Sfx.init();
-  const name = (nick.value || '').trim().slice(0, 14) || 'Кусака';
+  const typed = (nick.value || '').trim().slice(0, 14),
+    name = typed || t('defName');
   try {
-    localStorage.setItem('kus.name', name);
+    localStorage.setItem('kus.name', typed); // the default is never saved: it follows the language
     localStorage.setItem('kus.color', String(chosen));
     localStorage.setItem('kus.hat', chosenHat);
     localStorage.setItem('kus.skin', chosenSkin);
@@ -4506,10 +5013,10 @@ function startGame() {
   feedEl.innerHTML = '';
   hudT = 0;
   if (touchMode) {
-    addFeed(SET.lefty ? 'Справа води пальцем, слева <b>Кусь</b> и <b>Язык</b>' : 'Слева води пальцем, справа <b>Кусь</b> и <b>Язык</b>');
-    if (!tutor) addFeed('<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты'); // the first run tells this after the first bite
-  } else if (tutor) addFeed('Веди мышью: пасть смотрит на курсор');
-  else addFeed('<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты');
+    addFeed(SET.lefty ? t('tip.touchL') : t('tip.touchR'));
+    if (!tutor) addFeed(t('tip.colorsT')); // the first run tells this after the first bite
+  } else if (tutor) addFeed(t('tip.mouse'));
+  else addFeed(t('tip.colorsM'));
   if (day) {
     if (tutor)
       run.dayNote = true; // a newcomer learns to steer and bite first, the twist is told after that
@@ -4569,7 +5076,7 @@ function die(by) {
   killer = by;
   if (timed() && runActive && timeLeft > 0) {
     run.deaths++;
-    addFeed('Тебя съели. Сейчас вернёшься на поле');
+    addFeed(t('feed.back'));
     return;
   } // the clock keeps running
   finishRun();
@@ -4630,15 +5137,15 @@ function showOver() {
     secs = Math.max(0, Math.round(time - run.t0)),
     score = Math.round(run.max);
   const won = run.won,
-    shift = run.lap ? `Смена ${run.lap + 1}. ` : '';
+    shift = run.lap ? t('shift', run.lap + 1) + '. ' : '';
   const card = overEl.querySelector('.card');
   card.classList.toggle('trophy', !!won); // the trophy look and its record pill belong to a win only
   card.classList.toggle('rec', !!(won && won.rec));
   $('overWrap').classList.toggle('trophy', !!won);
-  $('overT').textContent = won ? 'Торт съеден!' : t3 ? 'Время вышло' : 'Тебя доели';
+  $('overT').textContent = t(won ? 'over.won' : t3 ? 'over.time' : 'over.t');
   const rec = $('trRec'),
     tiles = $('trTiles').querySelectorAll('b');
-  rec.textContent = won && won.rec ? (won.prev ? `Новый рекорд, было ${mmss(won.prev)}` : 'Первая победа!') : '';
+  rec.textContent = won && won.rec ? (won.prev ? t('tr.rec', mmss(won.prev)) : t('tr.first')) : '';
   rec.classList.toggle('hidden', !rec.textContent);
   if (won) {
     tiles[0].textContent = score;
@@ -4646,20 +5153,20 @@ function showOver() {
     tiles[2].textContent = run.got;
   }
   whoEl.innerHTML = won
-    ? `${won.lap ? `Смена ${won.lap + 1}` : 'Первая смена'} за <b>${mmss(won.secs)}</b>`
+    ? t('tr.who', won.lap ? t('shift', won.lap + 1) : t('shift1'), `<b>${mmss(won.secs)}</b>`)
     : (shift ? esc(shift) : '') +
       (daily
-        ? `Конфета дня «${esc(run.rule.name)}»`
+        ? t('who.daily', esc(run.rule.name))
         : t3
-          ? 'Три минуты позади. В зачёт идёт самая большая масса.'
+          ? t('who.t3')
           : killer
-            ? `Последний кусь: <b>${esc(killer.name)}</b>`
-            : 'Тебя растащили по кусочкам');
+            ? t('who.killer', `<b>${esc(nameOf(killer.name))}</b>`)
+            : t('who.torn'));
   $('sMax').textContent = score;
   $('sBites').textContent = run.bites;
   $('sKills').textContent = run.kills;
   $('sTime').textContent = t3 ? run.deaths : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
-  $('sTimeL').textContent = t3 ? 'раз тебя съели' : 'время в игре';
+  $('sTimeL').textContent = t(t3 ? 'st.deaths' : 'st.time');
   $('overMis').innerHTML = missionRows();
   renderSweet(mode, score);
   renderAlbumLine();
@@ -4667,34 +5174,34 @@ function showOver() {
   const streak = daily ? dailyStreak(run.day) : 0;
   bestEl.textContent = run.cheated
     ? daily
-      ? 'С читами результат дня и задания не засчитаны'
-      : 'С читами рекорд и задания не засчитаны'
+      ? t('best.cheatDay')
+      : t('best.cheat')
     : daily
-      ? `${score > run.dayPrev && run.dayPrev ? 'Новый лучший' : 'Лучший'} за сегодня: ${dailyBest(run.day)}. ` +
-        (streak > 1 ? `${streak} ${daysWord(streak)} подряд` : 'Первый день серии') +
-        (dailyRec.top > streak ? `, рекорд ${dailyRec.top}` : '')
+      ? t(score > run.dayPrev && run.dayPrev ? 'best.dayNew' : 'best.day', dailyBest(run.day)) +
+        (streak > 1 ? t('best.streak', streak, daysWord(streak)) : t('best.streak1')) +
+        (dailyRec.top > streak ? t('best.streakTop', dailyRec.top) : '')
       : t3
         ? best3 > prevBest3
-          ? `Новый рекорд на 3 минуты: ${best3}`
-          : `Рекорд на 3 минуты: ${best3}`
-        : (best > prevBest ? `Новый рекорд: ${best}` : `Рекорд: ${best}`) + (fresh.length ? `. Открыта шапка: ${fresh.join(', ')}` : '');
+          ? t('best.t3New', best3)
+          : t('best.t3', best3)
+        : (best > prevBest ? t('best.recNew', best) : t('rec', best)) + (fresh.length ? t('best.hat', fresh.join(', ')) : '');
   if (won && !run.cheated)
     bestEl.textContent = won.lap
-      ? `Время второй смены не идёт в рекорд. Лучшее прохождение: ${mmss(clearRec.best)}`
-      : `${won.rec ? 'Новый рекорд' : 'Рекорд'} прохождения: ${mmss(clearRec.best)}. Побед: ${clearRec.wins}`;
-  else if (won) bestEl.textContent = 'С читами победа и рекорд не засчитаны';
-  $('again').textContent = won ? (won.lap ? `Смена ${won.lap + 2}` : 'Вторая смена') : 'Ещё кусь';
+      ? t('best.lap', mmss(clearRec.best))
+      : t(won.rec ? 'best.clearNew' : 'best.clear', mmss(clearRec.best), clearRec.wins);
+  else if (won) bestEl.textContent = t('best.cheatWin');
+  $('again').textContent = won ? (won.lap ? t('shift', won.lap + 2) : t('shift2')) : t('over.again');
   $('chalRes').textContent =
     !challenge || (t3 && !(daily && challenge.d === run.day)) || (!t3 && challenge.d) || run.cheated
       ? ''
       : daily
-        ? `${score > challenge.c ? 'Вызов побит' : 'Вызов'}: ${challenge.n} ${challenge.c}, ты ${score}.`
+        ? t(score > challenge.c ? 'chal.dayWon' : 'chal.day', challenge.n, challenge.c, score)
         : score > challenge.c
-          ? `Вызов побит: у игрока ${challenge.n} было ${challenge.c}, у тебя ${score}.`
-          : `Вызов от игрока ${challenge.n}: ${challenge.c}. Твой результат: ${score}.`;
+          ? t('chal.won', challenge.n, challenge.c, score)
+          : t('chal.res', challenge.n, challenge.c, score);
   card.classList.toggle('chal', !!$('chalRes').textContent); // on short screens the challenge line takes the "so close" line's place
   $('chalBtn').classList.toggle('hidden', (t3 && !daily) || run.cheated || score < 1);
-  $('chalBtn').textContent = daily || won ? 'Поделиться' : 'Бросить вызов другу';
+  $('chalBtn').textContent = t(daily || won ? 'over.share' : 'over.chal');
   $('chalLink').classList.add('hidden');
   overEl.classList.remove('hidden');
   hudEl.classList.add('hidden');
@@ -4800,7 +5307,7 @@ function bumpMass() {
     });
 }
 function lbRow(n, b) {
-  return `<li class="${b.isPlayer ? 'me' : ''}"><span class="n">${n}</span><i style="background:${b.pal.base}"></i><span class="nm">${esc(b.name)}</span><span class="m">${Math.round(b.mass)}</span></li>`;
+  return `<li class="${b.isPlayer ? 'me' : ''}"><span class="n">${n}</span><i style="background:${b.pal.base}"></i><span class="nm">${esc(b.isPlayer ? b.name : nameOf(b.name))}</span><span class="m">${Math.round(b.mass)}</span></li>`;
 }
 function updateHUD(dt) {
   const pct = player && player.alive ? clamp(1 - player.dashCd / 1.5, 0, 1) : 1;
@@ -4833,13 +5340,13 @@ function updateHUD(dt) {
     mission('time', time - player.stats.t0, true);
   }
   const tl = Math.ceil(timeLeft);
-  $('timer').textContent = runActive && timed() ? `осталось ${Math.floor(tl / 60)}:${String(tl % 60).padStart(2, '0')}` : '';
+  $('timer').textContent = runActive && timed() ? t('hud.left', `${Math.floor(tl / 60)}:${String(tl % 60).padStart(2, '0')}`) : '';
   $('goal').textContent = !runActive
     ? ''
     : day
-      ? `конфета дня: ${run.rule.name}${challenge && challenge.d === run.day ? ` · побей ${challenge.c}` : ''}`
+      ? t('hud.daily', run.rule.name) + (challenge && challenge.d === run.day ? t('hud.beat', challenge.c) : '')
       : challenge && !challenge.d && mode === 'free'
-        ? `цель: ${challenge.c}`
+        ? t('hud.goal', challenge.c)
         : '';
   renderStage();
   renderFx();
@@ -4850,7 +5357,7 @@ function updateHUD(dt) {
   if (player && player.alive && state === 'play') {
     if (leader === player) {
       mission('top', 0.25);
-      if (was !== player) addFeed('Ты теперь <b>самый сладкий</b>. За укус лидера дают больше, береги спину', 5200);
+      if (was !== player) addFeed(t('feed.leader'), 5200);
     }
     const view = (Math.max(W, H) / cam.z) * 0.5; // explain each new thing the first time it comes into view
     const hint = (key, html) => {
@@ -4867,20 +5374,8 @@ function updateHUD(dt) {
       if (player.stats.bites > 0 || !q.alive || time - run.t0 > 30) {
         q.tame = false;
         tutor = null;
-        if (player.stats.bites > 0)
-          addFeed(
-            touchMode
-              ? '<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты'
-              : '<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты',
-            5200,
-          );
-      } else if (Math.hypot(q.x - player.x, q.y - player.y) - q.Rs - player.Rs < 50)
-        hint(
-          'bite',
-          touchMode
-            ? 'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Кусь</b>: рывок с укусом'
-            : 'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Клик</b>: рывок с укусом',
-        );
+        if (player.stats.bites > 0) addFeed(touchMode ? t('tip.colorsT') : t('tip.colorsM'), 5200);
+      } else if (Math.hypot(q.x - player.x, q.y - player.y) - q.Rs - player.Rs < 50) hint('bite', touchMode ? t('tip.biteT') : t('tip.biteM'));
     }
     if (run.dayNote && !tutor) {
       let live = 0;
@@ -4891,14 +5386,14 @@ function updateHUD(dt) {
       // the first run's lesson goes first, these wait until it is over
       for (const b of blobs) {
         if (!b.kind || !b.alive || seen[b.kind] || Math.abs(b.x - player.x) > view + b.Rs || Math.abs(b.y - player.y) > view + b.Rs) continue;
-        if (b.kind === 'hedgehog') hint('hedgehog', '<b>Ёж</b>: со спины колется. Кусай его в морду');
-        else if (b.kind === 'cake') hint('cake', '<b>Торт</b>: корка твёрдая. Кусай в вишенку на спине');
-        else hint('piranha', '<b>Пираньи</b>: мелкие, но нападают стаей. Глотай по одной');
+        if (b.kind === 'hedgehog') hint('hedgehog', t('tip.hedgehog'));
+        else if (b.kind === 'cake') hint('cake', t('tip.cake'));
+        else hint('piranha', t('tip.piranha'));
       }
     if (!seen.pickup && !tutor)
       for (const q of pickups)
         if (Math.abs(q.x - player.x) < view && Math.abs(q.y - player.y) < view) {
-          hint('pickup', '<b>Бонус</b>: наедь на него, чтобы подобрать');
+          hint('pickup', t('tip.pickup'));
           break;
         }
   }
@@ -5078,7 +5573,7 @@ function sugarSync() {
   if (v === sugShown) return;
   sugShown = v;
   sugOdo.set(v);
-  sugarEl.setAttribute('aria-label', `сахар ${v}`);
+  sugarEl.setAttribute('aria-label', t('a.sugar', v));
 }
 function sugarFly(wx, wy, value, n) {
   // a world point, the value split over n cubes. Order: the caller adds the value to run.sugar (earn) FIRST, then calls this
@@ -5151,7 +5646,7 @@ function sugarReset() {
   sugShown = 0;
   sugOdo.set(0, true);
   sugBox.x = 0; // the HUD is about to show and may have moved: measure again at the first flight
-  sugarEl.setAttribute('aria-label', 'сахар 0');
+  sugarEl.setAttribute('aria-label', t('a.sugar', 0));
 }
 function drawSugarCubes() {
   if (!sugImg.complete) return;
@@ -5230,15 +5725,15 @@ function renderFx() {
   }
   for (const f of fxLive) {
     const v = Math.max(0, player[f.prop]),
-      t = Math.round(clamp(v / PICK[f.k][1], 0, 1) * 100) / 100,
+      fill = Math.round(clamp(v / PICK[f.k][1], 0, 1) * 100) / 100,
       s = Math.ceil(v);
-    if (t !== f.t) {
-      f.t = t;
-      f.coin.style.setProperty('--t', t);
+    if (fill !== f.t) {
+      f.t = fill;
+      f.coin.style.setProperty('--t', fill);
     }
     if (s !== f.s) {
       f.s = s;
-      f.b.textContent = s + ' с';
+      f.b.textContent = s + t('unit.s');
     }
   }
 }
@@ -5248,9 +5743,9 @@ function renderFx() {
 // «Вторая смена» (second shift) carries on from the same spot, the events come round again by timers and each lap's cake is tougher.
 // The timed modes (t3, daily) and the world behind the menu keep the old free-roaming cake and piranhas.
 const STAGE = {
-  pir: { mass: 150, by: 45, name: 'пираний' }, // the player's mass that starts it, or the run second it starts by anyway
-  rain: { mass: 600, by: 120, name: 'сладкого дождя', T: 15 },
-  boss: { mass: 1600, name: 'Большого Торта' }, // no time ceiling
+  pir: { mass: 150, by: 45, name: t('stg.pir') }, // the player's mass that starts it, or the run second it starts by anyway
+  rain: { mass: 600, by: 120, name: t('stg.rain'), T: 15 },
+  boss: { mass: 1600, name: t('stg.boss') }, // no time ceiling
   gap: 8, // seconds of quiet after an event before the next one may start
   lap: { pir: 20, rain: 25, boss: 30 }, // second shift and later: seconds after the previous event ends
 };
@@ -5341,12 +5836,12 @@ function beginEvent(k) {
     c = { k, t: 0 };
   if (k === 'pir') {
     c.pack = raid(raidSize(P.mass));
-    announce('<b>Пираньи!</b> Стая плывёт к тебе. Глотай их по одной', 'Пираньи!');
+    announce(t('ann.pir'), t('ann.pirBig'));
   } else if (k === 'rain') {
     c.n = 0;
     c.acc = 0;
     c.picks = 0;
-    announce('<b>Сладкий дождь!</b> Вокруг сыплется посыпка и бонусы', 'Сладкий дождь!');
+    announce(t('ann.rain'), t('ann.rainBig'));
   } else {
     const lap = stg.lap,
       m = Math.min(3400, BOSS.mass * (1 + 0.25 * lap)),
@@ -5373,7 +5868,7 @@ function beginEvent(k) {
     c.m0 = m;
     c.esc = 0;
     c.phT = BOSS.face;
-    announce(`<b>${esc(b.name)}</b> идёт за тобой. Корка твёрдая, кусай вишенку на спине`, 'Большой Торт!');
+    announce(t('ann.boss', `<b>${esc(nameOf(b.name))}</b>`), t('ann.bossBig'));
   }
   stg.cur = c;
 }
@@ -5420,7 +5915,7 @@ function bossDown(A) {
   stg.cur = null;
   stg.winT = 1.4;
   A.safe = true; // nobody bites the winner while the screen comes up
-  floatText(A.x, A.y - A.Rs - 70 / cam.z, 'Торт съеден!', '#ffd23f', 34);
+  floatText(A.x, A.y - A.Rs - 70 / cam.z, t('over.won'), '#ffd23f', 34);
   Sfx.ding(6);
   if (!calm) {
     slowT = slowLen = 1.3;
@@ -5462,7 +5957,7 @@ function stageUpdate(dt) {
         if (c.esc < 2 && b.mass < c.m0 * (c.esc ? 0.34 : 0.67)) {
           c.esc++;
           raid(4 + stg.lap * 2);
-          addFeed('<b>Свита торта</b>: пираньи!', 3600);
+          addFeed(t('feed.retinue'), 3600);
           Sfx.power();
         }
       }
@@ -5479,26 +5974,26 @@ function stageLine() {
   // the HUD line under the mass: the next event and how close it is, or the event under way; [text, progress 0..1]
   if (!stg || mode !== 'free' || !runActive || !player) return ['', -1];
   const c = stg.cur,
-    lap = stg.lap ? `смена ${stg.lap + 1} · ` : '';
-  if (stg.winT > 0) return ['Торт съеден!', 1];
+    lap = stg.lap ? t('stg.lap', stg.lap + 1) : '';
+  if (stg.winT > 0) return [t('over.won'), 1];
   if (c) {
     if (c.k === 'pir') {
       const n = c.pack.filter((b) => b.alive).length;
-      return [`${lap}пираньи здесь: ${n}`, 1 - c.t / 30];
+      return [lap + t('stg.pirHere', n), 1 - c.t / 30];
     }
-    if (c.k === 'rain') return [`${lap}сладкий дождь ${Math.ceil(STAGE.rain.T - c.t)} с`, 1 - c.t / STAGE.rain.T];
+    if (c.k === 'rain') return [lap + t('stg.rainOn', Math.ceil(STAGE.rain.T - c.t)), 1 - c.t / STAGE.rain.T];
     const p = clamp(c.b.mass / c.m0, 0, 1);
-    return [`${lap}торт: ${Math.round(p * 100)}%`, p];
+    return [lap + t('stg.cakeOn', Math.round(p * 100)), p];
   }
   const k = STAGE_KEYS[stg.i],
     s = STAGE[k];
   if (stg.lap) {
     const left = Math.max(0, Math.max(STAGE.lap[k], stg.i ? STAGE.gap : 0) - (time - stg.endT));
-    return [`${lap}${k === 'boss' ? 'торт' : k === 'pir' ? 'пираньи' : 'дождь'} через ${Math.ceil(left)} с`, 1 - left / STAGE.lap[k]];
+    return [lap + t('stg.next', t('stg.n.' + k), Math.ceil(left)), 1 - left / STAGE.lap[k]];
   }
   const m = player.stats.maxMass,
     p = Math.max(m / s.mass, s.by ? (time - stg.t0) / s.by : 0);
-  return [`до ${s.name} ${Math.max(1, Math.ceil(s.mass - m))}`, clamp(p, 0, 1)];
+  return [t('stg.to', s.name, Math.max(1, Math.ceil(s.mass - m))), clamp(p, 0, 1)];
 }
 let lastStage = '',
   stageIcon = '';
@@ -5515,7 +6010,7 @@ function renderStage() {
   el.classList.toggle('hungry', hungry);
   el.classList.toggle('chomp', chomp);
   if (!t) return;
-  const m = /^(.*\S)\s+(\d+(?:\s*с|%)?)$/.exec(t); // a trailing number goes to its own slot so a long label can shrink but not the number
+  const m = /^(.*\S)\s+(\d+(?:\s*[сs]|%)?)$/.exec(t); // a trailing number goes to its own slot so a long label can shrink but not the number
   el.querySelector('.t').textContent = m ? m[1] + ' ' : t; // the space keeps the line readable as plain text
   el.querySelector('b').textContent = m ? m[2] : '';
   if (kind !== stageIcon) {
@@ -5573,13 +6068,13 @@ function secondShift() {
   hudEl.classList.remove('hidden');
   feedEl.innerHTML = '';
   hudT = 0;
-  addFeed(`<b>Смена ${stg.lap + 1}</b>: пираньи, дождь и торт по кругу, быстрее. Торт сильнее`, 5200);
+  addFeed(t('feed.lap', stg.lap + 1), 5200);
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 }
 
 // ---------- streak juice: ×N over the candy, fuses, stamps, sugar rush and the summary ----------
 // A streak is player.combo while player.comboT (the 4 s window) is still running. doBite calls onStreakBite, updateBlob calls onStreakEnd.
-const STREAK = { win: 4, close: 0.45, low: 0.8, words: { 2: 'Кусь-кусь!', 3: 'Ням!', 5: 'Хрум-хрум!', 7: 'Обжора!' } };
+const STREAK = { win: 4, close: 0.45, low: 0.8, words: { 2: t('w.2'), 3: t('w.3'), 5: t('w.5'), 7: t('w.7') } };
 const STREAK_COL = ['', '#9be15d', '#ff9a3c', '#ff4f7b']; // the colour of each step
 // 0: no streak (combo < 2), 1: ×2, 2: ×3-4, 3: ×5 and up
 const streakLevel = (combo) => (combo < 2 ? 0 : combo < 3 ? 1 : combo < 5 ? 2 : 3);
@@ -5671,9 +6166,9 @@ function onStreakBite(P, B, wx, wy, add, close) {
   streak.on = true;
   streak.lvl = lvl;
   sugarFly(wx, wy, add, Math.min(P.combo, 5) + 1); // the cubes carry this bite's sugar into the pill
-  const word = close ? 'На волоске!' : STREAK.words[P.combo];
+  const word = close ? t('w.close') : STREAK.words[P.combo];
   if (word) addStamp(word);
-  if (word && /ням/i.test(word)) for (const t of texts) if (t.s.startsWith('ням! ')) t.s = t.s.slice(5); // the stamp says it now: a swallow's «ням!» still floating keeps only its number
+  if (word && word === STREAK.words[3]) for (const x of texts) if (x.s.startsWith(t('float.yum'))) x.s = x.s.slice(t('float.yum').length); // the stamp says it now: a swallow's «ням!» still floating keeps only its number
   if (!calm) {
     streak.pop = 1;
     cam.shake = Math.max(cam.shake, 3 + Math.min(P.combo, 6) * 0.9);
@@ -5690,9 +6185,9 @@ function onStreakBite(P, B, wx, wy, add, close) {
 function onStreakEnd(P) {
   // comboT ran out with a streak of two or more bites: show what it was worth, then let Task 4 react
   // the wrapper's payout pill, if it is still up, is not replaced
-  if (runActive && P === player && !(streak.sumT > 0 && sumEl.textContent.startsWith('Фантик'))) {
+  if (runActive && P === player && !(streak.sumT > 0 && sumEl.textContent.startsWith(t('wrap.word')))) {
     const got = Math.max(0, Math.floor(streak.sum));
-    sumEl.textContent = got > 0 ? `Серия ×${P.combo} · +${got} сахара` : `Серия ×${P.combo}`; // a streak of bonuses only brought no sugar: no «+0»
+    sumEl.textContent = got > 0 ? t('sum.streakSugar', P.combo, got) : t('sum.streak', P.combo); // a streak of bonuses only brought no sugar: no «+0»
     sumEl.classList.add('on');
     streak.sumT = 2;
   }
@@ -5858,7 +6353,8 @@ const WRAP_POP = 0.3, // the hop out of the wound, seconds
     ['#ff5d8f', '#c49bff'],
   ], // body and twisted ends per tier: plain, rare, jackpot
   WRAP_RGB = ['255,241,220', '255,210,63', '255,93,143'],
-  WRAP_WORD = ['', 'Редкий!', 'Джекпот!'];
+  WRAP_WORD = ['', t('wrap.rare'), t('wrap.jack')],
+  WRAP_CATCH = t('wrap.catch'); // drawn where a local t is the clock
 let wrap = null, // { x, y, vx, vy, t, life, tier, final, state: 'pop' | 'run', step }
   reveal = null, // { t, tier, final, shown, paid, from, flash }: tier is the one shown now, from the one it was caught as
   wrapOut = null; // the one that got away, fading out for 0.4 s (drawing only)
@@ -6010,7 +6506,7 @@ function revealTick(P, dt) {
     if (runActive && !P.cheated && !run.cheated) {
       run.sugar += amt; // first into run.sugar, then the cubes carry it to the pill
       sugarFly(P.x, P.y - revealOff(P, z) / z, amt, 8 + 3 * R.final); // the cubes leave from the number
-      sumEl.textContent = `Фантик пойман · +${amt} сахара`;
+      sumEl.textContent = t('wrap.caught', amt);
       sumEl.classList.add('on');
       streak.sumT = 2;
       Sfx.wrapPay(R.final === 2);
@@ -6186,7 +6682,7 @@ function drawWrapTag(z, ox, oy) {
   ctx.save();
   ctx.translate(x, y - 40);
   ctx.scale(s, s);
-  wrapText('Лови!', 0, 0, '#ffd23f', 4);
+  wrapText(WRAP_CATCH, 0, 0, '#ffd23f', 4);
   ctx.restore();
   // the 5 s timer: an arc under its feet that empties
   ctx.lineCap = 'round';
@@ -7616,7 +8112,7 @@ function drawName(b) {
   if (sr < (lod ? 16 : 10) && !b.isPlayer) return;
   const fs = clamp(sr * 0.3, 11, 17) / z;
   let y = b.y - b.Rs * (b.hat !== 'none' && sr >= 8 ? 1.55 : 1.04) - 6 / z,
-    L = labelFor(b.name, b.isPlayer || !!b.boss),
+    L = labelFor(b.isPlayer ? b.name : nameOf(b.name), b.isPlayer || !!b.boss),
     k = fs / 34;
   const sk = streakStep(b);
   if (sk) {
@@ -7736,7 +8232,7 @@ function drawStick() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle = 'rgba(255,241,220,0.85)';
-    ctx.fillText('води пальцем', bx, by + STICK_R + 10);
+    ctx.fillText(t('stick.hint'), bx, by + STICK_R + 10);
   }
 }
 function render() {
@@ -8048,7 +8544,7 @@ addEventListener('keydown', (e) => {
 function toggleMute() {
   Sfx.on = !Sfx.on;
   muteEl.classList.toggle('muted', !Sfx.on);
-  muteEl.setAttribute('aria-label', Sfx.on ? 'Выключить звук' : 'Включить звук');
+  muteEl.setAttribute('aria-label', t(Sfx.on ? 'a.mute' : 'a.unmute'));
 }
 muteEl.addEventListener('click', () => {
   Sfx.init();
@@ -8060,9 +8556,9 @@ function renderHats() {
   if (!HATS.some((h) => h.id === chosenHat && h.need <= best)) chosenHat = 'none';
   hatsEl.innerHTML = HATS.map((h) => {
     const lock = h.need > best;
-    return `<button type="button" role="radio" aria-checked="${h.id === chosenHat}" data-h="${h.id}"${lock ? ' disabled' : ''}>${h.name}${lock ? ` <small>с ${h.need}</small>` : ''}</button>`;
+    return `<button type="button" role="radio" aria-checked="${h.id === chosenHat}" data-h="${h.id}"${lock ? ' disabled' : ''}>${h.name}${lock ? ` <small>${t('hat.from', h.need)}</small>` : ''}</button>`;
   }).join('');
-  recEl.textContent = best ? `Рекорд: ${best}` : 'Шапки открываются за рекорд по массе';
+  recEl.textContent = best ? t('rec', best) : t('rec.none');
   renderSecs();
 }
 hatsEl.addEventListener('click', (e) => {
@@ -8080,7 +8576,7 @@ let askSkin = null,
 function renderBank(msg) {
   // the sugar balance; a message replaces it for a few seconds
   clearTimeout(bankT);
-  bankEl.textContent = msg || `Сахар: ${sugar}`;
+  bankEl.textContent = msg || t('bank', sugar);
   if (msg) bankT = setTimeout(() => renderBank(), 3200);
 }
 function renderSkins() {
@@ -8092,9 +8588,9 @@ function renderSkins() {
       tag = !lock
         ? ''
         : askSkin === id
-          ? '<small class="pz ask">купить</small>'
+          ? `<small class="pz ask">${t('skin.buy')}</small>`
           : `<small class="pz${sugar >= price ? ' can' : ''}">${price}</small>`,
-      why = lock ? `: за задание или за ${price} сахара` : '';
+      why = lock ? t('skin.why', price) : '';
     return `<button type="button" role="radio" aria-checked="${id === chosenSkin}" aria-label="${name}${why}" title="${name}${why}" data-s="${id}"${lock ? ' class="lock"' : ''}><canvas width="92" height="92"></canvas>${tag}</button>`;
   }).join('');
   renderSecs();
@@ -8145,21 +8641,21 @@ function renderSkins() {
   }
 }
 skinsEl.addEventListener('click', (e) => {
-  const t = e.target.closest('button');
-  if (!t) return;
-  const id = t.dataset.s,
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  const id = btn.dataset.s,
     i = SKINS.findIndex((k) => k[0] === id),
     price = SKIN_PRICE(i),
     name = SKINS[i][1],
     wasAsk = askSkin;
-  if (t.classList.contains('lock')) {
+  if (btn.classList.contains('lock')) {
     // a locked pattern is bought with two taps, so a stray tap never spends sugar
     if (sugar < price) {
       askSkin = null;
-      renderBank(`«${name}»: ${price} сахара, у тебя ${sugar}`);
+      renderBank(t('skin.short', name, price, sugar));
     } else if (askSkin !== id) {
       askSkin = id;
-      renderBank(`Ещё раз: купить «${name}» за ${price}`);
+      renderBank(t('skin.ask', name, price));
     } else {
       sugar -= price;
       saveSugar();
@@ -8171,7 +8667,7 @@ skinsEl.addEventListener('click', (e) => {
       Sfx.power();
       haptic(20);
       renderMissions();
-      renderBank(`Узор «${name}» твой`);
+      renderBank(t('skin.got', name));
     }
     if (wasAsk !== askSkin || chosenSkin === id) renderSkins();
     const el = skinsEl.querySelector(`[data-s="${id}"]`);
@@ -8187,7 +8683,7 @@ skinsEl.addEventListener('click', (e) => {
 function renderSwatches() {
   swEl.innerHTML = PALS.map(
     (p, i) =>
-      `<button type="button" role="radio" aria-checked="${i === chosen}" aria-label="${p.name}" title="${p.name}" data-i="${i}" style="background:${p.base}"></button>`,
+      `<button type="button" role="radio" aria-checked="${i === chosen}" aria-label="${nameOf(p.name)}" title="${nameOf(p.name)}" data-i="${i}" style="background:${p.base}"></button>`,
   ).join('');
 }
 swEl.addEventListener('click', (e) => {
@@ -8243,14 +8739,13 @@ function renderSecs() {
   const pal = PALS[chosen],
     skin = SKINS.find((k) => k[0] === chosenSkin),
     hat = HATS.find((h) => h.id === chosenHat),
-    look = [pal.name, skin && skin[1], hat && hat.id !== 'none' && hat.name].filter(Boolean).join(' · ');
+    look = [nameOf(pal.name), skin && skin[1], hat && hat.id !== 'none' && hat.name].filter(Boolean).join(' · ');
   $('sumLook').innerHTML = `<i style="background:${pal.base}"></i>${look}`;
-  $('sumMode').textContent =
-    `${{ free: 'Свободная', t3: '3 минуты', daily: 'Конфета дня' }[mode]} · ${mode === 'daily' ? 'Обычная' : pressedText('diffSeg')}`;
+  $('sumMode').textContent = `${t('sum.' + mode)} · ${mode === 'daily' ? t('dif.normal') : pressedText('diffSeg')}`;
   const mis = $('misList').children,
     done = $('misList').querySelectorAll('.mi.ok').length;
-  $('sumMis').textContent = mis.length ? `готово ${done} из ${mis.length}` : '';
-  $('sumSet').textContent = `графика: ${pressedText('gfxSeg').toLowerCase()}`;
+  $('sumMis').textContent = mis.length ? t('sum.mis', done, mis.length) : '';
+  $('sumSet').textContent = t('sum.set', pressedText('gfxSeg').toLowerCase());
 }
 
 // ---------- admin panel ----------
@@ -8260,13 +8755,13 @@ const admEl = $('adm'),
   admA = $('admA'),
   cheatTag = $('cheatTag');
 const TOGGLES = [
-  ['god', 'Бессмертие'],
-  ['mega', 'Мега-укус и язык'],
-  ['cd', 'Без перезарядки'],
-  ['peace', 'Боты меня не трогают'],
-  ['magnet', 'Магнит для еды'],
-  ['heal', 'Раны сразу заживают'],
-  ['slow', 'Замедление времени'],
+  ['god', t('cheat.god')],
+  ['mega', t('cheat.mega')],
+  ['cd', t('cheat.cd')],
+  ['peace', t('cheat.peace')],
+  ['magnet', t('cheat.magnet')],
+  ['heal', t('cheat.heal')],
+  ['slow', t('cheat.slow')],
 ];
 const near = (b, d) => blobs.filter((o) => o.ai && o.alive && Math.hypot(o.x - b.x, o.y - b.y) < d);
 const putNear = (b, mass, dist) => {
@@ -8292,44 +8787,44 @@ const placeAt = (o, x, y) => {
 };
 const ACTIONS = [
   [
-    '+100 массы',
+    t('act.0'),
     (P) => {
       P.mass += 100;
     },
   ],
   [
-    '+1000 массы',
+    t('act.1'),
     (P) => {
       P.mass += 1000;
     },
   ],
   [
-    'Масса как на старте',
+    t('act.2'),
     (P) => {
       P.mass = DIFFS[diff].start;
     },
   ],
   [
-    'Залечить раны',
+    t('act.3'),
     (P) => {
       P.wounds.length = 0;
     },
   ],
   [
-    'Мелочь вокруг',
+    t('act.4'),
     (P) => {
       for (let i = 0; i < 8; i++) putNear(P, rand(12, 28), P.Rs + rand(160, 380));
     },
   ],
   [
-    'Гигант рядом',
+    t('act.5'),
     (P) => {
       putNear(P, 1400, P.Rs + 560);
     },
     'red',
   ],
   [
-    'Гора посыпки',
+    t('act.6'),
     (P) => {
       for (let i = 0; i < 160; i++) {
         const a = rand(TAU),
@@ -8342,7 +8837,7 @@ const ACTIONS = [
     },
   ],
   [
-    'Кусь по округе',
+    t('act.7'),
     (P) => {
       for (const o of near(P, 750)) {
         const a = Math.atan2(P.y - o.y, P.x - o.x),
@@ -8358,21 +8853,21 @@ const ACTIONS = [
     'red',
   ],
   [
-    'Съесть всех рядом',
+    t('act.8'),
     (P) => {
       for (const o of near(P, 900)) swallowWhole(P, o);
     },
     'red',
   ],
   [
-    'Ёж рядом',
+    t('act.9'),
     (P) => {
       const a = rand(TAU);
       for (const o of spawnSpecial('hedgehog')) placeAt(o, P.x + Math.cos(a) * (P.Rs + 300), P.y + Math.sin(a) * (P.Rs + 300));
     },
   ],
   [
-    'Стая пираний',
+    t('act.10'),
     (P) => {
       const a = rand(TAU);
       for (const o of spawnSpecial('piranha'))
@@ -8380,14 +8875,14 @@ const ACTIONS = [
     },
   ],
   [
-    'Торт рядом',
+    t('act.11'),
     (P) => {
       const a = rand(TAU);
       for (const o of spawnSpecial('cake')) placeAt(o, P.x + Math.cos(a) * (P.Rs + 640), P.y + Math.sin(a) * (P.Rs + 640));
     },
   ],
   [
-    'Бонусы вокруг',
+    t('act.12'),
     (P) => {
       ['speed', 'shield', 'magnet'].forEach((t, i) => {
         const a = (i * TAU) / 3 + rand(1);
@@ -8401,14 +8896,14 @@ const ACTIONS = [
     },
   ],
   [
-    'Открыть все узоры',
+    t('act.13'),
     () => {
       for (const k of SKINS) if (!M.open.includes(k[0])) M.open.push(k[0]);
       saveM();
     },
   ],
   [
-    'Очистить карту',
+    t('act.14'),
     (P) => {
       for (const o of blobs)
         if (o.ai) {
@@ -8427,8 +8922,8 @@ function renderAdmin() {
 }
 function updateCheatTag() {
   const on = TOGGLES.filter(([k]) => CHEAT[k]).map(([, n]) => n.toLowerCase());
-  if (CHEAT.speed !== 1) on.push('скорость ×' + CHEAT.speed);
-  cheatTag.textContent = on.length ? 'Читы: ' + on.join(', ') : '';
+  if (CHEAT.speed !== 1) on.push(t('cheat.speed', CHEAT.speed));
+  cheatTag.textContent = on.length ? t('cheat.tag', on.join(', ')) : '';
 }
 function openAdmin() {
   if (state !== 'play' || !player || !player.alive) return;
@@ -8503,6 +8998,15 @@ function setHome(inMenu) {
   if (inMenu) $('secSetB').appendChild(setBox);
   else pauseEl.querySelector('.card').insertBefore(setBox, $('resume'));
 }
+for (const b of $('langSeg').children) b.setAttribute('aria-pressed', String(b.dataset.v === LANG));
+$('langSeg').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b || b.dataset.v === LANG) return;
+  try {
+    localStorage.setItem('kus.lang', b.dataset.v);
+  } catch (e) {}
+  location.reload();
+});
 function openPause() {
   if (state !== 'play' || !player || !player.alive || paused) return;
   paused = true;
@@ -8580,11 +9084,11 @@ $('chalBtn').addEventListener('click', () => {
   if (run.won) return shareWin();
   // a link that carries your score: the friend sees it as the target
   const score = Math.round(run.max),
-    name = (nick.value || '').trim().slice(0, 14) || 'Кусака';
+    name = (nick.value || '').trim().slice(0, 14) || t('defName');
   const base = /^https?:$/.test(location.protocol) && !/claude|anthropic/i.test(location.hostname) ? location.origin + location.pathname : PUBLIC_URL;
   const daily = mode === 'daily' && run.rule, // a candy-of-the-day link opens the same day's run
     url = base + '?c=' + score + '&n=' + encodeURIComponent(name) + (daily ? '&d=' + run.day : ''),
-    text = daily ? `КУСЬ.io, конфета дня «${run.rule.name}»: у меня ${score}. Побей до полуночи` : `Я набрал ${score} в КУСЬ.io. Побей!`,
+    text = daily ? t('share.daily', run.rule.name, score) : t('share.free', score),
     box = $('chalLink');
   box.value = url;
   box.classList.remove('hidden');
@@ -8596,11 +9100,11 @@ $('chalBtn').addEventListener('click', () => {
   };
   try {
     if ((touchMode || daily) && navigator.share) {
-      navigator.share({ title: 'КУСЬ.io', text, url }).catch(() => {});
+      navigator.share({ title: t('brand'), text, url }).catch(() => {});
       return;
     }
     navigator.clipboard.writeText(text + ' ' + url).then(() => {
-      $('chalBtn').textContent = 'Ссылка скопирована';
+      $('chalBtn').textContent = t('share.copied');
     }, pick);
   } catch (e) {
     pick();
@@ -8609,17 +9113,17 @@ $('chalBtn').addEventListener('click', () => {
 function shareWin() {
   // the win screen's «Поделиться»: the clear time and a link to the game
   const base = /^https?:$/.test(location.protocol) && !/claude|anthropic/i.test(location.hostname) ? location.origin + location.pathname : PUBLIC_URL,
-    text = `Я съел Большой Торт в КУСЬ.io за ${mmss(run.won.secs)}. Сможешь быстрее?`,
+    text = t('share.win', mmss(run.won.secs)),
     box = $('chalLink');
   box.value = base;
   try {
     if (navigator.share) {
-      navigator.share({ title: 'КУСЬ.io', text, url: base }).catch(() => {});
+      navigator.share({ title: t('brand'), text, url: base }).catch(() => {});
       return;
     }
     navigator.clipboard.writeText(text + ' ' + base).then(
       () => {
-        $('chalBtn').textContent = 'Скопировано';
+        $('chalBtn').textContent = t('share.copied2');
       },
       () => box.classList.remove('hidden'),
     );
@@ -9341,8 +9845,13 @@ function frame(now) {
     fpsW += wk;
     if (raw > fpsMax) fpsMax = raw;
     if (fpsT >= 0.5) {
-      $('fpsTag').textContent =
-        `${Math.round(fpsN / fpsT)} fps · худший ${Math.round(fpsMax * 1000)} мс · работа ${(fpsW / fpsN).toFixed(1)} мс · деталь ${2 - lod}/${Math.round(quality * 100)}%`;
+      $('fpsTag').textContent = t(
+        'fps',
+        Math.round(fpsN / fpsT),
+        Math.round(fpsMax * 1000),
+        (fpsW / fpsN).toFixed(1),
+        `${2 - lod}/${Math.round(quality * 100)}%`,
+      );
       fpsN = 0;
       fpsT = 0;
       fpsW = 0;
@@ -9360,7 +9869,7 @@ function start(data) {
     try {
       nm = localStorage.getItem('kus.name') || '';
     } catch (e) {}
-  nick.value = nm;
+  nick.value = isDefName(nm) ? '' : nm; // an old save kept the default name: show the empty field instead
   let col = Number.isInteger(data.color) ? data.color : -1;
   if (col < 0)
     try {
@@ -9411,15 +9920,15 @@ function start(data) {
     document.body.classList.add('first');
   }
   if (challenge) {
-    const t = dailyOf(todayKey());
+    const dt = dailyOf(todayKey());
     // parts in .lx drop out on a phone held sideways, where the line must stay one row
     $('chal').innerHTML = !challenge.d
-      ? `${esc(challenge.n)} набрал ${challenge.c}. Побей в свободной игре!`
+      ? t('chal.free', esc(challenge.n), challenge.c)
       : chalToday()
-        ? `${esc(challenge.n)} набрал ${challenge.c} в конфете дня «${t.name}». Побей сегодня`
-        : challenge.d > t.key
-          ? `Это вызов на конфету за ${keyText(challenge.d)}<span class="lx">, у тебя она ещё не началась</span>. Сегодня «${t.name}»<span class="lx">, сыграй её</span>`
-          : `Это ${challenge.d === prevKey(t.key) ? 'вчерашняя конфета' : `конфета за ${keyText(challenge.d)}`}, она уже закончилась. Сегодня<span class="lx"> новая</span>: «${t.name}»<span class="lx">, сыграй её</span>`;
+        ? t('chal.today', esc(challenge.n), challenge.c, dt.name)
+        : challenge.d > dt.key
+          ? t('chal.ahead', keyText(challenge.d), dt.name)
+          : t('chal.old', challenge.d === prevKey(dt.key) ? t('chal.yesterday') : t('chal.dayOf', keyText(challenge.d)), dt.name);
     $('chal').classList.remove('hidden');
     mode = challenge.d ? 'daily' : 'free';
   }
@@ -9444,6 +9953,11 @@ function start(data) {
   requestAnimationFrame(frame);
 }
 window.__kus = {
+  LANG,
+  t,
+  STR,
+  EN_NAMES,
+  nameOf,
   Sfx,
   SFX_DATA,
   botStat, // what the smarter bots of hard and extreme have done (09-bots)
@@ -9541,6 +10055,8 @@ window.__kus = {
   albumCount,
   STICKERS,
   ALBUM_ROWS,
+  BOT_NAMES,
+  FLAVORS,
   NEED,
   openAlbum,
   closeAlbum,

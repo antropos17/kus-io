@@ -18,7 +18,7 @@ else launch.channel = 'chrome';
 const t0 = Date.now();
 const log = (m) => process.env.OG_DEBUG && console.log(`${((Date.now() - t0) / 1000).toFixed(1)} s ${m}`);
 const browser = await chromium.launch(launch);
-const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1, locale: 'ru-RU' }); // the link preview stays Russian whatever the machine's language
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 await page.addInitScript(() => {

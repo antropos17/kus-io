@@ -3,9 +3,9 @@
 // «Вторая смена» (second shift) carries on from the same spot, the events come round again by timers and each lap's cake is tougher.
 // The timed modes (t3, daily) and the world behind the menu keep the old free-roaming cake and piranhas.
 const STAGE = {
-  pir: { mass: 150, by: 45, name: 'пираний' }, // the player's mass that starts it, or the run second it starts by anyway
-  rain: { mass: 600, by: 120, name: 'сладкого дождя', T: 15 },
-  boss: { mass: 1600, name: 'Большого Торта' }, // no time ceiling
+  pir: { mass: 150, by: 45, name: t('stg.pir') }, // the player's mass that starts it, or the run second it starts by anyway
+  rain: { mass: 600, by: 120, name: t('stg.rain'), T: 15 },
+  boss: { mass: 1600, name: t('stg.boss') }, // no time ceiling
   gap: 8, // seconds of quiet after an event before the next one may start
   lap: { pir: 20, rain: 25, boss: 30 }, // second shift and later: seconds after the previous event ends
 };
@@ -96,12 +96,12 @@ function beginEvent(k) {
     c = { k, t: 0 };
   if (k === 'pir') {
     c.pack = raid(raidSize(P.mass));
-    announce('<b>Пираньи!</b> Стая плывёт к тебе. Глотай их по одной', 'Пираньи!');
+    announce(t('ann.pir'), t('ann.pirBig'));
   } else if (k === 'rain') {
     c.n = 0;
     c.acc = 0;
     c.picks = 0;
-    announce('<b>Сладкий дождь!</b> Вокруг сыплется посыпка и бонусы', 'Сладкий дождь!');
+    announce(t('ann.rain'), t('ann.rainBig'));
   } else {
     const lap = stg.lap,
       m = Math.min(3400, BOSS.mass * (1 + 0.25 * lap)),
@@ -128,7 +128,7 @@ function beginEvent(k) {
     c.m0 = m;
     c.esc = 0;
     c.phT = BOSS.face;
-    announce(`<b>${esc(b.name)}</b> идёт за тобой. Корка твёрдая, кусай вишенку на спине`, 'Большой Торт!');
+    announce(t('ann.boss', `<b>${esc(nameOf(b.name))}</b>`), t('ann.bossBig'));
   }
   stg.cur = c;
 }
@@ -175,7 +175,7 @@ function bossDown(A) {
   stg.cur = null;
   stg.winT = 1.4;
   A.safe = true; // nobody bites the winner while the screen comes up
-  floatText(A.x, A.y - A.Rs - 70 / cam.z, 'Торт съеден!', '#ffd23f', 34);
+  floatText(A.x, A.y - A.Rs - 70 / cam.z, t('over.won'), '#ffd23f', 34);
   Sfx.ding(6);
   if (!calm) {
     slowT = slowLen = 1.3;
@@ -217,7 +217,7 @@ function stageUpdate(dt) {
         if (c.esc < 2 && b.mass < c.m0 * (c.esc ? 0.34 : 0.67)) {
           c.esc++;
           raid(4 + stg.lap * 2);
-          addFeed('<b>Свита торта</b>: пираньи!', 3600);
+          addFeed(t('feed.retinue'), 3600);
           Sfx.power();
         }
       }
@@ -234,26 +234,26 @@ function stageLine() {
   // the HUD line under the mass: the next event and how close it is, or the event under way; [text, progress 0..1]
   if (!stg || mode !== 'free' || !runActive || !player) return ['', -1];
   const c = stg.cur,
-    lap = stg.lap ? `смена ${stg.lap + 1} · ` : '';
-  if (stg.winT > 0) return ['Торт съеден!', 1];
+    lap = stg.lap ? t('stg.lap', stg.lap + 1) : '';
+  if (stg.winT > 0) return [t('over.won'), 1];
   if (c) {
     if (c.k === 'pir') {
       const n = c.pack.filter((b) => b.alive).length;
-      return [`${lap}пираньи здесь: ${n}`, 1 - c.t / 30];
+      return [lap + t('stg.pirHere', n), 1 - c.t / 30];
     }
-    if (c.k === 'rain') return [`${lap}сладкий дождь ${Math.ceil(STAGE.rain.T - c.t)} с`, 1 - c.t / STAGE.rain.T];
+    if (c.k === 'rain') return [lap + t('stg.rainOn', Math.ceil(STAGE.rain.T - c.t)), 1 - c.t / STAGE.rain.T];
     const p = clamp(c.b.mass / c.m0, 0, 1);
-    return [`${lap}торт: ${Math.round(p * 100)}%`, p];
+    return [lap + t('stg.cakeOn', Math.round(p * 100)), p];
   }
   const k = STAGE_KEYS[stg.i],
     s = STAGE[k];
   if (stg.lap) {
     const left = Math.max(0, Math.max(STAGE.lap[k], stg.i ? STAGE.gap : 0) - (time - stg.endT));
-    return [`${lap}${k === 'boss' ? 'торт' : k === 'pir' ? 'пираньи' : 'дождь'} через ${Math.ceil(left)} с`, 1 - left / STAGE.lap[k]];
+    return [lap + t('stg.next', t('stg.n.' + k), Math.ceil(left)), 1 - left / STAGE.lap[k]];
   }
   const m = player.stats.maxMass,
     p = Math.max(m / s.mass, s.by ? (time - stg.t0) / s.by : 0);
-  return [`до ${s.name} ${Math.max(1, Math.ceil(s.mass - m))}`, clamp(p, 0, 1)];
+  return [t('stg.to', s.name, Math.max(1, Math.ceil(s.mass - m))), clamp(p, 0, 1)];
 }
 let lastStage = '',
   stageIcon = '';
@@ -270,7 +270,7 @@ function renderStage() {
   el.classList.toggle('hungry', hungry);
   el.classList.toggle('chomp', chomp);
   if (!t) return;
-  const m = /^(.*\S)\s+(\d+(?:\s*с|%)?)$/.exec(t); // a trailing number goes to its own slot so a long label can shrink but not the number
+  const m = /^(.*\S)\s+(\d+(?:\s*[сs]|%)?)$/.exec(t); // a trailing number goes to its own slot so a long label can shrink but not the number
   el.querySelector('.t').textContent = m ? m[1] + ' ' : t; // the space keeps the line readable as plain text
   el.querySelector('b').textContent = m ? m[2] : '';
   if (kind !== stageIcon) {
@@ -328,6 +328,6 @@ function secondShift() {
   hudEl.classList.remove('hidden');
   feedEl.innerHTML = '';
   hudT = 0;
-  addFeed(`<b>Смена ${stg.lap + 1}</b>: пираньи, дождь и торт по кругу, быстрее. Торт сильнее`, 5200);
+  addFeed(t('feed.lap', stg.lap + 1), 5200);
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 }

@@ -117,8 +117,13 @@ function frame(now) {
     fpsW += wk;
     if (raw > fpsMax) fpsMax = raw;
     if (fpsT >= 0.5) {
-      $('fpsTag').textContent =
-        `${Math.round(fpsN / fpsT)} fps · худший ${Math.round(fpsMax * 1000)} мс · работа ${(fpsW / fpsN).toFixed(1)} мс · деталь ${2 - lod}/${Math.round(quality * 100)}%`;
+      $('fpsTag').textContent = t(
+        'fps',
+        Math.round(fpsN / fpsT),
+        Math.round(fpsMax * 1000),
+        (fpsW / fpsN).toFixed(1),
+        `${2 - lod}/${Math.round(quality * 100)}%`,
+      );
       fpsN = 0;
       fpsT = 0;
       fpsW = 0;
@@ -136,7 +141,7 @@ function start(data) {
     try {
       nm = localStorage.getItem('kus.name') || '';
     } catch (e) {}
-  nick.value = nm;
+  nick.value = isDefName(nm) ? '' : nm; // an old save kept the default name: show the empty field instead
   let col = Number.isInteger(data.color) ? data.color : -1;
   if (col < 0)
     try {
@@ -187,15 +192,15 @@ function start(data) {
     document.body.classList.add('first');
   }
   if (challenge) {
-    const t = dailyOf(todayKey());
+    const dt = dailyOf(todayKey());
     // parts in .lx drop out on a phone held sideways, where the line must stay one row
     $('chal').innerHTML = !challenge.d
-      ? `${esc(challenge.n)} набрал ${challenge.c}. Побей в свободной игре!`
+      ? t('chal.free', esc(challenge.n), challenge.c)
       : chalToday()
-        ? `${esc(challenge.n)} набрал ${challenge.c} в конфете дня «${t.name}». Побей сегодня`
-        : challenge.d > t.key
-          ? `Это вызов на конфету за ${keyText(challenge.d)}<span class="lx">, у тебя она ещё не началась</span>. Сегодня «${t.name}»<span class="lx">, сыграй её</span>`
-          : `Это ${challenge.d === prevKey(t.key) ? 'вчерашняя конфета' : `конфета за ${keyText(challenge.d)}`}, она уже закончилась. Сегодня<span class="lx"> новая</span>: «${t.name}»<span class="lx">, сыграй её</span>`;
+        ? t('chal.today', esc(challenge.n), challenge.c, dt.name)
+        : challenge.d > dt.key
+          ? t('chal.ahead', keyText(challenge.d), dt.name)
+          : t('chal.old', challenge.d === prevKey(dt.key) ? t('chal.yesterday') : t('chal.dayOf', keyText(challenge.d)), dt.name);
     $('chal').classList.remove('hidden');
     mode = challenge.d ? 'daily' : 'free';
   }
@@ -220,6 +225,11 @@ function start(data) {
   requestAnimationFrame(frame);
 }
 window.__kus = {
+  LANG,
+  t,
+  STR,
+  EN_NAMES,
+  nameOf,
   Sfx,
   SFX_DATA,
   botStat, // what the smarter bots of hard and extreme have done (09-bots)
@@ -317,6 +327,8 @@ window.__kus = {
   albumCount,
   STICKERS,
   ALBUM_ROWS,
+  BOT_NAMES,
+  FLAVORS,
   NEED,
   openAlbum,
   closeAlbum,

@@ -30,6 +30,15 @@ function setHome(inMenu) {
   if (inMenu) $('secSetB').appendChild(setBox);
   else pauseEl.querySelector('.card').insertBefore(setBox, $('resume'));
 }
+for (const b of $('langSeg').children) b.setAttribute('aria-pressed', String(b.dataset.v === LANG));
+$('langSeg').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b || b.dataset.v === LANG) return;
+  try {
+    localStorage.setItem('kus.lang', b.dataset.v);
+  } catch (e) {}
+  location.reload();
+});
 function openPause() {
   if (state !== 'play' || !player || !player.alive || paused) return;
   paused = true;
@@ -107,11 +116,11 @@ $('chalBtn').addEventListener('click', () => {
   if (run.won) return shareWin();
   // a link that carries your score: the friend sees it as the target
   const score = Math.round(run.max),
-    name = (nick.value || '').trim().slice(0, 14) || 'Кусака';
+    name = (nick.value || '').trim().slice(0, 14) || t('defName');
   const base = /^https?:$/.test(location.protocol) && !/claude|anthropic/i.test(location.hostname) ? location.origin + location.pathname : PUBLIC_URL;
   const daily = mode === 'daily' && run.rule, // a candy-of-the-day link opens the same day's run
     url = base + '?c=' + score + '&n=' + encodeURIComponent(name) + (daily ? '&d=' + run.day : ''),
-    text = daily ? `КУСЬ.io, конфета дня «${run.rule.name}»: у меня ${score}. Побей до полуночи` : `Я набрал ${score} в КУСЬ.io. Побей!`,
+    text = daily ? t('share.daily', run.rule.name, score) : t('share.free', score),
     box = $('chalLink');
   box.value = url;
   box.classList.remove('hidden');
@@ -123,11 +132,11 @@ $('chalBtn').addEventListener('click', () => {
   };
   try {
     if ((touchMode || daily) && navigator.share) {
-      navigator.share({ title: 'КУСЬ.io', text, url }).catch(() => {});
+      navigator.share({ title: t('brand'), text, url }).catch(() => {});
       return;
     }
     navigator.clipboard.writeText(text + ' ' + url).then(() => {
-      $('chalBtn').textContent = 'Ссылка скопирована';
+      $('chalBtn').textContent = t('share.copied');
     }, pick);
   } catch (e) {
     pick();
@@ -136,17 +145,17 @@ $('chalBtn').addEventListener('click', () => {
 function shareWin() {
   // the win screen's «Поделиться»: the clear time and a link to the game
   const base = /^https?:$/.test(location.protocol) && !/claude|anthropic/i.test(location.hostname) ? location.origin + location.pathname : PUBLIC_URL,
-    text = `Я съел Большой Торт в КУСЬ.io за ${mmss(run.won.secs)}. Сможешь быстрее?`,
+    text = t('share.win', mmss(run.won.secs)),
     box = $('chalLink');
   box.value = base;
   try {
     if (navigator.share) {
-      navigator.share({ title: 'КУСЬ.io', text, url: base }).catch(() => {});
+      navigator.share({ title: t('brand'), text, url: base }).catch(() => {});
       return;
     }
     navigator.clipboard.writeText(text + ' ' + base).then(
       () => {
-        $('chalBtn').textContent = 'Скопировано';
+        $('chalBtn').textContent = t('share.copied2');
       },
       () => box.classList.remove('hidden'),
     );

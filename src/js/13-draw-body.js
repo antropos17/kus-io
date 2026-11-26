@@ -390,7 +390,7 @@ function drawName(b) {
   if (sr < (lod ? 16 : 10) && !b.isPlayer) return;
   const fs = clamp(sr * 0.3, 11, 17) / z;
   let y = b.y - b.Rs * (b.hat !== 'none' && sr >= 8 ? 1.55 : 1.04) - 6 / z,
-    L = labelFor(b.name, b.isPlayer || !!b.boss),
+    L = labelFor(b.isPlayer ? b.name : nameOf(b.name), b.isPlayer || !!b.boss),
     k = fs / 34;
   const sk = streakStep(b);
   if (sk) {
@@ -510,7 +510,7 @@ function drawStick() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle = 'rgba(255,241,220,0.85)';
-    ctx.fillText('води пальцем', bx, by + STICK_R + 10);
+    ctx.fillText(t('stick.hint'), bx, by + STICK_R + 10);
   }
 }
 function render() {

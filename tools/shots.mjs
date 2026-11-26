@@ -25,7 +25,7 @@ const browser = await chromium.launch(launch);
 const blank = await browser.newPage(); // decodes screenshots; the game pages keep their loop running
 
 async function open(width, height, { touch = false, dpr = 1, query = '' } = {}) {
-  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: dpr, hasTouch: touch, isMobile: touch });
+  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: dpr, hasTouch: touch, isMobile: touch, locale: 'ru-RU' }); // the README shows the Russian game
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));

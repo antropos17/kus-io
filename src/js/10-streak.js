@@ -1,6 +1,6 @@
 // ---------- streak juice: ×N over the candy, fuses, stamps, sugar rush and the summary ----------
 // A streak is player.combo while player.comboT (the 4 s window) is still running. doBite calls onStreakBite, updateBlob calls onStreakEnd.
-const STREAK = { win: 4, close: 0.45, low: 0.8, words: { 2: 'Кусь-кусь!', 3: 'Ням!', 5: 'Хрум-хрум!', 7: 'Обжора!' } };
+const STREAK = { win: 4, close: 0.45, low: 0.8, words: { 2: t('w.2'), 3: t('w.3'), 5: t('w.5'), 7: t('w.7') } };
 const STREAK_COL = ['', '#9be15d', '#ff9a3c', '#ff4f7b']; // the colour of each step
 // 0: no streak (combo < 2), 1: ×2, 2: ×3-4, 3: ×5 and up
 const streakLevel = (combo) => (combo < 2 ? 0 : combo < 3 ? 1 : combo < 5 ? 2 : 3);
@@ -92,9 +92,9 @@ function onStreakBite(P, B, wx, wy, add, close) {
   streak.on = true;
   streak.lvl = lvl;
   sugarFly(wx, wy, add, Math.min(P.combo, 5) + 1); // the cubes carry this bite's sugar into the pill
-  const word = close ? 'На волоске!' : STREAK.words[P.combo];
+  const word = close ? t('w.close') : STREAK.words[P.combo];
   if (word) addStamp(word);
-  if (word && /ням/i.test(word)) for (const t of texts) if (t.s.startsWith('ням! ')) t.s = t.s.slice(5); // the stamp says it now: a swallow's «ням!» still floating keeps only its number
+  if (word && word === STREAK.words[3]) for (const x of texts) if (x.s.startsWith(t('float.yum'))) x.s = x.s.slice(t('float.yum').length); // the stamp says it now: a swallow's «ням!» still floating keeps only its number
   if (!calm) {
     streak.pop = 1;
     cam.shake = Math.max(cam.shake, 3 + Math.min(P.combo, 6) * 0.9);
@@ -111,9 +111,9 @@ function onStreakBite(P, B, wx, wy, add, close) {
 function onStreakEnd(P) {
   // comboT ran out with a streak of two or more bites: show what it was worth, then let Task 4 react
   // the wrapper's payout pill, if it is still up, is not replaced
-  if (runActive && P === player && !(streak.sumT > 0 && sumEl.textContent.startsWith('Фантик'))) {
+  if (runActive && P === player && !(streak.sumT > 0 && sumEl.textContent.startsWith(t('wrap.word')))) {
     const got = Math.max(0, Math.floor(streak.sum));
-    sumEl.textContent = got > 0 ? `Серия ×${P.combo} · +${got} сахара` : `Серия ×${P.combo}`; // a streak of bonuses only brought no sugar: no «+0»
+    sumEl.textContent = got > 0 ? t('sum.streakSugar', P.combo, got) : t('sum.streak', P.combo); // a streak of bonuses only brought no sugar: no «+0»
     sumEl.classList.add('on');
     streak.sumT = 2;
   }
@@ -279,7 +279,8 @@ const WRAP_POP = 0.3, // the hop out of the wound, seconds
     ['#ff5d8f', '#c49bff'],
   ], // body and twisted ends per tier: plain, rare, jackpot
   WRAP_RGB = ['255,241,220', '255,210,63', '255,93,143'],
-  WRAP_WORD = ['', 'Редкий!', 'Джекпот!'];
+  WRAP_WORD = ['', t('wrap.rare'), t('wrap.jack')],
+  WRAP_CATCH = t('wrap.catch'); // drawn where a local t is the clock
 let wrap = null, // { x, y, vx, vy, t, life, tier, final, state: 'pop' | 'run', step }
   reveal = null, // { t, tier, final, shown, paid, from, flash }: tier is the one shown now, from the one it was caught as
   wrapOut = null; // the one that got away, fading out for 0.4 s (drawing only)
@@ -431,7 +432,7 @@ function revealTick(P, dt) {
     if (runActive && !P.cheated && !run.cheated) {
       run.sugar += amt; // first into run.sugar, then the cubes carry it to the pill
       sugarFly(P.x, P.y - revealOff(P, z) / z, amt, 8 + 3 * R.final); // the cubes leave from the number
-      sumEl.textContent = `Фантик пойман · +${amt} сахара`;
+      sumEl.textContent = t('wrap.caught', amt);
       sumEl.classList.add('on');
       streak.sumT = 2;
       Sfx.wrapPay(R.final === 2);
@@ -607,7 +608,7 @@ function drawWrapTag(z, ox, oy) {
   ctx.save();
   ctx.translate(x, y - 40);
   ctx.scale(s, s);
-  wrapText('Лови!', 0, 0, '#ffd23f', 4);
+  wrapText(WRAP_CATCH, 0, 0, '#ffd23f', 4);
   ctx.restore();
   // the 5 s timer: an arc under its feet that empties
   ctx.lineCap = 'round';
