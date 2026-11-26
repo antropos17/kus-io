@@ -337,6 +337,16 @@ window.__kus = {
   priceOf,
   owns,
   buyItem,
+  itemName,
+  cheapestUnowned,
+  pickClick,
+  get chosenHat() {
+    return chosenHat;
+  },
+  set chosenHat(v) {
+    chosenHat = v;
+  },
+  renderPick,
   get own() {
     return own;
   },

@@ -105,10 +105,6 @@ function saveSugar() {
     localStorage.setItem('kus.sugar', String(sugar));
   } catch (e) {}
 }
-function cheapestSkin() {
-  const i = SKINS.findIndex((k) => !skinOpen(k[0]));
-  return i < 0 ? null : { id: SKINS[i][0], name: SKINS[i][1], price: SKIN_PRICE(i) };
-}
 function countUp(el, n) {
   if (calm || n < 2) {
     el.textContent = '+' + n;
@@ -130,13 +126,14 @@ function nearText(m, score) {
     if (m === 'daily' && score < run.dayPrev) out.push(t('near.day', run.dayPrev - score));
     if (t3 && score < best3) out.push(t('near.t3', best3 - score));
     if (m === 'free' && score < best) out.push(t('near.rec', best - score));
-    const h = HATS.find((x) => x.need > best);
-    if (m === 'free' && h) out.push(t('near.hat', h.name, h.need - best));
   }
   const al = run.cheated ? '' : albumNear();
   if (al) out.splice(1, 0, al); // a row one or two stickers short comes right after the record
-  const s = cheapestSkin();
-  if (s && !al) out.push(sugar >= s.price ? t('near.skinCan', s.name) : t('near.skin', s.name, s.price - sugar));
+  const c = cheapestUnowned();
+  if (c && !al) {
+    const name = itemName(c.slot, c.id);
+    out.push(sugar >= c.price ? t('near.can', name) : t('near.need', name, c.price - sugar));
+  }
   return out.slice(0, 2).join('. ');
 }
 function renderSweet(m, score) {
@@ -417,7 +414,6 @@ function showOver() {
   $('overMis').innerHTML = missionRows();
   renderSweet(mode, score);
   renderAlbumLine();
-  const fresh = HATS.filter((h) => h.need > prevBest && h.need <= best).map((h) => h.name);
   const streak = daily ? dailyStreak(run.day) : 0;
   bestEl.textContent = run.cheated
     ? daily
@@ -431,7 +427,9 @@ function showOver() {
         ? best3 > prevBest3
           ? t('best.t3New', best3)
           : t('best.t3', best3)
-        : (best > prevBest ? t('best.recNew', best) : t('rec', best)) + (fresh.length ? t('best.hat', fresh.join(', ')) : '');
+        : best > prevBest
+          ? t('best.recNew', best)
+          : t('rec', best);
   if (won && !run.cheated)
     bestEl.textContent = won.lap
       ? t('best.lap', mmss(clearRec.best))

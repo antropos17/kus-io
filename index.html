@@ -78,13 +78,14 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #dodge small{font:800 10px/1 var(--font);color:var(--muted);margin-top:3px}
 #dodge:active span{transform:scale(.93)}
 #dodge:focus-visible{outline:3px solid var(--lemon);outline-offset:3px}
-#hats{gap:6px}
-#hats button{font:800 14px/1 var(--font);padding:8px 12px;min-height:44px;border-radius:999px;border:2px solid #ead2b9;background:#fff;color:var(--ink);cursor:pointer}
-#hats button[aria-checked=true]{border-color:var(--ink);background:#ffe3ea}
-#hats button:disabled{background:transparent;border-style:dashed;border-color:#c9ab92;color:#6b4a3a;cursor:not-allowed}
-#hats small{color:var(--muted);font-weight:700}
-#hats button:disabled small{color:inherit}
-#hats button:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
+#hats,#eyes,#trail,#tray{gap:6px}
+#hats button,#eyes button,#trail button,#tray button{font:800 14px/1 var(--font);padding:8px 12px;min-height:44px;border-radius:999px;border:2px solid #ead2b9;background:#fff;color:var(--ink);cursor:pointer}
+#hats button[aria-checked=true],#eyes button[aria-checked=true],#trail button[aria-checked=true],#tray button[aria-checked=true]{border-color:var(--ink);background:#ffe3ea}
+#hats button.lock,#eyes button.lock,#trail button.lock,#tray button.lock{background:transparent;border-style:dashed;border-color:#c9ab92;color:#6b4a3a}
+#hats .pz,#eyes .pz,#trail .pz,#tray .pz{margin-left:6px;font:900 11px/1 var(--font);padding:2px 6px;border-radius:99px;background:#ead2b9;color:var(--ink);font-variant-numeric:tabular-nums}
+#hats .pz.can,#eyes .pz.can,#trail .pz.can,#tray .pz.can{background:var(--lemon)}
+#hats .pz.ask,#eyes .pz.ask,#trail .pz.ask,#tray .pz.ask{background:var(--berry);color:#fff}
+#hats button:focus-visible,#eyes button:focus-visible,#trail button:focus-visible,#tray button:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
 #fpsTag{font:700 11px/1.3 var(--font);color:rgba(255,241,220,.75);text-shadow:0 1px 0 rgba(0,0,0,.6);font-variant-numeric:tabular-nums;margin-top:2px}
 #cheatTag{font:800 12px/1.3 var(--font);color:var(--lemon);margin-top:4px;text-shadow:0 2px 0 rgba(0,0,0,.5);max-width:60vw}
 #adm .wrap{width:min(480px,100%)}
@@ -241,7 +242,6 @@ body.touch.lefty #dash.low:after{right:auto;left:calc(100% + 12px)}
 .row2{display:flex;gap:8px}
 .row2 .btn2{flex:1 1 0;min-width:0}
 #pause .grp{font:900 15px/1.2 var(--font);margin:14px 0 8px;color:var(--ink)}
-#skins button.lock{cursor:not-allowed}
 #mute{position:fixed;right:14px;bottom:162px;z-index:3;width:44px;height:44px;border-radius:50%;border:0;background:var(--cream);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.4);padding:0}
 #mute svg{width:22px;height:22px}
 #mute .off,#mute.muted .on{display:none}
@@ -742,15 +742,13 @@ const STR = {
   // the menu, missions, admin panel and candy of the day built in JS
   'a.mute': ['Выключить звук', 'Mute'],
   'a.unmute': ['Включить звук', 'Sound on'],
-  'hat.from': [(n) => `с ${n}`, (n) => `at ${n}`],
   rec: [(n) => `Рекорд: ${n}`, (n) => `Record: ${n}`],
-  'rec.none': ['Шапки открываются за рекорд по массе', 'Hats unlock with your mass record'],
   bank: [(n) => `Сахар: ${n}`, (n) => `Sugar: ${n}`],
-  'skin.buy': ['купить', 'buy'],
-  'skin.why': [(n) => `: за задание или за ${n} сахара`, (n) => `: for a mission or ${n} sugar`],
-  'skin.short': [(n, p, s) => `«${n}»: ${p} сахара, у тебя ${s}`, (n, p, s) => `“${n}”: ${p} sugar, you have ${s}`],
-  'skin.ask': [(n, p) => `Ещё раз: купить «${n}» за ${p}`, (n, p) => `Tap again: buy “${n}” for ${p}`],
-  'skin.got': [(n) => `Узор «${n}» твой`, (n) => `The “${n}” pattern is yours`],
+  'shop.buy': ['Купить?', 'Buy?'],
+  'shop.why': [(n) => `: стоит ${n} сахара`, (n) => `: costs ${n} sugar`],
+  'shop.short': [(n, p, s) => `«${n}»: ${p} сахара, у тебя ${s}`, (n, p, s) => `“${n}”: ${p} sugar, you have ${s}`],
+  'shop.ask': [(n, p) => `Ещё раз: купить «${n}» за ${p}`, (n, p) => `Tap again: buy “${n}” for ${p}`],
+  'shop.got': [(n) => `Куплено: «${n}»`, (n) => `Bought: “${n}”`],
   'sum.free': ['Свободная', 'Free play'],
   'sum.t3': ['3 минуты', '3 minutes'],
   'sum.daily': ['Конфета дня', 'Candy of the Day'],
@@ -907,9 +905,8 @@ const STR = {
   'near.day': [(n) => `До лучшего за сегодня не хватило ${n}`, (n) => `${n} short of today's best`],
   'near.t3': [(n) => `До рекорда на 3 минуты не хватило ${n}`, (n) => `${n} short of the 3-minute record`],
   'near.rec': [(n) => `До рекорда не хватило ${n}`, (n) => `${n} short of the record`],
-  'near.hat': [(h, n) => `До шапки «${h}» ещё ${n} массы`, (h, n) => `The “${h}” hat is ${n} mass away`],
-  'near.skinCan': [(s) => `Сахара хватает на узор «${s}», он в меню`, (s) => `You have sugar for the “${s}” pattern, it is in the menu`],
-  'near.skin': [(s, n) => `До узора «${s}» ещё ${n} сахара`, (s, n) => `The “${s}” pattern is ${n} sugar away`],
+  'near.need': [(h, n) => `До «${h}» не хватает ${n} сахара`, (h, n) => `${n} more sugar for “${h}”`],
+  'near.can': [(h) => `Хватает на «${h}»`, (h) => `Enough sugar for “${h}”`],
   'sweet.bank': [(n) => `в копилке ${n}`, (n) => `${n} saved`],
   'chest.t': ['Выбери конфету: в одной много сахара', 'Pick a candy: one holds lots of sugar'],
   'chest.a': [(n) => `Конфета ${n}`, (n) => `Candy ${n}`],
@@ -948,7 +945,6 @@ const STR = {
   'best.t3New': [(n) => `Новый рекорд на 3 минуты: ${n}`, (n) => `New 3-minute record: ${n}`],
   'best.t3': [(n) => `Рекорд на 3 минуты: ${n}`, (n) => `3-minute record: ${n}`],
   'best.recNew': [(n) => `Новый рекорд: ${n}`, (n) => `New record: ${n}`],
-  'best.hat': [(h) => `. Открыта шапка: ${h}`, (h) => `. Hat unlocked: ${h}`],
   'best.lap': [(b) => `Время второй смены не идёт в рекорд. Лучшее прохождение: ${b}`, (b) => `Second-shift time does not count. Best clear: ${b}`],
   'best.clearNew': [(b, w) => `Новый рекорд прохождения: ${b}. Побед: ${w}`, (b, w) => `New clear record: ${b}. Wins: ${w}`],
   'best.clear': [(b, w) => `Рекорд прохождения: ${b}. Побед: ${w}`, (b, w) => `Clear record: ${b}. Wins: ${w}`],
@@ -1200,13 +1196,6 @@ const PAL_HEDGE = makePal('Ёж', 28, 44, 46),
 const PICK = { speed: [t('pick.speed'), 6, '#ffd23f'], shield: [t('pick.shield'), 5, '#7ad7ff'], magnet: [t('pick.magnet'), 8, '#ff7aa2'] }; // bonus sweets: name, seconds, colour
 const flesh = (p, a) => hsl(p.fl[0], p.fl[1], p.fl[2], a);
 const pore = (p, a) => hsl(p.po[0], p.po[1], p.po[2], a);
-const HATS = [
-  { id: 'none', name: t('hat.none'), need: 0 },
-  { id: 'bow', name: t('hat.bow'), need: 80 },
-  { id: 'crown', name: t('hat.crown'), need: 250 },
-  { id: 'chef', name: t('hat.chef'), need: 500 },
-  { id: 'horns', name: t('hat.horns'), need: 900 },
-];
 const SKINS = [
   ['plain', t('skin.plain')],
   ['stripes', t('skin.stripes')],
@@ -1224,7 +1213,6 @@ const SKINS = [
   ['galaxy', t('skin.galaxy')],
 ];
 const FREE_SKINS = 4; // the rest are prizes for missions
-const SKIN_PRICE = (i) => 150 + (i - FREE_SKINS) * 100; // or bought with sugar, dearer further down the list
 const SUGAR = { bites: 1, food: 0.2, kills: 6, wound: 1, tongue: 2, pickup: 2, piranha: 2, hedge: 3, cake: 3 }; // sugar per action in a clean run
 // the runaway wrapper after a ×min streak: seconds to catch it, sugar and odds per tier (plain, rare, jackpot), the chance it grows a tier in the reveal,
 // its speed as a multiple of the player's top speed at birth (v0) and after tire seconds (v1)
@@ -4953,10 +4941,6 @@ function saveSugar() {
     localStorage.setItem('kus.sugar', String(sugar));
   } catch (e) {}
 }
-function cheapestSkin() {
-  const i = SKINS.findIndex((k) => !skinOpen(k[0]));
-  return i < 0 ? null : { id: SKINS[i][0], name: SKINS[i][1], price: SKIN_PRICE(i) };
-}
 function countUp(el, n) {
   if (calm || n < 2) {
     el.textContent = '+' + n;
@@ -4978,13 +4962,14 @@ function nearText(m, score) {
     if (m === 'daily' && score < run.dayPrev) out.push(t('near.day', run.dayPrev - score));
     if (t3 && score < best3) out.push(t('near.t3', best3 - score));
     if (m === 'free' && score < best) out.push(t('near.rec', best - score));
-    const h = HATS.find((x) => x.need > best);
-    if (m === 'free' && h) out.push(t('near.hat', h.name, h.need - best));
   }
   const al = run.cheated ? '' : albumNear();
   if (al) out.splice(1, 0, al); // a row one or two stickers short comes right after the record
-  const s = cheapestSkin();
-  if (s && !al) out.push(sugar >= s.price ? t('near.skinCan', s.name) : t('near.skin', s.name, s.price - sugar));
+  const c = cheapestUnowned();
+  if (c && !al) {
+    const name = itemName(c.slot, c.id);
+    out.push(sugar >= c.price ? t('near.can', name) : t('near.need', name, c.price - sugar));
+  }
   return out.slice(0, 2).join('. ');
 }
 function renderSweet(m, score) {
@@ -5265,7 +5250,6 @@ function showOver() {
   $('overMis').innerHTML = missionRows();
   renderSweet(mode, score);
   renderAlbumLine();
-  const fresh = HATS.filter((h) => h.need > prevBest && h.need <= best).map((h) => h.name);
   const streak = daily ? dailyStreak(run.day) : 0;
   bestEl.textContent = run.cheated
     ? daily
@@ -5279,7 +5263,9 @@ function showOver() {
         ? best3 > prevBest3
           ? t('best.t3New', best3)
           : t('best.t3', best3)
-        : (best > prevBest ? t('best.recNew', best) : t('rec', best)) + (fresh.length ? t('best.hat', fresh.join(', ')) : '');
+        : best > prevBest
+          ? t('best.recNew', best)
+          : t('rec', best);
   if (won && !run.cheated)
     bestEl.textContent = won.lap
       ? t('best.lap', mmss(clearRec.best))
@@ -8648,25 +8634,12 @@ muteEl.addEventListener('click', () => {
 $('play').addEventListener('click', startGame);
 $('again').addEventListener('click', startGame);
 function renderHats() {
-  if (!HATS.some((h) => h.id === chosenHat && h.need <= best)) chosenHat = 'none';
-  hatsEl.innerHTML = HATS.map((h) => {
-    const lock = h.need > best;
-    return `<button type="button" role="radio" aria-checked="${h.id === chosenHat}" data-h="${h.id}"${lock ? ' disabled' : ''}>${h.name}${lock ? ` <small>${t('hat.from', h.need)}</small>` : ''}</button>`;
-  }).join('');
-  recEl.textContent = best ? t('rec', best) : t('rec.none');
-  renderSecs();
+  renderPick('hat');
+  recEl.textContent = best ? t('rec', best) : '';
 }
-hatsEl.addEventListener('click', (e) => {
-  const t = e.target.closest('button');
-  if (!t || t.disabled) return;
-  chosenHat = t.dataset.h;
-  renderHats();
-  const el = hatsEl.querySelector(`[data-h="${chosenHat}"]`);
-  if (el) el.focus();
-});
 const skinsEl = $('skins'),
   bankEl = $('bank');
-let askSkin = null,
+let ask = null, // the first of the two taps of a purchase: { slot, id }
   bankT = 0;
 function renderBank(msg) {
   // the sugar balance; a message replaces it for a few seconds
@@ -8674,19 +8647,86 @@ function renderBank(msg) {
   bankEl.textContent = msg || t('bank', sugar);
   if (msg) bankT = setTimeout(() => renderBank(), 3200);
 }
+const boxOf = (slot) => $(slot === 'hat' ? 'hats' : slot === 'skin' ? 'skins' : slot);
+const chosenOf = (slot) => (slot === 'hat' ? chosenHat : slot === 'skin' ? chosenSkin : null);
+function choose(slot, id) {
+  if (slot === 'hat') chosenHat = id;
+  else if (slot === 'skin') chosenSkin = id;
+}
+// the price tag of a closed item: its price, «Купить?» after the first tap
+function priceTag(slot, id) {
+  const price = priceOf(slot, id);
+  return ask && ask.slot === slot && ask.id === id
+    ? `<small class="pz ask">${t('shop.buy')}</small>`
+    : `<small class="pz${sugar >= price ? ' can' : ''}">${price}</small>`;
+}
+// one row of chips for hats (and later eyes, trail, tray): every item of the wardrobe slot, closed ones with a price
+function renderPick(slot) {
+  const box = boxOf(slot);
+  if (!box) return;
+  if (!owns(slot, chosenOf(slot))) choose(slot, WARDROBE[slot][0][0]);
+  box.innerHTML = WARDROBE[slot]
+    .map(([id]) => {
+      const lock = !owns(slot, id),
+        name = itemName(slot, id),
+        why = lock ? t('shop.why', priceOf(slot, id)) : '';
+      return `<button type="button" role="radio" aria-checked="${id === chosenOf(slot)}" aria-label="${name}${why}" data-slot="${slot}" data-id="${id}"${lock ? ' class="lock"' : ''}>${name}${lock ? priceTag(slot, id) : ''}</button>`;
+    })
+    .join('');
+  renderSecs();
+}
+const renderRow = (slot) => (slot === 'skin' ? renderSkins() : renderPick(slot));
+// the one tap logic of the shop: an owned item is chosen, a closed one is bought with two taps so a stray tap never spends sugar
+function pickClick(slot, id) {
+  const was = ask,
+    name = itemName(slot, id);
+  let redo = false;
+  if (!owns(slot, id)) {
+    const price = priceOf(slot, id);
+    if (sugar < price) {
+      ask = null;
+      renderBank(t('shop.short', name, price, sugar));
+    } else if (!ask || ask.slot !== slot || ask.id !== id) {
+      ask = { slot, id };
+      renderBank(t('shop.ask', name, price));
+    } else {
+      buyItem(slot, id);
+      ask = null;
+      choose(slot, id);
+      Sfx.init();
+      Sfx.power();
+      haptic(20);
+      renderBank(t('shop.got', name));
+    }
+    redo = true;
+  } else {
+    ask = null;
+    choose(slot, id);
+    redo = !!was;
+  }
+  if (redo) {
+    renderRow(slot);
+    if (was && was.slot !== slot) renderRow(was.slot);
+  } else {
+    for (const b of boxOf(slot).children) b.setAttribute('aria-checked', String(b.dataset.id === chosenOf(slot)));
+    renderSecs();
+  }
+  const el = boxOf(slot).querySelector(`[data-id="${id}"]`);
+  if (el) el.focus();
+}
+for (const slot of ['hat', 'skin', 'eyes', 'trail', 'tray'])
+  if (boxOf(slot))
+    boxOf(slot).addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (btn && btn.dataset.id) pickClick(slot, btn.dataset.id);
+    });
 function renderSkins() {
   if (!SKINS.some((k) => k[0] === chosenSkin)) chosenSkin = 'plain';
   if (!skinOpen(chosenSkin)) chosenSkin = 'plain';
-  skinsEl.innerHTML = SKINS.map(([id, name], i) => {
+  skinsEl.innerHTML = SKINS.map(([id, name]) => {
     const lock = !skinOpen(id),
-      price = SKIN_PRICE(i),
-      tag = !lock
-        ? ''
-        : askSkin === id
-          ? `<small class="pz ask">${t('skin.buy')}</small>`
-          : `<small class="pz${sugar >= price ? ' can' : ''}">${price}</small>`,
-      why = lock ? t('skin.why', price) : '';
-    return `<button type="button" role="radio" aria-checked="${id === chosenSkin}" aria-label="${name}${why}" title="${name}${why}" data-s="${id}"${lock ? ' class="lock"' : ''}><canvas width="92" height="92"></canvas>${tag}</button>`;
+      why = lock ? t('shop.why', priceOf('skin', id)) : '';
+    return `<button type="button" role="radio" aria-checked="${id === chosenSkin}" aria-label="${name}${why}" title="${name}${why}" data-s="${id}" data-slot="skin" data-id="${id}"${lock ? ' class="lock"' : ''}><canvas width="92" height="92"></canvas>${lock ? priceTag('skin', id) : ''}</button>`;
   }).join('');
   renderSecs();
   const pal = PALS[chosen];
@@ -8735,46 +8775,6 @@ function renderSkins() {
     }
   }
 }
-skinsEl.addEventListener('click', (e) => {
-  const btn = e.target.closest('button');
-  if (!btn) return;
-  const id = btn.dataset.s,
-    i = SKINS.findIndex((k) => k[0] === id),
-    price = SKIN_PRICE(i),
-    name = SKINS[i][1],
-    wasAsk = askSkin;
-  if (btn.classList.contains('lock')) {
-    // a locked pattern is bought with two taps, so a stray tap never spends sugar
-    if (sugar < price) {
-      askSkin = null;
-      renderBank(t('skin.short', name, price, sugar));
-    } else if (askSkin !== id) {
-      askSkin = id;
-      renderBank(t('skin.ask', name, price));
-    } else {
-      sugar -= price;
-      saveSugar();
-      M.open.push(id);
-      saveM();
-      askSkin = null;
-      chosenSkin = id;
-      Sfx.init();
-      Sfx.power();
-      haptic(20);
-      renderMissions();
-      renderBank(t('skin.got', name));
-    }
-    if (wasAsk !== askSkin || chosenSkin === id) renderSkins();
-    const el = skinsEl.querySelector(`[data-s="${id}"]`);
-    if (el) el.focus();
-    return;
-  }
-  askSkin = null;
-  chosenSkin = id;
-  if (wasAsk) renderSkins();
-  else for (const b of skinsEl.children) b.setAttribute('aria-checked', String(b.dataset.s === chosenSkin));
-  renderSecs();
-});
 function renderSwatches() {
   swEl.innerHTML = PALS.map(
     (p, i) =>
@@ -8833,8 +8833,7 @@ const pressedText = (id) => {
 function renderSecs() {
   const pal = PALS[chosen],
     skin = SKINS.find((k) => k[0] === chosenSkin),
-    hat = HATS.find((h) => h.id === chosenHat),
-    look = [nameOf(pal.name), skin && skin[1], hat && hat.id !== 'none' && hat.name].filter(Boolean).join(' · ');
+    look = [nameOf(pal.name), skin && skin[1], chosenHat !== 'none' && itemName('hat', chosenHat)].filter(Boolean).join(' · ');
   $('sumLook').innerHTML = `<i style="background:${pal.base}"></i>${look}`;
   $('sumMode').textContent = `${t('sum.' + mode)} · ${mode === 'daily' ? t('dif.normal') : pressedText('diffSeg')}`;
   const mis = $('misList').children,
@@ -10153,6 +10152,16 @@ window.__kus = {
   priceOf,
   owns,
   buyItem,
+  itemName,
+  cheapestUnowned,
+  pickClick,
+  get chosenHat() {
+    return chosenHat;
+  },
+  set chosenHat(v) {
+    chosenHat = v;
+  },
+  renderPick,
   get own() {
     return own;
   },

@@ -46,13 +46,6 @@ const PAL_HEDGE = makePal('Ёж', 28, 44, 46),
 const PICK = { speed: [t('pick.speed'), 6, '#ffd23f'], shield: [t('pick.shield'), 5, '#7ad7ff'], magnet: [t('pick.magnet'), 8, '#ff7aa2'] }; // bonus sweets: name, seconds, colour
 const flesh = (p, a) => hsl(p.fl[0], p.fl[1], p.fl[2], a);
 const pore = (p, a) => hsl(p.po[0], p.po[1], p.po[2], a);
-const HATS = [
-  { id: 'none', name: t('hat.none'), need: 0 },
-  { id: 'bow', name: t('hat.bow'), need: 80 },
-  { id: 'crown', name: t('hat.crown'), need: 250 },
-  { id: 'chef', name: t('hat.chef'), need: 500 },
-  { id: 'horns', name: t('hat.horns'), need: 900 },
-];
 const SKINS = [
   ['plain', t('skin.plain')],
   ['stripes', t('skin.stripes')],
@@ -70,7 +63,6 @@ const SKINS = [
   ['galaxy', t('skin.galaxy')],
 ];
 const FREE_SKINS = 4; // the rest are prizes for missions
-const SKIN_PRICE = (i) => 150 + (i - FREE_SKINS) * 100; // or bought with sugar, dearer further down the list
 const SUGAR = { bites: 1, food: 0.2, kills: 6, wound: 1, tongue: 2, pickup: 2, piranha: 2, hedge: 3, cake: 3 }; // sugar per action in a clean run
 // the runaway wrapper after a ×min streak: seconds to catch it, sugar and odds per tier (plain, rare, jackpot), the chance it grows a tier in the reveal,
 // its speed as a multiple of the player's top speed at birth (v0) and after tire seconds (v1)

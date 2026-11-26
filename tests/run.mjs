@@ -493,16 +493,19 @@ test('sugar: earned in a clean run, paid at the end, one chest pick, two-tap sho
     out.twice = k.sugar === after;
     out.near = document.getElementById('near').textContent;
     // shop: not enough sugar, then a first tap asks, a second tap buys
+    const cheap = k.cheapestUnowned();
+    out.nearWant = k.itemName(cheap.slot, cheap.id);
     k.setSugar(10);
     const lock = () => document.querySelector('#skins button.lock');
-    const id = lock().dataset.s;
+    const id = lock().dataset.s,
+      price = k.priceOf('skin', id);
     lock().click();
-    out.poor = k.sugar === 10 && !k.M.open.includes(id);
-    k.setSugar(5000);
+    out.poor = k.sugar === 10 && !k.owns('skin', id);
+    k.setSugar(price + 5000);
     document.querySelector(`#skins [data-s="${id}"]`).click();
-    out.asked = k.sugar === 5000 && !!document.querySelector(`#skins [data-s="${id}"] .pz.ask`);
+    out.asked = k.sugar === price + 5000 && !!document.querySelector(`#skins [data-s="${id}"] .pz.ask`);
     document.querySelector(`#skins [data-s="${id}"]`).click();
-    out.bought = k.M.open.includes(id) && k.sugar === 5000 - 150;
+    out.bought = k.owns('skin', id) && k.sugar === 5000;
     out.saved = localStorage.getItem('kus.sugar');
     return out;
   });
@@ -511,10 +514,10 @@ test('sugar: earned in a clean run, paid at the end, one chest pick, two-tap sho
   assert(r.over && r.got >= 11 && r.bank === r.got, `end of run must pay ${r.got} into the bank, bank is ${r.bank}`);
   assert(r.prizes.length === 3 && r.prizes.includes(r.chestWon) && r.chestWon > 0, `chest prizes ${r.prizes}, won ${r.chestWon}`);
   assert(r.twice, 'the chest paid twice');
-  assert(r.near.includes('узор'), `no "so close" line: "${r.near}"`);
+  assert(r.near.includes(r.nearWant), `no "so close" line naming "${r.nearWant}": "${r.near}"`);
   assert(r.poor, 'a pattern was sold without enough sugar');
   assert(r.asked, 'the first tap must only ask');
-  assert(r.bought && r.saved === String(5000 - 150), 'the second tap must buy the pattern and save the bank');
+  assert(r.bought && r.saved === '5000', 'the second tap must buy the pattern and save the bank');
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
 });
@@ -602,6 +605,7 @@ test('wardrobe: old saves keep what they had, a broken save does not break, buyi
   assert(own2 === r.own, `own changed on the second load: ${r.own} -> ${own2}`);
   const hat = await g.page.evaluate(() => {
     const k = window.__kus;
+    k.chosenHat = 'halo'; // never owned: only the owns() guard in spawnPlayer can stop it
     k.pause(true);
     k.startGame();
     return k.player.hat;
@@ -627,7 +631,54 @@ test('wardrobe: old saves keep what they had, a broken save does not break, buyi
   await g.page.evaluate(() => localStorage.setItem('kus.own', '{oops'));
   await reload();
   assert(await g.page.evaluate(() => window.__kus.owns('hat', 'bow')), 'a broken save must fall back to the migration');
+  await g.page.evaluate(() => localStorage.setItem('kus.own', '{"v":1,"hat":[1,"nope","cap"]}'));
+  await reload();
+  const mal = await g.page.evaluate(() => ({ hat: window.__kus.own.hat, saved: localStorage.getItem('kus.own') }));
+  assert(JSON.stringify(mal.hat) === '["cap"]', `malformed ids must be dropped: ${JSON.stringify(mal.hat)}`);
+  assert(JSON.parse(mal.saved).hat.join() === 'cap', `the save was not rewritten clean: ${mal.saved}`);
+  const adm = await g.page.evaluate(() => {
+    const k = window.__kus;
+    k.pause(true);
+    k.startGame();
+    document.getElementById('pAdmin').click();
+    return [...document.querySelectorAll('#admA button')].map((b) => b.textContent);
+  });
+  assert(adm.length > 0 && !adm.some((x) => x.includes('Открыть все узоры')), `the open-all cheat is still in the admin panel: ${adm}`);
   assert(await g.page.evaluate(() => window.__kus.STR['act.13'] === undefined), 'the "open all patterns" cheat is gone');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('wardrobe: hats are bought with sugar in two taps, a new player has only «none»', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {},
+      hat = (id) => document.querySelector(`#hats [data-id="${id}"]`);
+    out.open = [...document.querySelectorAll('#hats button')].filter((b) => !b.classList.contains('lock')).map((b) => b.dataset.id);
+    out.hasPrice = !!hat('bow').querySelector('.pz');
+    k.setSugar(0);
+    hat('bow').click();
+    out.poor = !k.owns('hat', 'bow');
+    out.bank = document.getElementById('bank').textContent;
+    k.setSugar(k.priceOf('hat', 'bow'));
+    hat('bow').click();
+    out.asked = !!hat('bow').querySelector('.pz.ask') && !k.owns('hat', 'bow');
+    hat('bow').click();
+    out.bought = k.owns('hat', 'bow') && k.sugar === 0;
+    out.checked = hat('bow').getAttribute('aria-checked') === 'true';
+    k.pause(true);
+    k.startGame();
+    out.stored = localStorage.getItem('kus.hat');
+    out.worn = k.player.hat;
+    return out;
+  });
+  assert(r.open.join() === 'none', `a new player must have only «none» open: ${r.open}`);
+  assert(r.hasPrice, 'a closed hat must show its price');
+  assert(r.poor && r.bank.includes('«Бантик»'), `no "not enough" line in the bank: "${r.bank}"`);
+  assert(r.asked, 'the first tap must only ask');
+  assert(r.bought && r.checked, 'the second tap must buy and select the hat');
+  assert(r.stored === 'bow' && r.worn === 'bow', `the hat was not saved or worn: ${r.stored} / ${r.worn}`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
 });
@@ -689,14 +740,32 @@ test('streak: a bonus pickup is a streak step', async () => {
     for (let i = 0; i < 268; i++) { away(); k.pickups.length = 0; P.biteCd = 999; k.update(1/60); }
     out.g.sum = sum.textContent; out.g.on = sum.classList.contains('on');
     return out; })()`);
-  assert(r.a.taken && r.b.taken && r.c.taken, `the player's own pickup was not collected (a stray blob won the overlap): ${JSON.stringify([r.a, r.b, r.c])}`);
-  assert(r.a.combo === 1 && r.a.words.length === 0 && Math.abs(r.a.comboT - 4) < 0.05, `a first pickup must start a streak at 1 with no word: ${JSON.stringify(r.a)}`);
-  assert(r.b.combo === 2 && r.b.words.join() === 'Кусь-кусь!' && r.b.chip === '×2', `a pickup inside a streak must make ×2 and stamp the word: ${JSON.stringify(r.b)}`);
-  assert(r.c.combo === 5 && r.c.words.join() === 'Хрум-хрум!', `a pickup at the last moment must make ×5 Хрум-хрум!, never На волоске!: ${JSON.stringify(r.c)}`);
+  assert(
+    r.a.taken && r.b.taken && r.c.taken,
+    `the player's own pickup was not collected (a stray blob won the overlap): ${JSON.stringify([r.a, r.b, r.c])}`,
+  );
+  assert(
+    r.a.combo === 1 && r.a.words.length === 0 && Math.abs(r.a.comboT - 4) < 0.05,
+    `a first pickup must start a streak at 1 with no word: ${JSON.stringify(r.a)}`,
+  );
+  assert(
+    r.b.combo === 2 && r.b.words.join() === 'Кусь-кусь!' && r.b.chip === '×2',
+    `a pickup inside a streak must make ×2 and stamp the word: ${JSON.stringify(r.b)}`,
+  );
+  assert(
+    r.c.combo === 5 && r.c.words.join() === 'Хрум-хрум!',
+    `a pickup at the last moment must make ×5 Хрум-хрум!, never На волоске!: ${JSON.stringify(r.c)}`,
+  );
   assert(r.d.taken && r.d.same, `a bot taking a bonus must not touch the player's streak: ${JSON.stringify(r.d)}`);
   assert(r.a.texts.includes('Скорость!'), `a pickup that only starts a streak still names the bonus over the candy: ${JSON.stringify(r.a.texts)}`);
-  assert(!r.b.texts.includes('Скорость!') && !r.c.texts.includes('Скорость!'), `inside a streak the stamp talks, the bonus name must not float over the candy: ${JSON.stringify([r.b.texts, r.c.texts])}`);
-  assert(r.f.taken && r.f.moved && Math.abs(r.f.kick + Math.PI / 2) < 0.35 && r.f.woundAbove, `the kick and the last spot must point at a bonus above the player: ${JSON.stringify(r.f)}`);
+  assert(
+    !r.b.texts.includes('Скорость!') && !r.c.texts.includes('Скорость!'),
+    `inside a streak the stamp talks, the bonus name must not float over the candy: ${JSON.stringify([r.b.texts, r.c.texts])}`,
+  );
+  assert(
+    r.f.taken && r.f.moved && Math.abs(r.f.kick + Math.PI / 2) < 0.35 && r.f.woundAbove,
+    `the kick and the last spot must point at a bonus above the player: ${JSON.stringify(r.f)}`,
+  );
   assert(r.g.combo === 2 && r.g.on && r.g.sum === 'Серия ×2', `a bonus-only streak sums up without «+0 сахара»: ${JSON.stringify(r.g)}`);
   assert(r.e.cold === r.e.deep, `a streak pickup must pay no sugar beyond the old pickup payout: ${JSON.stringify(r.e)}`);
   assert(g.errors.length === 0, g.errors.join(' | '));
@@ -1525,22 +1594,44 @@ test('bots: easy and normal keep the old script, no traits, packs, sneaks or lic
 // On phones the buttons sit on the left and the joystick hint on the right by default; «Справа» moves them back and is remembered.
 // A save from before this default (lefty: false without hv) is the old default, not a choice: it gets the new one.
 test('settings: phone buttons on the left by default, the hand switch is remembered', async () => {
-  const side = (page) => page.evaluate(() => { const d = document.getElementById('dash').getBoundingClientRect(), t = document.getElementById('dodge').getBoundingClientRect();
-    return { lefty: document.body.classList.contains('lefty'), dash: d.left + d.width / 2, tongue: t.left + t.width / 2, w: innerWidth,
-      pressed: document.querySelector('#handSeg [aria-pressed="true"]')?.dataset.v, saved: JSON.parse(localStorage.getItem('kus.set') || 'null') }; });
+  const side = (page) =>
+    page.evaluate(() => {
+      const d = document.getElementById('dash').getBoundingClientRect(),
+        t = document.getElementById('dodge').getBoundingClientRect();
+      return {
+        lefty: document.body.classList.contains('lefty'),
+        dash: d.left + d.width / 2,
+        tongue: t.left + t.width / 2,
+        w: innerWidth,
+        pressed: document.querySelector('#handSeg [aria-pressed="true"]')?.dataset.v,
+        saved: JSON.parse(localStorage.getItem('kus.set') || 'null'),
+      };
+    });
   const g = await open({ width: 390, height: 844, touch: true });
   const fresh = await side(g.page);
-  assert(fresh.lefty && fresh.dash < fresh.w / 2 && fresh.tongue < fresh.w / 2 && fresh.pressed === '1', `fresh phone: Кусь and Язык must sit on the left: ${JSON.stringify(fresh)}`);
+  assert(
+    fresh.lefty && fresh.dash < fresh.w / 2 && fresh.tongue < fresh.w / 2 && fresh.pressed === '1',
+    `fresh phone: Кусь and Язык must sit on the left: ${JSON.stringify(fresh)}`,
+  );
   await g.page.evaluate(() => document.querySelector('#handSeg button[data-v="0"]').click());
   const right = await side(g.page);
-  assert(!right.lefty && right.dash > right.w / 2 && right.pressed === '0' && right.saved && right.saved.lefty === false && right.saved.hv === 2, `«Справа» must move the buttons right and save it: ${JSON.stringify(right)}`);
-  await g.page.reload(); await g.page.waitForTimeout(600); await g.page.tap('#play'); await g.page.waitForTimeout(250);
+  assert(
+    !right.lefty && right.dash > right.w / 2 && right.pressed === '0' && right.saved && right.saved.lefty === false && right.saved.hv === 2,
+    `«Справа» must move the buttons right and save it: ${JSON.stringify(right)}`,
+  );
+  await g.page.reload();
+  await g.page.waitForTimeout(600);
+  await g.page.tap('#play');
+  await g.page.waitForTimeout(250);
   const again = await side(g.page);
   assert(!again.lefty && again.dash > again.w / 2, `the chosen «Справа» must survive a reload: ${JSON.stringify(again)}`);
   await g.close();
   const old = await open({ width: 390, height: 844, touch: true, play: false });
   await old.page.evaluate(() => localStorage.setItem('kus.set', JSON.stringify({ lefty: false, bs: 1, gfx: 'auto', fps: false })));
-  await old.page.reload(); await old.page.waitForTimeout(600); await old.page.tap('#play'); await old.page.waitForTimeout(250);
+  await old.page.reload();
+  await old.page.waitForTimeout(600);
+  await old.page.tap('#play');
+  await old.page.waitForTimeout(250);
   const oldSave = await side(old.page);
   assert(oldSave.lefty && oldSave.dash < oldSave.w / 2, `an old save with the old default must get the new left default: ${JSON.stringify(oldSave)}`);
   assert(g.errors.length === 0 && old.errors.length === 0, [...g.errors, ...old.errors].join(' | '));
@@ -1966,11 +2057,17 @@ test('lang: no Russian left in an English run, end card, album page, trophy, can
     for (let i = 0; i < 30; i++) { k.update(1/60); k.render(); } })()`);
   await look('run HUD');
   // the 3-minute end card
-  await g.page.evaluate(`(() => { const k = window.__kus; k.toMenu(); k.setMode('t3'); k.startGame(); k.player.spawnT = 0; k.setTimeLeft(0.001); for (let i = 0; i < 90; i++) k.update(1/60); })()`);
+  await g.page.evaluate(
+    `(() => { const k = window.__kus; k.toMenu(); k.setMode('t3'); k.startGame(); k.player.spawnT = 0; k.setTimeLeft(0.001); for (let i = 0; i < 90; i++) k.update(1/60); })()`,
+  );
   await look('3-minute end card');
   await g.page.evaluate(() => document.getElementById('chalBtn').click());
   // the album page from the menu
-  await g.page.evaluate(() => { window.__kus.toMenu(); document.getElementById('albumBtn').click(); document.querySelector('#albumRows .st').click(); });
+  await g.page.evaluate(() => {
+    window.__kus.toMenu();
+    document.getElementById('albumBtn').click();
+    document.querySelector('#albumRows .st').click();
+  });
   await g.page.waitForTimeout(200);
   await look('album page');
   await g.page.evaluate(() => document.getElementById('albumX').click());
@@ -1985,7 +2082,9 @@ test('lang: no Russian left in an English run, end card, album page, trophy, can
   await g.page.evaluate(`(() => { ${DAY} play(20261125, 120); })()`);
   await look('candy of the day end card');
   // the FPS line
-  await g.page.evaluate(`(() => { const k = window.__kus; k.toMenu(); document.querySelector('#fpsSeg [data-v="1"]').click(); k.setMode('free'); k.startGame(); })()`);
+  await g.page.evaluate(
+    `(() => { const k = window.__kus; k.toMenu(); document.querySelector('#fpsSeg [data-v="1"]').click(); k.setMode('free'); k.startGame(); })()`,
+  );
   await g.page.waitForTimeout(1500);
   await look('FPS line');
   const canvas = await g.page.evaluate(cyrDrawn);
@@ -2015,7 +2114,9 @@ test('lang: sticker names fit their tiles on a 360x640 phone in both languages',
     const g = await open({ width: 360, height: 640, touch: true, play: false, returning: true, locale });
     await g.page.evaluate(() => document.getElementById('albumBtn').click());
     await g.page.waitForTimeout(300);
-    const cut = await g.page.evaluate(() => [...document.querySelectorAll('#albumRows .sn')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent));
+    const cut = await g.page.evaluate(() =>
+      [...document.querySelectorAll('#albumRows .sn')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent),
+    );
     assert(!cut.length, `${locale}: names cut off: ${cut.join(', ')}`);
     await g.close();
   }
@@ -2044,7 +2145,10 @@ test('settings: the language row keeps the same gap to the next heading as the o
     await g.page.evaluate(() => document.querySelector('#secSet .sh').click());
     await g.page.waitForTimeout(400);
     gaps[touch ? 'phone' : 'pc'] = await g.page.evaluate(() => {
-      const next = (el) => [...document.querySelectorAll('#secSetB .grp')].find((h) => h.getBoundingClientRect().top > el.getBoundingClientRect().bottom && h.getClientRects().length);
+      const next = (el) =>
+        [...document.querySelectorAll('#secSetB .grp')].find(
+          (h) => h.getBoundingClientRect().top > el.getBoundingClientRect().bottom && h.getClientRects().length,
+        );
       const gap = (el) => Math.round(next(el).getBoundingClientRect().top - el.getBoundingClientRect().bottom);
       const sizeSeg = document.getElementById('sizeSeg');
       return { lang: gap(document.getElementById('langSeg')), other: sizeSeg.getClientRects().length ? gap(sizeSeg) : null };
@@ -2052,7 +2156,10 @@ test('settings: the language row keeps the same gap to the next heading as the o
     await g.close();
   }
   const ref = gaps.phone.other;
-  assert(ref > 6 && Math.abs(gaps.phone.lang - ref) <= 1 && Math.abs(gaps.pc.lang - ref) <= 1, `gaps after the language row vs the others: ${JSON.stringify(gaps)}`);
+  assert(
+    ref > 6 && Math.abs(gaps.phone.lang - ref) <= 1 && Math.abs(gaps.pc.lang - ref) <= 1,
+    `gaps after the language row vs the others: ${JSON.stringify(gaps)}`,
+  );
 });
 
 test('lang: the English stage pill says the number before an event is mass, not time', async () => {
