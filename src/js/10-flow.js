@@ -45,7 +45,6 @@ const MTYPES = [
   ['top', t('mis.top'), 10],
 ];
 const skinOpen = (id) => owns('skin', id);
-const nextPrize = () => SKINS.find((k, i) => i >= FREE_SKINS && !M.open.includes(k[0]));
 function saveM() {
   try {
     localStorage.setItem('kus.m', JSON.stringify(M));
@@ -54,11 +53,19 @@ function saveM() {
 function rollMissions() {
   // finished missions make way for new ones, each a little bigger than the last of its kind
   M.act = M.act.filter((m) => m && m.got < m.need && MTYPES.some((t) => t[0] === m.type));
+  for (const m of M.act) {
+    const cap = MIS_CAP[m.type]; // a target saved before the caps is cut back
+    if (cap && m.need > cap) {
+      m.need = cap;
+      m.got = Math.min(m.got, cap - 1);
+    }
+  }
   for (let guard = 0; M.act.length < 3 && guard < 40; guard++) {
     const i = M.seq++,
       t = MTYPES[i % MTYPES.length];
     if (M.act.some((m) => m.type === t[0])) continue;
-    M.act.push({ type: t[0], need: Math.round(t[2] * (1 + Math.floor(i / MTYPES.length) * 0.6)), got: 0 });
+    const c = Math.floor(i / MTYPES.length);
+    M.act.push({ type: t[0], need: Math.min(MIS_CAP[t[0]] || Infinity, Math.round(t[2] * (1 + c * 0.6))), got: 0, c, at: 0, idle: 0 });
   }
 }
 function mission(type, n, absolute) {
@@ -68,14 +75,11 @@ function mission(type, n, absolute) {
     if (m.type !== type || m.got >= m.need) continue;
     m.got = absolute ? Math.max(m.got, Math.min(m.need, Math.floor(n))) : Math.min(m.need, m.got + n);
     if (m.got >= m.need) {
-      // done: the prize is the next locked skin
-      earn(15);
-      const pz = nextPrize();
-      if (pz) {
-        M.open.push(pz[0]);
-        m.prize = pz[0]; // the pattern's id: the name is shown in the language of the moment
-        addFeed(t('mis.donePrize', pz[1]));
-      } else addFeed(t('mis.done'));
+      // done: the prize is sugar, more for a later circle of missions
+      m.paid = misReward(m);
+      earn(m.paid);
+      if (run.mis) run.mis.push(m.c | 0);
+      addFeed(t('mis.doneSugar', m.paid));
       Sfx.power();
       saveM();
     }
@@ -91,7 +95,7 @@ const missionRows = () =>
     .map((m) => {
       const mt = MTYPES.find((x) => x[0] === m.type),
         done = m.got >= m.need;
-      return `<div class="mi${done ? ' ok' : ''}"><span class="mt">${mt[1]}${done ? (m.prize ? t('mis.prize', skinName(m.prize)) : t('mis.ok')) : ''}</span><span class="mv">${Math.floor(m.got)} / ${m.need}</span><div class="mb"><i style="width:${Math.round((100 * m.got) / m.need)}%"></i></div></div>`;
+      return `<div class="mi${done ? ' ok' : ''}"><span class="mt">${mt[1]}${done ? (m.prize ? t('mis.prize', skinName(m.prize)) : m.paid ? t('mis.paid', m.paid) : t('mis.ok')) : ''}</span><span class="mv">${Math.floor(m.got)} / ${m.need}</span><div class="mb"><i style="width:${Math.round((100 * m.got) / m.need)}%"></i></div></div>`;
     })
     .join('');
 // ---------- sugar ----------
@@ -172,7 +176,7 @@ $('chestRow').addEventListener('click', (e) => {
   haptic(won === base * 5 ? 30 : 12);
 });
 function renderMissions() {
-  $('misT').textContent = nextPrize() ? t('mis.head') : t('mis.headAll');
+  $('misT').textContent = t('mis.head');
   $('misList').innerHTML = missionRows();
   renderSecs();
 }
@@ -238,9 +242,11 @@ function startGame() {
     localStorage.setItem('kus.diff', diffPick || diff);
   } catch (e) {}
   fixDiff();
+  clearAsk();
   rollMissions();
   saveM();
-  run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0 };
+  run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0, mis: [] };
+  for (const m of M.act) m.at = m.got;
   clearWrap();
   sugarReset();
   runActive = true;
@@ -296,6 +302,13 @@ function finishRun() {
   }
   run.chest = run.got > 0;
   saveSugar();
+  if (!run.cheated) {
+    // a mission that made no headway in this whole run (deaths inside it count once) makes way after MIS_IDLE runs
+    for (const m of M.act) if (m.got < m.need) m.idle = m.got > (m.at | 0) ? 0 : (m.idle | 0) + 1;
+    M.act = M.act.filter((m) => !(m.idle >= MIS_IDLE));
+    rollMissions();
+    saveM();
+  }
   try {
     localStorage.setItem('kus.best', String(best));
     localStorage.setItem('kus.best3', String(best3));
@@ -340,6 +353,7 @@ function endTimed() {
   finishRun();
 }
 function toMenu() {
+  clearAsk();
   clearWrap();
   sugarSettle();
   if (state === 'play' && player && player.alive) {

@@ -683,6 +683,132 @@ test('wardrobe: hats are bought with sugar in two taps, a new player has only «
   await g.close();
 });
 
+test('wardrobe: a pending first tap does not outlive the menu or another tap', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {},
+      hat = (id) => document.querySelector(`#hats [data-id="${id}"]`);
+    k.setSugar(100000);
+    hat('bow').click();
+    out.asked = !!hat('bow').querySelector('.pz.ask');
+    k.pause(true);
+    k.startGame();
+    k.toMenu();
+    out.tag = !!hat('bow').querySelector('.pz.ask');
+    hat('bow').click();
+    out.round = k.owns('hat', 'bow');
+    hat('crown').click(); // the first tap on another closed hat moves the ask there
+    hat('bow').click();
+    out.moved = k.owns('hat', 'bow');
+    return out;
+  });
+  assert(r.asked, 'the first tap must ask');
+  assert(!r.tag, 'the «Купить?» tag must disappear after a round trip through a run');
+  assert(!r.round, 'one tap after a menu-run-menu round trip must not buy');
+  assert(!r.moved, 'tapping another hat must clear the first ask');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('missions: a done mission pays sugar and opens no pattern', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {};
+    k.setSugar(0);
+    k.pause(true);
+    k.setMode('t3');
+    k.startGame();
+    k.player.spawnT = 0;
+    k.player.combo = 0;
+    k.M.act = [{ type: 'bites', need: 2, got: 0, c: 1 }];
+    const skin = [...k.own.skin].join(),
+      open = k.M.open.join(),
+      s0 = k.run.sugar;
+    k.mission('bites', 1);
+    k.mission('bites', 1);
+    out.gain = k.run.sugar - s0;
+    out.same = skin === [...k.own.skin].join() && open === k.M.open.join();
+    out.feed = document.getElementById('feed').textContent;
+    out.row = document.getElementById('misList').textContent;
+    k.renderMissions();
+    out.row = document.getElementById('misList').textContent;
+    return out;
+  });
+  assert(r.gain >= 480 && r.gain <= 490, `a circle-1 mission must pay 480 (plus bite sugar), got ${r.gain}`);
+  assert(r.same, 'a mission must not open a pattern');
+  assert(r.feed.includes('+480'), `the feed must say +480: "${r.feed}"`);
+  assert(r.row.includes('480'), `the mission row must show the payout: "${r.row}"`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('missions: time, combo and mass stop growing at their caps', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      need = {};
+    k.M.seq = 13 * 6;
+    k.M.act = [];
+    for (let i = 0; i < 40; i++) {
+      k.M.act = [];
+      k.rollMissions();
+      for (const m of k.M.act) need[m.type] = Math.max(need[m.type] || 0, m.need);
+    }
+    return need;
+  });
+  // the page saves its own missions when it is hidden (a reload), so the old save is written before each load
+  await g.page.addInitScript(() => localStorage.setItem('kus.m', JSON.stringify({ seq: 0, act: [{ type: 'time', need: 260, got: 0 }], open: [] })));
+  assert(r.time > 0 && r.combo > 0 && r.mass > 0, `time, combo and mass must all roll: ${JSON.stringify(r)}`);
+  assert(r.time <= 150 && r.combo <= 8 && r.mass <= 1600, `caps broken: ${JSON.stringify(r)}`);
+  await g.page.reload();
+  await g.page.waitForTimeout(600);
+  const old = await g.page.evaluate(() => window.__kus.M.act.find((m) => m.type === 'time').need);
+  assert(old === 150, `an old time mission must be cut to 150, got ${old}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('missions: one stuck for 5 runs is replaced, deaths inside a run count once', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = { has: [], len: [] };
+    k.pause(true);
+    k.M.act = [{ type: 'hedge', need: 2, got: 0, c: 0 }];
+    const go = (cheat) => {
+      k.setMode('t3');
+      k.startGame();
+      k.player.spawnT = 0;
+      if (cheat) k.player.cheated = true;
+      for (let d = 0; d < 2; d++) {
+        k.die(null);
+        for (let i = 0; i < 200 && k.state !== 'play'; i++) k.update(1 / 60);
+      }
+      k.setTimeLeft(0.001);
+      for (let i = 0; i < 400 && !(k.state === 'dead' && 'got' in k.run); i++) k.update(1 / 60);
+      for (let i = 0; i < 120; i++) k.update(1 / 60); // the end card comes up, so the next startGame is allowed
+    };
+    for (let n = 0; n < 5; n++) {
+      go(false);
+      out.has.push(k.M.act.some((m) => m.type === 'hedge'));
+      out.len.push(k.M.act.length);
+      if (n === 3) out.idle4 = (k.M.act.find((m) => m.type === 'hedge') || {}).idle;
+    }
+    k.M.act = [{ type: 'hedge', need: 2, got: 0, c: 0 }];
+    go(true);
+    out.cheat = (k.M.act.find((m) => m.type === 'hedge') || {}).idle | 0;
+    return out;
+  });
+  assert(r.has.join() === 'true,true,true,true,false', `hedge must go after the fifth run only: ${r.has}`);
+  assert(r.idle4 === 4, `two deaths in a run must count once, idle after 4 runs ${r.idle4}`);
+  assert(r.len[4] === 3, `three missions must be active after the replacement: ${r.len}`);
+  assert(r.cheat === 0, `a cheated run must not count as idle: ${r.cheat}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 // Album: a sticker for every named bot swallowed whole in a clean run.
 // eat(name): a small bot of that name is put in front of a big player's mouth and swallowed the way the game does it.
 const EAT = `const eat = (name) => { const S = k.spawnBot(20); S.name = name; S.ai = null; S.spawnT = 0; P.mass = 400;

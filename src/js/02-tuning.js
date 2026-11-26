@@ -62,7 +62,10 @@ const SKINS = [
   ['zigzag', t('skin.zigzag')],
   ['galaxy', t('skin.galaxy')],
 ];
-const FREE_SKINS = 4; // the rest are prizes for missions
+const MIS_SUGAR = 300; // a mission's payout in the first circle; each later circle adds 60% of it
+const MIS_CAP = { time: 150, combo: 8, mass: 1600 }; // targets that must stay reachable in one run
+const MIS_IDLE = 5; // runs in a row without headway after which a mission makes way
+const misReward = (m) => Math.round(MIS_SUGAR * (1 + 0.6 * (m.c | 0)));
 const SUGAR = { bites: 1, food: 0.2, kills: 6, wound: 1, tongue: 2, pickup: 2, piranha: 2, hedge: 3, cake: 3 }; // sugar per action in a clean run
 // the runaway wrapper after a ×min streak: seconds to catch it, sugar and odds per tier (plain, rare, jackpot), the chance it grows a tier in the reveal,
 // its speed as a multiple of the player's top speed at birth (v0) and after tire seconds (v1)

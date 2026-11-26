@@ -186,6 +186,12 @@ function renderPick(slot) {
   renderSecs();
 }
 const renderRow = (slot) => (slot === 'skin' ? renderSkins() : renderPick(slot));
+// a pending first tap does not outlive the menu: after a run or a round trip one tap must never buy
+function clearAsk() {
+  const was = ask;
+  ask = null;
+  if (was) renderRow(was.slot);
+}
 // the one tap logic of the shop: an owned item is chosen, a closed one is bought with two taps so a stray tap never spends sugar
 function pickClick(slot, id) {
   const was = ask,
