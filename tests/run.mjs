@@ -552,12 +552,16 @@ test('chest: one paid reroll, the price is three times the base, never twice', a
 
 test('chest: the reroll is hidden when the bank is short of its price', async () => {
   const g = await open({ play: false });
-  const r = await g.page.evaluate(`(() => { ${CHEST_END}
-    const base = k.run.chestBase; k.setSugar(0);
-    document.getElementById('chestRow').children[0].click();
+  // Math.random is pinned so the shuffle keeps the order [base, 2*base, 5*base]: card 0 pays base, card 1 pays 2*base
+  const run = (bank0, card) => g.page.evaluate(`(() => { ${CHEST_END}
+    const base = k.run.chestBase, rnd = Math.random; Math.random = () => 0.999;
+    k.setSugar(${bank0} * base);
+    document.getElementById('chestRow').children[${card}].click();
+    Math.random = rnd;
     return { base, bank: k.sugar, hidden: document.getElementById('chestAgain').classList.contains('hidden') }; })()`);
-  assert(r.hidden === (r.bank < 3 * r.base), `bank ${r.bank}, price ${3 * r.base}, hidden ${r.hidden}`);
-  assert(r.bank < 3 * r.base, `the test needs a bank below the price: ${r.bank} vs ${3 * r.base}`);
+  const lo = await run(0, 0), hi = await run(1, 1);
+  assert(lo.bank === lo.base && lo.hidden, `bank ${lo.bank} is below the price ${3 * lo.base}: the button must be hidden (hidden ${lo.hidden})`);
+  assert(hi.bank === 3 * hi.base && !hi.hidden, `bank ${hi.bank} equals the price ${3 * hi.base}: the button must show (hidden ${hi.hidden})`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
 });
