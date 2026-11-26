@@ -180,7 +180,7 @@ function start(data) {
       M.open = m.open.filter((x) => typeof x === 'string');
     }
   } catch (e) {}
-  if (SKINS.some((k) => k[0] === chosenSkin) && !skinOpen(chosenSkin)) M.open.push(chosenSkin); // a skin picked before missions existed stays yours
+  loadOwn(best);
   rollMissions();
   newcomer = best <= 0 && best3 <= 0; // the end of every run writes kus.best, so its absence means no run was ever finished
   try {
@@ -333,6 +333,13 @@ window.__kus = {
   openAlbum,
   closeAlbum,
   mission,
+  WARDROBE,
+  priceOf,
+  owns,
+  buyItem,
+  get own() {
+    return own;
+  },
   get sugar() {
     return sugar;
   },

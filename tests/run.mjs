@@ -566,6 +566,72 @@ test('sugar: none for a run with cheats', async () => {
   await g.close();
 });
 
+test('wardrobe: old saves keep what they had, a broken save does not break, buying is exact', async () => {
+  const g = await open({ play: false });
+  const reload = async () => {
+    await g.page.reload();
+    await g.page.waitForTimeout(600);
+  };
+  // seeded by an init script: the old page saves its own state on unload, which would overwrite keys set by hand
+  await g.page.addInitScript(() => {
+    if (sessionStorage.getItem('seeded')) return;
+    sessionStorage.setItem('seeded', '1');
+    localStorage.clear();
+    localStorage.setItem('kus.best', '600');
+    localStorage.setItem('kus.m', JSON.stringify({ seq: 3, act: [], open: ['waffle', 'tiger'] }));
+    localStorage.setItem('kus.hat', 'horns');
+  });
+  await reload();
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus;
+    return {
+      hats: k.owns('hat', 'bow') && k.owns('hat', 'crown') && k.owns('hat', 'chef'),
+      horns: k.owns('hat', 'horns'),
+      skins: k.owns('skin', 'waffle') && k.owns('skin', 'tiger'),
+      cow: k.owns('skin', 'cow'),
+      free: k.owns('hat', 'none') && k.owns('skin', 'dots') && k.owns('eyes', 'none') && k.owns('tray', 'choco'),
+      v: JSON.parse(localStorage.getItem('kus.own')).v,
+      own: JSON.stringify(k.own),
+    };
+  });
+  assert(r.hats && !r.horns, 'old hats must follow the old record thresholds');
+  assert(r.skins && !r.cow, 'old mission skins must stay open, the others closed');
+  assert(r.free && r.v === 1, 'free items are owned and the save is versioned');
+  await reload();
+  const own2 = await g.page.evaluate(() => JSON.stringify(window.__kus.own));
+  assert(own2 === r.own, `own changed on the second load: ${r.own} -> ${own2}`);
+  const hat = await g.page.evaluate(() => {
+    const k = window.__kus;
+    k.pause(true);
+    k.startGame();
+    return k.player.hat;
+  });
+  assert(hat === 'none', `an unbought hat was worn: ${hat}`);
+  const b = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {};
+    k.setSugar(k.priceOf('hat', 'cap'));
+    out.first = k.buyItem('hat', 'cap');
+    out.left = k.sugar;
+    out.stored = localStorage.getItem('kus.sugar');
+    out.second = k.buyItem('hat', 'cap');
+    k.setSugar(10);
+    out.poor = k.buyItem('hat', 'halo');
+    out.poorSugar = k.sugar;
+    out.poorOwns = k.owns('hat', 'halo');
+    return out;
+  });
+  assert(b.first === true && b.left === 0 && b.stored === '0', `buying: ${JSON.stringify(b)}`);
+  assert(b.second === false, 'the same item was bought twice');
+  assert(b.poor === false && b.poorSugar === 10 && !b.poorOwns, 'a purchase without enough sugar changed state');
+  await g.page.evaluate(() => localStorage.setItem('kus.own', '{oops'));
+  await reload();
+  assert(await g.page.evaluate(() => window.__kus.owns('hat', 'bow')), 'a broken save must fall back to the migration');
+  assert(await g.page.evaluate(() => window.__kus.STR['act.13'] === undefined), 'the "open all patterns" cheat is gone');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 // Album: a sticker for every named bot swallowed whole in a clean run.
 // eat(name): a small bot of that name is put in front of a big player's mouth and swallowed the way the game does it.
 const EAT = `const eat = (name) => { const S = k.spawnBot(20); S.name = name; S.ai = null; S.spawnT = 0; P.mass = 400;

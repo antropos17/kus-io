@@ -44,7 +44,7 @@ const MTYPES = [
   ['combo', t('mis.combo'), 3],
   ['top', t('mis.top'), 10],
 ];
-const skinOpen = (id) => SKINS.findIndex((k) => k[0] === id) < FREE_SKINS || M.open.includes(id);
+const skinOpen = (id) => owns('skin', id);
 const nextPrize = () => SKINS.find((k, i) => i >= FREE_SKINS && !M.open.includes(k[0]));
 function saveM() {
   try {
@@ -209,7 +209,7 @@ function spawnPlayer(spawnT) {
     y,
     isPlayer: true,
     spawnT,
-    hat: chosenHat,
+    hat: owns('hat', chosenHat) ? chosenHat : 'none',
     skin: skinOpen(chosenSkin) ? chosenSkin : 'plain',
   });
   blobs.push(player);
