@@ -249,6 +249,9 @@ window.__kus = {
   get player() {
     return player;
   },
+  get parts() {
+    return parts;
+  },
   get blobs() {
     return blobs;
   },

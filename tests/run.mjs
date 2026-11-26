@@ -1610,6 +1610,74 @@ test('announce: not behind the menu; two swallows in one frame; a pause holds it
   await g.close();
 });
 
+// where the big word lands on a phone: on screen, clear of the controls, the HUD and the player's own candy
+const ANN_BOX = `(() => { const r = document.querySelector('#announce b').getBoundingClientRect(), bad = [];
+  if (r.left < 8 || r.right > innerWidth - 8 || r.top < 8) bad.push('off screen ' + [r.left, r.top, r.right, r.bottom].map(Math.round));
+  for (const id of ['dash', 'dodge', 'score', 'board', 'pauseBtn', 'mute']) { const e = document.getElementById(id); if (!e || getComputedStyle(e).display === 'none' || getComputedStyle(e).visibility === 'hidden') continue;
+    for (const q of id === 'score' ? [...e.children].filter((c) => c.id !== 'feed' && c.offsetParent && c.getBoundingClientRect().height > 0) : [e]) { const b = q.getBoundingClientRect();
+      if (b.width && r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top) bad.push('overlaps #' + (q.id || id)); } }
+  const A = window.__kus.ann;
+  if (!(A.top > 0 && A.bot > A.top)) bad.push('no ann.top / ann.bot');
+  else if (r.bottom > A.top + 0.5 && r.top < A.bot - 0.5) bad.push('covers the candy: ' + Math.round(r.top) + '..' + Math.round(r.bottom) + ' in ' + Math.round(A.top) + '..' + Math.round(A.bot));
+  return { bad, h: Math.round(r.height), fs: parseFloat(getComputedStyle(document.querySelector('#announce b')).fontSize) }; })()`;
+
+test('announce: fits 360x640 and 844x390 in both languages, clear of the buttons, the HUD and the player', async () => {
+  const fails = [];
+  for (const locale of ['ru-RU', 'en-US'])
+    for (const [width, height] of [
+      [360, 640],
+      [844, 390],
+    ]) {
+      const g = await open({ locale, width, height, touch: true, dpr: 2 });
+      for (const mass of [400, 2500]) {
+        await g.page.evaluate(`(() => { ${QUIET} P.mass = ${mass}; for (let i = 0; i < 240; i++) { P.mass = ${mass}; k.update(1 / 60); } k.annShow(5); k.pause(false); })()`);
+        await g.page.waitForTimeout(350);
+        const r = await g.page.evaluate(ANN_BOX);
+        if (r.bad.length || r.fs < 16) fails.push(`${locale} ${width}x${height} mass ${mass}: ${r.bad.join(', ')} font ${r.fs}`);
+      }
+      if (g.errors.length) fails.push(g.errors.join(' | '));
+      await g.close();
+    }
+  assert(fails.length === 0, fails.join(' | '));
+});
+
+test('announce: a phone turned mid-announcement refits it', async () => {
+  const g = await open({ width: 360, height: 640, touch: true, dpr: 2 });
+  await g.page.evaluate(`(() => { ${QUIET} P.mass = 400; for (let i = 0; i < 120; i++) k.update(1 / 60); k.annShow(5); k.pause(false); })()`);
+  await g.page.waitForTimeout(150);
+  await g.page.setViewportSize({ width: 844, height: 390 });
+  await g.page.waitForTimeout(250);
+  const r = await g.page.evaluate(ANN_BOX);
+  assert(r.bad.length === 0, `after turning: ${r.bad.join(', ')}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('announce: glow and sprinkles from step 4, none in calm', async () => {
+  const look = `(() => { ${QUIET} P.mass = 400; for (let i = 0; i < 30; i++) k.update(1 / 60); const ann = document.getElementById('announce'), out = {};
+    let n0 = k.parts.length; k.annShow(3); out.glow3 = ann.classList.contains('glow'); out.parts3 = k.parts.length - n0;
+    n0 = k.parts.length; k.annShow(4); out.glow4 = ann.classList.contains('glow'); out.parts4 = k.parts.length - n0; return out; })()`;
+  const g = await open();
+  const r = await g.page.evaluate(look);
+  assert(!r.glow3 && r.parts3 === 0, `step 3 has no glow or sprinkles (${r.glow3}, ${r.parts3})`);
+  assert(r.glow4 && r.parts4 >= 8, `step 4 glows and throws sprinkles (${r.glow4}, ${r.parts4})`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce', locale: 'ru-RU' });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.addInitScript(() => localStorage.setItem('kus.best', '1'));
+  await page.goto(URL);
+  await page.waitForTimeout(400);
+  await page.evaluate(() => window.__kus.startGame());
+  await page.waitForTimeout(250);
+  const c = await page.evaluate(look);
+  assert(!c.glow4 && c.parts4 === 0, `calm: no glow or sprinkles (${c.glow4}, ${c.parts4})`);
+  assert(errors.length === 0, errors.join(' | '));
+  await ctx.close();
+});
+
 test('sound: every effect plays without throwing', async () => {
   const g = await open();
   const r = await g.page.evaluate(async () => {
