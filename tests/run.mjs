@@ -584,11 +584,13 @@ test('streak: swallowing whole counts as a streak bite', async () => {
     out.words = k.stamps.map((s) => s.txt); out.chip = document.querySelector('#sugar .mult').textContent; out.sum = k.streak.sum;
     // the three swallows came well inside a second: every «ням» over the candy right now, floating texts and the stamp together
     out.nyam = [...k.texts.filter((t) => t.t < t.T).map((t) => t.s), ...out.words].filter((s) => /ням/i.test(s));
+    out.ann = document.querySelector('#announce b').textContent;
     return out; })()`);
-  assert(r.nyam.length === 1, `only one «ням» may hang over the candy at a time, saw ${JSON.stringify(r.nyam)}`);
+  assert(r.nyam.length <= 1, `only one «ням» may hang over the candy at a time, saw ${JSON.stringify(r.nyam)}`);
   assert(r.kills === 3, `all three small candies must be swallowed whole, got ${r.kills}`);
   assert(r.combos.join() === '1,2,3', `swallows in a row must count 1,2,3, got ${r.combos}`);
-  assert(r.words.join() === 'Ням!' && r.chip === '×3', `the third swallow must stamp Ням! and show ×3: ${r.words} ${r.chip}`);
+  // three swallows in a row are also a chain: the big word takes the screen and the streak's own stamp waits
+  assert(r.words.length === 0 && r.ann === 'Тройной кусь!!' && r.chip === '×3', `the third swallow must announce Тройной кусь!! with no stamp and show ×3: ${r.words} "${r.ann}" ${r.chip}`);
   assert(r.sum > 0, 'the swallows must add their sugar to the streak sum');
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
