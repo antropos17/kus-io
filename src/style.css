@@ -220,7 +220,7 @@ body.touch.lefty #dash.low:after{right:auto;left:calc(100% + 12px)}
 #chestAgain{margin-top:8px;padding:8px;font-size:14px}
 #chestOdds{margin:4px 0 0;font:700 12px/1.25 var(--font);color:#7a5a49;text-align:center}
 #near{margin-top:6px}
-@media (max-height:760px){#over .card.rr #near{display:none}#over .card.rr #chestMore{display:flex;gap:8px;align-items:center;margin-top:6px}#over .card.paid #chestAgain{flex:0 0 46%;margin:0;padding:7px 4px;font-size:13px}#chestOdds{flex:1 1 0;min-width:0;margin:0;font-size:11px;text-align:left}#over .card.paid.stk #near,#over .card.paid.chal #stk{display:none}#over .card.paid.chal #near{display:none}#over .card.paid #overMis{display:none}#over .card.paid .stats{margin-bottom:6px}#over .card.paid .best{margin-top:6px}}
+@media (max-height:760px){#over .card.rr #near{display:none}#over .card.rr #chestMore{display:flex;gap:8px;align-items:center;margin-top:6px}#over .card.paid #chestAgain{flex:0 0 46%;margin:0;padding:7px 4px;font-size:13px}#chestOdds{flex:1 1 0;min-width:0;margin:0;font-size:11px;text-align:left}#over .card.paid.stk #near,#over .card.paid.chal #stk{display:none}#over .card.paid.chal #near{display:none}#over .card.paid #overMis{display:none}#over .card.paid .stats{margin-bottom:6px}#over .card.paid .best{margin-top:6px}#over .card.paid.rr.stk:not(.trophy) .tag{display:none}}
 #near:empty{display:none}
 #modeSeg [data-m=daily]{grid-column:1/-1;grid-row:1;display:flex;align-items:baseline;align-content:center;justify-content:center;gap:0 8px;flex-wrap:wrap}
 #modeSeg [data-m=daily] small{font:700 13px/1.2 var(--font);color:#7a5a49}
@@ -395,6 +395,7 @@ body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))}
   #over .card.paid .best{margin-top:3px;font-size:13px}
   #over .card.paid .btn2{margin-top:5px;padding:8px}
   #over .card.paid #chalRes{margin-top:5px}
+  #over .card.paid.rr.stk #best{float:left;max-width:45%;margin:0 10px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} /* the album line and the reroll row both: the record shares the album's line */
   #over .card.trophy .tag{display:block;margin:2px 0 6px}
   #trMedal{width:48px;height:48px;margin-bottom:2px}
   .card.trophy h2.dead{font-size:24px}

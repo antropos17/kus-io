@@ -78,6 +78,7 @@ function mission(type, n, absolute) {
       // done: the prize is sugar, more for a later circle of missions
       m.paid = misReward(m);
       earn(m.paid);
+      M.owed = (M.owed | 0) + m.paid; // kept in the save until the run is banked: a run the app never ends still pays it
       if (run.mis) run.mis.push(m.c | 0);
       addFeed(t('mis.doneSugar', m.paid));
       Sfx.power();
@@ -348,6 +349,7 @@ function finishRun() {
     sugar += run.got;
   }
   run.chest = run.got > 0;
+  M.owed = 0; // the missions' sugar is in run.got now (or lost with a cheated run); saveM below
   saveSugar();
   if (!run.cheated) {
     // a mission that made no headway in this whole run (deaths inside it count once) makes way after MIS_IDLE runs

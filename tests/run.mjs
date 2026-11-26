@@ -594,6 +594,34 @@ for (const [w, h] of [
       await g.close();
     });
 
+// early runs open stickers almost every time, and the reroll is offered on almost every card: both at once must fit
+for (const [w, h] of [
+  [360, 640],
+  [844, 390],
+])
+  for (const locale of ['ru-RU', 'en-US'])
+    for (const m of ['t3', 'free'])
+      test(`chest: the reroll row and the album line fit the end card at ${w}x${h} ${locale} ${m}`, async () => {
+        const g = await open({ play: false, width: w, height: h, touch: true, dpr: 2, locale, returning: true });
+        const r = await g.page.evaluate(`(() => { const k = window.__kus; k.setSugar(0); k.pause(true);
+          for (const n of ['Мармеладка', 'Желешка', 'Жвачка', 'Тянучка']) k.album.c[n] = 1;
+          k.setMode('${m}'); k.startGame(); k.player.spawnT = 0; k.run.sugar = 200;
+          for (const n of ['Зефирка', 'Суфле', 'Безе', 'Мусс', 'Бабл-гам']) k.albumEat({ name: n });
+          if ('${m}' === 't3') k.setTimeLeft(0.001); else { k.player.alive = false; k.die(null); }
+          for (let i = 0; i < 90; i++) k.update(1 / 60);
+          document.getElementById('chestRow').children[0].click();
+          const card = document.querySelector('#over .card'), cb = card.getBoundingClientRect(), bad = [];
+          const seen = (id) => { const e = document.getElementById(id), b = e.getBoundingClientRect();
+            if (!e.textContent.trim() || e.classList.contains('hidden') || getComputedStyle(e).display === 'none' || b.height === 0) bad.push(id + ' hidden');
+            else if (b.top < cb.top || b.bottom > cb.bottom + 1 || b.bottom > innerHeight) bad.push(id + ' cut off at ' + Math.round(b.bottom) + ' (card ' + Math.round(cb.bottom) + ')'); };
+          ['chestAgain', 'chestOdds', 'stk', 'best', 'again'].forEach(seen);
+          if (card.scrollHeight > card.clientHeight + 1) bad.push('the card scrolls ' + (card.scrollHeight - card.clientHeight) + 'px');
+          return { bad }; })()`);
+        assert(r.bad.length === 0, `${w}x${h} ${locale} ${m}: ${r.bad.join(', ')}`);
+        assert(g.errors.length === 0, g.errors.join(' | '));
+        await g.close();
+      });
+
 test('hud: the sugar pill rolls to earned sugar once the cubes land', async () => {
   const g = await open();
   const r = await g.page.evaluate(`(() => { ${QUIET} k.run.sugar = 0; k.hud.sugarSettle();
@@ -637,6 +665,52 @@ test('sugar: none for a run with cheats', async () => {
     return { bank: k.sugar, chest: !document.getElementById('sweet').classList.contains('hidden') };
   });
   assert(r.bank === 0 && !r.chest, `a cheated run paid ${r.bank} sugar`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('missions: the sugar of a mission finished in a run the app never ended is paid on the next start, once', async () => {
+  const g = await open({ play: false, returning: true });
+  const reload = async () => {
+    await g.page.reload();
+    await g.page.waitForTimeout(600);
+  };
+  const finish = (end) =>
+    g.page.evaluate((end) => {
+      const k = window.__kus;
+      k.pause(true);
+      k.setSugar(50);
+      localStorage.setItem('kus.sugar', '50'); // setSugar does not save
+      k.M.act = [{ type: 'kills', need: 3, got: 2, c: 1, at: 0, idle: 0 }];
+      k.setMode('t3');
+      k.startGame();
+      k.player.spawnT = 0;
+      k.mission('kills', 1);
+      const m = k.M.act.find((x) => x.type === 'kills');
+      const out = { paid: m.paid, done: m.got >= m.need };
+      if (end) {
+        k.setTimeLeft(0.001);
+        for (let i = 0; i < 90; i++) k.update(1 / 60);
+        out.got = k.run.got;
+      }
+      out.bank = k.sugar;
+      return out;
+    }, end);
+  // the app is closed (or killed in the background) mid-run, after the mission is done: «+N сахара» was promised
+  const a = await finish(false);
+  await reload();
+  const a2 = await g.page.evaluate(() => ({ bank: window.__kus.sugar, kills: window.__kus.M.act.some((m) => m.type === 'kills') }));
+  await reload();
+  const a3 = await g.page.evaluate(() => window.__kus.sugar);
+  assert(a.done && a.paid > 0 && a.bank === 50, `mission done ${a.done}, paid ${a.paid}, bank mid-run ${a.bank}`);
+  assert(a2.bank === 50 + a.paid && !a2.kills, `after the restart the bank is ${a2.bank}, want ${50 + a.paid}`);
+  assert(a3 === a2.bank, `a second restart paid again: ${a2.bank} -> ${a3}`);
+  // a run that ends as usual pays the mission inside its own sugar, and a restart adds nothing
+  const b = await finish(true);
+  await reload();
+  const b2 = await g.page.evaluate(() => window.__kus.sugar);
+  assert(b.got >= b.paid && b.bank === 50 + b.got, `the run paid ${b.got} (mission ${b.paid}), bank ${b.bank}`);
+  assert(b2 === b.bank, `a restart after a finished run changed the bank ${b.bank} -> ${b2}`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
 });

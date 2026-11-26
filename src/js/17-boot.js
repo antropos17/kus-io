@@ -188,9 +188,17 @@ function start(data) {
       M.seq = m.seq | 0;
       M.act = m.act.filter((x) => x && typeof x.type === 'string' && x.need > 0);
       M.open = m.open.filter((x) => typeof x === 'string');
+      M.owed = Math.max(0, m.owed | 0);
     }
   } catch (e) {}
   loadOwn(best);
+  if (M.owed > 0) {
+    // missions finished in a run the app never got to end (closed, or killed in the background): their sugar is still yours
+    sugar += M.owed;
+    M.owed = 0;
+    saveSugar();
+    saveM();
+  }
   rollMissions();
   newcomer = best <= 0 && best3 <= 0; // the end of every run writes kus.best, so its absence means no run was ever finished
   try {
