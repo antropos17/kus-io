@@ -1643,6 +1643,28 @@ test('announce: fits 360x640 and 844x390 in both languages, clear of the buttons
   assert(fails.length === 0, fails.join(' | '));
 });
 
+test('announce: clear of the ×N label even with a hat on, at its biggest pop', async () => {
+  const fails = [];
+  for (const [width, height] of [
+    [360, 640],
+    [844, 390],
+  ]) {
+    const g = await open({ width, height, touch: true, dpr: 2 });
+    for (const hat of ['none', 'crown'])
+      for (const mass of [400, 2500]) {
+        const r = await g.page.evaluate(`(() => { ${QUIET} P.hat = '${hat}'; P.mass = ${mass}; for (let i = 0; i < 240; i++) { P.mass = ${mass}; k.update(1 / 60); }
+          P.combo = 3; P.comboT = 4; k.streak.pop = 1; k.annShow(5); k.render(); // drawName sets the label's top as it is drawn
+          const top = (k.streak.lt - k.cam.y) * k.cam.z + innerHeight / 2 + k.cam.ky, w = document.querySelector('#announce b');
+          for (const a of w.getAnimations()) a.currentTime = 400; const b = w.getBoundingClientRect();
+          return { top: Math.round(top), wt: Math.round(b.top), wb: Math.round(b.bottom), bot: Math.round(k.ann.bot) }; })()`);
+        if (!(r.wb <= r.top + 0.5 || r.wt >= r.bot - 0.5)) fails.push(`${width}x${height} hat ${hat} mass ${mass}: word ${r.wt}..${r.wb}, label top ${r.top}`);
+      }
+    if (g.errors.length) fails.push(g.errors.join(' | '));
+    await g.close();
+  }
+  assert(fails.length === 0, fails.join(' | '));
+});
+
 test('announce: a phone turned mid-announcement refits it', async () => {
   const g = await open({ width: 360, height: 640, touch: true, dpr: 2 });
   await g.page.evaluate(`(() => { ${QUIET} P.mass = 400; for (let i = 0; i < 120; i++) k.update(1 / 60); k.annShow(5); k.pause(false); })()`);

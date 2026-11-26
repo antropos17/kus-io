@@ -4753,8 +4753,14 @@ function annFit() {
   if (!ann.step || !player) return;
   const z = cam.z,
     oy = H / 2 + focusOffset()[1] - cam.y * z + cam.ky;
-  ann.top = (player.y - player.Rs) * z + oy - 34; // the ×N or the name above the candy
-  ann.bot = (player.y + player.Rs) * z + oy + 6;
+  // the top of the label over the candy, as drawName places it, at its biggest: a hat lifts it, a streak turns it into a
+  // ×N 1.7 times the size that pops 45% bigger on a bite. The swallow's mass is still arriving, so the bigger of R and Rs
+  const P = player,
+    R = Math.max(P.R || 0, P.Rs),
+    lfs = clamp(R * z * 0.3, 11, 17) / z,
+    labelY = P.y - R * (P.hat !== 'none' && R * z >= 8 ? 1.55 : 1.04) - 6 / z - lfs * 0.45 - 37 * ((lfs * 1.7) / 34) * 1.45;
+  ann.top = labelY * z + oy - 6; // a few px for the zoom kick of the swallow
+  ann.bot = (P.y + R) * z + oy + 6;
   if (!annMeasure) annMeasure = document.createElement('canvas').getContext('2d');
   annMeasure.font = `900 100px ${FONT}`;
   const w1 = annMeasure.measureText(annWord.textContent).width / 100, // width of the word per 1 px of font
