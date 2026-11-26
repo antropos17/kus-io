@@ -309,8 +309,9 @@ function secondShift() {
   const P = player;
   annReset(); // a fresh shift, a fresh chain
   rollMissions();
+  for (const m of M.act) m.at = m.got;
   saveM();
-  run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0, lap: stg.lap + 1 };
+  run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0, lap: stg.lap + 1, mis: [] };
   sugarReset();
   runActive = true;
   state = 'play';

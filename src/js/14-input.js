@@ -144,25 +144,15 @@ muteEl.addEventListener('click', () => {
 $('play').addEventListener('click', startGame);
 $('again').addEventListener('click', startGame);
 function renderHats() {
-  if (!HATS.some((h) => h.id === chosenHat && h.need <= best)) chosenHat = 'none';
-  hatsEl.innerHTML = HATS.map((h) => {
-    const lock = h.need > best;
-    return `<button type="button" role="radio" aria-checked="${h.id === chosenHat}" data-h="${h.id}"${lock ? ' disabled' : ''}>${h.name}${lock ? ` <small>${t('hat.from', h.need)}</small>` : ''}</button>`;
-  }).join('');
-  recEl.textContent = best ? t('rec', best) : t('rec.none');
-  renderSecs();
+  renderPick('hat');
+  renderPick('eyes');
+  renderPick('trail');
+  renderPick('tray');
+  recEl.textContent = best ? t('rec', best) : '';
 }
-hatsEl.addEventListener('click', (e) => {
-  const t = e.target.closest('button');
-  if (!t || t.disabled) return;
-  chosenHat = t.dataset.h;
-  renderHats();
-  const el = hatsEl.querySelector(`[data-h="${chosenHat}"]`);
-  if (el) el.focus();
-});
 const skinsEl = $('skins'),
   bankEl = $('bank');
-let askSkin = null,
+let ask = null, // the first of the two taps of a purchase: { slot, id }
   bankT = 0;
 function renderBank(msg) {
   // the sugar balance; a message replaces it for a few seconds
@@ -170,19 +160,106 @@ function renderBank(msg) {
   bankEl.textContent = msg || t('bank', sugar);
   if (msg) bankT = setTimeout(() => renderBank(), 3200);
 }
+const boxOf = (slot) => $(slot === 'hat' ? 'hats' : slot === 'skin' ? 'skins' : slot);
+const chosenOf = (slot) =>
+  slot === 'hat'
+    ? chosenHat
+    : slot === 'skin'
+      ? chosenSkin
+      : slot === 'eyes'
+        ? chosenEyes
+        : slot === 'trail'
+          ? chosenTrail
+          : slot === 'tray'
+            ? chosenTray
+            : null;
+function choose(slot, id) {
+  if (slot === 'hat') chosenHat = id;
+  else if (slot === 'skin') chosenSkin = id;
+  else if (slot === 'eyes') chosenEyes = id;
+  else if (slot === 'trail') chosenTrail = id;
+  else if (slot === 'tray') setTray(id);
+}
+// the price tag of a closed item: its price, «Купить?» after the first tap
+function priceTag(slot, id) {
+  const price = priceOf(slot, id);
+  return ask && ask.slot === slot && ask.id === id
+    ? `<small class="pz ask">${t('shop.buy')}</small>`
+    : `<small class="pz${sugar >= price ? ' can' : ''}">${price}</small>`;
+}
+// one row of chips for hats (and later eyes, trail, tray): every item of the wardrobe slot, closed ones with a price
+function renderPick(slot) {
+  const box = boxOf(slot);
+  if (!box) return;
+  if (!owns(slot, chosenOf(slot))) choose(slot, WARDROBE[slot][0][0]);
+  box.innerHTML = WARDROBE[slot]
+    .map(([id]) => {
+      const lock = !owns(slot, id),
+        name = itemName(slot, id),
+        why = lock ? t('shop.why', priceOf(slot, id)) : '';
+      return `<button type="button" role="radio" aria-checked="${id === chosenOf(slot)}" aria-label="${name}${why}" data-slot="${slot}" data-id="${id}"${lock ? ' class="lock"' : ''}>${name}${lock ? priceTag(slot, id) : ''}</button>`;
+    })
+    .join('');
+  renderSecs();
+}
+const renderRow = (slot) => (slot === 'skin' ? renderSkins() : renderPick(slot));
+// a pending first tap does not outlive the menu: after a run or a round trip one tap must never buy
+function clearAsk() {
+  const was = ask;
+  ask = null;
+  if (was) renderRow(was.slot);
+}
+// the one tap logic of the shop: an owned item is chosen, a closed one is bought with two taps so a stray tap never spends sugar
+function pickClick(slot, id) {
+  const was = ask,
+    name = itemName(slot, id);
+  let redo = false;
+  if (!owns(slot, id)) {
+    const price = priceOf(slot, id);
+    if (sugar < price) {
+      ask = null;
+      renderBank(t('shop.short', name, price, sugar));
+    } else if (!ask || ask.slot !== slot || ask.id !== id) {
+      ask = { slot, id };
+      renderBank(t('shop.ask', name, price));
+    } else {
+      buyItem(slot, id);
+      ask = null;
+      choose(slot, id);
+      Sfx.init();
+      Sfx.power();
+      haptic(20);
+      renderBank(t('shop.got', name));
+    }
+    redo = true;
+  } else {
+    ask = null;
+    choose(slot, id);
+    redo = !!was;
+  }
+  if (redo) {
+    renderRow(slot);
+    if (was && was.slot !== slot) renderRow(was.slot);
+  } else {
+    for (const b of boxOf(slot).children) b.setAttribute('aria-checked', String(b.dataset.id === chosenOf(slot)));
+    renderSecs();
+  }
+  const el = boxOf(slot).querySelector(`[data-id="${id}"]`);
+  if (el) el.focus();
+}
+for (const slot of ['hat', 'skin', 'eyes', 'trail', 'tray'])
+  if (boxOf(slot))
+    boxOf(slot).addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (btn && btn.dataset.id) pickClick(slot, btn.dataset.id);
+    });
 function renderSkins() {
   if (!SKINS.some((k) => k[0] === chosenSkin)) chosenSkin = 'plain';
   if (!skinOpen(chosenSkin)) chosenSkin = 'plain';
-  skinsEl.innerHTML = SKINS.map(([id, name], i) => {
+  skinsEl.innerHTML = SKINS.map(([id, name]) => {
     const lock = !skinOpen(id),
-      price = SKIN_PRICE(i),
-      tag = !lock
-        ? ''
-        : askSkin === id
-          ? `<small class="pz ask">${t('skin.buy')}</small>`
-          : `<small class="pz${sugar >= price ? ' can' : ''}">${price}</small>`,
-      why = lock ? t('skin.why', price) : '';
-    return `<button type="button" role="radio" aria-checked="${id === chosenSkin}" aria-label="${name}${why}" title="${name}${why}" data-s="${id}"${lock ? ' class="lock"' : ''}><canvas width="92" height="92"></canvas>${tag}</button>`;
+      why = lock ? t('shop.why', priceOf('skin', id)) : '';
+    return `<button type="button" role="radio" aria-checked="${id === chosenSkin}" aria-label="${name}${why}" title="${name}${why}" data-s="${id}" data-slot="skin" data-id="${id}"${lock ? ' class="lock"' : ''}><canvas width="92" height="92"></canvas>${lock ? priceTag('skin', id) : ''}</button>`;
   }).join('');
   renderSecs();
   const pal = PALS[chosen];
@@ -231,46 +308,6 @@ function renderSkins() {
     }
   }
 }
-skinsEl.addEventListener('click', (e) => {
-  const btn = e.target.closest('button');
-  if (!btn) return;
-  const id = btn.dataset.s,
-    i = SKINS.findIndex((k) => k[0] === id),
-    price = SKIN_PRICE(i),
-    name = SKINS[i][1],
-    wasAsk = askSkin;
-  if (btn.classList.contains('lock')) {
-    // a locked pattern is bought with two taps, so a stray tap never spends sugar
-    if (sugar < price) {
-      askSkin = null;
-      renderBank(t('skin.short', name, price, sugar));
-    } else if (askSkin !== id) {
-      askSkin = id;
-      renderBank(t('skin.ask', name, price));
-    } else {
-      sugar -= price;
-      saveSugar();
-      M.open.push(id);
-      saveM();
-      askSkin = null;
-      chosenSkin = id;
-      Sfx.init();
-      Sfx.power();
-      haptic(20);
-      renderMissions();
-      renderBank(t('skin.got', name));
-    }
-    if (wasAsk !== askSkin || chosenSkin === id) renderSkins();
-    const el = skinsEl.querySelector(`[data-s="${id}"]`);
-    if (el) el.focus();
-    return;
-  }
-  askSkin = null;
-  chosenSkin = id;
-  if (wasAsk) renderSkins();
-  else for (const b of skinsEl.children) b.setAttribute('aria-checked', String(b.dataset.s === chosenSkin));
-  renderSecs();
-});
 function renderSwatches() {
   swEl.innerHTML = PALS.map(
     (p, i) =>
@@ -329,8 +366,16 @@ const pressedText = (id) => {
 function renderSecs() {
   const pal = PALS[chosen],
     skin = SKINS.find((k) => k[0] === chosenSkin),
-    hat = HATS.find((h) => h.id === chosenHat),
-    look = [nameOf(pal.name), skin && skin[1], hat && hat.id !== 'none' && hat.name].filter(Boolean).join(' · ');
+    look = [
+      nameOf(pal.name),
+      skin && skin[1],
+      chosenHat !== 'none' && itemName('hat', chosenHat),
+      chosenEyes !== 'none' && itemName('eyes', chosenEyes),
+      chosenTrail !== 'none' && itemName('trail', chosenTrail),
+      chosenTray !== 'choco' && itemName('tray', chosenTray),
+    ]
+      .filter(Boolean)
+      .join(' · ');
   $('sumLook').innerHTML = `<i style="background:${pal.base}"></i>${look}`;
   $('sumMode').textContent = `${t('sum.' + mode)} · ${mode === 'daily' ? t('dif.normal') : pressedText('diffSeg')}`;
   const mis = $('misList').children,

@@ -160,6 +160,9 @@ function start(data) {
   try {
     stored = parseInt(localStorage.getItem('kus.best'), 10) || 0;
     chosenHat = localStorage.getItem('kus.hat') || 'none';
+    chosenEyes = localStorage.getItem('kus.eyes') || 'none';
+    chosenTrail = localStorage.getItem('kus.trail') || 'none';
+    chosenTray = localStorage.getItem('kus.tray') || 'choco';
     chosenSkin = localStorage.getItem('kus.skin') || 'plain';
     sugar = Math.max(0, parseInt(localStorage.getItem('kus.sugar'), 10) || 0);
     if (localStorage.getItem('kus.lbmin') === '1') $('board').classList.add('min');
@@ -185,9 +188,17 @@ function start(data) {
       M.seq = m.seq | 0;
       M.act = m.act.filter((x) => x && typeof x.type === 'string' && x.need > 0);
       M.open = m.open.filter((x) => typeof x === 'string');
+      M.owed = Math.max(0, m.owed | 0);
     }
   } catch (e) {}
-  if (SKINS.some((k) => k[0] === chosenSkin) && !skinOpen(chosenSkin)) M.open.push(chosenSkin); // a skin picked before missions existed stays yours
+  loadOwn(best);
+  if (M.owed > 0) {
+    // missions finished in a run the app never got to end (closed, or killed in the background): their sugar is still yours
+    sugar += M.owed;
+    M.owed = 0;
+    saveSugar();
+    saveM();
+  }
   rollMissions();
   newcomer = best <= 0 && best3 <= 0; // the end of every run writes kus.best, so its absence means no run was ever finished
   try {
@@ -346,6 +357,50 @@ window.__kus = {
   openAlbum,
   closeAlbum,
   mission,
+  rollMissions,
+  renderMissions,
+  misReward,
+  die,
+  WARDROBE,
+  SKINS,
+  skinTile,
+  priceOf,
+  owns,
+  buyItem,
+  itemName,
+  cheapestUnowned,
+  pickClick,
+  get chosenHat() {
+    return chosenHat;
+  },
+  set chosenHat(v) {
+    chosenHat = v;
+  },
+  get chosenEyes() {
+    return chosenEyes;
+  },
+  set chosenEyes(v) {
+    chosenEyes = v;
+  },
+  get chosenTrail() {
+    return chosenTrail;
+  },
+  set chosenTrail(v) {
+    chosenTrail = v;
+  },
+  get chosenTray() {
+    return chosenTray;
+  },
+  set chosenTray(v) {
+    setTray(v);
+  },
+  get parts() {
+    return parts;
+  },
+  renderPick,
+  get own() {
+    return own;
+  },
   get sugar() {
     return sugar;
   },

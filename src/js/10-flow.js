@@ -44,8 +44,7 @@ const MTYPES = [
   ['combo', t('mis.combo'), 3],
   ['top', t('mis.top'), 10],
 ];
-const skinOpen = (id) => SKINS.findIndex((k) => k[0] === id) < FREE_SKINS || M.open.includes(id);
-const nextPrize = () => SKINS.find((k, i) => i >= FREE_SKINS && !M.open.includes(k[0]));
+const skinOpen = (id) => owns('skin', id);
 function saveM() {
   try {
     localStorage.setItem('kus.m', JSON.stringify(M));
@@ -54,11 +53,19 @@ function saveM() {
 function rollMissions() {
   // finished missions make way for new ones, each a little bigger than the last of its kind
   M.act = M.act.filter((m) => m && m.got < m.need && MTYPES.some((t) => t[0] === m.type));
+  for (const m of M.act) {
+    const cap = MIS_CAP[m.type]; // a target saved before the caps is cut back
+    if (cap && m.need > cap) {
+      m.need = cap;
+      m.got = Math.min(m.got, cap - 1);
+    }
+  }
   for (let guard = 0; M.act.length < 3 && guard < 40; guard++) {
     const i = M.seq++,
       t = MTYPES[i % MTYPES.length];
     if (M.act.some((m) => m.type === t[0])) continue;
-    M.act.push({ type: t[0], need: Math.round(t[2] * (1 + Math.floor(i / MTYPES.length) * 0.6)), got: 0 });
+    const c = Math.floor(i / MTYPES.length);
+    M.act.push({ type: t[0], need: Math.min(MIS_CAP[t[0]] || Infinity, Math.round(t[2] * (1 + c * 0.6))), got: 0, c, at: 0, idle: 0 });
   }
 }
 function mission(type, n, absolute) {
@@ -68,14 +75,12 @@ function mission(type, n, absolute) {
     if (m.type !== type || m.got >= m.need) continue;
     m.got = absolute ? Math.max(m.got, Math.min(m.need, Math.floor(n))) : Math.min(m.need, m.got + n);
     if (m.got >= m.need) {
-      // done: the prize is the next locked skin
-      earn(15);
-      const pz = nextPrize();
-      if (pz) {
-        M.open.push(pz[0]);
-        m.prize = pz[0]; // the pattern's id: the name is shown in the language of the moment
-        addFeed(t('mis.donePrize', pz[1]));
-      } else addFeed(t('mis.done'));
+      // done: the prize is sugar, more for a later circle of missions
+      m.paid = misReward(m);
+      earn(m.paid);
+      M.owed = (M.owed | 0) + m.paid; // kept in the save until the run is banked: a run the app never ends still pays it
+      if (run.mis) run.mis.push(m.c | 0);
+      addFeed(t('mis.doneSugar', m.paid));
       Sfx.power();
       saveM();
     }
@@ -91,7 +96,7 @@ const missionRows = () =>
     .map((m) => {
       const mt = MTYPES.find((x) => x[0] === m.type),
         done = m.got >= m.need;
-      return `<div class="mi${done ? ' ok' : ''}"><span class="mt">${mt[1]}${done ? (m.prize ? t('mis.prize', skinName(m.prize)) : t('mis.ok')) : ''}</span><span class="mv">${Math.floor(m.got)} / ${m.need}</span><div class="mb"><i style="width:${Math.round((100 * m.got) / m.need)}%"></i></div></div>`;
+      return `<div class="mi${done ? ' ok' : ''}"><span class="mt">${mt[1]}${done ? (m.prize ? t('mis.prize', skinName(m.prize)) : m.paid ? t('mis.paid', m.paid) : t('mis.ok')) : ''}</span><span class="mv">${Math.floor(m.got)} / ${m.need}</span><div class="mb"><i style="width:${Math.round((100 * m.got) / m.need)}%"></i></div></div>`;
     })
     .join('');
 // ---------- sugar ----------
@@ -104,10 +109,6 @@ function saveSugar() {
   try {
     localStorage.setItem('kus.sugar', String(sugar));
   } catch (e) {}
-}
-function cheapestSkin() {
-  const i = SKINS.findIndex((k) => !skinOpen(k[0]));
-  return i < 0 ? null : { id: SKINS[i][0], name: SKINS[i][1], price: SKIN_PRICE(i) };
 }
 function countUp(el, n) {
   if (calm || n < 2) {
@@ -130,13 +131,14 @@ function nearText(m, score) {
     if (m === 'daily' && score < run.dayPrev) out.push(t('near.day', run.dayPrev - score));
     if (t3 && score < best3) out.push(t('near.t3', best3 - score));
     if (m === 'free' && score < best) out.push(t('near.rec', best - score));
-    const h = HATS.find((x) => x.need > best);
-    if (m === 'free' && h) out.push(t('near.hat', h.name, h.need - best));
   }
   const al = run.cheated ? '' : albumNear();
   if (al) out.splice(1, 0, al); // a row one or two stickers short comes right after the record
-  const s = cheapestSkin();
-  if (s && !al) out.push(sugar >= s.price ? t('near.skinCan', s.name) : t('near.skin', s.name, s.price - sugar));
+  const c = cheapestUnowned();
+  if (c && !al) {
+    const name = itemName(c.slot, c.id);
+    out.push(sugar >= c.price ? t('near.can', name) : t('near.need', name, c.price - sugar));
+  }
   return out.slice(0, 2).join('. ');
 }
 function renderSweet(m, score) {
@@ -148,13 +150,33 @@ function renderSweet(m, score) {
   countUp($('sweetN'), got);
   $('sweetBank').textContent = t('sweet.bank', sugar);
   $('chestT').textContent = t('chest.t');
+  chestCards();
+  run.chestBase = clamp(Math.round(got * 0.3), 3, 40);
+  run.rerolled = false;
+  rerollAsk = false;
+  renderReroll(false);
+}
+function chestCards() {
   $('chestRow').innerHTML = [0, 1, 2].map((i) => `<button type="button" data-i="${i}" aria-label="${t('chest.a', i + 1)}">?</button>`).join('');
+}
+let rerollAsk = false; // the first tap on the reroll button asked, the second pays
+function rerollPrice() {
+  return 3 * run.chestBase;
+}
+function renderReroll(picked) {
+  const show = picked && !run.rerolled && sugar >= rerollPrice();
+  $('chestAgain').classList.toggle('hidden', !show);
+  $('chestOdds').classList.toggle('hidden', !show);
+  overEl.querySelector('.card').classList.toggle('rr', show); // short screens: the reroll row takes the «almost» line's place
+  if (!show) return;
+  $('chestAgain').textContent = rerollAsk ? t('chest.againAsk', rerollPrice()) : t('chest.again', rerollPrice());
+  $('chestOdds').textContent = t('chest.odds');
 }
 $('chestRow').addEventListener('click', (e) => {
   const pick = e.target.closest('button');
   if (!pick || !run.chest) return;
   run.chest = false;
-  const base = clamp(Math.round(run.got * 0.3), 3, 40),
+  const base = run.chestBase,
     prizes = [base, base * 2, base * 5];
   for (let i = 2; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -173,9 +195,32 @@ $('chestRow').addEventListener('click', (e) => {
   $('near').textContent = nearText(mode, Math.round(run.max));
   Sfx.power();
   haptic(won === base * 5 ? 30 : 12);
+  rerollAsk = false;
+  renderReroll(true);
+});
+$('chestAgain').addEventListener('click', () => {
+  const price = rerollPrice();
+  if (run.chest || run.rerolled || sugar < price) return;
+  if (!rerollAsk) {
+    rerollAsk = true;
+    renderReroll(true);
+    return;
+  }
+  sugar -= price;
+  saveSugar();
+  run.rerolled = true;
+  run.chest = true;
+  rerollAsk = false;
+  $('chestT').textContent = t('chest.t');
+  chestCards();
+  $('sweetBank').textContent = t('sweet.bank', sugar);
+  $('near').textContent = nearText(mode, Math.round(run.max));
+  renderReroll(false);
+  Sfx.power();
+  haptic(12);
 });
 function renderMissions() {
-  $('misT').textContent = nextPrize() ? t('mis.head') : t('mis.headAll');
+  $('misT').textContent = t('mis.head');
   $('misList').innerHTML = missionRows();
   renderSecs();
 }
@@ -209,7 +254,9 @@ function spawnPlayer(spawnT) {
     y,
     isPlayer: true,
     spawnT,
-    hat: chosenHat,
+    hat: owns('hat', chosenHat) ? chosenHat : 'none',
+    eyes: owns('eyes', chosenEyes) ? chosenEyes : 'none',
+    trail: owns('trail', chosenTrail) ? chosenTrail : 'none',
     skin: skinOpen(chosenSkin) ? chosenSkin : 'plain',
   });
   blobs.push(player);
@@ -236,14 +283,18 @@ function startGame() {
     localStorage.setItem('kus.name', typed); // the default is never saved: it follows the language
     localStorage.setItem('kus.color', String(chosen));
     localStorage.setItem('kus.hat', chosenHat);
+    localStorage.setItem('kus.eyes', chosenEyes);
+    localStorage.setItem('kus.trail', chosenTrail);
     localStorage.setItem('kus.skin', chosenSkin);
     localStorage.setItem('kus.mode', mode);
     localStorage.setItem('kus.diff', diffPick || diff);
   } catch (e) {}
   fixDiff();
+  clearAsk();
   rollMissions();
   saveM();
-  run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0 };
+  run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0, mis: [] };
+  for (const m of M.act) m.at = m.got;
   clearWrap();
   sugarReset();
   runActive = true;
@@ -298,7 +349,14 @@ function finishRun() {
     sugar += run.got;
   }
   run.chest = run.got > 0;
+  M.owed = 0; // the missions' sugar is in run.got now (or lost with a cheated run); saveM below
   saveSugar();
+  if (!run.cheated) {
+    // a mission that made no headway in this whole run (deaths inside it count once) makes way after MIS_IDLE runs
+    for (const m of M.act) if (m.got < m.need) m.idle = m.got > (m.at | 0) ? 0 : (m.idle | 0) + 1;
+    M.act = M.act.filter((m) => !(m.idle >= MIS_IDLE));
+    saveM();
+  }
   try {
     localStorage.setItem('kus.best', String(best));
     localStorage.setItem('kus.best3', String(best3));
@@ -345,6 +403,7 @@ function endTimed() {
   finishRun();
 }
 function toMenu() {
+  clearAsk();
   clearWrap();
   annReset();
   sugarSettle();
@@ -420,7 +479,6 @@ function showOver() {
   $('overMis').innerHTML = missionRows();
   renderSweet(mode, score);
   renderAlbumLine();
-  const fresh = HATS.filter((h) => h.need > prevBest && h.need <= best).map((h) => h.name);
   const streak = daily ? dailyStreak(run.day) : 0;
   bestEl.textContent = run.cheated
     ? daily
@@ -434,7 +492,9 @@ function showOver() {
         ? best3 > prevBest3
           ? t('best.t3New', best3)
           : t('best.t3', best3)
-        : (best > prevBest ? t('best.recNew', best) : t('rec', best)) + (fresh.length ? t('best.hat', fresh.join(', ')) : '');
+        : best > prevBest
+          ? t('best.recNew', best)
+          : t('rec', best);
   if (won && !run.cheated)
     bestEl.textContent = won.lap
       ? t('best.lap', mmss(clearRec.best))
@@ -705,6 +765,7 @@ function update(dt) {
   input.dodge = false;
   for (const b of blobs) if (b.alive && b.ai) botSteer(b, dt);
   for (const b of blobs) if (b.alive) updateBlob(b, dt);
+  if (player && player.alive) emitTrail(player, dt);
   collideAll(dt);
   for (const b of blobs) {
     const m = b.Rs * 0.85; // the same rim as in updateBlob: past it, next frame's wall would snap the body back in one jump

@@ -463,7 +463,18 @@ function drawFace(b) {
       ctx.fill(); // iris in the body's flavour
       ctx.fillStyle = '#1a0b07';
       ctx.beginPath();
-      ctx.arc(qx, qy, er * (b.wowT > 0 ? 0.48 : b.tongue || fierce ? 0.26 : 0.36) * big, 0, TAU);
+      const pr = er * (b.wowT > 0 ? 0.48 : b.tongue || fierce ? 0.26 : 0.36) * big;
+      if (b.eyes === 'stars') {
+        // a five-point star for a pupil
+        for (let i = 0; i < 10; i++) {
+          const a = look - 1.5708 + i * 0.6283,
+            r = i % 2 ? pr * 0.5 : pr * 1.45;
+          if (i) ctx.lineTo(qx + Math.cos(a) * r, qy + Math.sin(a) * r);
+          else ctx.moveTo(qx + Math.cos(a) * r, qy + Math.sin(a) * r);
+        }
+        ctx.closePath();
+      } else if (b.eyes === 'cat') ctx.ellipse(qx, qy, pr * 1.6, pr * 0.42, look, 0, TAU); // a slit along the gaze
+      else ctx.arc(qx, qy, pr, 0, TAU);
       ctx.fill();
       ctx.fillStyle = '#fff';
       ctx.beginPath();
@@ -478,6 +489,28 @@ function drawFace(b) {
       ctx.arc(ex, ey, er * 0.92, -2.6, -0.55);
       ctx.closePath();
       ctx.fill(); // lid shade
+      if (b.eyes === 'sleepy') {
+        // a heavy upper lid in the body's colour
+        ctx.fillStyle = b.pal.base;
+        ctx.beginPath();
+        ctx.arc(ex, ey, er, Math.PI + 0.1, TAU - 0.1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#24110c';
+        ctx.lineWidth = er * 0.2;
+        ctx.stroke();
+      } else if (b.eyes === 'lashes') {
+        // three short lashes over the outer edge
+        ctx.strokeStyle = '#24110c';
+        ctx.lineWidth = er * 0.2;
+        ctx.beginPath();
+        for (let i = -1; i <= 1; i++) {
+          const a = ea + i * 0.45;
+          ctx.moveTo(ex + Math.cos(a) * er * 1.05, ey + Math.sin(a) * er * 1.05);
+          ctx.lineTo(ex + Math.cos(a) * er * 1.6, ey + Math.sin(a) * er * 1.6);
+        }
+        ctx.stroke();
+      }
       if (fierce) {
         // hunter's brow
         ctx.strokeStyle = b.pal.rim;
@@ -488,6 +521,30 @@ function drawFace(b) {
         ctx.stroke();
       }
     }
+  }
+  if (b.eyes === 'glasses') {
+    // two round frames, a bridge arched toward the brow, short arms back toward the ears; over any state of the eyes.
+    // In the face's own axes: a along the look (f), c across it (px, py); the eyes sit at a = ea, c = ±ec
+    const gr = er * 1.35,
+      ea = Math.cos(1.15) * R * 0.52,
+      ec = Math.sin(1.15) * R * 0.52,
+      ba = ea - gr * 0.42, // where the bridge leaves each frame, on its inner edge a little toward the brow
+      bc = ec - gr * 0.91,
+      tc = ec + gr; // the outer edge, where an arm starts
+    ctx.strokeStyle = '#24110c';
+    ctx.lineWidth = er * 0.2;
+    ctx.beginPath();
+    ctx.moveTo(b.x + fx * ea - px * ec + gr, b.y + fy * ea - py * ec);
+    ctx.arc(b.x + fx * ea - px * ec, b.y + fy * ea - py * ec, gr, 0, TAU);
+    ctx.moveTo(b.x + fx * ea + px * ec + gr, b.y + fy * ea + py * ec);
+    ctx.arc(b.x + fx * ea + px * ec, b.y + fy * ea + py * ec, gr, 0, TAU);
+    ctx.moveTo(b.x + fx * ba - px * bc, b.y + fy * ba - py * bc);
+    ctx.quadraticCurveTo(b.x + fx * (ba - gr * 0.55), b.y + fy * (ba - gr * 0.55), b.x + fx * ba + px * bc, b.y + fy * ba + py * bc);
+    ctx.moveTo(b.x + fx * ea - px * tc, b.y + fy * ea - py * tc);
+    ctx.lineTo(b.x + fx * (ea - gr * 1.3) - px * (tc + gr * 0.15), b.y + fy * (ea - gr * 1.3) - py * (tc + gr * 0.15));
+    ctx.moveTo(b.x + fx * ea + px * tc, b.y + fy * ea + py * tc);
+    ctx.lineTo(b.x + fx * (ea - gr * 1.3) + px * (tc + gr * 0.15), b.y + fy * (ea - gr * 1.3) + py * (tc + gr * 0.15));
+    ctx.stroke();
   }
   if (hot === 3 && lod < 2 && R * cam.z > 16 && b.hurtT <= 0) {
     // a drop of drool hangs from the corner of the mouth
@@ -689,6 +746,269 @@ function drawHat(b) {
       ctx.quadraticCurveTo(k * 0.6, -0.4, k * 0.25, 0.15);
       ctx.closePath();
       ctx.fill();
+      ctx.stroke();
+    }
+  } else if (b.hat === 'cap') {
+    // a baseball cap, the peak to the right
+    ctx.fillStyle = '#3f9cff';
+    ctx.strokeStyle = '#123f7a';
+    ctx.beginPath();
+    ctx.moveTo(-0.85, 0.15);
+    ctx.bezierCurveTo(-0.92, -1, 0.92, -1, 0.85, 0.15);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    if (lod < 2) {
+      ctx.lineWidth = 0.05;
+      ctx.beginPath();
+      ctx.moveTo(0, -0.68);
+      ctx.quadraticCurveTo(-0.38, -0.4, -0.42, 0.12);
+      ctx.moveTo(0, -0.68);
+      ctx.quadraticCurveTo(0.38, -0.4, 0.42, 0.12);
+      ctx.stroke();
+      ctx.lineWidth = 0.09;
+    }
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(0, -0.7, 0.12, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#2a78d6';
+    ctx.beginPath();
+    ctx.moveTo(0.35, 0.0);
+    ctx.quadraticCurveTo(1.2, -0.12, 1.5, 0.12);
+    ctx.quadraticCurveTo(1.05, 0.34, 0.35, 0.2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  } else if (b.hat === 'pompom') {
+    // a knitted beanie: ribbed crown, a folded cuff, a fluffy pom-pom
+    ctx.fillStyle = '#ff5a6e';
+    ctx.strokeStyle = '#7a1424';
+    ctx.beginPath();
+    ctx.moveTo(-0.8, -0.1);
+    ctx.bezierCurveTo(-0.86, -1.2, 0.86, -1.2, 0.8, -0.1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    if (lod < 2) {
+      ctx.lineWidth = 0.05;
+      ctx.beginPath();
+      for (let k = -1; k <= 1; k += 2) {
+        ctx.moveTo(k * 0.4, -0.2);
+        ctx.quadraticCurveTo(k * 0.42, -0.62, k * 0.22, -0.86);
+      }
+      ctx.moveTo(0, -0.2);
+      ctx.lineTo(0, -0.9);
+      ctx.stroke();
+      ctx.lineWidth = 0.09;
+    }
+    ctx.fillStyle = '#fff3e0';
+    ctx.beginPath();
+    ctx.moveTo(-0.92, -0.26);
+    ctx.quadraticCurveTo(0, -0.46, 0.92, -0.26);
+    ctx.lineTo(0.92, 0.12);
+    ctx.quadraticCurveTo(0, -0.06, -0.92, 0.12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // the pom-pom: a thick outline under the fill leaves only the bumpy outer edge
+    ctx.beginPath();
+    ctx.arc(0, -1.02, 0.25, 0, TAU);
+    for (let i = 0; i < 8; i++) {
+      const a = i * 0.785,
+        x = Math.cos(a) * 0.24,
+        y = -1.02 + Math.sin(a) * 0.24;
+      ctx.moveTo(x + 0.12, y);
+      ctx.arc(x, y, 0.12, 0, TAU);
+    }
+    ctx.lineWidth = 0.18;
+    ctx.stroke();
+    ctx.fill();
+  } else if (b.hat === 'wreath') {
+    // a ring of leaves around the crown of the head, three little flowers in front
+    ctx.strokeStyle = '#235c10';
+    ctx.lineWidth = 0.06;
+    for (let i = 0; i < 14; i++) {
+      // the back half first, so the front leaves overlap it
+      const a = i < 7 ? Math.PI + (i + 0.5) * 0.449 : (i - 6.5) * 0.449,
+        x = Math.cos(a) * 0.95,
+        y = -0.1 + Math.sin(a) * 0.32;
+      ctx.fillStyle = i < 7 ? (i % 2 ? '#3f9424' : '#5cb83a') : i % 2 ? '#5cc232' : '#86e054'; // the back half a shade darker
+      ctx.beginPath();
+      ctx.ellipse(x, y, 0.27, 0.12, a + 1.5708 + (i % 2 ? 0.5 : -0.5), 0, TAU);
+      ctx.fill();
+      ctx.stroke();
+    }
+    if (lod < 2)
+      for (let j = -1; j <= 1; j++) {
+        const a = 1.5708 + j * 0.75,
+          x = Math.cos(a) * 0.95,
+          y = -0.1 + Math.sin(a) * 0.32;
+        ctx.fillStyle = j ? '#ff7aa2' : '#fffaf2';
+        ctx.strokeStyle = j ? '#a3264f' : '#b7a596';
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+          const px = x + Math.cos(i * 1.2566) * 0.11,
+            py = y + Math.sin(i * 1.2566) * 0.11;
+          ctx.moveTo(px + 0.09, py);
+          ctx.arc(px, py, 0.09, 0, TAU);
+        }
+        ctx.lineWidth = 0.12;
+        ctx.stroke();
+        ctx.fill();
+        ctx.fillStyle = '#ffd23f';
+        ctx.beginPath();
+        ctx.arc(x, y, 0.06, 0, TAU);
+        ctx.fill();
+      }
+  } else if (b.hat === 'tophat') {
+    // a top hat with a pink band; the front of the brim is drawn last, over the crown
+    ctx.fillStyle = '#3a3042';
+    ctx.strokeStyle = '#100b14';
+    ctx.beginPath();
+    ctx.ellipse(0, 0.05, 1.02, 0.22, 0, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-0.6, 0.05);
+    ctx.lineTo(-0.66, -1.22);
+    ctx.lineTo(0.66, -1.22);
+    ctx.lineTo(0.6, 0.05);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#ff4f7b';
+    ctx.beginPath();
+    ctx.moveTo(-0.61, -0.1);
+    ctx.lineTo(-0.63, -0.4);
+    ctx.quadraticCurveTo(0, -0.28, 0.63, -0.4);
+    ctx.lineTo(0.61, -0.1);
+    ctx.quadraticCurveTo(0, 0.02, -0.61, -0.1);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#4a3f54';
+    ctx.beginPath();
+    ctx.ellipse(0, -1.22, 0.66, 0.15, 0, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+    if (lod < 2) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 0.1;
+      ctx.beginPath();
+      ctx.moveTo(-0.44, -0.5);
+      ctx.lineTo(-0.48, -1.04);
+      ctx.stroke();
+      ctx.strokeStyle = '#100b14';
+      ctx.lineWidth = 0.09;
+    }
+    ctx.fillStyle = '#3a3042';
+    ctx.beginPath();
+    ctx.ellipse(0, 0.05, 1.02, 0.22, 0, 0, Math.PI);
+    ctx.fill();
+    ctx.stroke();
+  } else if (b.hat === 'witch') {
+    // a pointed hat whose tip has flopped over, an orange band with a buckle
+    ctx.fillStyle = '#6a3fa6';
+    ctx.strokeStyle = '#24103d';
+    ctx.beginPath();
+    ctx.ellipse(0, 0.04, 1.16, 0.25, 0, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-0.62, 0.04);
+    ctx.quadraticCurveTo(-0.32, -0.85, 0.08, -1.5);
+    ctx.quadraticCurveTo(0.42, -1.62, 0.82, -1.3);
+    ctx.quadraticCurveTo(0.34, -1.24, 0.32, -0.8);
+    ctx.lineTo(0.62, 0.04);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#ff8a2a';
+    ctx.beginPath();
+    ctx.moveTo(-0.6, -0.04);
+    ctx.lineTo(-0.5, -0.32);
+    ctx.quadraticCurveTo(0, -0.22, 0.5, -0.32);
+    ctx.lineTo(0.6, -0.04);
+    ctx.quadraticCurveTo(0, 0.08, -0.6, -0.04);
+    ctx.fill();
+    ctx.stroke();
+    if (lod < 2) {
+      ctx.strokeStyle = '#ffd23f';
+      ctx.lineWidth = 0.07;
+      ctx.beginPath();
+      ctx.rect(-0.13, -0.29, 0.26, 0.26);
+      ctx.stroke();
+      ctx.strokeStyle = '#24103d';
+      ctx.lineWidth = 0.09;
+    }
+    ctx.fillStyle = '#6a3fa6';
+    ctx.beginPath();
+    ctx.ellipse(0, 0.04, 1.16, 0.25, 0, 0, Math.PI);
+    ctx.fill();
+    ctx.stroke();
+  } else if (b.hat === 'pirate') {
+    // a tricorn: two corners and a point in front, gold trim, a little skull
+    ctx.fillStyle = '#2e2529';
+    ctx.strokeStyle = '#0c0809';
+    ctx.beginPath();
+    ctx.moveTo(-1.25, -0.22);
+    ctx.quadraticCurveTo(-0.75, -1.08, 0, -1.02);
+    ctx.quadraticCurveTo(0.75, -1.08, 1.25, -0.22);
+    ctx.quadraticCurveTo(0.6, -0.16, 0, 0.18);
+    ctx.quadraticCurveTo(-0.6, -0.16, -1.25, -0.22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = '#ffc23a';
+    ctx.lineWidth = 0.09;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-1.1, -0.26);
+    ctx.quadraticCurveTo(-0.55, -0.22, 0, 0.07);
+    ctx.quadraticCurveTo(0.55, -0.22, 1.1, -0.26);
+    ctx.stroke();
+    if (lod < 2) {
+      ctx.strokeStyle = '#fffaf2';
+      ctx.beginPath();
+      ctx.moveTo(-0.27, -0.76);
+      ctx.lineTo(0.27, -0.26);
+      ctx.moveTo(0.27, -0.76);
+      ctx.lineTo(-0.27, -0.26);
+      ctx.stroke();
+      ctx.fillStyle = '#fffaf2';
+      ctx.beginPath();
+      ctx.arc(0, -0.55, 0.19, 0, TAU);
+      ctx.rect(-0.1, -0.44, 0.2, 0.12);
+      ctx.fill();
+      ctx.fillStyle = '#0c0809';
+      ctx.beginPath();
+      ctx.arc(-0.075, -0.56, 0.05, 0, TAU);
+      ctx.moveTo(0.125, -0.56);
+      ctx.arc(0.075, -0.56, 0.05, 0, TAU);
+      ctx.fill();
+    }
+  } else if (b.hat === 'halo') {
+    // a gold ring floating over the head, nothing on the body itself
+    const hy = -1 + (calm ? 0 : Math.sin(time * 2.2) * 0.05);
+    ctx.beginPath();
+    ctx.ellipse(0, hy, 0.82, 0.26, 0, 0, TAU);
+    if (lod < 2) {
+      ctx.strokeStyle = 'rgba(255,230,120,0.35)';
+      ctx.lineWidth = 0.46;
+      ctx.stroke();
+    }
+    ctx.strokeStyle = '#9a6208';
+    ctx.lineWidth = 0.3;
+    ctx.stroke();
+    ctx.strokeStyle = '#ffd23f';
+    ctx.lineWidth = 0.17;
+    ctx.stroke();
+    if (lod < 2) {
+      ctx.strokeStyle = 'rgba(255,255,235,0.9)';
+      ctx.lineWidth = 0.05;
+      ctx.beginPath();
+      ctx.ellipse(0, hy - 0.02, 0.8, 0.24, 0, Math.PI + 0.5, TAU - 0.5);
       ctx.stroke();
     }
   }

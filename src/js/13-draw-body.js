@@ -521,6 +521,31 @@ function drawStick() {
     ctx.fillText(t('stick.hint'), bx, by + STICK_R + 10);
   }
 }
+// one particle of the player's trail: heart, star, bubble ring or a plain dot (rainbow)
+function drawTrailShape(p, r) {
+  ctx.beginPath();
+  if (p.sh === 2) {
+    ctx.moveTo(p.x, p.y + r * 0.9);
+    ctx.bezierCurveTo(p.x - r * 1.6, p.y - r * 0.2, p.x - r * 0.7, p.y - r * 1.3, p.x, p.y - r * 0.4);
+    ctx.bezierCurveTo(p.x + r * 0.7, p.y - r * 1.3, p.x + r * 1.6, p.y - r * 0.2, p.x, p.y + r * 0.9);
+  } else if (p.sh === 3) {
+    for (let i = 0; i < 10; i++) {
+      const a = i * 0.6283 - 1.5708,
+        rr = i % 2 ? r * 0.5 : r * 1.3;
+      if (i) ctx.lineTo(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr);
+      else ctx.moveTo(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr);
+    }
+    ctx.closePath();
+  } else ctx.arc(p.x, p.y, r, 0, TAU);
+  if (p.sh === 4) {
+    ctx.strokeStyle = p.c;
+    ctx.lineWidth = Math.max(1, r * 0.3);
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = p.c;
+    ctx.fill();
+  }
+}
 function render() {
   ensurePattern();
   const z = cam.z,
@@ -598,6 +623,14 @@ function render() {
       ctx.fill(b.path);
       ctx.restore();
     }
+  for (const p of parts)
+    if (p.sh) {
+      // the player's trail lies under the bodies
+      const e = p.t / p.T;
+      ctx.globalAlpha = 1 - e;
+      drawTrailShape(p, p.r * (1 - e * 0.5));
+    }
+  ctx.globalAlpha = 1;
   drawWrap(z, ox, oy); // the runaway wrapper runs under the bodies
   drawStreakFuse(z);
   for (const b of vis) drawBlob(b);
@@ -638,6 +671,7 @@ function render() {
       ctx.stroke();
       continue;
     }
+    if (p.sh) continue; // the trail, drawn under the bodies
     ctx.fillStyle = p.c;
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.r * (1 - e * 0.5), 0, TAU);

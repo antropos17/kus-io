@@ -78,13 +78,14 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #dodge small{font:800 10px/1 var(--font);color:var(--muted);margin-top:3px}
 #dodge:active span{transform:scale(.93)}
 #dodge:focus-visible{outline:3px solid var(--lemon);outline-offset:3px}
-#hats{gap:6px}
-#hats button{font:800 14px/1 var(--font);padding:8px 12px;min-height:44px;border-radius:999px;border:2px solid #ead2b9;background:#fff;color:var(--ink);cursor:pointer}
-#hats button[aria-checked=true]{border-color:var(--ink);background:#ffe3ea}
-#hats button:disabled{background:transparent;border-style:dashed;border-color:#c9ab92;color:#6b4a3a;cursor:not-allowed}
-#hats small{color:var(--muted);font-weight:700}
-#hats button:disabled small{color:inherit}
-#hats button:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
+#hats,#eyes,#trail,#tray{gap:6px}
+#hats button,#eyes button,#trail button,#tray button{font:800 14px/1 var(--font);padding:8px 12px;min-height:44px;border-radius:999px;border:2px solid #ead2b9;background:#fff;color:var(--ink);cursor:pointer}
+#hats button[aria-checked=true],#eyes button[aria-checked=true],#trail button[aria-checked=true],#tray button[aria-checked=true]{border-color:var(--ink);background:#ffe3ea}
+#hats button.lock,#eyes button.lock,#trail button.lock,#tray button.lock{background:transparent;border-style:dashed;border-color:#c9ab92;color:#6b4a3a}
+#hats .pz,#eyes .pz,#trail .pz,#tray .pz{margin-left:6px;font:900 11px/1 var(--font);padding:2px 6px;border-radius:99px;background:#ead2b9;color:var(--ink);font-variant-numeric:tabular-nums}
+#hats .pz.can,#eyes .pz.can,#trail .pz.can,#tray .pz.can{background:var(--lemon)}
+#hats .pz.ask,#eyes .pz.ask,#trail .pz.ask,#tray .pz.ask{background:var(--berry);color:#fff}
+#hats button:focus-visible,#eyes button:focus-visible,#trail button:focus-visible,#tray button:focus-visible{outline:3px solid var(--berry);outline-offset:2px}
 #fpsTag{font:700 11px/1.3 var(--font);color:rgba(255,241,220,.75);text-shadow:0 1px 0 rgba(0,0,0,.6);font-variant-numeric:tabular-nums;margin-top:2px}
 #cheatTag{font:800 12px/1.3 var(--font);color:var(--lemon);margin-top:4px;text-shadow:0 2px 0 rgba(0,0,0,.5);max-width:60vw}
 #adm .wrap{width:min(480px,100%)}
@@ -249,8 +250,10 @@ body.touch.lefty #dash.low:after{right:auto;left:calc(100% + 12px)}
 #chestRow button:disabled{cursor:default;box-shadow:none}
 #chestRow button.open{background:#f0dcc6;color:#7a5a49}
 #chestRow button.got{background:var(--berry);color:#fff}
+#chestAgain{margin-top:8px;padding:8px;font-size:14px}
+#chestOdds{margin:4px 0 0;font:700 12px/1.25 var(--font);color:#7a5a49;text-align:center}
 #near{margin-top:6px}
-@media (max-height:760px){#over .card.paid.stk #near,#over .card.paid.chal #stk{display:none}#over .card.paid.chal #near{display:none}#over .card.paid #overMis{display:none}#over .card.paid .stats{margin-bottom:6px}#over .card.paid .best{margin-top:6px}}
+@media (max-height:760px){#over .card.rr #near{display:none}#over .card.rr #chestMore{display:flex;gap:8px;align-items:center;margin-top:6px}#over .card.paid #chestAgain{flex:0 0 46%;margin:0;padding:7px 4px;font-size:13px}#chestOdds{flex:1 1 0;min-width:0;margin:0;font-size:11px;text-align:left}#over .card.paid.stk #near,#over .card.paid.chal #stk{display:none}#over .card.paid.chal #near{display:none}#over .card.paid #overMis{display:none}#over .card.paid .stats{margin-bottom:6px}#over .card.paid .best{margin-top:6px}#over .card.paid.rr.stk:not(.trophy) .tag{display:none}}
 #near:empty{display:none}
 #modeSeg [data-m=daily]{grid-column:1/-1;grid-row:1;display:flex;align-items:baseline;align-content:center;justify-content:center;gap:0 8px;flex-wrap:wrap}
 #modeSeg [data-m=daily] small{font:700 13px/1.2 var(--font);color:#7a5a49}
@@ -259,7 +262,6 @@ body.touch.lefty #dash.low:after{right:auto;left:calc(100% + 12px)}
 .row2{display:flex;gap:8px}
 .row2 .btn2{flex:1 1 0;min-width:0}
 #pause .grp{font:900 15px/1.2 var(--font);margin:14px 0 8px;color:var(--ink)}
-#skins button.lock{cursor:not-allowed}
 #mute{position:fixed;right:14px;bottom:162px;z-index:3;width:44px;height:44px;border-radius:50%;border:0;background:var(--cream);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.4);padding:0}
 #mute svg{width:22px;height:22px}
 #mute .off,#mute.muted .on{display:none}
@@ -417,11 +419,16 @@ body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))}
   #chestT{margin:0;font-size:13px}
   #chestRow{grid-column:1/-1}
   #chestRow button{min-height:34px;font-size:16px}
+  #chestMore{grid-column:1/-1}
+  #over .card.rr #chestMore{margin-top:0}
+  #over .card.rr #chestRow button{min-height:28px}
+  #over .card.paid #chestAgain{padding:5px 4px}
   #over .card.paid .tag{display:none}
   #over .card.paid .stats{margin-bottom:8px}
   #over .card.paid .best{margin-top:3px;font-size:13px}
   #over .card.paid .btn2{margin-top:5px;padding:8px}
   #over .card.paid #chalRes{margin-top:5px}
+  #over .card.paid.rr.stk #best{float:left;max-width:45%;margin:0 10px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} /* the album line and the reroll row both: the record shares the album's line */
   #over .card.trophy .tag{display:block;margin:2px 0 6px}
   #trMedal{width:48px;height:48px;margin-bottom:2px}
   .card.trophy h2.dead{font-size:24px}
@@ -523,6 +530,9 @@ document.getElementById('nojs').style.display = 'none';
         <div class="pk"><span class="pl" data-t="look.flavor">Вкус</span><div id="sw" class="pr" role="radiogroup" aria-label="Вкус" data-ta="look.flavor"></div></div>
         <div class="pk later"><span class="pl" data-t="look.skin">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор" data-ta="look.skin"></div></div>
         <div class="pk later"><span class="pl" data-t="look.hat">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка" data-ta="look.hat"></div></div>
+        <div class="pk later"><span class="pl" data-t="look.eyes">Глаза</span><div id="eyes" class="pr" role="radiogroup" aria-label="Глаза" data-ta="look.eyes"></div></div>
+        <div class="pk later"><span class="pl" data-t="look.trail">След</span><div id="trail" class="pr" role="radiogroup" aria-label="След" data-ta="look.trail"></div></div>
+        <div class="pk later"><span class="pl" data-t="look.tray">Поднос</span><div id="tray" class="pr" role="radiogroup" aria-label="Поднос" data-ta="look.tray"></div></div>
         <p class="best later" id="rec"></p>
       </div></section>
       <section class="sec later" id="secMis"><button class="sh" type="button" aria-expanded="false" aria-controls="secMisB"><span class="sk" data-t="sec.mis">Задания</span><span class="sv" id="sumMis"></span></button><div class="sb" id="secMisB">
@@ -581,6 +591,10 @@ document.getElementById('nojs').style.display = 'none';
       <div class="sw1"><b id="sweetN">+0</b><span data-t="sweet.round">сахара за раунд</span><span id="sweetBank"></span></div>
       <p id="chestT"></p>
       <div id="chestRow" role="group" aria-label="Три конфеты" data-ta="a.chest"></div>
+      <div id="chestMore">
+        <button id="chestAgain" class="btn2 hidden" type="button"></button>
+        <p id="chestOdds" class="hidden"></p>
+      </div>
     </div>
     <div id="overMis"></div>
     <button id="again" class="btn" type="button" data-t="over.again">Ещё кусь</button>
@@ -696,6 +710,9 @@ const STR = {
   'look.flavor': ['Вкус', 'Flavor'],
   'look.skin': ['Узор', 'Pattern'],
   'look.hat': ['Шапка', 'Hat'],
+  'look.eyes': ['Глаза', 'Eyes'],
+  'look.trail': ['След', 'Trail'],
+  'look.tray': ['Поднос', 'Tray'],
   'sec.mis': ['Задания', 'Missions'],
   'sec.set': ['Настройки', 'Settings'],
   'sec.help': ['Как играть', 'How to play'],
@@ -761,15 +778,13 @@ const STR = {
   // the menu, missions, admin panel and candy of the day built in JS
   'a.mute': ['Выключить звук', 'Mute'],
   'a.unmute': ['Включить звук', 'Sound on'],
-  'hat.from': [(n) => `с ${n}`, (n) => `at ${n}`],
   rec: [(n) => `Рекорд: ${n}`, (n) => `Record: ${n}`],
-  'rec.none': ['Шапки открываются за рекорд по массе', 'Hats unlock with your mass record'],
   bank: [(n) => `Сахар: ${n}`, (n) => `Sugar: ${n}`],
-  'skin.buy': ['купить', 'buy'],
-  'skin.why': [(n) => `: за задание или за ${n} сахара`, (n) => `: for a mission or ${n} sugar`],
-  'skin.short': [(n, p, s) => `«${n}»: ${p} сахара, у тебя ${s}`, (n, p, s) => `“${n}”: ${p} sugar, you have ${s}`],
-  'skin.ask': [(n, p) => `Ещё раз: купить «${n}» за ${p}`, (n, p) => `Tap again: buy “${n}” for ${p}`],
-  'skin.got': [(n) => `Узор «${n}» твой`, (n) => `The “${n}” pattern is yours`],
+  'shop.buy': ['Купить?', 'Buy?'],
+  'shop.why': [(n) => `: стоит ${n} сахара`, (n) => `: costs ${n} sugar`],
+  'shop.short': [(n, p, s) => `«${n}»: ${p} сахара, у тебя ${s}`, (n, p, s) => `“${n}”: ${p} sugar, you have ${s}`],
+  'shop.ask': [(n, p) => `Ещё раз: купить «${n}» за ${p}`, (n, p) => `Tap again: buy “${n}” for ${p}`],
+  'shop.got': [(n) => `Куплено: «${n}»`, (n) => `Bought: “${n}”`],
   'sum.free': ['Свободная', 'Free play'],
   'sum.t3': ['3 минуты', '3 minutes'],
   'sum.daily': ['Конфета дня', 'Candy of the Day'],
@@ -783,6 +798,35 @@ const STR = {
   'hat.crown': ['Корона', 'Crown'],
   'hat.chef': ['Колпак', 'Chef hat'],
   'hat.horns': ['Рожки', 'Horns'],
+  'hat.cap': ['Кепка', 'Cap'],
+  'hat.pompom': ['Шапка с помпоном', 'Pom-pom hat'],
+  'hat.wreath': ['Венок', 'Wreath'],
+  'hat.tophat': ['Цилиндр', 'Top hat'],
+  'hat.witch': ['Шляпа ведьмы', 'Witch hat'],
+  'hat.pirate': ['Треуголка', 'Tricorn'],
+  'hat.halo': ['Нимб', 'Halo'],
+  'skin.checks': ['Клетка', 'Checks'],
+  'skin.marble': ['Мрамор', 'Marble'],
+  'skin.leopard': ['Леопард', 'Leopard'],
+  'skin.mosaic': ['Мозаика', 'Mosaic'],
+  'skin.foil': ['Золотая фольга', 'Gold foil'],
+  'skin.aurora': ['Северное сияние', 'Aurora'],
+  'eyes.none': ['Обычные', 'Plain'],
+  'eyes.sleepy': ['Сонные', 'Sleepy'],
+  'eyes.lashes': ['Реснички', 'Lashes'],
+  'eyes.glasses': ['Очки', 'Glasses'],
+  'eyes.stars': ['Звёздочки', 'Star eyes'],
+  'eyes.cat': ['Кошачьи', 'Cat eyes'],
+  'trail.none': ['Без следа', 'No trail'],
+  'trail.crumbs': ['Крошки', 'Crumbs'],
+  'trail.hearts': ['Сердечки', 'Hearts'],
+  'trail.stars': ['Звёздочки', 'Stars'],
+  'trail.bubbles': ['Пузырьки', 'Bubbles'],
+  'trail.rainbow': ['Радуга', 'Rainbow'],
+  'tray.choco': ['Шоколадный', 'Chocolate'],
+  'tray.berry': ['Клубничный', 'Strawberry'],
+  'tray.mint': ['Мятный', 'Mint'],
+  'tray.gold': ['Золотой', 'Gold'],
   'skin.plain': ['Гладкая', 'Plain'],
   'skin.stripes': ['Полоски', 'Stripes'],
   'skin.dots': ['Горошек', 'Polka dots'],
@@ -817,7 +861,6 @@ const STR = {
   'act.10': ['Стая пираний', 'A piranha pack'],
   'act.11': ['Торт рядом', 'A cake nearby'],
   'act.12': ['Бонусы вокруг', 'Bonuses around'],
-  'act.13': ['Открыть все узоры', 'Open all patterns'],
   'act.14': ['Очистить карту', 'Clear the map'],
   'cheat.speed': [(v) => `скорость ×${v}`, (v) => `speed ×${v}`],
   'cheat.tag': [(s) => `Читы: ${s}`, (s) => `Cheats: ${s}`],
@@ -859,8 +902,8 @@ const STR = {
   'mis.cake': ['Укуси торт в вишенку', 'Bite the cake on its cherry'],
   'mis.combo': ['Сделай серию укусов подряд', 'Make a bite streak'],
   'mis.top': ['Побудь лидером рейтинга, секунд', 'Lead the board, seconds'],
-  'mis.donePrize': [(p) => `Задание выполнено. Новый узор: <b>${p}</b>`, (p) => `Mission done. New pattern: <b>${p}</b>`],
-  'mis.done': ['Задание выполнено', 'Mission done'],
+  'mis.doneSugar': [(n) => `Задание выполнено: +${n} сахара`, (n) => `Mission done: +${n} sugar`],
+  'mis.paid': [(n) => `: +${n} сахара`, (n) => `: +${n} sugar`],
   'mis.prize': [(p) => `: открыт узор «${p}»`, (p) => `: the “${p}” pattern is open`],
   'mis.ok': [': готово', ': done'],
   // the album
@@ -898,16 +941,17 @@ const STR = {
   'near.day': [(n) => `До лучшего за сегодня не хватило ${n}`, (n) => `${n} short of today's best`],
   'near.t3': [(n) => `До рекорда на 3 минуты не хватило ${n}`, (n) => `${n} short of the 3-minute record`],
   'near.rec': [(n) => `До рекорда не хватило ${n}`, (n) => `${n} short of the record`],
-  'near.hat': [(h, n) => `До шапки «${h}» ещё ${n} массы`, (h, n) => `The “${h}” hat is ${n} mass away`],
-  'near.skinCan': [(s) => `Сахара хватает на узор «${s}», он в меню`, (s) => `You have sugar for the “${s}” pattern, it is in the menu`],
-  'near.skin': [(s, n) => `До узора «${s}» ещё ${n} сахара`, (s, n) => `The “${s}” pattern is ${n} sugar away`],
+  'near.need': [(h, n) => `До «${h}» не хватает ${n} сахара`, (h, n) => `${n} more sugar for “${h}”`],
+  'near.can': [(h) => `Хватает на «${h}»`, (h) => `Enough sugar for “${h}”`],
   'sweet.bank': [(n) => `в копилке ${n}`, (n) => `${n} saved`],
   'chest.t': ['Выбери конфету: в одной много сахара', 'Pick a candy: one holds lots of sugar'],
   'chest.a': [(n) => `Конфета ${n}`, (n) => `Candy ${n}`],
   'chest.top': [(n) => `Самая сладкая! +${n} сахара`, (n) => `The sweetest one! +${n} sugar`],
+  'chest.again': [(n) => `Ещё раз — ${n}`, (n) => `Again — ${n}`],
+  'chest.againAsk': [(n) => `Точно? −${n} сахара`, (n) => `Sure? −${n} sugar`],
+  'chest.odds': ['Каждая карта — 1 из 3: ×1, ×2, ×5', 'Each card is 1 in 3: ×1, ×2, ×5'],
   'chest.got': [(n) => `+${n} сахара`, (n) => `+${n} sugar`],
-  'mis.head': ['Задания: за каждое новый узор', 'Missions: a new pattern for each'],
-  'mis.headAll': ['Задания (все узоры уже открыты)', 'Missions (all patterns are open)'],
+  'mis.head': ['Задания: за каждое сахар', 'Missions: sugar for each'],
   'tip.touchL': ['Справа води пальцем, слева <b>Кусь</b> и <b>Язык</b>', 'Drag on the right, <b>Kusь!</b> and <b>Tongue</b> on the left'],
   'tip.touchR': ['Слева води пальцем, справа <b>Кусь</b> и <b>Язык</b>', 'Drag on the left, <b>Kusь!</b> and <b>Tongue</b> on the right'],
   'tip.colorsT': ['<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты', 'A <b>red</b> outline will eat you, a <b>green</b> one you can eat'],
@@ -939,7 +983,6 @@ const STR = {
   'best.t3New': [(n) => `Новый рекорд на 3 минуты: ${n}`, (n) => `New 3-minute record: ${n}`],
   'best.t3': [(n) => `Рекорд на 3 минуты: ${n}`, (n) => `3-minute record: ${n}`],
   'best.recNew': [(n) => `Новый рекорд: ${n}`, (n) => `New record: ${n}`],
-  'best.hat': [(h) => `. Открыта шапка: ${h}`, (h) => `. Hat unlocked: ${h}`],
   'best.lap': [(b) => `Время второй смены не идёт в рекорд. Лучшее прохождение: ${b}`, (b) => `Second-shift time does not count. Best clear: ${b}`],
   'best.clearNew': [(b, w) => `Новый рекорд прохождения: ${b}. Побед: ${w}`, (b, w) => `New clear record: ${b}. Wins: ${w}`],
   'best.clear': [(b, w) => `Рекорд прохождения: ${b}. Побед: ${w}`, (b, w) => `Clear record: ${b}. Wins: ${w}`],
@@ -1195,13 +1238,6 @@ const PAL_HEDGE = makePal('Ёж', 28, 44, 46),
 const PICK = { speed: [t('pick.speed'), 6, '#ffd23f'], shield: [t('pick.shield'), 5, '#7ad7ff'], magnet: [t('pick.magnet'), 8, '#ff7aa2'] }; // bonus sweets: name, seconds, colour
 const flesh = (p, a) => hsl(p.fl[0], p.fl[1], p.fl[2], a);
 const pore = (p, a) => hsl(p.po[0], p.po[1], p.po[2], a);
-const HATS = [
-  { id: 'none', name: t('hat.none'), need: 0 },
-  { id: 'bow', name: t('hat.bow'), need: 80 },
-  { id: 'crown', name: t('hat.crown'), need: 250 },
-  { id: 'chef', name: t('hat.chef'), need: 500 },
-  { id: 'horns', name: t('hat.horns'), need: 900 },
-];
 const SKINS = [
   ['plain', t('skin.plain')],
   ['stripes', t('skin.stripes')],
@@ -1217,9 +1253,17 @@ const SKINS = [
   ['bubbles', t('skin.bubbles')],
   ['zigzag', t('skin.zigzag')],
   ['galaxy', t('skin.galaxy')],
+  ['checks', t('skin.checks')],
+  ['marble', t('skin.marble')],
+  ['leopard', t('skin.leopard')],
+  ['mosaic', t('skin.mosaic')],
+  ['foil', t('skin.foil')],
+  ['aurora', t('skin.aurora')],
 ];
-const FREE_SKINS = 4; // the rest are prizes for missions
-const SKIN_PRICE = (i) => 150 + (i - FREE_SKINS) * 100; // or bought with sugar, dearer further down the list
+const MIS_SUGAR = 300; // a mission's payout in the first circle; each later circle adds 60% of it
+const MIS_CAP = { time: 150, combo: 8, mass: 1600 }; // targets that must stay reachable in one run
+const MIS_IDLE = 5; // runs in a row without headway after which a mission makes way
+const misReward = (m) => Math.round(MIS_SUGAR * (1 + 0.6 * (m.c | 0)));
 const SUGAR = { bites: 1, food: 0.2, kills: 6, wound: 1, tongue: 2, pickup: 2, piranha: 2, hedge: 3, cake: 3 }; // sugar per action in a clean run
 // the runaway wrapper after a ×min streak: seconds to catch it, sugar and odds per tier (plain, rare, jackpot), the chance it grows a tier in the reveal,
 // its speed as a multiple of the player's top speed at birth (v0) and after tire seconds (v1)
@@ -1430,6 +1474,149 @@ function skinTile(id) {
       g.lineTo(x + Math.cos(t) * 5, y + Math.sin(t) * 5);
       g.stroke();
     }
+  } else if (id === 'checks') {
+    // gingham: see-through bands across and down, lighter where they cross
+    g.fillStyle = 'rgba(255,255,255,0.27)';
+    g.fillRect(0, 0, h, S);
+    g.fillRect(0, 0, S, h);
+    span = 0.7;
+  } else if (id === 'marble') {
+    // soft pale veins, each with a fine thread down the middle
+    span = 3.2;
+    g.lineCap = 'round';
+    for (let v = 0; v < 6; v++) {
+      const y0 = 50 + v * 31 + hash1(v * 3.3) * 14,
+        a = hash1(v * 7.1) * 0.9 - 0.45;
+      g.beginPath();
+      for (let x = -12; x <= S + 12; x += 8) {
+        const y = y0 + (x - h) * a + 13 * Math.sin(x * 0.045 + v * 1.7) + 5 * Math.sin(x * 0.14 + v);
+        x < 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+      }
+      g.strokeStyle = 'rgba(255,255,255,0.26)';
+      g.lineWidth = 6 + hash1(v * 5.9) * 9;
+      g.stroke();
+      g.strokeStyle = v % 2 ? 'rgba(45,12,24,0.32)' : 'rgba(255,255,255,0.55)';
+      g.lineWidth = 1.6;
+      g.stroke();
+    }
+  } else if (id === 'leopard') {
+    // rosettes: broken dark rings round a warm centre, a few loose spots between
+    span = 1;
+    g.lineCap = 'round';
+    const ros = [
+      [0.22, 0.24, 30],
+      [0.72, 0.16, 26],
+      [0.5, 0.58, 32],
+      [0.14, 0.8, 27],
+      [0.86, 0.74, 28],
+    ];
+    for (let ox = -S; ox <= S; ox += S)
+      for (let oy = -S; oy <= S; oy += S)
+        for (let i = 0; i < ros.length; i++) {
+          const x = ros[i][0] * S + ox,
+            y = ros[i][1] * S + oy,
+            r = ros[i][2];
+          if (x < -r * 2 || x > S + r * 2 || y < -r * 2 || y > S + r * 2) continue;
+          g.fillStyle = 'rgba(255,190,90,0.26)';
+          g.beginPath();
+          g.ellipse(x, y, r * 0.8, r * 0.7, i, 0, TAU);
+          g.fill();
+          g.strokeStyle = 'rgba(45,12,24,0.5)';
+          g.lineWidth = 9;
+          for (let k = 0; k < 4; k++) {
+            const a0 = k * 1.5708 + hash1(i * 3 + k) * 0.7;
+            g.beginPath();
+            g.ellipse(x, y, r, r * 0.86, i, a0, a0 + 0.85 + hash1(i + k * 5) * 0.4);
+            g.stroke();
+          }
+          g.fillStyle = 'rgba(45,12,24,0.5)';
+          g.beginPath();
+          g.arc(x + r * 1.45, y - r * 0.9, 5, 0, TAU);
+          g.fill();
+        }
+  } else if (id === 'mosaic') {
+    // little tiles in four shades set in dark grout
+    span = 1;
+    const n = 4,
+      q = S / n,
+      cols = [lite, 'rgba(255,214,110,0.34)', 'rgba(120,200,255,0.32)', 'rgba(255,120,170,0.3)', 'rgba(255,255,255,0.12)'];
+    g.fillStyle = 'rgba(45,12,24,0.36)';
+    g.fillRect(0, 0, S, S);
+    for (let j = 0; j < n; j++)
+      for (let i = 0; i < n; i++) {
+        const x = i * q,
+          y = j * q,
+          d = (k) => 6 + hash1(i * 7.1 + j * 3.7 + k) * 6;
+        g.beginPath();
+        g.moveTo(x + d(1), y + d(2));
+        g.lineTo(x + q - d(3), y + d(4));
+        g.lineTo(x + q - d(5), y + q - d(6));
+        g.lineTo(x + d(7), y + q - d(8));
+        g.closePath();
+        g.globalCompositeOperation = 'destination-out';
+        g.fillStyle = '#000';
+        g.fill();
+        g.globalCompositeOperation = 'source-over';
+        g.fillStyle = cols[(i * 3 + j * 2 + ((hash1(i + j * 9) * 3) | 0)) % cols.length];
+        g.fill();
+      }
+  } else if (id === 'foil') {
+    // crumpled gold foil: a gold wash broken into facets that catch the light
+    span = 3.2;
+    const n = 8,
+      q = S / n,
+      jit = (i, j, s) => (i % n && j % n ? (hash1(i * 7.3 + j * 1.9 + s) - 0.5) * q * 0.7 : 0),
+      px = (i, j) => i * q + jit(i, j, 0),
+      py = (i, j) => j * q + jit(i, j, 11);
+    for (let j = 0; j < n; j++)
+      for (let i = 0; i < n; i++)
+        for (let t2 = 0; t2 < 2; t2++) {
+          const s = hash1(i * 1.3 + j * 7.7 + t2 * 4.1),
+            r = Math.round(196 + 59 * s),
+            gr = Math.round(128 + 112 * s),
+            bl = Math.round(16 + 130 * s * s);
+          g.fillStyle = `rgba(${r},${gr},${bl},0.88)`; // strong enough to read as gold over any flavour
+          g.beginPath();
+          g.moveTo(px(i, j), py(i, j));
+          if (t2) {
+            g.lineTo(px(i + 1, j), py(i + 1, j));
+            g.lineTo(px(i + 1, j + 1), py(i + 1, j + 1));
+          } else {
+            g.lineTo(px(i + 1, j + 1), py(i + 1, j + 1));
+            g.lineTo(px(i, j + 1), py(i, j + 1));
+          }
+          g.closePath();
+          g.fill();
+        }
+    g.strokeStyle = 'rgba(255,255,240,0.3)';
+    g.lineWidth = 26;
+    g.beginPath();
+    g.moveTo(60, 230);
+    g.lineTo(220, 40);
+    g.stroke();
+  } else if (id === 'aurora') {
+    // northern lights: curtains of green, teal and violet hanging over a night wash
+    span = 3.2;
+    g.fillStyle = 'rgba(16,24,70,0.32)';
+    g.fillRect(0, 0, S, S);
+    const cols = ['90,255,170', '80,215,255', '200,120,255'];
+    for (let k = 0; k < 3; k++)
+      for (let x = 0; x < S; x += 2) {
+        const yc = 105 + k * 34 + 18 * Math.sin(x * 0.028 + k * 2.1) + 7 * Math.sin(x * 0.09 + k),
+          L = 44 + 22 * Math.sin(x * 0.05 + k * 1.3) + 12 * hash1(x * 0.37 + k),
+          gr = g.createLinearGradient(0, yc - L, 0, yc + 6);
+        gr.addColorStop(0, `rgba(${cols[k]},0)`);
+        gr.addColorStop(0.85, `rgba(${cols[k]},0.55)`);
+        gr.addColorStop(1, `rgba(${cols[k]},0)`);
+        g.fillStyle = gr;
+        g.fillRect(x, yc - L, 2, L + 6);
+      }
+    g.fillStyle = 'rgba(255,255,255,0.8)';
+    for (let i = 0; i < 14; i++) {
+      g.beginPath();
+      g.arc(50 + hash1(i * 2.7) * 156, 52 + hash1(i * 6.1) * 44, 1 + hash1(i * 4.3) * 1.4, 0, TAU);
+      g.fill();
+    }
   }
   let pat = null;
   try {
@@ -1491,6 +1678,73 @@ const BOT_NAMES = [
   ['Гогал', 'Гогала', 1, 'plain', 'chef'],
   ['Медовик', 'Медовика', 2, 'stripes', 'none'],
 ];
+
+// The wardrobe: what can be bought with sugar, what it costs, what the player owns.
+// Top-level code here must not touch `sugar`, `M` or `chosenSkin` (later files): only functions do.
+const PRICE_K = 1; // one multiplier over every price, tuned against the measured income
+// per slot: [id, base price] in the order shown; price 0 is free
+const WARDROBE = {
+  hat: [['none', 0], ['bow', 2000], ['cap', 3000], ['chef', 5000], ['pompom', 6000], ['wreath', 8000], ['horns', 10000], ['tophat', 12000], ['witch', 15000], ['pirate', 17000], ['crown', 20000], ['halo', 30000]], // prettier-ignore
+  skin: [['plain', 0], ['stripes', 0], ['dots', 0], ['swirl', 0], ['waffle', 2000], ['hearts', 2500], ['stars', 3000], ['zigzag', 3500], ['bubbles', 4000], ['checks', 4000], ['cow', 5000], ['tiger', 6000], ['glaze', 7000], ['marble', 7000], ['leopard', 7000], ['mosaic', 8000], ['rainbow', 9000], ['foil', 10000], ['aurora', 12000], ['galaxy', 14000]], // prettier-ignore
+  eyes: [['none', 0], ['sleepy', 4000], ['lashes', 6000], ['glasses', 8000], ['stars', 10000], ['cat', 12000]], // prettier-ignore
+  trail: [['none', 0], ['crumbs', 3000], ['hearts', 6000], ['stars', 8000], ['bubbles', 8000], ['rainbow', 12000]], // prettier-ignore
+  tray: [['choco', 0], ['berry', 8000], ['mint', 8000], ['gold', 16000]], // prettier-ignore
+};
+const OLD_HAT_NEED = { bow: 80, crown: 250, chef: 500, horns: 900 }; // the record that opened each hat before the shop: only for the move of old saves
+let own = { hat: [], skin: [], eyes: [], trail: [], tray: [] }; // paid items only
+
+const wardrobeItem = (slot, id) => (WARDROBE[slot] || []).find((e) => e[0] === id);
+const priceOf = (slot, id) => {
+  const e = wardrobeItem(slot, id);
+  return !e || !e[1] ? 0 : Math.max(500, Math.round((e[1] * PRICE_K) / 500) * 500);
+};
+const owns = (slot, id) => {
+  const e = wardrobeItem(slot, id);
+  if (!e) return false;
+  // M.open is the old store of mission prizes: until missions pay sugar they still show up as owned
+  return !e[1] || own[slot].includes(id) || (slot === 'skin' && M.open.includes(id));
+};
+function saveOwn() {
+  try {
+    localStorage.setItem('kus.own', JSON.stringify({ v: 1, ...own }));
+  } catch (e) {}
+}
+function buyItem(slot, id) {
+  const price = priceOf(slot, id);
+  if (!price || owns(slot, id) || sugar < price) return false;
+  sugar -= price;
+  own[slot].push(id);
+  saveOwn();
+  saveSugar();
+  return true;
+}
+function loadOwn(bestStored) {
+  let raw = null;
+  try {
+    raw = JSON.parse(localStorage.getItem('kus.own'));
+  } catch (e) {}
+  const ok = !!raw && typeof raw === 'object' && raw.v === 1;
+  const add = (slot, id) => {
+    const e = wardrobeItem(slot, id);
+    if (e && e[1] && !own[slot].includes(id)) own[slot].push(id);
+  };
+  own = { hat: [], skin: [], eyes: [], trail: [], tray: [] };
+  for (const slot in own) if (ok && Array.isArray(raw[slot])) raw[slot].forEach((id) => typeof id === 'string' && add(slot, id));
+  if (!ok) for (const id in OLD_HAT_NEED) if (OLD_HAT_NEED[id] <= bestStored) add('hat', id);
+  M.open.forEach((id) => add('skin', id));
+  if (SKINS.some((k) => k[0] === chosenSkin)) add('skin', chosenSkin); // a skin picked before missions existed stays yours
+  saveOwn();
+}
+const itemName = (slot, id) => t(slot + '.' + id);
+function cheapestUnowned() {
+  let best = null;
+  for (const slot in WARDROBE)
+    for (const [id] of WARDROBE[slot]) {
+      const price = priceOf(slot, id);
+      if (price && !owns(slot, id) && (!best || price < best.price)) best = { slot, id, price };
+    }
+  return best;
+}
 
 // ---------- dom & canvas ----------
 const $ = (id) => document.getElementById(id);
@@ -1626,6 +1880,9 @@ let player = null,
   crumbCount = 0;
 let chosen = randi(PALS.length),
   chosenHat = 'none',
+  chosenEyes = 'none',
+  chosenTrail = 'none',
+  chosenTray = 'choco',
   chosenSkin = 'plain',
   prevBest = 0,
   best = 0,
@@ -2166,6 +2423,9 @@ class Blob {
     this.tongue = null;
     this.dripT = 0;
     this.hat = o.hat || 'none';
+    this.eyes = o.eyes || 'none';
+    this.trail = o.trail || 'none';
+    this.trailAcc = 0;
     this.skin = o.skin || 'plain';
     this.kind = o.kind || null;
     this.pSpeed = 0;
@@ -3651,6 +3911,42 @@ function spawnDust(x, y, pal, nx, ny, n) {
     });
   }
 }
+// the player's trail: a few small shapes left behind a moving candy (sh: 1 crumbs, 2 hearts, 3 stars, 4 bubbles, 5 rainbow)
+const TRAIL_SH = { crumbs: 1, hearts: 2, stars: 3, bubbles: 4, rainbow: 5 };
+function emitTrail(b, dt) {
+  const sh = TRAIL_SH[b.trail];
+  if (!sh || lod > 1) return;
+  const sp = Math.hypot(b.vx, b.vy);
+  if (sp <= 40) {
+    b.trailAcc = 0;
+    return;
+  }
+  b.trailAcc += dt * (lod ? 7 : 14);
+  for (; b.trailAcc >= 1; b.trailAcc -= 1) {
+    const ux = b.vx / sp,
+      uy = b.vy / sp;
+    parts.push({
+      x: b.x - ux * b.Rs * 1.15, // just outside the rim, so it never starts on the candy
+      y: b.y - uy * b.Rs * 1.15,
+      vx: rand(-14, 14),
+      vy: rand(-14, 14),
+      r: clamp(b.Rs * 0.16, 3, 7),
+      t: 0,
+      T: 0.9,
+      c:
+        sh === 1
+          ? flesh(b.pal, 1)
+          : sh === 2
+            ? '#ff7aa2'
+            : sh === 3
+              ? '#ffd23f'
+              : sh === 4
+                ? 'rgba(200,230,255,.8)'
+                : hsl((time * 120) % 360, 90, 62),
+      sh,
+    });
+  }
+}
 function floatText(x, y, s, color, size) {
   texts.push({ x, y, s, color, size, t: 0, T: 1 });
 }
@@ -4997,8 +5293,7 @@ const MTYPES = [
   ['combo', t('mis.combo'), 3],
   ['top', t('mis.top'), 10],
 ];
-const skinOpen = (id) => SKINS.findIndex((k) => k[0] === id) < FREE_SKINS || M.open.includes(id);
-const nextPrize = () => SKINS.find((k, i) => i >= FREE_SKINS && !M.open.includes(k[0]));
+const skinOpen = (id) => owns('skin', id);
 function saveM() {
   try {
     localStorage.setItem('kus.m', JSON.stringify(M));
@@ -5007,11 +5302,19 @@ function saveM() {
 function rollMissions() {
   // finished missions make way for new ones, each a little bigger than the last of its kind
   M.act = M.act.filter((m) => m && m.got < m.need && MTYPES.some((t) => t[0] === m.type));
+  for (const m of M.act) {
+    const cap = MIS_CAP[m.type]; // a target saved before the caps is cut back
+    if (cap && m.need > cap) {
+      m.need = cap;
+      m.got = Math.min(m.got, cap - 1);
+    }
+  }
   for (let guard = 0; M.act.length < 3 && guard < 40; guard++) {
     const i = M.seq++,
       t = MTYPES[i % MTYPES.length];
     if (M.act.some((m) => m.type === t[0])) continue;
-    M.act.push({ type: t[0], need: Math.round(t[2] * (1 + Math.floor(i / MTYPES.length) * 0.6)), got: 0 });
+    const c = Math.floor(i / MTYPES.length);
+    M.act.push({ type: t[0], need: Math.min(MIS_CAP[t[0]] || Infinity, Math.round(t[2] * (1 + c * 0.6))), got: 0, c, at: 0, idle: 0 });
   }
 }
 function mission(type, n, absolute) {
@@ -5021,14 +5324,12 @@ function mission(type, n, absolute) {
     if (m.type !== type || m.got >= m.need) continue;
     m.got = absolute ? Math.max(m.got, Math.min(m.need, Math.floor(n))) : Math.min(m.need, m.got + n);
     if (m.got >= m.need) {
-      // done: the prize is the next locked skin
-      earn(15);
-      const pz = nextPrize();
-      if (pz) {
-        M.open.push(pz[0]);
-        m.prize = pz[0]; // the pattern's id: the name is shown in the language of the moment
-        addFeed(t('mis.donePrize', pz[1]));
-      } else addFeed(t('mis.done'));
+      // done: the prize is sugar, more for a later circle of missions
+      m.paid = misReward(m);
+      earn(m.paid);
+      M.owed = (M.owed | 0) + m.paid; // kept in the save until the run is banked: a run the app never ends still pays it
+      if (run.mis) run.mis.push(m.c | 0);
+      addFeed(t('mis.doneSugar', m.paid));
       Sfx.power();
       saveM();
     }
@@ -5044,7 +5345,7 @@ const missionRows = () =>
     .map((m) => {
       const mt = MTYPES.find((x) => x[0] === m.type),
         done = m.got >= m.need;
-      return `<div class="mi${done ? ' ok' : ''}"><span class="mt">${mt[1]}${done ? (m.prize ? t('mis.prize', skinName(m.prize)) : t('mis.ok')) : ''}</span><span class="mv">${Math.floor(m.got)} / ${m.need}</span><div class="mb"><i style="width:${Math.round((100 * m.got) / m.need)}%"></i></div></div>`;
+      return `<div class="mi${done ? ' ok' : ''}"><span class="mt">${mt[1]}${done ? (m.prize ? t('mis.prize', skinName(m.prize)) : m.paid ? t('mis.paid', m.paid) : t('mis.ok')) : ''}</span><span class="mv">${Math.floor(m.got)} / ${m.need}</span><div class="mb"><i style="width:${Math.round((100 * m.got) / m.need)}%"></i></div></div>`;
     })
     .join('');
 // ---------- sugar ----------
@@ -5057,10 +5358,6 @@ function saveSugar() {
   try {
     localStorage.setItem('kus.sugar', String(sugar));
   } catch (e) {}
-}
-function cheapestSkin() {
-  const i = SKINS.findIndex((k) => !skinOpen(k[0]));
-  return i < 0 ? null : { id: SKINS[i][0], name: SKINS[i][1], price: SKIN_PRICE(i) };
 }
 function countUp(el, n) {
   if (calm || n < 2) {
@@ -5083,13 +5380,14 @@ function nearText(m, score) {
     if (m === 'daily' && score < run.dayPrev) out.push(t('near.day', run.dayPrev - score));
     if (t3 && score < best3) out.push(t('near.t3', best3 - score));
     if (m === 'free' && score < best) out.push(t('near.rec', best - score));
-    const h = HATS.find((x) => x.need > best);
-    if (m === 'free' && h) out.push(t('near.hat', h.name, h.need - best));
   }
   const al = run.cheated ? '' : albumNear();
   if (al) out.splice(1, 0, al); // a row one or two stickers short comes right after the record
-  const s = cheapestSkin();
-  if (s && !al) out.push(sugar >= s.price ? t('near.skinCan', s.name) : t('near.skin', s.name, s.price - sugar));
+  const c = cheapestUnowned();
+  if (c && !al) {
+    const name = itemName(c.slot, c.id);
+    out.push(sugar >= c.price ? t('near.can', name) : t('near.need', name, c.price - sugar));
+  }
   return out.slice(0, 2).join('. ');
 }
 function renderSweet(m, score) {
@@ -5101,13 +5399,33 @@ function renderSweet(m, score) {
   countUp($('sweetN'), got);
   $('sweetBank').textContent = t('sweet.bank', sugar);
   $('chestT').textContent = t('chest.t');
+  chestCards();
+  run.chestBase = clamp(Math.round(got * 0.3), 3, 40);
+  run.rerolled = false;
+  rerollAsk = false;
+  renderReroll(false);
+}
+function chestCards() {
   $('chestRow').innerHTML = [0, 1, 2].map((i) => `<button type="button" data-i="${i}" aria-label="${t('chest.a', i + 1)}">?</button>`).join('');
+}
+let rerollAsk = false; // the first tap on the reroll button asked, the second pays
+function rerollPrice() {
+  return 3 * run.chestBase;
+}
+function renderReroll(picked) {
+  const show = picked && !run.rerolled && sugar >= rerollPrice();
+  $('chestAgain').classList.toggle('hidden', !show);
+  $('chestOdds').classList.toggle('hidden', !show);
+  overEl.querySelector('.card').classList.toggle('rr', show); // short screens: the reroll row takes the «almost» line's place
+  if (!show) return;
+  $('chestAgain').textContent = rerollAsk ? t('chest.againAsk', rerollPrice()) : t('chest.again', rerollPrice());
+  $('chestOdds').textContent = t('chest.odds');
 }
 $('chestRow').addEventListener('click', (e) => {
   const pick = e.target.closest('button');
   if (!pick || !run.chest) return;
   run.chest = false;
-  const base = clamp(Math.round(run.got * 0.3), 3, 40),
+  const base = run.chestBase,
     prizes = [base, base * 2, base * 5];
   for (let i = 2; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -5126,9 +5444,32 @@ $('chestRow').addEventListener('click', (e) => {
   $('near').textContent = nearText(mode, Math.round(run.max));
   Sfx.power();
   haptic(won === base * 5 ? 30 : 12);
+  rerollAsk = false;
+  renderReroll(true);
+});
+$('chestAgain').addEventListener('click', () => {
+  const price = rerollPrice();
+  if (run.chest || run.rerolled || sugar < price) return;
+  if (!rerollAsk) {
+    rerollAsk = true;
+    renderReroll(true);
+    return;
+  }
+  sugar -= price;
+  saveSugar();
+  run.rerolled = true;
+  run.chest = true;
+  rerollAsk = false;
+  $('chestT').textContent = t('chest.t');
+  chestCards();
+  $('sweetBank').textContent = t('sweet.bank', sugar);
+  $('near').textContent = nearText(mode, Math.round(run.max));
+  renderReroll(false);
+  Sfx.power();
+  haptic(12);
 });
 function renderMissions() {
-  $('misT').textContent = nextPrize() ? t('mis.head') : t('mis.headAll');
+  $('misT').textContent = t('mis.head');
   $('misList').innerHTML = missionRows();
   renderSecs();
 }
@@ -5162,7 +5503,9 @@ function spawnPlayer(spawnT) {
     y,
     isPlayer: true,
     spawnT,
-    hat: chosenHat,
+    hat: owns('hat', chosenHat) ? chosenHat : 'none',
+    eyes: owns('eyes', chosenEyes) ? chosenEyes : 'none',
+    trail: owns('trail', chosenTrail) ? chosenTrail : 'none',
     skin: skinOpen(chosenSkin) ? chosenSkin : 'plain',
   });
   blobs.push(player);
@@ -5189,14 +5532,18 @@ function startGame() {
     localStorage.setItem('kus.name', typed); // the default is never saved: it follows the language
     localStorage.setItem('kus.color', String(chosen));
     localStorage.setItem('kus.hat', chosenHat);
+    localStorage.setItem('kus.eyes', chosenEyes);
+    localStorage.setItem('kus.trail', chosenTrail);
     localStorage.setItem('kus.skin', chosenSkin);
     localStorage.setItem('kus.mode', mode);
     localStorage.setItem('kus.diff', diffPick || diff);
   } catch (e) {}
   fixDiff();
+  clearAsk();
   rollMissions();
   saveM();
-  run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0 };
+  run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0, mis: [] };
+  for (const m of M.act) m.at = m.got;
   clearWrap();
   sugarReset();
   runActive = true;
@@ -5251,7 +5598,14 @@ function finishRun() {
     sugar += run.got;
   }
   run.chest = run.got > 0;
+  M.owed = 0; // the missions' sugar is in run.got now (or lost with a cheated run); saveM below
   saveSugar();
+  if (!run.cheated) {
+    // a mission that made no headway in this whole run (deaths inside it count once) makes way after MIS_IDLE runs
+    for (const m of M.act) if (m.got < m.need) m.idle = m.got > (m.at | 0) ? 0 : (m.idle | 0) + 1;
+    M.act = M.act.filter((m) => !(m.idle >= MIS_IDLE));
+    saveM();
+  }
   try {
     localStorage.setItem('kus.best', String(best));
     localStorage.setItem('kus.best3', String(best3));
@@ -5298,6 +5652,7 @@ function endTimed() {
   finishRun();
 }
 function toMenu() {
+  clearAsk();
   clearWrap();
   annReset();
   sugarSettle();
@@ -5373,7 +5728,6 @@ function showOver() {
   $('overMis').innerHTML = missionRows();
   renderSweet(mode, score);
   renderAlbumLine();
-  const fresh = HATS.filter((h) => h.need > prevBest && h.need <= best).map((h) => h.name);
   const streak = daily ? dailyStreak(run.day) : 0;
   bestEl.textContent = run.cheated
     ? daily
@@ -5387,7 +5741,9 @@ function showOver() {
         ? best3 > prevBest3
           ? t('best.t3New', best3)
           : t('best.t3', best3)
-        : (best > prevBest ? t('best.recNew', best) : t('rec', best)) + (fresh.length ? t('best.hat', fresh.join(', ')) : '');
+        : best > prevBest
+          ? t('best.recNew', best)
+          : t('rec', best);
   if (won && !run.cheated)
     bestEl.textContent = won.lap
       ? t('best.lap', mmss(clearRec.best))
@@ -5658,6 +6014,7 @@ function update(dt) {
   input.dodge = false;
   for (const b of blobs) if (b.alive && b.ai) botSteer(b, dt);
   for (const b of blobs) if (b.alive) updateBlob(b, dt);
+  if (player && player.alive) emitTrail(player, dt);
   collideAll(dt);
   for (const b of blobs) {
     const m = b.Rs * 0.85; // the same rim as in updateBlob: past it, next frame's wall would snap the body back in one jump
@@ -6269,8 +6626,9 @@ function secondShift() {
   const P = player;
   annReset(); // a fresh shift, a fresh chain
   rollMissions();
+  for (const m of M.act) m.at = m.got;
   saveM();
-  run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0, lap: stg.lap + 1 };
+  run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0, lap: stg.lap + 1, mis: [] };
   sugarReset();
   runActive = true;
   state = 'play';
@@ -7009,29 +7367,45 @@ function smoothPoly(c, P) {
 }
 let tilePat = null;
 const ghosts = [];
+// per tray: background, three slope stops, two top stops, highlight stroke. The berry, mint and gold stay as dark as the chocolate so food, bots and wounds keep their contrast.
+const TRAYS = {
+  choco: ['#1d110c', '#4b2f22', '#362117', '#22140e', '#3b251a', '#301d14', 'rgba(255,220,190,0.07)'],
+  berry: ['#210c15', '#512238', '#3b1a2a', '#26101a', '#3d1829', '#311321', 'rgba(255,190,215,0.07)'],
+  mint: ['#0b1b17', '#1f4a3f', '#173a31', '#0e231d', '#1a3a31', '#143028', 'rgba(190,255,230,0.07)'],
+  gold: ['#1d1608', '#554115', '#403010', '#271c09', '#42330f', '#362a0c', 'rgba(255,230,150,0.08)'],
+};
+function setTray(id) {
+  chosenTray = TRAYS[id] ? id : 'choco';
+  tilePat = null;
+  bgT = 0;
+  try {
+    localStorage.setItem('kus.tray', chosenTray);
+  } catch (e) {}
+}
 function ensurePattern() {
-  // one segment of a chocolate bar, repeated
+  // one segment of a chocolate bar (or another tray), repeated; rebuilt only when the tray changes
   if (tilePat) return;
-  const S = 256,
+  const C = TRAYS[chosenTray] || TRAYS.choco,
+    S = 256,
     c = document.createElement('canvas');
   c.width = c.height = S;
   const g = c.getContext('2d');
-  g.fillStyle = '#1d110c';
+  g.fillStyle = C[0];
   g.fillRect(0, 0, S, S);
   const slope = g.createLinearGradient(0, 0, S, S);
-  slope.addColorStop(0, '#4b2f22');
-  slope.addColorStop(0.5, '#362117');
-  slope.addColorStop(1, '#22140e');
+  slope.addColorStop(0, C[1]);
+  slope.addColorStop(0.5, C[2]);
+  slope.addColorStop(1, C[3]);
   g.fillStyle = slope;
   rr(g, 9, 9, S - 18, S - 18, 22);
   g.fill();
   const top = g.createLinearGradient(0, 30, 0, S - 30);
-  top.addColorStop(0, '#3b251a');
-  top.addColorStop(1, '#301d14');
+  top.addColorStop(0, C[4]);
+  top.addColorStop(1, C[5]);
   g.fillStyle = top;
   rr(g, 36, 36, S - 72, S - 72, 14);
   g.fill();
-  g.strokeStyle = 'rgba(255,220,190,0.07)';
+  g.strokeStyle = C[6];
   g.lineWidth = 3;
   rr(g, 37.5, 37.5, S - 75, S - 75, 13);
   g.stroke();
@@ -7719,7 +8093,18 @@ function drawFace(b) {
       ctx.fill(); // iris in the body's flavour
       ctx.fillStyle = '#1a0b07';
       ctx.beginPath();
-      ctx.arc(qx, qy, er * (b.wowT > 0 ? 0.48 : b.tongue || fierce ? 0.26 : 0.36) * big, 0, TAU);
+      const pr = er * (b.wowT > 0 ? 0.48 : b.tongue || fierce ? 0.26 : 0.36) * big;
+      if (b.eyes === 'stars') {
+        // a five-point star for a pupil
+        for (let i = 0; i < 10; i++) {
+          const a = look - 1.5708 + i * 0.6283,
+            r = i % 2 ? pr * 0.5 : pr * 1.45;
+          if (i) ctx.lineTo(qx + Math.cos(a) * r, qy + Math.sin(a) * r);
+          else ctx.moveTo(qx + Math.cos(a) * r, qy + Math.sin(a) * r);
+        }
+        ctx.closePath();
+      } else if (b.eyes === 'cat') ctx.ellipse(qx, qy, pr * 1.6, pr * 0.42, look, 0, TAU); // a slit along the gaze
+      else ctx.arc(qx, qy, pr, 0, TAU);
       ctx.fill();
       ctx.fillStyle = '#fff';
       ctx.beginPath();
@@ -7734,6 +8119,28 @@ function drawFace(b) {
       ctx.arc(ex, ey, er * 0.92, -2.6, -0.55);
       ctx.closePath();
       ctx.fill(); // lid shade
+      if (b.eyes === 'sleepy') {
+        // a heavy upper lid in the body's colour
+        ctx.fillStyle = b.pal.base;
+        ctx.beginPath();
+        ctx.arc(ex, ey, er, Math.PI + 0.1, TAU - 0.1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#24110c';
+        ctx.lineWidth = er * 0.2;
+        ctx.stroke();
+      } else if (b.eyes === 'lashes') {
+        // three short lashes over the outer edge
+        ctx.strokeStyle = '#24110c';
+        ctx.lineWidth = er * 0.2;
+        ctx.beginPath();
+        for (let i = -1; i <= 1; i++) {
+          const a = ea + i * 0.45;
+          ctx.moveTo(ex + Math.cos(a) * er * 1.05, ey + Math.sin(a) * er * 1.05);
+          ctx.lineTo(ex + Math.cos(a) * er * 1.6, ey + Math.sin(a) * er * 1.6);
+        }
+        ctx.stroke();
+      }
       if (fierce) {
         // hunter's brow
         ctx.strokeStyle = b.pal.rim;
@@ -7744,6 +8151,30 @@ function drawFace(b) {
         ctx.stroke();
       }
     }
+  }
+  if (b.eyes === 'glasses') {
+    // two round frames, a bridge arched toward the brow, short arms back toward the ears; over any state of the eyes.
+    // In the face's own axes: a along the look (f), c across it (px, py); the eyes sit at a = ea, c = ±ec
+    const gr = er * 1.35,
+      ea = Math.cos(1.15) * R * 0.52,
+      ec = Math.sin(1.15) * R * 0.52,
+      ba = ea - gr * 0.42, // where the bridge leaves each frame, on its inner edge a little toward the brow
+      bc = ec - gr * 0.91,
+      tc = ec + gr; // the outer edge, where an arm starts
+    ctx.strokeStyle = '#24110c';
+    ctx.lineWidth = er * 0.2;
+    ctx.beginPath();
+    ctx.moveTo(b.x + fx * ea - px * ec + gr, b.y + fy * ea - py * ec);
+    ctx.arc(b.x + fx * ea - px * ec, b.y + fy * ea - py * ec, gr, 0, TAU);
+    ctx.moveTo(b.x + fx * ea + px * ec + gr, b.y + fy * ea + py * ec);
+    ctx.arc(b.x + fx * ea + px * ec, b.y + fy * ea + py * ec, gr, 0, TAU);
+    ctx.moveTo(b.x + fx * ba - px * bc, b.y + fy * ba - py * bc);
+    ctx.quadraticCurveTo(b.x + fx * (ba - gr * 0.55), b.y + fy * (ba - gr * 0.55), b.x + fx * ba + px * bc, b.y + fy * ba + py * bc);
+    ctx.moveTo(b.x + fx * ea - px * tc, b.y + fy * ea - py * tc);
+    ctx.lineTo(b.x + fx * (ea - gr * 1.3) - px * (tc + gr * 0.15), b.y + fy * (ea - gr * 1.3) - py * (tc + gr * 0.15));
+    ctx.moveTo(b.x + fx * ea + px * tc, b.y + fy * ea + py * tc);
+    ctx.lineTo(b.x + fx * (ea - gr * 1.3) + px * (tc + gr * 0.15), b.y + fy * (ea - gr * 1.3) + py * (tc + gr * 0.15));
+    ctx.stroke();
   }
   if (hot === 3 && lod < 2 && R * cam.z > 16 && b.hurtT <= 0) {
     // a drop of drool hangs from the corner of the mouth
@@ -7945,6 +8376,269 @@ function drawHat(b) {
       ctx.quadraticCurveTo(k * 0.6, -0.4, k * 0.25, 0.15);
       ctx.closePath();
       ctx.fill();
+      ctx.stroke();
+    }
+  } else if (b.hat === 'cap') {
+    // a baseball cap, the peak to the right
+    ctx.fillStyle = '#3f9cff';
+    ctx.strokeStyle = '#123f7a';
+    ctx.beginPath();
+    ctx.moveTo(-0.85, 0.15);
+    ctx.bezierCurveTo(-0.92, -1, 0.92, -1, 0.85, 0.15);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    if (lod < 2) {
+      ctx.lineWidth = 0.05;
+      ctx.beginPath();
+      ctx.moveTo(0, -0.68);
+      ctx.quadraticCurveTo(-0.38, -0.4, -0.42, 0.12);
+      ctx.moveTo(0, -0.68);
+      ctx.quadraticCurveTo(0.38, -0.4, 0.42, 0.12);
+      ctx.stroke();
+      ctx.lineWidth = 0.09;
+    }
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(0, -0.7, 0.12, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#2a78d6';
+    ctx.beginPath();
+    ctx.moveTo(0.35, 0.0);
+    ctx.quadraticCurveTo(1.2, -0.12, 1.5, 0.12);
+    ctx.quadraticCurveTo(1.05, 0.34, 0.35, 0.2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  } else if (b.hat === 'pompom') {
+    // a knitted beanie: ribbed crown, a folded cuff, a fluffy pom-pom
+    ctx.fillStyle = '#ff5a6e';
+    ctx.strokeStyle = '#7a1424';
+    ctx.beginPath();
+    ctx.moveTo(-0.8, -0.1);
+    ctx.bezierCurveTo(-0.86, -1.2, 0.86, -1.2, 0.8, -0.1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    if (lod < 2) {
+      ctx.lineWidth = 0.05;
+      ctx.beginPath();
+      for (let k = -1; k <= 1; k += 2) {
+        ctx.moveTo(k * 0.4, -0.2);
+        ctx.quadraticCurveTo(k * 0.42, -0.62, k * 0.22, -0.86);
+      }
+      ctx.moveTo(0, -0.2);
+      ctx.lineTo(0, -0.9);
+      ctx.stroke();
+      ctx.lineWidth = 0.09;
+    }
+    ctx.fillStyle = '#fff3e0';
+    ctx.beginPath();
+    ctx.moveTo(-0.92, -0.26);
+    ctx.quadraticCurveTo(0, -0.46, 0.92, -0.26);
+    ctx.lineTo(0.92, 0.12);
+    ctx.quadraticCurveTo(0, -0.06, -0.92, 0.12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // the pom-pom: a thick outline under the fill leaves only the bumpy outer edge
+    ctx.beginPath();
+    ctx.arc(0, -1.02, 0.25, 0, TAU);
+    for (let i = 0; i < 8; i++) {
+      const a = i * 0.785,
+        x = Math.cos(a) * 0.24,
+        y = -1.02 + Math.sin(a) * 0.24;
+      ctx.moveTo(x + 0.12, y);
+      ctx.arc(x, y, 0.12, 0, TAU);
+    }
+    ctx.lineWidth = 0.18;
+    ctx.stroke();
+    ctx.fill();
+  } else if (b.hat === 'wreath') {
+    // a ring of leaves around the crown of the head, three little flowers in front
+    ctx.strokeStyle = '#235c10';
+    ctx.lineWidth = 0.06;
+    for (let i = 0; i < 14; i++) {
+      // the back half first, so the front leaves overlap it
+      const a = i < 7 ? Math.PI + (i + 0.5) * 0.449 : (i - 6.5) * 0.449,
+        x = Math.cos(a) * 0.95,
+        y = -0.1 + Math.sin(a) * 0.32;
+      ctx.fillStyle = i < 7 ? (i % 2 ? '#3f9424' : '#5cb83a') : i % 2 ? '#5cc232' : '#86e054'; // the back half a shade darker
+      ctx.beginPath();
+      ctx.ellipse(x, y, 0.27, 0.12, a + 1.5708 + (i % 2 ? 0.5 : -0.5), 0, TAU);
+      ctx.fill();
+      ctx.stroke();
+    }
+    if (lod < 2)
+      for (let j = -1; j <= 1; j++) {
+        const a = 1.5708 + j * 0.75,
+          x = Math.cos(a) * 0.95,
+          y = -0.1 + Math.sin(a) * 0.32;
+        ctx.fillStyle = j ? '#ff7aa2' : '#fffaf2';
+        ctx.strokeStyle = j ? '#a3264f' : '#b7a596';
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+          const px = x + Math.cos(i * 1.2566) * 0.11,
+            py = y + Math.sin(i * 1.2566) * 0.11;
+          ctx.moveTo(px + 0.09, py);
+          ctx.arc(px, py, 0.09, 0, TAU);
+        }
+        ctx.lineWidth = 0.12;
+        ctx.stroke();
+        ctx.fill();
+        ctx.fillStyle = '#ffd23f';
+        ctx.beginPath();
+        ctx.arc(x, y, 0.06, 0, TAU);
+        ctx.fill();
+      }
+  } else if (b.hat === 'tophat') {
+    // a top hat with a pink band; the front of the brim is drawn last, over the crown
+    ctx.fillStyle = '#3a3042';
+    ctx.strokeStyle = '#100b14';
+    ctx.beginPath();
+    ctx.ellipse(0, 0.05, 1.02, 0.22, 0, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-0.6, 0.05);
+    ctx.lineTo(-0.66, -1.22);
+    ctx.lineTo(0.66, -1.22);
+    ctx.lineTo(0.6, 0.05);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#ff4f7b';
+    ctx.beginPath();
+    ctx.moveTo(-0.61, -0.1);
+    ctx.lineTo(-0.63, -0.4);
+    ctx.quadraticCurveTo(0, -0.28, 0.63, -0.4);
+    ctx.lineTo(0.61, -0.1);
+    ctx.quadraticCurveTo(0, 0.02, -0.61, -0.1);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#4a3f54';
+    ctx.beginPath();
+    ctx.ellipse(0, -1.22, 0.66, 0.15, 0, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+    if (lod < 2) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.lineWidth = 0.1;
+      ctx.beginPath();
+      ctx.moveTo(-0.44, -0.5);
+      ctx.lineTo(-0.48, -1.04);
+      ctx.stroke();
+      ctx.strokeStyle = '#100b14';
+      ctx.lineWidth = 0.09;
+    }
+    ctx.fillStyle = '#3a3042';
+    ctx.beginPath();
+    ctx.ellipse(0, 0.05, 1.02, 0.22, 0, 0, Math.PI);
+    ctx.fill();
+    ctx.stroke();
+  } else if (b.hat === 'witch') {
+    // a pointed hat whose tip has flopped over, an orange band with a buckle
+    ctx.fillStyle = '#6a3fa6';
+    ctx.strokeStyle = '#24103d';
+    ctx.beginPath();
+    ctx.ellipse(0, 0.04, 1.16, 0.25, 0, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-0.62, 0.04);
+    ctx.quadraticCurveTo(-0.32, -0.85, 0.08, -1.5);
+    ctx.quadraticCurveTo(0.42, -1.62, 0.82, -1.3);
+    ctx.quadraticCurveTo(0.34, -1.24, 0.32, -0.8);
+    ctx.lineTo(0.62, 0.04);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#ff8a2a';
+    ctx.beginPath();
+    ctx.moveTo(-0.6, -0.04);
+    ctx.lineTo(-0.5, -0.32);
+    ctx.quadraticCurveTo(0, -0.22, 0.5, -0.32);
+    ctx.lineTo(0.6, -0.04);
+    ctx.quadraticCurveTo(0, 0.08, -0.6, -0.04);
+    ctx.fill();
+    ctx.stroke();
+    if (lod < 2) {
+      ctx.strokeStyle = '#ffd23f';
+      ctx.lineWidth = 0.07;
+      ctx.beginPath();
+      ctx.rect(-0.13, -0.29, 0.26, 0.26);
+      ctx.stroke();
+      ctx.strokeStyle = '#24103d';
+      ctx.lineWidth = 0.09;
+    }
+    ctx.fillStyle = '#6a3fa6';
+    ctx.beginPath();
+    ctx.ellipse(0, 0.04, 1.16, 0.25, 0, 0, Math.PI);
+    ctx.fill();
+    ctx.stroke();
+  } else if (b.hat === 'pirate') {
+    // a tricorn: two corners and a point in front, gold trim, a little skull
+    ctx.fillStyle = '#2e2529';
+    ctx.strokeStyle = '#0c0809';
+    ctx.beginPath();
+    ctx.moveTo(-1.25, -0.22);
+    ctx.quadraticCurveTo(-0.75, -1.08, 0, -1.02);
+    ctx.quadraticCurveTo(0.75, -1.08, 1.25, -0.22);
+    ctx.quadraticCurveTo(0.6, -0.16, 0, 0.18);
+    ctx.quadraticCurveTo(-0.6, -0.16, -1.25, -0.22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = '#ffc23a';
+    ctx.lineWidth = 0.09;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-1.1, -0.26);
+    ctx.quadraticCurveTo(-0.55, -0.22, 0, 0.07);
+    ctx.quadraticCurveTo(0.55, -0.22, 1.1, -0.26);
+    ctx.stroke();
+    if (lod < 2) {
+      ctx.strokeStyle = '#fffaf2';
+      ctx.beginPath();
+      ctx.moveTo(-0.27, -0.76);
+      ctx.lineTo(0.27, -0.26);
+      ctx.moveTo(0.27, -0.76);
+      ctx.lineTo(-0.27, -0.26);
+      ctx.stroke();
+      ctx.fillStyle = '#fffaf2';
+      ctx.beginPath();
+      ctx.arc(0, -0.55, 0.19, 0, TAU);
+      ctx.rect(-0.1, -0.44, 0.2, 0.12);
+      ctx.fill();
+      ctx.fillStyle = '#0c0809';
+      ctx.beginPath();
+      ctx.arc(-0.075, -0.56, 0.05, 0, TAU);
+      ctx.moveTo(0.125, -0.56);
+      ctx.arc(0.075, -0.56, 0.05, 0, TAU);
+      ctx.fill();
+    }
+  } else if (b.hat === 'halo') {
+    // a gold ring floating over the head, nothing on the body itself
+    const hy = -1 + (calm ? 0 : Math.sin(time * 2.2) * 0.05);
+    ctx.beginPath();
+    ctx.ellipse(0, hy, 0.82, 0.26, 0, 0, TAU);
+    if (lod < 2) {
+      ctx.strokeStyle = 'rgba(255,230,120,0.35)';
+      ctx.lineWidth = 0.46;
+      ctx.stroke();
+    }
+    ctx.strokeStyle = '#9a6208';
+    ctx.lineWidth = 0.3;
+    ctx.stroke();
+    ctx.strokeStyle = '#ffd23f';
+    ctx.lineWidth = 0.17;
+    ctx.stroke();
+    if (lod < 2) {
+      ctx.strokeStyle = 'rgba(255,255,235,0.9)';
+      ctx.lineWidth = 0.05;
+      ctx.beginPath();
+      ctx.ellipse(0, hy - 0.02, 0.8, 0.24, 0, Math.PI + 0.5, TAU - 0.5);
       ctx.stroke();
     }
   }
@@ -8474,6 +9168,31 @@ function drawStick() {
     ctx.fillText(t('stick.hint'), bx, by + STICK_R + 10);
   }
 }
+// one particle of the player's trail: heart, star, bubble ring or a plain dot (rainbow)
+function drawTrailShape(p, r) {
+  ctx.beginPath();
+  if (p.sh === 2) {
+    ctx.moveTo(p.x, p.y + r * 0.9);
+    ctx.bezierCurveTo(p.x - r * 1.6, p.y - r * 0.2, p.x - r * 0.7, p.y - r * 1.3, p.x, p.y - r * 0.4);
+    ctx.bezierCurveTo(p.x + r * 0.7, p.y - r * 1.3, p.x + r * 1.6, p.y - r * 0.2, p.x, p.y + r * 0.9);
+  } else if (p.sh === 3) {
+    for (let i = 0; i < 10; i++) {
+      const a = i * 0.6283 - 1.5708,
+        rr = i % 2 ? r * 0.5 : r * 1.3;
+      if (i) ctx.lineTo(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr);
+      else ctx.moveTo(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr);
+    }
+    ctx.closePath();
+  } else ctx.arc(p.x, p.y, r, 0, TAU);
+  if (p.sh === 4) {
+    ctx.strokeStyle = p.c;
+    ctx.lineWidth = Math.max(1, r * 0.3);
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = p.c;
+    ctx.fill();
+  }
+}
 function render() {
   ensurePattern();
   const z = cam.z,
@@ -8551,6 +9270,14 @@ function render() {
       ctx.fill(b.path);
       ctx.restore();
     }
+  for (const p of parts)
+    if (p.sh) {
+      // the player's trail lies under the bodies
+      const e = p.t / p.T;
+      ctx.globalAlpha = 1 - e;
+      drawTrailShape(p, p.r * (1 - e * 0.5));
+    }
+  ctx.globalAlpha = 1;
   drawWrap(z, ox, oy); // the runaway wrapper runs under the bodies
   drawStreakFuse(z);
   for (const b of vis) drawBlob(b);
@@ -8591,6 +9318,7 @@ function render() {
       ctx.stroke();
       continue;
     }
+    if (p.sh) continue; // the trail, drawn under the bodies
     ctx.fillStyle = p.c;
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.r * (1 - e * 0.5), 0, TAU);
@@ -8792,25 +9520,15 @@ muteEl.addEventListener('click', () => {
 $('play').addEventListener('click', startGame);
 $('again').addEventListener('click', startGame);
 function renderHats() {
-  if (!HATS.some((h) => h.id === chosenHat && h.need <= best)) chosenHat = 'none';
-  hatsEl.innerHTML = HATS.map((h) => {
-    const lock = h.need > best;
-    return `<button type="button" role="radio" aria-checked="${h.id === chosenHat}" data-h="${h.id}"${lock ? ' disabled' : ''}>${h.name}${lock ? ` <small>${t('hat.from', h.need)}</small>` : ''}</button>`;
-  }).join('');
-  recEl.textContent = best ? t('rec', best) : t('rec.none');
-  renderSecs();
+  renderPick('hat');
+  renderPick('eyes');
+  renderPick('trail');
+  renderPick('tray');
+  recEl.textContent = best ? t('rec', best) : '';
 }
-hatsEl.addEventListener('click', (e) => {
-  const t = e.target.closest('button');
-  if (!t || t.disabled) return;
-  chosenHat = t.dataset.h;
-  renderHats();
-  const el = hatsEl.querySelector(`[data-h="${chosenHat}"]`);
-  if (el) el.focus();
-});
 const skinsEl = $('skins'),
   bankEl = $('bank');
-let askSkin = null,
+let ask = null, // the first of the two taps of a purchase: { slot, id }
   bankT = 0;
 function renderBank(msg) {
   // the sugar balance; a message replaces it for a few seconds
@@ -8818,19 +9536,106 @@ function renderBank(msg) {
   bankEl.textContent = msg || t('bank', sugar);
   if (msg) bankT = setTimeout(() => renderBank(), 3200);
 }
+const boxOf = (slot) => $(slot === 'hat' ? 'hats' : slot === 'skin' ? 'skins' : slot);
+const chosenOf = (slot) =>
+  slot === 'hat'
+    ? chosenHat
+    : slot === 'skin'
+      ? chosenSkin
+      : slot === 'eyes'
+        ? chosenEyes
+        : slot === 'trail'
+          ? chosenTrail
+          : slot === 'tray'
+            ? chosenTray
+            : null;
+function choose(slot, id) {
+  if (slot === 'hat') chosenHat = id;
+  else if (slot === 'skin') chosenSkin = id;
+  else if (slot === 'eyes') chosenEyes = id;
+  else if (slot === 'trail') chosenTrail = id;
+  else if (slot === 'tray') setTray(id);
+}
+// the price tag of a closed item: its price, «Купить?» after the first tap
+function priceTag(slot, id) {
+  const price = priceOf(slot, id);
+  return ask && ask.slot === slot && ask.id === id
+    ? `<small class="pz ask">${t('shop.buy')}</small>`
+    : `<small class="pz${sugar >= price ? ' can' : ''}">${price}</small>`;
+}
+// one row of chips for hats (and later eyes, trail, tray): every item of the wardrobe slot, closed ones with a price
+function renderPick(slot) {
+  const box = boxOf(slot);
+  if (!box) return;
+  if (!owns(slot, chosenOf(slot))) choose(slot, WARDROBE[slot][0][0]);
+  box.innerHTML = WARDROBE[slot]
+    .map(([id]) => {
+      const lock = !owns(slot, id),
+        name = itemName(slot, id),
+        why = lock ? t('shop.why', priceOf(slot, id)) : '';
+      return `<button type="button" role="radio" aria-checked="${id === chosenOf(slot)}" aria-label="${name}${why}" data-slot="${slot}" data-id="${id}"${lock ? ' class="lock"' : ''}>${name}${lock ? priceTag(slot, id) : ''}</button>`;
+    })
+    .join('');
+  renderSecs();
+}
+const renderRow = (slot) => (slot === 'skin' ? renderSkins() : renderPick(slot));
+// a pending first tap does not outlive the menu: after a run or a round trip one tap must never buy
+function clearAsk() {
+  const was = ask;
+  ask = null;
+  if (was) renderRow(was.slot);
+}
+// the one tap logic of the shop: an owned item is chosen, a closed one is bought with two taps so a stray tap never spends sugar
+function pickClick(slot, id) {
+  const was = ask,
+    name = itemName(slot, id);
+  let redo = false;
+  if (!owns(slot, id)) {
+    const price = priceOf(slot, id);
+    if (sugar < price) {
+      ask = null;
+      renderBank(t('shop.short', name, price, sugar));
+    } else if (!ask || ask.slot !== slot || ask.id !== id) {
+      ask = { slot, id };
+      renderBank(t('shop.ask', name, price));
+    } else {
+      buyItem(slot, id);
+      ask = null;
+      choose(slot, id);
+      Sfx.init();
+      Sfx.power();
+      haptic(20);
+      renderBank(t('shop.got', name));
+    }
+    redo = true;
+  } else {
+    ask = null;
+    choose(slot, id);
+    redo = !!was;
+  }
+  if (redo) {
+    renderRow(slot);
+    if (was && was.slot !== slot) renderRow(was.slot);
+  } else {
+    for (const b of boxOf(slot).children) b.setAttribute('aria-checked', String(b.dataset.id === chosenOf(slot)));
+    renderSecs();
+  }
+  const el = boxOf(slot).querySelector(`[data-id="${id}"]`);
+  if (el) el.focus();
+}
+for (const slot of ['hat', 'skin', 'eyes', 'trail', 'tray'])
+  if (boxOf(slot))
+    boxOf(slot).addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (btn && btn.dataset.id) pickClick(slot, btn.dataset.id);
+    });
 function renderSkins() {
   if (!SKINS.some((k) => k[0] === chosenSkin)) chosenSkin = 'plain';
   if (!skinOpen(chosenSkin)) chosenSkin = 'plain';
-  skinsEl.innerHTML = SKINS.map(([id, name], i) => {
+  skinsEl.innerHTML = SKINS.map(([id, name]) => {
     const lock = !skinOpen(id),
-      price = SKIN_PRICE(i),
-      tag = !lock
-        ? ''
-        : askSkin === id
-          ? `<small class="pz ask">${t('skin.buy')}</small>`
-          : `<small class="pz${sugar >= price ? ' can' : ''}">${price}</small>`,
-      why = lock ? t('skin.why', price) : '';
-    return `<button type="button" role="radio" aria-checked="${id === chosenSkin}" aria-label="${name}${why}" title="${name}${why}" data-s="${id}"${lock ? ' class="lock"' : ''}><canvas width="92" height="92"></canvas>${tag}</button>`;
+      why = lock ? t('shop.why', priceOf('skin', id)) : '';
+    return `<button type="button" role="radio" aria-checked="${id === chosenSkin}" aria-label="${name}${why}" title="${name}${why}" data-s="${id}" data-slot="skin" data-id="${id}"${lock ? ' class="lock"' : ''}><canvas width="92" height="92"></canvas>${lock ? priceTag('skin', id) : ''}</button>`;
   }).join('');
   renderSecs();
   const pal = PALS[chosen];
@@ -8879,46 +9684,6 @@ function renderSkins() {
     }
   }
 }
-skinsEl.addEventListener('click', (e) => {
-  const btn = e.target.closest('button');
-  if (!btn) return;
-  const id = btn.dataset.s,
-    i = SKINS.findIndex((k) => k[0] === id),
-    price = SKIN_PRICE(i),
-    name = SKINS[i][1],
-    wasAsk = askSkin;
-  if (btn.classList.contains('lock')) {
-    // a locked pattern is bought with two taps, so a stray tap never spends sugar
-    if (sugar < price) {
-      askSkin = null;
-      renderBank(t('skin.short', name, price, sugar));
-    } else if (askSkin !== id) {
-      askSkin = id;
-      renderBank(t('skin.ask', name, price));
-    } else {
-      sugar -= price;
-      saveSugar();
-      M.open.push(id);
-      saveM();
-      askSkin = null;
-      chosenSkin = id;
-      Sfx.init();
-      Sfx.power();
-      haptic(20);
-      renderMissions();
-      renderBank(t('skin.got', name));
-    }
-    if (wasAsk !== askSkin || chosenSkin === id) renderSkins();
-    const el = skinsEl.querySelector(`[data-s="${id}"]`);
-    if (el) el.focus();
-    return;
-  }
-  askSkin = null;
-  chosenSkin = id;
-  if (wasAsk) renderSkins();
-  else for (const b of skinsEl.children) b.setAttribute('aria-checked', String(b.dataset.s === chosenSkin));
-  renderSecs();
-});
 function renderSwatches() {
   swEl.innerHTML = PALS.map(
     (p, i) =>
@@ -8977,8 +9742,16 @@ const pressedText = (id) => {
 function renderSecs() {
   const pal = PALS[chosen],
     skin = SKINS.find((k) => k[0] === chosenSkin),
-    hat = HATS.find((h) => h.id === chosenHat),
-    look = [nameOf(pal.name), skin && skin[1], hat && hat.id !== 'none' && hat.name].filter(Boolean).join(' · ');
+    look = [
+      nameOf(pal.name),
+      skin && skin[1],
+      chosenHat !== 'none' && itemName('hat', chosenHat),
+      chosenEyes !== 'none' && itemName('eyes', chosenEyes),
+      chosenTrail !== 'none' && itemName('trail', chosenTrail),
+      chosenTray !== 'choco' && itemName('tray', chosenTray),
+    ]
+      .filter(Boolean)
+      .join(' · ');
   $('sumLook').innerHTML = `<i style="background:${pal.base}"></i>${look}`;
   $('sumMode').textContent = `${t('sum.' + mode)} · ${mode === 'daily' ? t('dif.normal') : pressedText('diffSeg')}`;
   const mis = $('misList').children,
@@ -9132,13 +9905,6 @@ const ACTIONS = [
           t: 0,
         });
       });
-    },
-  ],
-  [
-    t('act.13'),
-    () => {
-      for (const k of SKINS) if (!M.open.includes(k[0])) M.open.push(k[0]);
-      saveM();
     },
   ],
   [
@@ -10127,6 +10893,9 @@ function start(data) {
   try {
     stored = parseInt(localStorage.getItem('kus.best'), 10) || 0;
     chosenHat = localStorage.getItem('kus.hat') || 'none';
+    chosenEyes = localStorage.getItem('kus.eyes') || 'none';
+    chosenTrail = localStorage.getItem('kus.trail') || 'none';
+    chosenTray = localStorage.getItem('kus.tray') || 'choco';
     chosenSkin = localStorage.getItem('kus.skin') || 'plain';
     sugar = Math.max(0, parseInt(localStorage.getItem('kus.sugar'), 10) || 0);
     if (localStorage.getItem('kus.lbmin') === '1') $('board').classList.add('min');
@@ -10152,9 +10921,17 @@ function start(data) {
       M.seq = m.seq | 0;
       M.act = m.act.filter((x) => x && typeof x.type === 'string' && x.need > 0);
       M.open = m.open.filter((x) => typeof x === 'string');
+      M.owed = Math.max(0, m.owed | 0);
     }
   } catch (e) {}
-  if (SKINS.some((k) => k[0] === chosenSkin) && !skinOpen(chosenSkin)) M.open.push(chosenSkin); // a skin picked before missions existed stays yours
+  loadOwn(best);
+  if (M.owed > 0) {
+    // missions finished in a run the app never got to end (closed, or killed in the background): their sugar is still yours
+    sugar += M.owed;
+    M.owed = 0;
+    saveSugar();
+    saveM();
+  }
   rollMissions();
   newcomer = best <= 0 && best3 <= 0; // the end of every run writes kus.best, so its absence means no run was ever finished
   try {
@@ -10313,6 +11090,50 @@ window.__kus = {
   openAlbum,
   closeAlbum,
   mission,
+  rollMissions,
+  renderMissions,
+  misReward,
+  die,
+  WARDROBE,
+  SKINS,
+  skinTile,
+  priceOf,
+  owns,
+  buyItem,
+  itemName,
+  cheapestUnowned,
+  pickClick,
+  get chosenHat() {
+    return chosenHat;
+  },
+  set chosenHat(v) {
+    chosenHat = v;
+  },
+  get chosenEyes() {
+    return chosenEyes;
+  },
+  set chosenEyes(v) {
+    chosenEyes = v;
+  },
+  get chosenTrail() {
+    return chosenTrail;
+  },
+  set chosenTrail(v) {
+    chosenTrail = v;
+  },
+  get chosenTray() {
+    return chosenTray;
+  },
+  set chosenTray(v) {
+    setTray(v);
+  },
+  get parts() {
+    return parts;
+  },
+  renderPick,
+  get own() {
+    return own;
+  },
   get sugar() {
     return sugar;
   },

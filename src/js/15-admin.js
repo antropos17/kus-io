@@ -146,13 +146,6 @@ const ACTIONS = [
     },
   ],
   [
-    t('act.13'),
-    () => {
-      for (const k of SKINS) if (!M.open.includes(k[0])) M.open.push(k[0]);
-      saveM();
-    },
-  ],
-  [
     t('act.14'),
     (P) => {
       for (const o of blobs)

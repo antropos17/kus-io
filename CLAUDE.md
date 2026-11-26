@@ -18,6 +18,7 @@ npm test           build and run the tests in headless Chrome (needs an installe
 npm run format     prettier over src/js, tools, tests
 node tests/run.mjs soak    only the tests whose name contains "soak" (no build: run npm run build first)
 node tools/wrap-curve.mjs 30 normal    the autopilot's runaway-wrapper catch rate and its share of a run's sugar (see docs/stages.md «Фантик»)
+node tools/sugar-curve.mjs 8 35 normal [weak]    hours of play to the whole wardrobe and to the first purchase, for any PRICE_K and MIS_SUGAR (MIS=300,400 X2=1 OUT=f.json; a smoke run is `2 1`, a full one of 8 chains × 35 hours takes about 2.5 hours of wall time, see docs/sugar.md)
 node tools/announce-curve.mjs 20 normal    how often each word of swallows in a row comes per run (add weak, or daily=<twist>)
 node tools/perf.mjs 6 3    frame cost on an emulated phone (CPU x6, 390x844): first frame, real-loop fps, style/layout per second, update/render ms
 npm run check      exit with an error if index.html does not match src/
@@ -50,6 +51,7 @@ Sound takes are made outside the repository with earshot (https://github.com/Leo
 |---|---|
 | `01-helpers` | `clamp`, `lerp`, `rand`, `angDiff`, `vnoise`, `FONT` |
 | `01-lang` | the language: `LANG` (`kus.lang`, else the phone's language), the string table `STR` and `t`, English candy names `EN_NAMES` with `nameOf`/`accOf` (Russian names stay the save keys), `applyLang` for the markup: `data-t` text, `data-th` html, `data-ta` aria-label, `data-tt` title, `data-tp` placeholder, `data-tc` a `data-c` attribute that CSS shows with `content: attr(data-c)` |
+| `02-wardrobe` | the sugar wardrobe: `WARDROBE` (base prices per slot hat, skin, eyes, trail, tray), `PRICE_K` (the one price multiplier), `priceOf`, `owns`, `buyItem`, `loadOwn` (moves old saves), `cheapestUnowned` |
 | `02-tuning` | world constants, `massToR`, `biteOf`, `lethalFor`, palettes, `PICK` bonuses, hats, patterns (`SKINS`, `skinTile`, `drawSkin`), bot names |
 | `03-dom` | `$`, canvas, `resize`, `PIXEL_BUDGET`, safe-area insets |
 | `04-state` | shared state: `blobs`, `food`, `parts`, `player`, `state`, `mode`, `cam`, `calm`, `input`, `stick`; settings `SET`, difficulty `DIFFS`, cheats `CHEAT`, missions `M`, `haptic` |
@@ -81,7 +83,7 @@ A bite step by step (`checkBites`): wind-up → snap → `doBite` → the piece 
 
 `window.__kus` in `17-boot` gives the tests the state and functions (`LANG`, `t`, `STR`, `EN_NAMES`, `nameOf`, `player`, `blobs`, `update`, `render`, `place`, `spawnBot`, `spawnSpecial`, `Sfx`, `cam`, `CHEAT`, `pause`, `setLod`, and for the HUD, streak, wrapper and trophy work: `streak`, `stamps`, `texts` (floating numbers and words), `wrap`, `reveal`, `spawnWrap`, `clearWrap`, `WRAP`, `sugarFly`, `hud` (`sugarShown`, `air`, `sugarSettle`), `trophy`, `stages.kind`; for the announcements and the heavy bite: `ann`, `ANN`, `annShow`, `annSwallow`, `annReset`, `annFrame`, `HEAVY`, `heavyBite`, `parts`, `die`). The easiest way to test a new mechanic is through it.
 
-Saves in `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.best`, `kus.best3`, `kus.mode`, `kus.diff`, `kus.set`, `kus.m` (missions and unlocked patterns), `kus.seen` (hints already shown), `kus.cheat`, `kus.lbmin`, `kus.daily` (candy of the day: date `d` like 20261123, best of the day `best`, days in a row `streak`, longest streak `top`), `kus.album` (album: `c` — times each sticker was swallowed whole, `r` — ids of rows already paid), `kus.albumOld` (ids of stickers opened before `NEED`, written once so they stay open), `kus.clear` (free-play wins: the fastest first-shift clear `best` in seconds, the number of clears `wins`), `kus.lang` (the language chosen in the menu's settings, `ru` or `en`; without it the phone's language decides).
+Saves in `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.eyes`, `kus.trail`, `kus.tray`, `kus.own` (what the player bought with sugar, per slot), `kus.best`, `kus.best3`, `kus.mode`, `kus.diff`, `kus.set`, `kus.m` (missions and unlocked patterns), `kus.seen` (hints already shown), `kus.cheat`, `kus.lbmin`, `kus.daily` (candy of the day: date `d` like 20261123, best of the day `best`, days in a row `streak`, longest streak `top`), `kus.album` (album: `c` — times each sticker was swallowed whole, `r` — ids of rows already paid), `kus.albumOld` (ids of stickers opened before `NEED`, written once so they stay open), `kus.clear` (free-play wins: the fastest first-shift clear `best` in seconds, the number of clears `wins`), `kus.lang` (the language chosen in the menu's settings, `ru` or `en`; without it the phone's language decides).
 
 ## Decisions that must not be broken
 
@@ -101,6 +103,8 @@ Saves in `localStorage`: `kus.name`, `kus.color`, `kus.hat`, `kus.skin`, `kus.be
 - The page stays one file with no external scripts. No syntax or CSS newer than what iOS 15 Safari has (`inset`, for example, has already been replaced).
 - The ES5 script embedded at the start of `<body>` shows errors on screen. Do not touch it and do not move it to modern syntax.
 - Every text a player sees goes through `t('key')` with both languages in `STR` (`01-lang`); candy names go through `nameOf`. Never call `t()` in a scope that has its own local `t` (about 60 functions use `t` for a time, a button or a twist): the call throws «t is not a function». Rename the local instead. The `lang:` tests catch it only on the paths they reach.
+
+- The wardrobe's target pace is 30 hours of play for the whole collection with the first purchase inside 15 minutes. The prices are NOT measured against it yet: `PRICE_K` (`02-wardrobe`) is 1 and `MIS_SUGAR` (`02-tuning`) is 300, the first guesses. Change only those two, and only after a `node tools/sugar-curve.mjs` measurement; the relative prices in `WARDROBE` and the ids stay. See `docs/sugar.md`.
 
 ## The album
 

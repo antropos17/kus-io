@@ -493,16 +493,19 @@ test('sugar: earned in a clean run, paid at the end, one chest pick, two-tap sho
     out.twice = k.sugar === after;
     out.near = document.getElementById('near').textContent;
     // shop: not enough sugar, then a first tap asks, a second tap buys
+    const cheap = k.cheapestUnowned();
+    out.nearWant = k.itemName(cheap.slot, cheap.id);
     k.setSugar(10);
     const lock = () => document.querySelector('#skins button.lock');
-    const id = lock().dataset.s;
+    const id = lock().dataset.s,
+      price = k.priceOf('skin', id);
     lock().click();
-    out.poor = k.sugar === 10 && !k.M.open.includes(id);
-    k.setSugar(5000);
+    out.poor = k.sugar === 10 && !k.owns('skin', id);
+    k.setSugar(price + 5000);
     document.querySelector(`#skins [data-s="${id}"]`).click();
-    out.asked = k.sugar === 5000 && !!document.querySelector(`#skins [data-s="${id}"] .pz.ask`);
+    out.asked = k.sugar === price + 5000 && !!document.querySelector(`#skins [data-s="${id}"] .pz.ask`);
     document.querySelector(`#skins [data-s="${id}"]`).click();
-    out.bought = k.M.open.includes(id) && k.sugar === 5000 - 150;
+    out.bought = k.owns('skin', id) && k.sugar === 5000;
     out.saved = localStorage.getItem('kus.sugar');
     return out;
   });
@@ -511,13 +514,113 @@ test('sugar: earned in a clean run, paid at the end, one chest pick, two-tap sho
   assert(r.over && r.got >= 11 && r.bank === r.got, `end of run must pay ${r.got} into the bank, bank is ${r.bank}`);
   assert(r.prizes.length === 3 && r.prizes.includes(r.chestWon) && r.chestWon > 0, `chest prizes ${r.prizes}, won ${r.chestWon}`);
   assert(r.twice, 'the chest paid twice');
-  assert(r.near.includes('узор'), `no "so close" line: "${r.near}"`);
+  assert(r.near.includes(r.nearWant), `no "so close" line naming "${r.nearWant}": "${r.near}"`);
   assert(r.poor, 'a pattern was sold without enough sugar');
   assert(r.asked, 'the first tap must only ask');
-  assert(r.bought && r.saved === String(5000 - 150), 'the second tap must buy the pattern and save the bank');
+  assert(r.bought && r.saved === '5000', 'the second tap must buy the pattern and save the bank');
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
 });
+
+const CHEST_END = `const k = window.__kus; k.setSugar(0); k.pause(true); k.setMode('t3'); k.startGame(); k.player.spawnT = 0; k.run.sugar = 200; k.setTimeLeft(0.001); for (let i = 0; i < 90; i++) k.update(1 / 60);`;
+
+test('chest: one paid reroll, the price is three times the base, never twice', async () => {
+  const g = await open({ play: false });
+  const r = await g.page.evaluate(`(() => { ${CHEST_END}
+    const out = {}, again = document.getElementById('chestAgain'), odds = document.getElementById('chestOdds'), row = document.getElementById('chestRow');
+    out.base = k.run.chestBase; out.hiddenBefore = again.classList.contains('hidden') && odds.classList.contains('hidden');
+    row.children[0].click();
+    out.shown = !again.classList.contains('hidden') && !odds.classList.contains('hidden');
+    out.label = again.textContent; out.oddsT = odds.textContent;
+    k.setSugar(1000);
+    again.click(); out.ask = again.textContent; out.afterAsk = k.sugar;
+    again.click(); again.click();
+    out.paid = 1000 - k.sugar; out.reset = [...row.children].every((b) => b.textContent === '?' && !b.disabled);
+    out.hiddenAfter = again.classList.contains('hidden') && odds.classList.contains('hidden');
+    const before = k.sugar; row.children[2].click(); out.won = k.sugar - before; out.prizes = [...row.children].map((b) => +b.textContent);
+    again.click(); again.click(); out.noThird = 1000 - k.sugar === out.paid - out.won;
+    return out; })()`);
+  assert(r.base >= 3 && r.hiddenBefore, `base ${r.base}, hidden before the pick ${r.hiddenBefore}`);
+  assert(
+    r.shown && r.label === `Ещё раз — ${3 * r.base}` && r.oddsT === 'Каждая карта — 1 из 3: ×1, ×2, ×5',
+    `label "${r.label}", odds "${r.oddsT}"`,
+  );
+  assert(r.ask === `Точно? −${3 * r.base} сахара` && r.afterAsk === 1000, `first tap "${r.ask}", bank ${r.afterAsk}`);
+  assert(r.paid === 3 * r.base, `paid ${r.paid}, want ${3 * r.base}`);
+  assert(r.reset && r.hiddenAfter, 'cards must be "?" again and the button hidden');
+  assert(r.prizes.includes(r.won) && r.won > 0 && r.noThird, `second pick won ${r.won} of ${r.prizes}, third reroll ${r.noThird}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('chest: the reroll is hidden when the bank is short of its price', async () => {
+  const g = await open({ play: false });
+  // Math.random is pinned so the shuffle keeps the order [base, 2*base, 5*base]: card 0 pays base, card 1 pays 2*base
+  const run = (bank0, card) =>
+    g.page.evaluate(`(() => { ${CHEST_END}
+    const base = k.run.chestBase, rnd = Math.random; Math.random = () => 0.999;
+    k.setSugar(${bank0} * base);
+    document.getElementById('chestRow').children[${card}].click();
+    Math.random = rnd;
+    return { base, bank: k.sugar, hidden: document.getElementById('chestAgain').classList.contains('hidden') }; })()`);
+  const lo = await run(0, 0),
+    hi = await run(1, 1);
+  assert(lo.bank === lo.base && lo.hidden, `bank ${lo.bank} is below the price ${3 * lo.base}: the button must be hidden (hidden ${lo.hidden})`);
+  assert(hi.bank === 3 * hi.base && !hi.hidden, `bank ${hi.bank} equals the price ${3 * hi.base}: the button must show (hidden ${hi.hidden})`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+for (const [w, h] of [
+  [360, 640],
+  [844, 390],
+])
+  for (const locale of ['ru-RU', 'en-US'])
+    test(`chest: the reroll button and odds fit the end card at ${w}x${h} ${locale}`, async () => {
+      const g = await open({ play: false, width: w, height: h, touch: true, dpr: 2, locale });
+      const r = await g.page.evaluate(`(() => { ${CHEST_END}
+        document.getElementById('chestRow').children[0].click();
+        const R = (s) => { const e = document.querySelector(s); const b = e.getBoundingClientRect(); return { s, l: b.left, t: b.top, r: b.right, b: b.bottom, hid: e.classList.contains('hidden') }; };
+        const card = R('#over .card'), parts = ['#chestAgain', '#chestOdds'].map(R), others = ['#chestRow', '#again', '#chalBtn', '#toMenu'].map(R);
+        const hit = (a, b) => a.l < b.r - 1 && b.l < a.r - 1 && a.t < b.b - 1 && b.t < a.b - 1;
+        const bad = []; for (const p of parts) { if (p.hid) bad.push(p.s + ' hidden'); if (p.l < card.l || p.r > card.r) bad.push(p.s + ' outside card x'); for (const o of others) if (hit(p, o)) bad.push(p.s + ' over ' + o.s); }
+        if (hit(parts[0], parts[1])) bad.push('button over odds');
+        const cardEl = document.querySelector('#over .card'), be = document.getElementById('best'), bb = be.getBoundingClientRect(), cb = cardEl.getBoundingClientRect();
+        if (cardEl.scrollHeight > cardEl.clientHeight) bad.push('the card scrolls ' + cardEl.scrollHeight + ' > ' + cardEl.clientHeight);
+        if (!be.textContent.trim() || getComputedStyle(be).display === 'none' || bb.bottom > cb.bottom || bb.top < cb.top) bad.push('the best line is not visible');
+        return { bad }; })()`);
+      assert(r.bad.length === 0, `${w}x${h} ${locale}: ${r.bad.join(', ')}`);
+      assert(g.errors.length === 0, g.errors.join(' | '));
+      await g.close();
+    });
+
+// early runs open stickers almost every time, and the reroll is offered on almost every card: both at once must fit
+for (const [w, h] of [
+  [360, 640],
+  [844, 390],
+])
+  for (const locale of ['ru-RU', 'en-US'])
+    for (const m of ['t3', 'free'])
+      test(`chest: the reroll row and the album line fit the end card at ${w}x${h} ${locale} ${m}`, async () => {
+        const g = await open({ play: false, width: w, height: h, touch: true, dpr: 2, locale, returning: true });
+        const r = await g.page.evaluate(`(() => { const k = window.__kus; k.setSugar(0); k.pause(true);
+          for (const n of ['Мармеладка', 'Желешка', 'Жвачка', 'Тянучка']) k.album.c[n] = 1;
+          k.setMode('${m}'); k.startGame(); k.player.spawnT = 0; k.run.sugar = 200;
+          for (const n of ['Зефирка', 'Суфле', 'Безе', 'Мусс', 'Бабл-гам']) k.albumEat({ name: n });
+          if ('${m}' === 't3') k.setTimeLeft(0.001); else { k.player.alive = false; k.die(null); }
+          for (let i = 0; i < 90; i++) k.update(1 / 60);
+          document.getElementById('chestRow').children[0].click();
+          const card = document.querySelector('#over .card'), cb = card.getBoundingClientRect(), bad = [];
+          const seen = (id) => { const e = document.getElementById(id), b = e.getBoundingClientRect();
+            if (!e.textContent.trim() || e.classList.contains('hidden') || getComputedStyle(e).display === 'none' || b.height === 0) bad.push(id + ' hidden');
+            else if (b.top < cb.top || b.bottom > cb.bottom + 1 || b.bottom > innerHeight) bad.push(id + ' cut off at ' + Math.round(b.bottom) + ' (card ' + Math.round(cb.bottom) + ')'); };
+          ['chestAgain', 'chestOdds', 'stk', 'best', 'again'].forEach(seen);
+          if (card.scrollHeight > card.clientHeight + 1) bad.push('the card scrolls ' + (card.scrollHeight - card.clientHeight) + 'px');
+          return { bad }; })()`);
+        assert(r.bad.length === 0, `${w}x${h} ${locale} ${m}: ${r.bad.join(', ')}`);
+        assert(g.errors.length === 0, g.errors.join(' | '));
+        await g.close();
+      });
 
 test('hud: the sugar pill rolls to earned sugar once the cubes land', async () => {
   const g = await open();
@@ -562,6 +665,589 @@ test('sugar: none for a run with cheats', async () => {
     return { bank: k.sugar, chest: !document.getElementById('sweet').classList.contains('hidden') };
   });
   assert(r.bank === 0 && !r.chest, `a cheated run paid ${r.bank} sugar`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('missions: the sugar of a mission finished in a run the app never ended is paid on the next start, once', async () => {
+  const g = await open({ play: false, returning: true });
+  const reload = async () => {
+    await g.page.reload();
+    await g.page.waitForTimeout(600);
+  };
+  const finish = (end) =>
+    g.page.evaluate((end) => {
+      const k = window.__kus;
+      k.pause(true);
+      k.setSugar(50);
+      localStorage.setItem('kus.sugar', '50'); // setSugar does not save
+      k.M.act = [{ type: 'kills', need: 3, got: 2, c: 1, at: 0, idle: 0 }];
+      k.setMode('t3');
+      k.startGame();
+      k.player.spawnT = 0;
+      k.mission('kills', 1);
+      const m = k.M.act.find((x) => x.type === 'kills');
+      const out = { paid: m.paid, done: m.got >= m.need };
+      if (end) {
+        k.setTimeLeft(0.001);
+        for (let i = 0; i < 90; i++) k.update(1 / 60);
+        out.got = k.run.got;
+      }
+      out.bank = k.sugar;
+      return out;
+    }, end);
+  // the app is closed (or killed in the background) mid-run, after the mission is done: «+N сахара» was promised
+  const a = await finish(false);
+  await reload();
+  const a2 = await g.page.evaluate(() => ({ bank: window.__kus.sugar, kills: window.__kus.M.act.some((m) => m.type === 'kills') }));
+  await reload();
+  const a3 = await g.page.evaluate(() => window.__kus.sugar);
+  assert(a.done && a.paid > 0 && a.bank === 50, `mission done ${a.done}, paid ${a.paid}, bank mid-run ${a.bank}`);
+  assert(a2.bank === 50 + a.paid && !a2.kills, `after the restart the bank is ${a2.bank}, want ${50 + a.paid}`);
+  assert(a3 === a2.bank, `a second restart paid again: ${a2.bank} -> ${a3}`);
+  // a run that ends as usual pays the mission inside its own sugar, and a restart adds nothing
+  const b = await finish(true);
+  await reload();
+  const b2 = await g.page.evaluate(() => window.__kus.sugar);
+  assert(b.got >= b.paid && b.bank === 50 + b.got, `the run paid ${b.got} (mission ${b.paid}), bank ${b.bank}`);
+  assert(b2 === b.bank, `a restart after a finished run changed the bank ${b.bank} -> ${b2}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('wardrobe: old saves keep what they had, a broken save does not break, buying is exact', async () => {
+  const g = await open({ play: false });
+  const reload = async () => {
+    await g.page.reload();
+    await g.page.waitForTimeout(600);
+  };
+  // seeded by an init script: the old page saves its own state on unload, which would overwrite keys set by hand
+  await g.page.addInitScript(() => {
+    if (sessionStorage.getItem('seeded')) return;
+    sessionStorage.setItem('seeded', '1');
+    localStorage.clear();
+    localStorage.setItem('kus.best', '600');
+    localStorage.setItem('kus.m', JSON.stringify({ seq: 3, act: [], open: ['waffle', 'tiger'] }));
+    localStorage.setItem('kus.hat', 'horns');
+  });
+  await reload();
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus;
+    return {
+      hats: k.owns('hat', 'bow') && k.owns('hat', 'crown') && k.owns('hat', 'chef'),
+      horns: k.owns('hat', 'horns'),
+      skins: k.owns('skin', 'waffle') && k.owns('skin', 'tiger'),
+      cow: k.owns('skin', 'cow'),
+      free: k.owns('hat', 'none') && k.owns('skin', 'dots') && k.owns('eyes', 'none') && k.owns('tray', 'choco'),
+      v: JSON.parse(localStorage.getItem('kus.own')).v,
+      own: JSON.stringify(k.own),
+    };
+  });
+  assert(r.hats && !r.horns, 'old hats must follow the old record thresholds');
+  assert(r.skins && !r.cow, 'old mission skins must stay open, the others closed');
+  assert(r.free && r.v === 1, 'free items are owned and the save is versioned');
+  await reload();
+  const own2 = await g.page.evaluate(() => JSON.stringify(window.__kus.own));
+  assert(own2 === r.own, `own changed on the second load: ${r.own} -> ${own2}`);
+  const hat = await g.page.evaluate(() => {
+    const k = window.__kus;
+    k.chosenHat = 'halo'; // never owned: only the owns() guard in spawnPlayer can stop it
+    k.pause(true);
+    k.startGame();
+    return k.player.hat;
+  });
+  assert(hat === 'none', `an unbought hat was worn: ${hat}`);
+  const b = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {};
+    k.setSugar(k.priceOf('hat', 'cap'));
+    out.first = k.buyItem('hat', 'cap');
+    out.left = k.sugar;
+    out.stored = localStorage.getItem('kus.sugar');
+    out.second = k.buyItem('hat', 'cap');
+    k.setSugar(10);
+    out.poor = k.buyItem('hat', 'halo');
+    out.poorSugar = k.sugar;
+    out.poorOwns = k.owns('hat', 'halo');
+    return out;
+  });
+  assert(b.first === true && b.left === 0 && b.stored === '0', `buying: ${JSON.stringify(b)}`);
+  assert(b.second === false, 'the same item was bought twice');
+  assert(b.poor === false && b.poorSugar === 10 && !b.poorOwns, 'a purchase without enough sugar changed state');
+  await g.page.evaluate(() => localStorage.setItem('kus.own', '{oops'));
+  await reload();
+  assert(await g.page.evaluate(() => window.__kus.owns('hat', 'bow')), 'a broken save must fall back to the migration');
+  await g.page.evaluate(() => localStorage.setItem('kus.own', '{"v":1,"hat":[1,"nope","cap"]}'));
+  await reload();
+  const mal = await g.page.evaluate(() => ({ hat: window.__kus.own.hat, saved: localStorage.getItem('kus.own') }));
+  assert(JSON.stringify(mal.hat) === '["cap"]', `malformed ids must be dropped: ${JSON.stringify(mal.hat)}`);
+  assert(JSON.parse(mal.saved).hat.join() === 'cap', `the save was not rewritten clean: ${mal.saved}`);
+  const adm = await g.page.evaluate(() => {
+    const k = window.__kus;
+    k.pause(true);
+    k.startGame();
+    document.getElementById('pAdmin').click();
+    return [...document.querySelectorAll('#admA button')].map((b) => b.textContent);
+  });
+  assert(adm.length > 0 && !adm.some((x) => x.includes('Открыть все узоры')), `the open-all cheat is still in the admin panel: ${adm}`);
+  assert(await g.page.evaluate(() => window.__kus.STR['act.13'] === undefined), 'the "open all patterns" cheat is gone');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('wardrobe: hats are bought with sugar in two taps, a new player has only «none»', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {},
+      hat = (id) => document.querySelector(`#hats [data-id="${id}"]`);
+    out.open = [...document.querySelectorAll('#hats button')].filter((b) => !b.classList.contains('lock')).map((b) => b.dataset.id);
+    out.hasPrice = !!hat('bow').querySelector('.pz');
+    k.setSugar(0);
+    hat('bow').click();
+    out.poor = !k.owns('hat', 'bow');
+    out.bank = document.getElementById('bank').textContent;
+    k.setSugar(k.priceOf('hat', 'bow'));
+    hat('bow').click();
+    out.asked = !!hat('bow').querySelector('.pz.ask') && !k.owns('hat', 'bow');
+    hat('bow').click();
+    out.bought = k.owns('hat', 'bow') && k.sugar === 0;
+    out.checked = hat('bow').getAttribute('aria-checked') === 'true';
+    k.pause(true);
+    k.startGame();
+    out.stored = localStorage.getItem('kus.hat');
+    out.worn = k.player.hat;
+    return out;
+  });
+  assert(r.open.join() === 'none', `a new player must have only «none» open: ${r.open}`);
+  assert(r.hasPrice, 'a closed hat must show its price');
+  assert(r.poor && r.bank.includes('«Бантик»'), `no "not enough" line in the bank: "${r.bank}"`);
+  assert(r.asked, 'the first tap must only ask');
+  assert(r.bought && r.checked, 'the second tap must buy and select the hat');
+  assert(r.stored === 'bow' && r.worn === 'bow', `the hat was not saved or worn: ${r.stored} / ${r.worn}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('wardrobe: a pending first tap does not outlive the menu or another tap', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {},
+      hat = (id) => document.querySelector(`#hats [data-id="${id}"]`);
+    k.setSugar(100000);
+    hat('bow').click();
+    out.asked = !!hat('bow').querySelector('.pz.ask');
+    k.pause(true);
+    k.startGame();
+    k.toMenu();
+    out.tag = !!hat('bow').querySelector('.pz.ask');
+    hat('bow').click();
+    out.round = k.owns('hat', 'bow');
+    hat('crown').click(); // the first tap on another closed hat moves the ask there
+    hat('bow').click();
+    out.moved = k.owns('hat', 'bow');
+    return out;
+  });
+  assert(r.asked, 'the first tap must ask');
+  assert(!r.tag, 'the «Купить?» tag must disappear after a round trip through a run');
+  assert(!r.round, 'one tap after a menu-run-menu round trip must not buy');
+  assert(!r.moved, 'tapping another hat must clear the first ask');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('wardrobe: every hat and pattern draws', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = { flat: [], empty: [], missing: [], frames: 0 };
+    k.pause(true);
+    k.startGame();
+    const P = k.player;
+    for (const b of k.blobs)
+      if (b !== P) {
+        b.x = 300 + Math.random() * 300;
+        b.y = 3700;
+        b.resetPoints();
+      }
+    P.spawnT = 0;
+    // a hat is drawn when the frame has more fills and strokes than the bare head
+    const C = CanvasRenderingContext2D.prototype,
+      fill = C.fill,
+      stroke = C.stroke;
+    let n = 0;
+    C.fill = function (...a) {
+      n++;
+      return fill.apply(this, a);
+    };
+    C.stroke = function (...a) {
+      n++;
+      return stroke.apply(this, a);
+    };
+    const ops = () => {
+      k.parts.length = 0;
+      n = 0;
+      k.render();
+      out.frames++;
+      return n;
+    };
+    P.hat = 'none';
+    const bare = ops();
+    for (const [id] of k.WARDROBE.hat) {
+      if (id === 'none') continue;
+      P.hat = id;
+      if (ops() <= bare) out.flat.push(id);
+      k.setLod(2);
+      ops();
+      k.setLod(0);
+    }
+    C.fill = fill;
+    C.stroke = stroke;
+    P.hat = 'none';
+    for (const [id] of k.WARDROBE.skin) {
+      if (!k.SKINS.some((s) => s[0] === id)) out.missing.push(id);
+      if (id === 'plain') continue;
+      const c = k.skinTile(id).c,
+        px = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      let seen = false;
+      for (let i = 3; i < px.length && !seen; i += 4) seen = px[i] > 0;
+      if (!seen) out.empty.push(id);
+      P.skin = id;
+      ops();
+    }
+    return out;
+  });
+  assert(r.flat.length === 0, `hats that draw nothing: ${r.flat}`);
+  assert(r.missing.length === 0, `patterns missing from SKINS (the shop row): ${r.missing}`);
+  assert(r.empty.length === 0, `patterns with an empty tile: ${r.empty}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('wardrobe: every eye style draws, blinks and grows in a streak without errors', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = { worn: [], stored: [], frames: 0, bots: true };
+    for (const [id] of k.WARDROBE.eyes) {
+      k.setSugar(100000);
+      if (!k.owns('eyes', id)) {
+        k.pickClick('eyes', id);
+        k.pickClick('eyes', id);
+      } else k.pickClick('eyes', id);
+      k.pause(true);
+      k.startGame();
+      const P = k.player;
+      out.worn.push(P.eyes === id);
+      out.stored.push(localStorage.getItem('kus.eyes') === id);
+      P.spawnT = 0;
+      for (const lod of [0, 2]) {
+        k.setLod(lod);
+        P.blink = 0.1;
+        k.render();
+        P.blink = 0;
+        P.hurtT = 0.3;
+        k.render();
+        P.hurtT = 0;
+        P.combo = 5;
+        P.comboT = 1;
+        k.render();
+        P.combo = 0;
+        P.comboT = 0;
+        k.render();
+        out.frames += 4;
+      }
+      for (const b of k.blobs) if (!b.isPlayer && b.eyes !== 'none') out.bots = false;
+      k.toMenu();
+    }
+    return out;
+  });
+  assert(r.worn.length === 6 && r.worn.every(Boolean), `the player must wear the chosen eyes: ${r.worn}`);
+  assert(r.stored.every(Boolean), `kus.eyes must be saved: ${r.stored}`);
+  assert(r.bots, 'bots must keep plain eyes');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('trail: only while moving, bounded, gone at lod 2', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = { still: 0, moving: 0, peak: 0, later: 0, drew: [], noneParts: 0 };
+    k.setSugar(100000);
+    k.pickClick('trail', 'stars');
+    k.pickClick('trail', 'stars');
+    k.startGame();
+    k.pause(true);
+    const P = k.player;
+    for (const key in k.CHEAT) k.CHEAT[key] = key === 'speed' ? 1 : false;
+    for (const b of k.blobs)
+      if (b !== P) {
+        b.x = 300 + Math.random() * 300;
+        b.y = 3700;
+        b.resetPoints();
+      }
+    P.spawnT = 0;
+    P.x = 2000;
+    P.y = 2000;
+    P.resetPoints();
+    const shaped = () => k.parts.filter((p) => p.sh === 3).length;
+    const cvsMove = (x) =>
+      document.querySelector('canvas').dispatchEvent(new PointerEvent('pointermove', { pointerType: 'mouse', clientX: x, clientY: innerHeight / 2 })); // the mouse steers the candy
+    cvsMove(innerWidth / 2);
+    for (let i = 0; i < 120; i++) {
+      P.tx = P.x;
+      P.ty = P.y;
+      k.update(1 / 60);
+      out.still = Math.max(out.still, k.parts.filter((p) => p.sh).length);
+    }
+    cvsMove(innerWidth - 20);
+    for (let i = 0; i < 180; i++) {
+      P.tx = P.x + 800;
+      P.ty = P.y;
+      if (P.x > 3000) P.x = 1000;
+      k.update(1 / 60);
+      out.peak = Math.max(out.peak, shaped());
+    }
+    out.moving = out.peak;
+    k.setLod(2);
+    for (let i = 0; i < 60; i++) k.update(1 / 60); // the old ones die out
+    k.parts.length = 0;
+    for (let i = 0; i < 120; i++) {
+      P.tx = P.x + 800;
+      P.ty = P.y;
+      if (P.x > 3000) P.x = 1000;
+      k.update(1 / 60);
+      out.later = Math.max(out.later, k.parts.filter((p) => p.sh).length);
+    }
+    k.setLod(0);
+    for (const [id] of k.WARDROBE.trail) {
+      P.trail = id;
+      k.parts.length = 0;
+      for (let i = 0; i < 60; i++) {
+        P.tx = P.x + 800;
+        P.ty = P.y;
+        if (P.x > 3000) P.x = 1000;
+        k.update(1 / 60);
+      }
+      if (id === 'none') out.noneParts = k.parts.filter((p) => p.sh).length;
+      k.render();
+      out.drew.push(id);
+    }
+    return out;
+  });
+  assert(r.still === 0, `no trail while standing still: ${r.still}`);
+  assert(r.moving > 0, 'stars must trail a moving candy');
+  assert(r.peak <= 16, `at most 16 alive at once: ${r.peak}`);
+  assert(r.later === 0, `no trail at lod 2: ${r.later}`);
+  assert(r.noneParts === 0, 'trail none leaves nothing');
+  assert(r.drew.length === 6, 'every trail renders');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('trail: particles start outside the rim, behind the candy', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = { n: 0, near: 1e9 };
+    k.setSugar(100000);
+    k.pickClick('trail', 'hearts');
+    k.pickClick('trail', 'hearts');
+    k.startGame();
+    k.pause(true);
+    const P = k.player;
+    for (const key in k.CHEAT) k.CHEAT[key] = key === 'speed' ? 1 : false;
+    for (const b of k.blobs)
+      if (b !== P) {
+        b.x = 300 + Math.random() * 300;
+        b.y = 3700;
+        b.resetPoints();
+      }
+    P.spawnT = 0;
+    P.mass = 400;
+    P.x = 1000;
+    P.y = 2000;
+    P.resetPoints();
+    document
+      .querySelector('canvas')
+      .dispatchEvent(new PointerEvent('pointermove', { pointerType: 'mouse', clientX: innerWidth - 20, clientY: innerHeight / 2 }));
+    const seen = new Set(k.parts);
+    for (let i = 0; i < 120; i++) {
+      P.tx = P.x + 800;
+      P.ty = P.y;
+      const x = P.x,
+        y = P.y;
+      k.update(1 / 60);
+      const sp = Math.hypot(P.vx, P.vy) || 1;
+      for (const p of k.parts)
+        if (p.sh && !seen.has(p)) {
+          seen.add(p);
+          out.n++;
+          // how far behind the centre it was born, in body radii (the centre moved at most one frame since)
+          const back = Math.min(-((p.x - x) * P.vx + (p.y - y) * P.vy) / sp, -((p.x - P.x) * P.vx + (p.y - P.y) * P.vy) / sp);
+          out.near = Math.min(out.near, back / P.Rs);
+        }
+    }
+    return out;
+  });
+  assert(r.n > 0, 'a moving candy must leave a trail');
+  assert(r.near >= 1.05, `a trail particle was born inside the body: ${r.near.toFixed(2)} radii behind the centre`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('tray: switching rebuilds the pattern, the menu world shows it, the choice is kept', async () => {
+  const g = await open({ play: false, returning: true });
+  // the entities are cleared inside the same synchronous call as the render, so only the tray is under the sampled patch
+  const shade = () =>
+    g.page.evaluate(() => {
+      const k = window.__kus;
+      k.blobs.length = 0;
+      k.food.length = 0;
+      k.parts.length = 0;
+      k.render();
+      const c = document.querySelector('canvas'),
+        d = c.getContext('2d').getImageData(Math.floor(c.width * 0.5), Math.floor(c.height * 0.5), 12, 12).data;
+      let r = 0,
+        gr = 0,
+        b = 0;
+      for (let i = 0; i < d.length; i += 4) ((r += d[i]), (gr += d[i + 1]), (b += d[i + 2]));
+      const n = d.length / 4;
+      return { r: r / n, g: gr / n, b: b / n };
+    });
+  const before = await shade();
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus;
+    k.setSugar(100000);
+    k.pickClick('tray', 'mint');
+    k.pickClick('tray', 'mint');
+    return { chosen: k.chosenTray, saved: localStorage.getItem('kus.tray'), owned: k.owns('tray', 'mint') };
+  });
+  const after = await shade();
+  assert(r.owned && r.chosen === 'mint' && r.saved === 'mint', `the bought tray must be chosen and saved: ${JSON.stringify(r)}`);
+  // choco is red-brown (r > g > b), mint is green-teal (g > r): the patch must have moved in that direction
+  assert(before.r > before.g && before.g > before.b, `the chocolate tray must be red-brown: ${JSON.stringify(before)}`);
+  assert(after.g > after.r && after.b > before.b, `the mint tray must be green-teal: ${JSON.stringify(after)}`);
+  await g.page.reload();
+  assert((await g.page.evaluate(() => window.__kus.chosenTray)) === 'mint', 'the tray must survive a reload');
+  await g.page.evaluate(() => localStorage.setItem('kus.tray', 'gold')); // gold was never bought
+  await g.page.reload();
+  const r2 = await g.page.evaluate(() => ({ chosen: window.__kus.chosenTray, saved: localStorage.getItem('kus.tray') }));
+  assert(r2.chosen === 'choco', `an unbought tray in the save must fall back to choco: ${JSON.stringify(r2)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('missions: a done mission pays sugar and opens no pattern', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {};
+    k.setSugar(0);
+    k.pause(true);
+    k.setMode('t3');
+    k.startGame();
+    k.player.spawnT = 0;
+    k.player.combo = 0;
+    k.M.act = [{ type: 'bites', need: 2, got: 0, c: 1 }];
+    const skin = [...k.own.skin].join(),
+      open = k.M.open.join(),
+      s0 = k.run.sugar;
+    k.mission('bites', 1);
+    k.mission('bites', 1);
+    out.gain = k.run.sugar - s0;
+    k.setTimeLeft(0.001);
+    for (let i = 0; i < 300; i++) k.update(1 / 60);
+    out.card = document.getElementById('overMis').textContent;
+    out.same = skin === [...k.own.skin].join() && open === k.M.open.join();
+    out.feed = document.getElementById('feed').textContent;
+    out.row = document.getElementById('misList').textContent;
+    k.renderMissions();
+    out.row = document.getElementById('misList').textContent;
+    return out;
+  });
+  assert(r.gain >= 480 && r.gain <= 490, `a circle-1 mission must pay 480 (plus bite sugar), got ${r.gain}`);
+  assert(r.same, 'a mission must not open a pattern');
+  assert(r.card.includes('+480'), `the end card must keep the finished mission with its payout: "${r.card}"`);
+  assert(r.feed.includes('+480'), `the feed must say +480: "${r.feed}"`);
+  assert(r.row.includes('480'), `the mission row must show the payout: "${r.row}"`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('missions: time, combo and mass stop growing at their caps', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      need = {};
+    k.M.seq = 13 * 6;
+    k.M.act = [];
+    for (let i = 0; i < 40; i++) {
+      k.M.act = [];
+      k.rollMissions();
+      for (const m of k.M.act) need[m.type] = Math.max(need[m.type] || 0, m.need);
+    }
+    return need;
+  });
+  // the page saves its own missions when it is hidden (a reload), so the old save is written before each load
+  await g.page.addInitScript(() => localStorage.setItem('kus.m', JSON.stringify({ seq: 0, act: [{ type: 'time', need: 260, got: 0 }], open: [] })));
+  assert(r.time > 0 && r.combo > 0 && r.mass > 0, `time, combo and mass must all roll: ${JSON.stringify(r)}`);
+  assert(r.time <= 150 && r.combo <= 8 && r.mass <= 1600, `caps broken: ${JSON.stringify(r)}`);
+  await g.page.reload();
+  await g.page.waitForTimeout(600);
+  const old = await g.page.evaluate(() => window.__kus.M.act.find((m) => m.type === 'time').need);
+  assert(old === 150, `an old time mission must be cut to 150, got ${old}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('missions: one stuck for 5 runs is replaced, deaths inside a run count once', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = { has: [], len: [] };
+    k.pause(true);
+    k.M.act = [{ type: 'hedge', need: 2, got: 0, c: 0 }];
+    const go = (cheat) => {
+      k.setMode('t3');
+      k.startGame();
+      k.player.spawnT = 0;
+      if (cheat) k.player.cheated = true;
+      for (const m of k.M.act) if (m.type !== 'hedge') m.got = Math.min(m.need - 1, m.got + 1); // the others make headway, only hedge is stuck
+      for (let d = 0; d < 2; d++) {
+        k.player.alive = false;
+        k.die(null);
+        for (let i = 0; i < 200 && k.state !== 'play'; i++) k.update(1 / 60);
+      }
+      k.setTimeLeft(0.001);
+      for (let i = 0; i < 400 && !(k.state === 'dead' && 'got' in k.run); i++) k.update(1 / 60);
+      for (let i = 0; i < 120; i++) k.update(1 / 60); // the end card comes up, so the next startGame is allowed
+    };
+    for (let n = 0; n < 5; n++) {
+      go(false);
+      out.has.push(k.M.act.some((m) => m.type === 'hedge'));
+      out.len.push(k.M.act.length);
+      if (n === 4) out.card = document.getElementById('overMis').textContent;
+      if (n === 3) out.idle4 = (k.M.act.find((m) => m.type === 'hedge') || {}).idle;
+    }
+    k.setMode('t3');
+    k.startGame();
+    out.afterStart = k.M.act.length;
+    k.M.act = [{ type: 'hedge', need: 2, got: 0, c: 0 }];
+    go(true);
+    out.cheat = (k.M.act.find((m) => m.type === 'hedge') || {}).idle | 0;
+    return out;
+  });
+  assert(r.has.join() === 'true,true,true,true,false', `hedge must go after the fifth run only: ${r.has}`);
+  assert(r.idle4 === 4, `two deaths in a run must count once, idle after 4 runs ${r.idle4}`);
+  assert(
+    r.len[4] === 2 && r.card.includes('hedge') === false && r.card.length > 0,
+    `after the fifth run the stuck one is gone and the card still lists the run's missions: ${r.len} "${r.card}"`,
+  );
+  assert(r.afterStart === 3, `the next start must refill to three missions: ${r.afterStart}`);
+  assert(r.cheat === 0, `a cheated run must not count as idle: ${r.cheat}`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
 });
@@ -625,14 +1311,32 @@ test('streak: a bonus pickup is a streak step', async () => {
     for (let i = 0; i < 268; i++) { away(); k.pickups.length = 0; P.biteCd = 999; k.update(1/60); }
     out.g.sum = sum.textContent; out.g.on = sum.classList.contains('on');
     return out; })()`);
-  assert(r.a.taken && r.b.taken && r.c.taken, `the player's own pickup was not collected (a stray blob won the overlap): ${JSON.stringify([r.a, r.b, r.c])}`);
-  assert(r.a.combo === 1 && r.a.words.length === 0 && Math.abs(r.a.comboT - 4) < 0.05, `a first pickup must start a streak at 1 with no word: ${JSON.stringify(r.a)}`);
-  assert(r.b.combo === 2 && r.b.words.join() === 'Кусь-кусь!' && r.b.chip === '×2', `a pickup inside a streak must make ×2 and stamp the word: ${JSON.stringify(r.b)}`);
-  assert(r.c.combo === 5 && r.c.words.join() === 'Хрум-хрум!', `a pickup at the last moment must make ×5 Хрум-хрум!, never На волоске!: ${JSON.stringify(r.c)}`);
+  assert(
+    r.a.taken && r.b.taken && r.c.taken,
+    `the player's own pickup was not collected (a stray blob won the overlap): ${JSON.stringify([r.a, r.b, r.c])}`,
+  );
+  assert(
+    r.a.combo === 1 && r.a.words.length === 0 && Math.abs(r.a.comboT - 4) < 0.05,
+    `a first pickup must start a streak at 1 with no word: ${JSON.stringify(r.a)}`,
+  );
+  assert(
+    r.b.combo === 2 && r.b.words.join() === 'Кусь-кусь!' && r.b.chip === '×2',
+    `a pickup inside a streak must make ×2 and stamp the word: ${JSON.stringify(r.b)}`,
+  );
+  assert(
+    r.c.combo === 5 && r.c.words.join() === 'Хрум-хрум!',
+    `a pickup at the last moment must make ×5 Хрум-хрум!, never На волоске!: ${JSON.stringify(r.c)}`,
+  );
   assert(r.d.taken && r.d.same, `a bot taking a bonus must not touch the player's streak: ${JSON.stringify(r.d)}`);
   assert(r.a.texts.includes('Скорость!'), `a pickup that only starts a streak still names the bonus over the candy: ${JSON.stringify(r.a.texts)}`);
-  assert(!r.b.texts.includes('Скорость!') && !r.c.texts.includes('Скорость!'), `inside a streak the stamp talks, the bonus name must not float over the candy: ${JSON.stringify([r.b.texts, r.c.texts])}`);
-  assert(r.f.taken && r.f.moved && Math.abs(r.f.kick + Math.PI / 2) < 0.35 && r.f.woundAbove, `the kick and the last spot must point at a bonus above the player: ${JSON.stringify(r.f)}`);
+  assert(
+    !r.b.texts.includes('Скорость!') && !r.c.texts.includes('Скорость!'),
+    `inside a streak the stamp talks, the bonus name must not float over the candy: ${JSON.stringify([r.b.texts, r.c.texts])}`,
+  );
+  assert(
+    r.f.taken && r.f.moved && Math.abs(r.f.kick + Math.PI / 2) < 0.35 && r.f.woundAbove,
+    `the kick and the last spot must point at a bonus above the player: ${JSON.stringify(r.f)}`,
+  );
   assert(r.g.combo === 2 && r.g.on && r.g.sum === 'Серия ×2', `a bonus-only streak sums up without «+0 сахара»: ${JSON.stringify(r.g)}`);
   assert(r.e.cold === r.e.deep, `a streak pickup must pay no sugar beyond the old pickup payout: ${JSON.stringify(r.e)}`);
   assert(g.errors.length === 0, g.errors.join(' | '));
@@ -1543,22 +2247,44 @@ test('bots: easy and normal keep the old script, no traits, packs, sneaks or lic
 // On phones the buttons sit on the left and the joystick hint on the right by default; «Справа» moves them back and is remembered.
 // A save from before this default (lefty: false without hv) is the old default, not a choice: it gets the new one.
 test('settings: phone buttons on the left by default, the hand switch is remembered', async () => {
-  const side = (page) => page.evaluate(() => { const d = document.getElementById('dash').getBoundingClientRect(), t = document.getElementById('dodge').getBoundingClientRect();
-    return { lefty: document.body.classList.contains('lefty'), dash: d.left + d.width / 2, tongue: t.left + t.width / 2, w: innerWidth,
-      pressed: document.querySelector('#handSeg [aria-pressed="true"]')?.dataset.v, saved: JSON.parse(localStorage.getItem('kus.set') || 'null') }; });
+  const side = (page) =>
+    page.evaluate(() => {
+      const d = document.getElementById('dash').getBoundingClientRect(),
+        t = document.getElementById('dodge').getBoundingClientRect();
+      return {
+        lefty: document.body.classList.contains('lefty'),
+        dash: d.left + d.width / 2,
+        tongue: t.left + t.width / 2,
+        w: innerWidth,
+        pressed: document.querySelector('#handSeg [aria-pressed="true"]')?.dataset.v,
+        saved: JSON.parse(localStorage.getItem('kus.set') || 'null'),
+      };
+    });
   const g = await open({ width: 390, height: 844, touch: true });
   const fresh = await side(g.page);
-  assert(fresh.lefty && fresh.dash < fresh.w / 2 && fresh.tongue < fresh.w / 2 && fresh.pressed === '1', `fresh phone: Кусь and Язык must sit on the left: ${JSON.stringify(fresh)}`);
+  assert(
+    fresh.lefty && fresh.dash < fresh.w / 2 && fresh.tongue < fresh.w / 2 && fresh.pressed === '1',
+    `fresh phone: Кусь and Язык must sit on the left: ${JSON.stringify(fresh)}`,
+  );
   await g.page.evaluate(() => document.querySelector('#handSeg button[data-v="0"]').click());
   const right = await side(g.page);
-  assert(!right.lefty && right.dash > right.w / 2 && right.pressed === '0' && right.saved && right.saved.lefty === false && right.saved.hv === 2, `«Справа» must move the buttons right and save it: ${JSON.stringify(right)}`);
-  await g.page.reload(); await g.page.waitForTimeout(600); await g.page.tap('#play'); await g.page.waitForTimeout(250);
+  assert(
+    !right.lefty && right.dash > right.w / 2 && right.pressed === '0' && right.saved && right.saved.lefty === false && right.saved.hv === 2,
+    `«Справа» must move the buttons right and save it: ${JSON.stringify(right)}`,
+  );
+  await g.page.reload();
+  await g.page.waitForTimeout(600);
+  await g.page.tap('#play');
+  await g.page.waitForTimeout(250);
   const again = await side(g.page);
   assert(!again.lefty && again.dash > again.w / 2, `the chosen «Справа» must survive a reload: ${JSON.stringify(again)}`);
   await g.close();
   const old = await open({ width: 390, height: 844, touch: true, play: false });
   await old.page.evaluate(() => localStorage.setItem('kus.set', JSON.stringify({ lefty: false, bs: 1, gfx: 'auto', fps: false })));
-  await old.page.reload(); await old.page.waitForTimeout(600); await old.page.tap('#play'); await old.page.waitForTimeout(250);
+  await old.page.reload();
+  await old.page.waitForTimeout(600);
+  await old.page.tap('#play');
+  await old.page.waitForTimeout(250);
   const oldSave = await side(old.page);
   assert(oldSave.lefty && oldSave.dash < oldSave.w / 2, `an old save with the old default must get the new left default: ${JSON.stringify(oldSave)}`);
   assert(g.errors.length === 0 && old.errors.length === 0, [...g.errors, ...old.errors].join(' | '));
@@ -2356,11 +3082,17 @@ test('lang: no Russian left in an English run, end card, album page, trophy, can
     for (let i = 0; i < 30; i++) { k.update(1/60); k.render(); } })()`);
   await look('run HUD');
   // the 3-minute end card
-  await g.page.evaluate(`(() => { const k = window.__kus; k.toMenu(); k.setMode('t3'); k.startGame(); k.player.spawnT = 0; k.setTimeLeft(0.001); for (let i = 0; i < 90; i++) k.update(1/60); })()`);
+  await g.page.evaluate(
+    `(() => { const k = window.__kus; k.toMenu(); k.setMode('t3'); k.startGame(); k.player.spawnT = 0; k.setTimeLeft(0.001); for (let i = 0; i < 90; i++) k.update(1/60); })()`,
+  );
   await look('3-minute end card');
   await g.page.evaluate(() => document.getElementById('chalBtn').click());
   // the album page from the menu
-  await g.page.evaluate(() => { window.__kus.toMenu(); document.getElementById('albumBtn').click(); document.querySelector('#albumRows .st').click(); });
+  await g.page.evaluate(() => {
+    window.__kus.toMenu();
+    document.getElementById('albumBtn').click();
+    document.querySelector('#albumRows .st').click();
+  });
   await g.page.waitForTimeout(200);
   await look('album page');
   await g.page.evaluate(() => document.getElementById('albumX').click());
@@ -2375,7 +3107,9 @@ test('lang: no Russian left in an English run, end card, album page, trophy, can
   await g.page.evaluate(`(() => { ${DAY} play(20261125, 120); })()`);
   await look('candy of the day end card');
   // the FPS line
-  await g.page.evaluate(`(() => { const k = window.__kus; k.toMenu(); document.querySelector('#fpsSeg [data-v="1"]').click(); k.setMode('free'); k.startGame(); })()`);
+  await g.page.evaluate(
+    `(() => { const k = window.__kus; k.toMenu(); document.querySelector('#fpsSeg [data-v="1"]').click(); k.setMode('free'); k.startGame(); })()`,
+  );
   await g.page.waitForTimeout(1500);
   await look('FPS line');
   const canvas = await g.page.evaluate(cyrDrawn);
@@ -2405,7 +3139,9 @@ test('lang: sticker names fit their tiles on a 360x640 phone in both languages',
     const g = await open({ width: 360, height: 640, touch: true, play: false, returning: true, locale });
     await g.page.evaluate(() => document.getElementById('albumBtn').click());
     await g.page.waitForTimeout(300);
-    const cut = await g.page.evaluate(() => [...document.querySelectorAll('#albumRows .sn')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent));
+    const cut = await g.page.evaluate(() =>
+      [...document.querySelectorAll('#albumRows .sn')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent),
+    );
     assert(!cut.length, `${locale}: names cut off: ${cut.join(', ')}`);
     await g.close();
   }
@@ -2434,7 +3170,10 @@ test('settings: the language row keeps the same gap to the next heading as the o
     await g.page.evaluate(() => document.querySelector('#secSet .sh').click());
     await g.page.waitForTimeout(400);
     gaps[touch ? 'phone' : 'pc'] = await g.page.evaluate(() => {
-      const next = (el) => [...document.querySelectorAll('#secSetB .grp')].find((h) => h.getBoundingClientRect().top > el.getBoundingClientRect().bottom && h.getClientRects().length);
+      const next = (el) =>
+        [...document.querySelectorAll('#secSetB .grp')].find(
+          (h) => h.getBoundingClientRect().top > el.getBoundingClientRect().bottom && h.getClientRects().length,
+        );
       const gap = (el) => Math.round(next(el).getBoundingClientRect().top - el.getBoundingClientRect().bottom);
       const sizeSeg = document.getElementById('sizeSeg');
       return { lang: gap(document.getElementById('langSeg')), other: sizeSeg.getClientRects().length ? gap(sizeSeg) : null };
@@ -2442,7 +3181,10 @@ test('settings: the language row keeps the same gap to the next heading as the o
     await g.close();
   }
   const ref = gaps.phone.other;
-  assert(ref > 6 && Math.abs(gaps.phone.lang - ref) <= 1 && Math.abs(gaps.pc.lang - ref) <= 1, `gaps after the language row vs the others: ${JSON.stringify(gaps)}`);
+  assert(
+    ref > 6 && Math.abs(gaps.phone.lang - ref) <= 1 && Math.abs(gaps.pc.lang - ref) <= 1,
+    `gaps after the language row vs the others: ${JSON.stringify(gaps)}`,
+  );
 });
 
 test('lang: the English stage pill says the number before an event is mass, not time', async () => {
