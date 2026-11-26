@@ -1426,8 +1426,9 @@ test('perf: the stage pill animates without a page layout every frame', async ()
   await g.close();
 });
 
-// smarter bots: a scene with the player and a few bots, everything else parked far away
-const BOTS = `const k = window.__kus, P = k.player; k.pause(true);
+// smarter bots: a scene with the player and a few bots, everything else parked far away.
+// Sound is off: Sfx.pop skips clicks by the audio clock, so with sound on Math.random is drawn a different number of times on a slower machine.
+const BOTS = `const k = window.__kus, P = k.player; k.pause(true); k.Sfx.ok = () => false;
   for (const key in k.CHEAT) k.CHEAT[key] = key === 'speed' ? 1 : false;
   for (const b of k.blobs) if (b !== P) { b.x = 300 + Math.random() * 300; b.y = 3700; b.resetPoints(); }
   P.spawnT = 0; P.ai = null;
@@ -1489,18 +1490,30 @@ test('bots: a small bot bites the back of a busy big player and backs off', asyn
 
 test('bots: a pack gathers on a big one, goes in from several sides and breaks up', async () => {
   const g = await open();
-  const r = await g.page.evaluate(`(() => { ${BOTS}
-    k.setDiff('extreme'); const t0 = k.botStat.packs; let formed = 0, size = 0, ended = 0;
-    for (let t = 0; t < 4 && k.botStat.packs === t0; t++) {
-      // members may still run off from a giant that turns their way, so try a few fresh groups
-      for (const b of k.blobs) if (b !== P && b.ai) b.alive = false;
-      P.mass = 500; k.place(P, 2000, 2000, 0); P.pShield = 99;
-      const four = [0, 1, 2, 3].map((i) => bot(70, 2000 + Math.cos(i * 1.6) * 420, 2000 + Math.sin(i * 1.6) * 420, 0));
-      run(1, () => { clear(four); k.place(P, 2000, 2000, 0); });
-      P.pShield = 0;
-      run(20, () => { clear(four); k.place(P, 2000, 2000, 0); P.biteCd = 1; if (k.packs.length) { formed = 1; size = Math.max(size, k.packs[0].m.length); } else if (formed) ended = 1; });
+  // A seeded Math.random from here on. The field before this point still comes from real frames, so runs are alike, not identical.
+  const r = await g.page.evaluate(`(() => { let seed = 1; Math.random = () => { seed = (seed + 0x6d2b79f5) >>> 0; let x = seed;
+      x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+    ${BOTS}
+    // only the four on the field: a bigger bot wandering in scares the members off, and packs between bots are not this test
+    const only = (four) => { for (const o of k.blobs) if (o !== P && four.indexOf(o) < 0) o.alive = false; k.place(P, 2000, 2000, 0); };
+    k.setDiff('extreme'); let formed = 0, size = 0, went = 0, ended = 0;
+    for (let t = 0; t < 8 && !went; t++) {
+      // members may still run off from the giant or eat each other before the pack goes in, so try a few fresh groups;
+      // a pack that falls apart holds the next one off for up to 10.4 s (packCd on extreme), so wait that out on an empty field
+      P.mass = 500; P.pShield = 99; only([]);
+      if (t) run(11, () => only([]));
+      // round its back and sides, not in front of its mouth, where a member runs off before the pack forms
+      const four = [0, 1, 2, 3].map((i) => bot(70, 2000 + Math.cos(Math.PI + (i - 1.5) * 0.9) * 420, 2000 + Math.sin(Math.PI + (i - 1.5) * 0.9) * 420, 0));
+      run(1, () => only(four));
+      P.pShield = 0; let on = 0, off = 0;
+      for (let i = 0; i < 20 * 60 && !off; i++) {
+        only(four); P.biteCd = 1;
+        const pk = k.packs.find((p) => p.tgt === P);
+        if (pk) { on = formed = 1; size = Math.max(size, pk.m.length); if (pk.go) went = 1; } else if (on) ended = off = 1;
+        k.update(1 / 60);
+      }
     }
-    return { formed, size, went: k.botStat.packs - t0, ended }; })()`);
+    return { formed, size, went, ended }; })()`);
   assert(r.formed && r.size >= 2 && r.size <= 4, `pack ${JSON.stringify(r)}`);
   assert(r.went > 0, 'the pack never went in');
   assert(r.ended, 'the pack never broke up');
