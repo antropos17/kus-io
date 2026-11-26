@@ -522,6 +522,63 @@ test('sugar: earned in a clean run, paid at the end, one chest pick, two-tap sho
   await g.close();
 });
 
+const CHEST_END = `const k = window.__kus; k.setSugar(0); k.pause(true); k.setMode('t3'); k.startGame(); k.player.spawnT = 0; k.run.sugar = 200; k.setTimeLeft(0.001); for (let i = 0; i < 90; i++) k.update(1 / 60);`;
+
+test('chest: one paid reroll, the price is three times the base, never twice', async () => {
+  const g = await open({ play: false });
+  const r = await g.page.evaluate(`(() => { ${CHEST_END}
+    const out = {}, again = document.getElementById('chestAgain'), odds = document.getElementById('chestOdds'), row = document.getElementById('chestRow');
+    out.base = k.run.chestBase; out.hiddenBefore = again.classList.contains('hidden') && odds.classList.contains('hidden');
+    row.children[0].click();
+    out.shown = !again.classList.contains('hidden') && !odds.classList.contains('hidden');
+    out.label = again.textContent; out.oddsT = odds.textContent;
+    k.setSugar(1000);
+    again.click(); out.ask = again.textContent; out.afterAsk = k.sugar;
+    again.click(); again.click();
+    out.paid = 1000 - k.sugar; out.reset = [...row.children].every((b) => b.textContent === '?' && !b.disabled);
+    out.hiddenAfter = again.classList.contains('hidden') && odds.classList.contains('hidden');
+    const before = k.sugar; row.children[2].click(); out.won = k.sugar - before; out.prizes = [...row.children].map((b) => +b.textContent);
+    again.click(); again.click(); out.noThird = 1000 - k.sugar === out.paid - out.won;
+    return out; })()`);
+  assert(r.base >= 3 && r.hiddenBefore, `base ${r.base}, hidden before the pick ${r.hiddenBefore}`);
+  assert(r.shown && r.label === `Ещё раз — ${3 * r.base}` && r.oddsT === 'Каждая карта — 1 из 3: ×1, ×2, ×5', `label "${r.label}", odds "${r.oddsT}"`);
+  assert(r.ask === `Точно? −${3 * r.base} сахара` && r.afterAsk === 1000, `first tap "${r.ask}", bank ${r.afterAsk}`);
+  assert(r.paid === 3 * r.base, `paid ${r.paid}, want ${3 * r.base}`);
+  assert(r.reset && r.hiddenAfter, 'cards must be "?" again and the button hidden');
+  assert(r.prizes.includes(r.won) && r.won > 0 && r.noThird, `second pick won ${r.won} of ${r.prizes}, third reroll ${r.noThird}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('chest: the reroll is hidden when the bank is short of its price', async () => {
+  const g = await open({ play: false });
+  const r = await g.page.evaluate(`(() => { ${CHEST_END}
+    const base = k.run.chestBase; k.setSugar(0);
+    document.getElementById('chestRow').children[0].click();
+    return { base, bank: k.sugar, hidden: document.getElementById('chestAgain').classList.contains('hidden') }; })()`);
+  assert(r.hidden === (r.bank < 3 * r.base), `bank ${r.bank}, price ${3 * r.base}, hidden ${r.hidden}`);
+  assert(r.bank < 3 * r.base, `the test needs a bank below the price: ${r.bank} vs ${3 * r.base}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+for (const [w, h] of [[360, 640], [844, 390]])
+  for (const locale of ['ru-RU', 'en-US'])
+    test(`chest: the reroll button and odds fit the end card at ${w}x${h} ${locale}`, async () => {
+      const g = await open({ play: false, width: w, height: h, touch: true, locale });
+      const r = await g.page.evaluate(`(() => { ${CHEST_END}
+        document.getElementById('chestRow').children[0].click();
+        const R = (s) => { const e = document.querySelector(s); const b = e.getBoundingClientRect(); return { s, l: b.left, t: b.top, r: b.right, b: b.bottom, hid: e.classList.contains('hidden') }; };
+        const card = R('#over .card'), parts = ['#chestAgain', '#chestOdds'].map(R), others = ['#chestRow', '#again', '#chalBtn', '#toMenu'].map(R);
+        const hit = (a, b) => a.l < b.r - 1 && b.l < a.r - 1 && a.t < b.b - 1 && b.t < a.b - 1;
+        const bad = []; for (const p of parts) { if (p.hid) bad.push(p.s + ' hidden'); if (p.l < card.l || p.r > card.r) bad.push(p.s + ' outside card x'); for (const o of others) if (hit(p, o)) bad.push(p.s + ' over ' + o.s); }
+        if (hit(parts[0], parts[1])) bad.push('button over odds');
+        return { bad }; })()`);
+      assert(r.bad.length === 0, `${w}x${h} ${locale}: ${r.bad.join(', ')}`);
+      assert(g.errors.length === 0, g.errors.join(' | '));
+      await g.close();
+    });
+
 test('hud: the sugar pill rolls to earned sugar once the cubes land', async () => {
   const g = await open();
   const r = await g.page.evaluate(`(() => { ${QUIET} k.run.sugar = 0; k.hud.sugarSettle();

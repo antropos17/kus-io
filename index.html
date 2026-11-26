@@ -232,6 +232,8 @@ body.touch.lefty #dash.low:after{right:auto;left:calc(100% + 12px)}
 #chestRow button:disabled{cursor:default;box-shadow:none}
 #chestRow button.open{background:#f0dcc6;color:#7a5a49}
 #chestRow button.got{background:var(--berry);color:#fff}
+#chestAgain{margin-top:8px;padding:8px;font-size:14px}
+#chestOdds{margin:4px 0 0;font:700 12px/1.25 var(--font);color:#7a5a49;text-align:center}
 #near{margin-top:6px}
 @media (max-height:760px){#over .card.paid.stk #near,#over .card.paid.chal #stk{display:none}#over .card.paid.chal #near{display:none}#over .card.paid #overMis{display:none}#over .card.paid .stats{margin-bottom:6px}#over .card.paid .best{margin-top:6px}}
 #near:empty{display:none}
@@ -399,6 +401,9 @@ body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))}
   #chestT{margin:0;font-size:13px}
   #chestRow{grid-column:1/-1}
   #chestRow button{min-height:34px;font-size:16px}
+  #chestAgain,#chestOdds{grid-column:1/-1}
+  #chestAgain{margin-top:0;padding:6px;font-size:13px}
+  #chestOdds{margin:0;font-size:11px}
   #over .card.paid .tag{display:none}
   #over .card.paid .stats{margin-bottom:8px}
   #over .card.paid .best{margin-top:3px;font-size:13px}
@@ -562,6 +567,8 @@ document.getElementById('nojs').style.display = 'none';
       <div class="sw1"><b id="sweetN">+0</b><span data-t="sweet.round">сахара за раунд</span><span id="sweetBank"></span></div>
       <p id="chestT"></p>
       <div id="chestRow" role="group" aria-label="Три конфеты" data-ta="a.chest"></div>
+      <button id="chestAgain" class="btn2 hidden" type="button"></button>
+      <p id="chestOdds" class="hidden"></p>
     </div>
     <div id="overMis"></div>
     <button id="again" class="btn" type="button" data-t="over.again">Ещё кусь</button>
@@ -911,6 +918,9 @@ const STR = {
   'chest.t': ['Выбери конфету: в одной много сахара', 'Pick a candy: one holds lots of sugar'],
   'chest.a': [(n) => `Конфета ${n}`, (n) => `Candy ${n}`],
   'chest.top': [(n) => `Самая сладкая! +${n} сахара`, (n) => `The sweetest one! +${n} sugar`],
+  'chest.again': [(n) => `Ещё раз — ${n}`, (n) => `Again — ${n}`],
+  'chest.againAsk': [(n) => `Точно? −${n} сахара`, (n) => `Sure? −${n} sugar`],
+  'chest.odds': ['Каждая карта — 1 из 3: ×1, ×2, ×5', 'Each card is 1 in 3: ×1, ×2, ×5'],
   'chest.got': [(n) => `+${n} сахара`, (n) => `+${n} sugar`],
   'mis.head': ['Задания: за каждое сахар', 'Missions: sugar for each'],
   'tip.touchL': ['Справа води пальцем, слева <b>Кусь</b> и <b>Язык</b>', 'Drag on the right, <b>Kusь!</b> and <b>Tongue</b> on the left'],
@@ -4987,13 +4997,32 @@ function renderSweet(m, score) {
   countUp($('sweetN'), got);
   $('sweetBank').textContent = t('sweet.bank', sugar);
   $('chestT').textContent = t('chest.t');
+  chestCards();
+  run.chestBase = clamp(Math.round(got * 0.3), 3, 40);
+  run.rerolled = false;
+  rerollAsk = false;
+  renderReroll(false);
+}
+function chestCards() {
   $('chestRow').innerHTML = [0, 1, 2].map((i) => `<button type="button" data-i="${i}" aria-label="${t('chest.a', i + 1)}">?</button>`).join('');
+}
+let rerollAsk = false; // the first tap on the reroll button asked, the second pays
+function rerollPrice() {
+  return 3 * run.chestBase;
+}
+function renderReroll(picked) {
+  const show = picked && !run.rerolled && sugar >= rerollPrice();
+  $('chestAgain').classList.toggle('hidden', !show);
+  $('chestOdds').classList.toggle('hidden', !show);
+  if (!show) return;
+  $('chestAgain').textContent = rerollAsk ? t('chest.againAsk', rerollPrice()) : t('chest.again', rerollPrice());
+  $('chestOdds').textContent = t('chest.odds');
 }
 $('chestRow').addEventListener('click', (e) => {
   const pick = e.target.closest('button');
   if (!pick || !run.chest) return;
   run.chest = false;
-  const base = clamp(Math.round(run.got * 0.3), 3, 40),
+  const base = run.chestBase,
     prizes = [base, base * 2, base * 5];
   for (let i = 2; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -5012,6 +5041,29 @@ $('chestRow').addEventListener('click', (e) => {
   $('near').textContent = nearText(mode, Math.round(run.max));
   Sfx.power();
   haptic(won === base * 5 ? 30 : 12);
+  rerollAsk = false;
+  renderReroll(true);
+});
+$('chestAgain').addEventListener('click', () => {
+  const price = rerollPrice();
+  if (run.chest || run.rerolled || sugar < price) return;
+  if (!rerollAsk) {
+    rerollAsk = true;
+    renderReroll(true);
+    return;
+  }
+  sugar -= price;
+  saveSugar();
+  run.rerolled = true;
+  run.chest = true;
+  rerollAsk = false;
+  $('chestT').textContent = t('chest.t');
+  chestCards();
+  $('sweetBank').textContent = t('sweet.bank', sugar);
+  $('near').textContent = nearText(mode, Math.round(run.max));
+  renderReroll(false);
+  Sfx.power();
+  haptic(12);
 });
 function renderMissions() {
   $('misT').textContent = t('mis.head');

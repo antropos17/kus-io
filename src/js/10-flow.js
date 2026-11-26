@@ -149,13 +149,32 @@ function renderSweet(m, score) {
   countUp($('sweetN'), got);
   $('sweetBank').textContent = t('sweet.bank', sugar);
   $('chestT').textContent = t('chest.t');
+  chestCards();
+  run.chestBase = clamp(Math.round(got * 0.3), 3, 40);
+  run.rerolled = false;
+  rerollAsk = false;
+  renderReroll(false);
+}
+function chestCards() {
   $('chestRow').innerHTML = [0, 1, 2].map((i) => `<button type="button" data-i="${i}" aria-label="${t('chest.a', i + 1)}">?</button>`).join('');
+}
+let rerollAsk = false; // the first tap on the reroll button asked, the second pays
+function rerollPrice() {
+  return 3 * run.chestBase;
+}
+function renderReroll(picked) {
+  const show = picked && !run.rerolled && sugar >= rerollPrice();
+  $('chestAgain').classList.toggle('hidden', !show);
+  $('chestOdds').classList.toggle('hidden', !show);
+  if (!show) return;
+  $('chestAgain').textContent = rerollAsk ? t('chest.againAsk', rerollPrice()) : t('chest.again', rerollPrice());
+  $('chestOdds').textContent = t('chest.odds');
 }
 $('chestRow').addEventListener('click', (e) => {
   const pick = e.target.closest('button');
   if (!pick || !run.chest) return;
   run.chest = false;
-  const base = clamp(Math.round(run.got * 0.3), 3, 40),
+  const base = run.chestBase,
     prizes = [base, base * 2, base * 5];
   for (let i = 2; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -174,6 +193,29 @@ $('chestRow').addEventListener('click', (e) => {
   $('near').textContent = nearText(mode, Math.round(run.max));
   Sfx.power();
   haptic(won === base * 5 ? 30 : 12);
+  rerollAsk = false;
+  renderReroll(true);
+});
+$('chestAgain').addEventListener('click', () => {
+  const price = rerollPrice();
+  if (run.chest || run.rerolled || sugar < price) return;
+  if (!rerollAsk) {
+    rerollAsk = true;
+    renderReroll(true);
+    return;
+  }
+  sugar -= price;
+  saveSugar();
+  run.rerolled = true;
+  run.chest = true;
+  rerollAsk = false;
+  $('chestT').textContent = t('chest.t');
+  chestCards();
+  $('sweetBank').textContent = t('sweet.bank', sugar);
+  $('near').textContent = nearText(mode, Math.round(run.max));
+  renderReroll(false);
+  Sfx.power();
+  haptic(12);
 });
 function renderMissions() {
   $('misT').textContent = t('mis.head');

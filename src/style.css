@@ -199,6 +199,8 @@ body.touch.lefty #dash.low:after{right:auto;left:calc(100% + 12px)}
 #chestRow button:disabled{cursor:default;box-shadow:none}
 #chestRow button.open{background:#f0dcc6;color:#7a5a49}
 #chestRow button.got{background:var(--berry);color:#fff}
+#chestAgain{margin-top:8px;padding:8px;font-size:14px}
+#chestOdds{margin:4px 0 0;font:700 12px/1.25 var(--font);color:#7a5a49;text-align:center}
 #near{margin-top:6px}
 @media (max-height:760px){#over .card.paid.stk #near,#over .card.paid.chal #stk{display:none}#over .card.paid.chal #near{display:none}#over .card.paid #overMis{display:none}#over .card.paid .stats{margin-bottom:6px}#over .card.paid .best{margin-top:6px}}
 #near:empty{display:none}
@@ -366,6 +368,9 @@ body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))}
   #chestT{margin:0;font-size:13px}
   #chestRow{grid-column:1/-1}
   #chestRow button{min-height:34px;font-size:16px}
+  #chestAgain,#chestOdds{grid-column:1/-1}
+  #chestAgain{margin-top:0;padding:6px;font-size:13px}
+  #chestOdds{margin:0;font-size:11px}
   #over .card.paid .tag{display:none}
   #over .card.paid .stats{margin-bottom:8px}
   #over .card.paid .best{margin-top:3px;font-size:13px}
