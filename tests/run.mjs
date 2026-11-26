@@ -1659,6 +1659,34 @@ test('sound: every effect plays without throwing', async () => {
   await g.close();
 });
 
+// Who eats or pulls a sprinkle: these pin the behaviour across grid cells (256 px), at the world's edge and with a magnet's long reach.
+test('food: eating and pulling sprinkles work across cell borders, at the world edge and with a magnet', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} const out = {};
+    const clear = (x, y) => { for (const f of k.food) if (Math.hypot(f.x - x, f.y - y) < 700) { f.x = 3900; f.y = 100; f.vx = f.vy = 0; } };
+    const drop = (x, y) => { const f = { kind: 0, x, y, m: 1, c: 0, ai: 0, sz: 7 }; k.food.push(f); return f; };
+    // 1: eaten in one step by a candy in the next cell over
+    k.place(P, 1020, 2000, 0); clear(1020, 2000); let f = drop(1020 + P.Rs * 0.8, 2000), m = P.mass;
+    out.crossX = f.x; k.update(1 / 60); out.eaten = !k.food.includes(f); out.gain = P.mass - m;
+    // 2: a magnet pulls a sprinkle 300 px behind the face, two cells away; without one it stays put
+    k.place(P, 2040, 2000, 0); clear(2040, 2000); P.pMagnet = 5; f = drop(1740, 2000); k.update(1 / 60); out.pulled = f.x - 1740;
+    P.pMagnet = 0; k.place(P, 2040, 2000, 0); f = drop(1740, 2000); k.update(1 / 60); out.still = Math.abs(f.x - 1740) + Math.abs(f.y - 2000);
+    // 3: the corner of the world
+    k.place(P, P.Rs, P.Rs, Math.PI * 1.25); clear(0, 0); f = drop(5, 5); let n = 0;
+    for (; n < 30 && k.food.includes(f); n++) k.update(1 / 60); out.corner = n;
+    // 4: a bot eats across the border too
+    const B = k.blobs.find((b) => b !== P && !b.kind && b.alive); B.ai = null; k.place(B, 3060, 3000, 0); clear(3060, 3000);
+    f = drop(3060 + B.Rs * 0.8, 3000); m = B.mass; out.botX = f.x; k.update(1 / 60); out.botEaten = !k.food.includes(f); out.botGain = B.mass - m;
+    return out; })()`);
+  assert(r.crossX > 1024, `setup: the sprinkle at x ${r.crossX} must be in the next cell`);
+  assert(r.eaten && Math.abs(r.gain - 1) < 0.01, `a sprinkle across the cell border: eaten ${r.eaten}, mass +${r.gain}`);
+  assert(r.pulled > 5 && r.still < 0.001, `magnet: pulled ${r.pulled} px; without it moved ${r.still} px`);
+  assert(r.corner < 30, `a sprinkle in the corner was not eaten in 30 steps`);
+  assert(r.botX > 3072 && r.botEaten && Math.abs(r.botGain - 1) < 0.01, `a bot across the border: ${JSON.stringify(r)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 // The long one: the autopilot plays for simulated minutes at an uneven frame rate while invariants are checked every frame.
 test('soak: 3 simulated minutes at a ragged frame rate, nothing breaks or gets stuck', async () => {
   const g = await open();
