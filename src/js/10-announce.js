@@ -3,15 +3,17 @@
 // The word is a page layer over the canvas, so it stays sharp when adapt lowers the canvas resolution; it pays nothing.
 const ANN = { win: 5, life: 1.4, inT: 0.18, glow: 4 };
 // n swallows in the chain, at: game time of the last one; top, bot: screen y of the candy's label and of its bottom
-const ann = { n: 0, at: -99, step: 0, t: 0, hold: false, top: 0, bot: 0 };
+const ann = { n: 0, at: -99, step: 0, t: 0, hold: false, top: 0, bot: 0, quiet: false }; // quiet: the swallow that brought the word stamps nothing
 const annEl = $('announce'),
   annWord = annEl.querySelector('b');
 function annSwallow(B) {
-  // called from swallowWhole for the player's own swallow, before the streak's stamp
-  if (B.boss) return annReset(); // the Big Cake has its own win arc: it does not count and ends the chain
+  // called from swallowWhole for the player's own swallow, before the streak's stamp; true when it brought a word
+  if (B.boss) return annReset(), false; // the Big Cake has its own win arc: it does not count and ends the chain
   ann.n = time - ann.at <= ANN.win ? ann.n + 1 : 1;
   ann.at = time;
-  if (ann.n >= 2) annShow(Math.min(ann.n, 5));
+  if (ann.n < 2) return false;
+  annShow(Math.min(ann.n, 5));
+  return ann.step > 0;
 }
 const ANN_SIZE = [0, 0, 1, 1.12, 1.24, 1.36], // font scale of each step on a 34 px base
   ANN_SPR = ['#ff5d8f', '#ffd23f', '#7ad7ff', '#9be15d', '#c49bff', '#fff6e8', '#ff9a3d'];
@@ -24,6 +26,8 @@ function annShow(step) {
   const glow = !calm && step >= ANN.glow;
   annEl.className = 's' + step + (calm ? ' calm' : '') + (glow ? ' glow' : '');
   annFit();
+  stamps.length = 0; // one word on screen: a streak stamp already up makes way
+  stampOut = null;
   void annEl.offsetWidth; // restart the CSS animation from its first frame
   annEl.classList.add('on');
   if (glow) annBurst(step);

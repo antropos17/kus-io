@@ -1643,6 +1643,24 @@ test('announce: fits 360x640 and 844x390 in both languages, clear of the buttons
   assert(fails.length === 0, fails.join(' | '));
 });
 
+test('announce: only the same swallow’s stamp waits; a bite under the word still stamps; an older stamp makes way', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} const out = {};
+    P.mass = 120; for (let i = 0; i < 40; i++) k.update(1 / 60);
+    const V = k.spawnBot(400); V.ai = null; V.spawnT = 0; for (let i = 0; i < 30; i++) k.update(1 / 60);
+    const bite = (combo) => { k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; V.mass = 400; P.biteCd = 0;
+      P.combo = combo; P.comboT = 4; const n0 = P.stats.bites; let f = 0;
+      while (f < 90 && P.stats.bites === n0) { k.pickups.length = 0; P.comboT = Math.max(P.comboT, 1); P.tx = V.x; P.ty = V.y; V.tx = V.x; V.ty = V.y; V.biteCd = 9; k.update(1 / 60); f++; }
+      P.biteCd = 999; V.biteCd = 999; return k.stamps.map((s) => s.txt).join(); };
+    out.before = bite(1); k.annShow(3); out.cleared = k.stamps.length;
+    out.under = bite(4); out.wordUp = k.ann.step > 0; return out; })()`);
+  assert(r.before === 'Кусь-кусь!', `a ×2 bite stamps first: "${r.before}"`);
+  assert(r.cleared === 0, `the big word clears a stamp already up: ${r.cleared} left`);
+  assert(r.wordUp && r.under === 'Хрум-хрум!', `a ×5 bite under the word still stamps Хрум-хрум!: "${r.under}" (word up ${r.wordUp})`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 test('announce: clear of the ×N label even with a hat on, at its biggest pop', async () => {
   const fails = [];
   for (const [width, height] of [
