@@ -1549,6 +1549,10 @@ test('sound: every effect plays without throwing', async () => {
       ['wrapCatch', []],
       ['wrapUp', [2]],
       ['wrapPay', [true]],
+      ['announce', [2]],
+      ['announce', [5]],
+      ['crunch', [1]],
+      ['crunch', [5]],
     ];
     // every embedded take must decode; then each effect plays from its takes and, with them switched off, from the synth
     const failed = await S.ready;
@@ -1578,9 +1582,23 @@ test('sound: every effect plays without throwing', async () => {
     }
     S.play = orig;
     S.useBuf = true;
+    // sound off, as on iOS before the first tap: the new events stay silent and throw nothing
+    const on0 = S.on;
+    let offPlays = 0;
+    S.play = () => (offPlays++, false);
+    S.on = false;
+    for (const [m, a] of calls.slice(-4))
+      try {
+        S[m](...a);
+      } catch (e) {
+        bad.push(`${m} (off): ${e.message}`);
+      }
+    S.on = on0;
+    S.play = orig;
     const expected = calls.filter(([m]) => window.__kus.SFX_DATA[m]).length;
-    return { running: !!S.ok(), bad, failed, missing, withTakes, expected, afterSynth: played - withTakes, ms: S.decodeMs };
+    return { running: !!S.ok(), bad, failed, missing, withTakes, expected, afterSynth: played - withTakes, ms: S.decodeMs, offPlays };
   });
+  assert(r.offPlays === 0, `with the sound off, ${r.offPlays} takes were started`);
   assert(r.running, 'audio context is not running, so nothing was actually tested');
   assert(r.failed === 0 && r.missing.length === 0, `takes that did not decode: ${r.failed}; events missing takes: ${r.missing.join(', ')}`);
   assert(r.withTakes === r.expected, `with takes, ${r.withTakes} of ${r.expected} calls played a take`);
