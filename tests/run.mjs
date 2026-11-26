@@ -1702,6 +1702,20 @@ test('hud: the table and buttons are measured only when the layout can have move
   });
   f = await follows();
   assert(near(f.h.boardBottom, f.b[0]), `the table changed rows: ${JSON.stringify(f)}`);
+  // live play: the masses in the table change every tick, its rows do not, so it is not measured again
+  const live = await page.evaluate(() => {
+    window.__reads = 0;
+    for (let i = 0; i < 180; i++) {
+      for (const [b, m] of window.__mass) if (!b.isPlayer) window.__mass.set(b, m + 0.5);
+      window.__run(1 / 60);
+    }
+    return window.__reads;
+  });
+  assert(live <= 2, `with only the numbers changing the table was read ${live} times in 3 s`);
+  // the button size from the pause card moves the buttons
+  await page.evaluate(() => (document.querySelector('#sizeSeg [data-v="1.18"]').click(), window.__run(0.3)));
+  f = await follows();
+  assert(near(f.h.btnTop, f.d), `bigger buttons: ${JSON.stringify(f)}`);
   // text: the timer changes once a second, the daily goal never; neither is rewritten in between
   const writes = (mode, id) =>
     page.evaluate(
@@ -1749,12 +1763,15 @@ test('food: eating and pulling sprinkles work across cell borders, at the world 
     // 4: a bot eats across the border too
     const B = k.blobs.find((b) => b !== P && !b.kind && b.alive); B.ai = null; k.place(B, 3060, 3000, 0); clear(3060, 3000);
     f = drop(3060 + B.Rs * 0.8, 3000); m = B.mass; out.botX = f.x; k.update(1 / 60); out.botEaten = !k.food.includes(f); out.botGain = B.mass - m;
+    // 5: a sprinkle whose position went bad (NaN, from some other bug) lies inert instead of stopping the game
+    const bad = drop(NaN, NaN); try { k.update(1 / 60); out.nan = 'ok'; } catch (e) { out.nan = String(e); } k.food.splice(k.food.indexOf(bad), 1);
     return out; })()`);
   assert(r.crossX > 1024, `setup: the sprinkle at x ${r.crossX} must be in the next cell`);
   assert(r.eaten && Math.abs(r.gain - 1) < 0.01, `a sprinkle across the cell border: eaten ${r.eaten}, mass +${r.gain}`);
   assert(r.pulled > 5 && r.still < 0.001, `magnet: pulled ${r.pulled} px; without it moved ${r.still} px`);
   assert(r.corner < 30, `a sprinkle in the corner was not eaten in 30 steps`);
   assert(r.botX > 3072 && r.botEaten && Math.abs(r.botGain - 1) < 0.01, `a bot across the border: ${JSON.stringify(r)}`);
+  assert(r.nan === 'ok', `a NaN sprinkle: ${r.nan}`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
 });

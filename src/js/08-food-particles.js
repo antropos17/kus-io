@@ -97,7 +97,7 @@ const FOOD_CELL = 256,
   foodGrid = Array.from({ length: FOOD_COLS * FOOD_COLS }, () => []);
 const foodMag = (b) => (b.isPlayer && CHEAT.magnet) || b.pMagnet > 0;
 const foodReach = (b) => b.Rs * 1.5 + (foodMag(b) ? 320 : 18);
-const foodCol = (v) => Math.min(FOOD_COLS - 1, Math.max(0, Math.floor(v / FOOD_CELL)));
+const foodCol = (v) => Math.min(FOOD_COLS - 1, Math.max(0, Math.floor(v / FOOD_CELL))) || 0; // a NaN position (some other bug) lands in cell 0 and stays inert
 function fillFoodGrid() {
   for (const c of foodGrid) c.length = 0;
   for (const b of blobs) {

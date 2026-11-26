@@ -652,16 +652,18 @@ function updateHUD(dt) {
           break;
         }
   }
+  const gap = player && player.alive && !top.includes(player);
   let html = top.map((b, i) => lbRow(i + 1, b)).join('');
-  if (player && player.alive && !top.includes(player)) html += '<li class="gap">…</li>' + lbRow(list.indexOf(player) + 1, player);
-  let lbNew = false;
+  if (gap) html += '<li class="gap">…</li>' + lbRow(list.indexOf(player) + 1, player);
   if (html !== lastLb) {
     lbEl.innerHTML = html;
     lastLb = html;
-    lbNew = true;
   }
-  const boxKey = W + 'x' + H + '|' + state + '|' + touchMode + '|' + SET.lefty + '|' + $('board').className;
-  if (lbNew || boxKey !== hudBoxKey) {
+  // the rows have a fixed height, so the table moves only with their count; the buttons with the screen, its insets and their size
+  const boxKey = [W, H, safe.t, safe.r, safe.b, safe.l, state, touchMode, SET.lefty, SET.bs, $('board').className, top.length + (gap ? 2 : 0)].join(
+    '|',
+  );
+  if (boxKey !== hudBoxKey) {
     // reading a box right after the writes above forces a layout: only when the table or the buttons can have moved
     hudBoxKey = boxKey;
     const br = $('board').getBoundingClientRect();
