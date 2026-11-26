@@ -15,6 +15,8 @@
     "thwip": { "sound": "flick/thin", "max": 0.25, "trim_db": 0 },
     "squelch": { "sound": "step/mud", "max": 0.5, "trim_db": 0 },
     "power": { "sound": "power_up/rise", "max": 1.1, "trim_db": 0 },
-    "dash": { "sound": "dash/air", "max": 0.5, "trim_db": 0 }
+    "dash": { "sound": "dash/air", "max": 0.5, "trim_db": 0 },
+    "announce": { "sound": "level_up/fanfare", "max": 0.9, "trim_db": 0 },
+    "crunch": { "sound": "apple/bite", "max": 0.35, "trim_db": 0 }
   }
 }

@@ -203,6 +203,7 @@ function woundLoad(b) {
   return l;
 }
 function updateBlob(b, dt) {
+  if (b.swell) b.swell = b.swell > 0.001 ? b.swell * Math.exp(-dt * 7) : 0; // a streak bite's swell settles in about a second
   b.R = massToR(b.mass);
   b.Rs += (b.R - b.Rs) * (1 - Math.exp(-dt * 6));
   if (b.mass > b.stats.maxMass) b.stats.maxMass = b.mass;

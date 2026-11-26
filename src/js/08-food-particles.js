@@ -90,7 +90,26 @@ function updatePickups(dt) {
     }
   }
 }
+// a sprinkle checks only the candies whose reach covers its grid cell; each cell lists them in blobs order, so the first one
+// to eat or pull a sprinkle is the same one as when every sprinkle checked every candy
+const FOOD_CELL = 256,
+  FOOD_COLS = Math.ceil(WORLD / FOOD_CELL),
+  foodGrid = Array.from({ length: FOOD_COLS * FOOD_COLS }, () => []);
+const foodMag = (b) => (b.isPlayer && CHEAT.magnet) || b.pMagnet > 0;
+const foodReach = (b) => b.Rs * 1.5 + (foodMag(b) ? 320 : 18);
+const foodCol = (v) => Math.min(FOOD_COLS - 1, Math.max(0, Math.floor(v / FOOD_CELL))) || 0; // a NaN position (some other bug) lands in cell 0 and stays inert
+function fillFoodGrid() {
+  for (const c of foodGrid) c.length = 0;
+  for (const b of blobs) {
+    if (!b.alive) continue;
+    const r = foodReach(b),
+      x1 = foodCol(b.x + r),
+      y1 = foodCol(b.y + r);
+    for (let y = foodCol(b.y - r); y <= y1; y++) for (let x = foodCol(b.x - r); x <= x1; x++) foodGrid[y * FOOD_COLS + x].push(b);
+  }
+}
 function updateFood(dt) {
+  fillFoodGrid();
   for (let i = food.length - 1; i >= 0; i--) {
     const f = food[i];
     if (f.kind) {
@@ -110,10 +129,10 @@ function updateFood(dt) {
       }
       if (f.delay > 0) continue;
     }
-    for (const b of blobs) {
+    for (const b of foodGrid[foodCol(f.y) * FOOD_COLS + foodCol(f.x)]) {
       if (!b.alive || (f.owner === b && f.age < 1.5)) continue;
-      const mag = (b.isPlayer && CHEAT.magnet) || b.pMagnet > 0,
-        reach = b.Rs * 1.5 + (mag ? 320 : 18),
+      const mag = foodMag(b),
+        reach = foodReach(b),
         dx = f.x - b.x,
         dy = f.y - b.y;
       if (dx > reach || dx < -reach || dy > reach || dy < -reach) continue;

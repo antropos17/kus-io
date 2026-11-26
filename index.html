@@ -108,11 +108,14 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #goal{font:800 13px/1.3 var(--font);color:#e9c9ad;text-shadow:0 2px 0 rgba(0,0,0,.5)}
 #stage{--p:0;position:relative;display:flex;align-items:center;width:178px;min-height:30px;margin-top:12px;border-radius:99px;background:var(--cream);box-shadow:0 4px 0 rgba(0,0,0,.4);overflow:hidden;font:800 13px/1 var(--font);color:var(--ink)}
 #stage.off{display:none}
-#stage .fill{position:absolute;left:0;top:0;bottom:0;width:calc(var(--p) * 100%);background:repeating-linear-gradient(-45deg,#ffd23f 0 8px,#ffe070 8px 16px);background-size:22.6px 22.6px;animation:stageSlide 1s linear infinite;border-radius:99px;transition:width .5s cubic-bezier(.22,1,.36,1)}
-@keyframes stageSlide{to{background-position:22.6px 0}}
+#stage .fill{position:absolute;left:0;top:0;bottom:0;width:100%;transform:translateX(calc((var(--p) - 1) * 100%));overflow:hidden;border-radius:99px;transition:transform .5s cubic-bezier(.22,1,.36,1)} /* slides in from the left (the pill clips it): a moving width would lay the page out every frame */
+#stage .fill:before{content:"";position:absolute;top:0;bottom:0;left:-22.6px;right:0;background:repeating-linear-gradient(-45deg,#ffd23f 0 8px,#ffe070 8px 16px);background-size:22.6px 22.6px;animation:stageSlide 1s linear infinite} /* the stripes slide by transform: the compositor moves them and the page is not restyled every frame */
+@keyframes stageSlide{to{transform:translateX(22.6px)}}
 #stage .t{position:relative;flex:1;min-width:0;padding:5px 0 5px 12px;line-height:1.1} /* a long label (second shift) wraps to a second line */
 #stage b{position:relative;flex:none;margin-right:4px;font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}
 #stage .ic{position:relative;flex:none;width:24px;height:24px;margin-right:4px}
+#stage .ic>*{position:absolute;left:0;top:0;width:100%;height:100%}
+#stage .ic span svg{display:block;width:100%;height:100%}
 #stage .jt{transform:translateY(calc((var(--p) - 1) * 3.2px))}
 #stage .jb{transform:translateY(calc((1 - var(--p)) * 3.2px))}
 #stage .jt,#stage .jb{transition:transform .35s cubic-bezier(.3,1.5,.5,1)}
@@ -120,15 +123,16 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #stage.hungry .jb{animation:chatB .22s infinite alternate}
 #stage.chomp .jt{animation:snapT .16s 4 alternate}
 #stage.chomp .jb{animation:snapB .16s 4 alternate}
-#stage .rain g path{animation:stageDrip .9s linear infinite}
-#stage .rain g path:nth-child(2){animation-delay:-.3s}
-#stage .rain g path:nth-child(3){animation-delay:-.6s}
+#stage .rain .d{animation:stageDrip .9s linear infinite}
+#stage .rain .d:nth-child(3){animation-delay:-.3s}
+#stage .rain .d:nth-child(4){animation-delay:-.6s}
 @keyframes chatT{to{transform:translateY(.8px)}}
 @keyframes chatB{to{transform:translateY(-.8px)}}
 @keyframes snapT{from{transform:translateY(-3px)}to{transform:translateY(1px)}}
 @keyframes snapB{from{transform:translateY(3px)}to{transform:translateY(-1px)}}
 @keyframes stageDrip{0%{transform:translateY(-1.5px);opacity:0}25%{opacity:1}80%{opacity:1}100%{transform:translateY(2.5px);opacity:0}}
-@media (prefers-reduced-motion:reduce){#stage .fill,#stage.hungry .jt,#stage.hungry .jb,#stage.chomp .jt,#stage.chomp .jb,#stage .rain g path{animation:none}#stage .jt,#stage .jb{transition:none}}
+body.lite #stage .fill:before,body.lite #stage.hungry .jt,body.lite #stage.hungry .jb,body.lite #stage .rain .d{animation:none} /* adapt stepped down: no endless HUD animation */
+@media (prefers-reduced-motion:reduce){#stage .fill:before,#stage.hungry .jt,#stage.hungry .jb,#stage.chomp .jt,#stage.chomp .jb,#stage .rain .d{animation:none}#stage .jt,#stage .jb{transition:none}}
 #fx{display:flex;flex-wrap:wrap;align-items:center;gap:8px;max-width:200px;margin-top:12px}
 #fx .fxu{display:inline-flex;flex-wrap:nowrap;align-items:center;gap:4px}
 #fx:empty{display:none}
@@ -170,6 +174,20 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 /* streak: the summary under the HUD, the fuse and sprinkles round the bite button, the sugar rush on the screen edges */
 #streakSum{position:absolute;left:0;margin-top:10px;padding:7px 13px;border-radius:99px;background:var(--cream);color:var(--ink);font:900 13px/1 var(--font);white-space:nowrap;box-shadow:0 4px 0 rgba(0,0,0,.4);opacity:0;visibility:hidden;transform:translateX(-14px);transition:opacity .2s,transform .2s cubic-bezier(.22,1,.36,1),visibility 0s .2s}
 #streakSum.on{opacity:1;visibility:visible;transform:none;transition:opacity .2s,transform .2s cubic-bezier(.22,1,.36,1)}
+/* swallows in a row: the big word across the screen; only transform and opacity animate */
+#announce{position:fixed;left:0;right:0;top:36%;z-index:2;pointer-events:none;text-align:center;visibility:hidden;--c:#fff1dc;--o:#c8264f}
+#announce b{display:inline-block;font:900 34px/1.05 var(--font);color:var(--c);white-space:nowrap;letter-spacing:.01em;opacity:0;transform:translateY(-50%);text-shadow:3px 0 0 var(--o),-3px 0 0 var(--o),0 3px 0 var(--o),0 -3px 0 var(--o),2px 2px 0 var(--o),-2px 2px 0 var(--o),2px -2px 0 var(--o),-2px -2px 0 var(--o),0 6px 0 rgba(0,0,0,.45)}
+#announce.on{visibility:visible}
+#announce.on b{animation:annIn 1.4s linear both}
+#announce.calm.on b{animation-name:annCalm}
+#announce.hold b{animation-play-state:paused}
+#announce.s3{--c:#ffd23f;--o:#a3361a}#announce.s4{--c:#ff9a3c;--o:#5a1020}#announce.s5{--c:#ff4f7b;--o:#2a0812} /* the font size is set by annFit */
+#announce.glow.on:before{content:'';position:fixed;left:0;top:0;right:0;bottom:0;background:radial-gradient(ellipse at 50% 36%,var(--c),rgba(0,0,0,0) 70%);opacity:0;animation:annGlow 1.4s ease-out both}
+@keyframes annGlow{0%{opacity:0}12%{opacity:.35}100%{opacity:0}}
+#announce.hold:before{animation-play-state:paused}
+@keyframes annIn{0%{opacity:0;transform:translateY(-50%) scale(2.4) rotate(-3deg)}9%{opacity:1;transform:translateY(-50%) scale(.94) rotate(-3deg)}13%{transform:translateY(-50%) scale(1.04) rotate(-3deg)}17%{transform:translateY(-50%) scale(1) rotate(-3deg)}30%{transform:translateY(-50%) scale(1.02) rotate(-2deg)}45%{transform:translateY(-50%) scale(1) rotate(-3.5deg)}68%{opacity:1;transform:translateY(-50%) scale(1) rotate(-3deg)}100%{opacity:0;transform:translateY(calc(-50% - 30px)) scale(1) rotate(-3deg)}}
+@keyframes annCalm{0%{opacity:0;transform:translateY(-50%)}10%{opacity:1}68%{opacity:1}100%{opacity:0;transform:translateY(-50%)}}
+@media (prefers-reduced-motion:reduce){#announce.on b{animation-name:annCalm}}
 #dash:before{content:"";position:absolute;left:-9px;top:-9px;right:-9px;bottom:-9px;border-radius:50%;background:conic-gradient(var(--fc,#9be15d) calc(var(--f,0)*360deg),rgba(0,0,0,.4) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));opacity:0;pointer-events:none}
 #dash.fuse:before{opacity:1}
 #dash.low:before{animation:fuseBlink .2s linear infinite alternate}
@@ -477,6 +495,7 @@ document.getElementById('nojs').style.display = 'none';
 </script>
 <canvas id="c" aria-label="Игровое поле" data-ta="a.field"></canvas>
 <div id="vig"></div>
+<div id="announce" aria-hidden="true"><b></b></div>
 <div id="safe"></div>
 
 <div id="hud" class="hidden">
@@ -1029,6 +1048,10 @@ const STR = {
   'w.3': ['Ням!', 'Yum!'],
   'w.5': ['Хрум-хрум!', 'Crunch!'],
   'w.7': ['Обжора!', 'Nom-nom!'],
+  'ann.2': ['Двойной кусь!', 'Double bite!'],
+  'ann.3': ['Тройной кусь!!', 'Triple bite!!'],
+  'ann.4': ['Обжорство!!!', 'Gluttony!!!'],
+  'ann.5': ['Монстр кусь!!!', 'Monster bite!!!'],
   'w.close': ['На волоске!', 'Close call!'],
   'sum.streakSugar': [(c, n) => `Серия ×${c} · +${n} сахара`, (c, n) => `Streak ×${c} · +${n} sugar`],
   'sum.streak': [(c) => `Серия ×${c}`, (c) => `Streak ×${c}`],
@@ -2000,6 +2023,20 @@ const SFX_DATA = {
       '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',
     ],
   },
+  // level_up/fanfare, 1 take
+  announce: {
+    g: 0.253,
+    r: [
+      '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',
+    ],
+  },
+  // apple/bite, 1 take
+  crunch: {
+    g: 0.220,
+    r: [
+      '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',
+    ],
+  },
 };
 
 // ---------- sound (recorded takes from SFX_DATA, synthesised when they are missing) ----------
@@ -2322,6 +2359,28 @@ const Sfx = {
       notes = jackpot ? [523.25, 659.25, 783.99, 1046.5] : [523.25, 659.25, 783.99];
     notes.forEach((f, i) => this.tone(t + i * 0.08, 'sine', f, f, 0.12, 0.25 + (i === notes.length - 1 ? 0.12 : 0), 0.006));
   },
+  announce(step) {
+    // swallows in a row (2..5): a rising fanfare, higher and louder each step, a low thump from step 4
+    if (!this.ok()) return;
+    if (this.play('announce', 0.8 + 0.1 * (step - 2), Math.pow(2, [0, 0, 0, 2, 4, 7][step] / 12))) return;
+    const t = this.ac.currentTime,
+      semi = [0, 4, 7, 12, 16];
+    for (let i = 0; i < Math.min(step + 1, 5); i++) {
+      const f = 392 * Math.pow(2, semi[i] / 12);
+      this.tone(t + i * 0.07, 'triangle', f, f, 0.18, 0.22, 0.006);
+    }
+    if (step >= 4) this.tone(t, 'sine', 98, 49, 0.35, 0.35, 0.006);
+  },
+  crunch(k) {
+    // a streak bite (k 1..5): a candy shell cracking, louder and lower each step
+    if (!this.ok()) return;
+    const to = this.dest();
+    if (this.play('crunch', 0.7 + 0.075 * k, 1 + 0.04 * (k - 1), to)) return;
+    const t = this.ac.currentTime,
+      d = 0.09 + 0.03 * k;
+    this.hiss(t, 1800 - k * 150, 700, 0.8, 0.35 + 0.08 * k, d, 'bandpass', to);
+    this.hiss(t, 5200, 2600, 0.7, 0.12 + 0.03 * k, 0.03, 'highpass', to);
+  },
 };
 
 // ---------- soft body ----------
@@ -2529,6 +2588,7 @@ function woundLoad(b) {
   return l;
 }
 function updateBlob(b, dt) {
+  if (b.swell) b.swell = b.swell > 0.001 ? b.swell * Math.exp(-dt * 7) : 0; // a streak bite's swell settles in about a second
   b.R = massToR(b.mass);
   b.Rs += (b.R - b.Rs) * (1 - Math.exp(-dt * 6));
   if (b.mass > b.stats.maxMass) b.stats.maxMass = b.mass;
@@ -3424,10 +3484,12 @@ function doBite(A, B, ang, dashBite) {
   const big = dashBite || intoWound || weak || king;
   if (big) A.wowT = 0.7;
   if (A.isPlayer) {
-    const step = Math.min(A.combo, 6);
+    const step = Math.min(A.combo, 6),
+      hk = A.combo >= 2 && HEAVY.on ? Math.min(A.combo, 5) : 0, // a streak bite is felt in the body: swell, gobs, crunch
+      hg = hk ? heavyBite(A, hk) : 1;
     if (!lod) {
       spawnDust(bx, by, B.pal, nx, ny, 3 + step);
-      for (let i = 0; i < 2 + (big ? 2 : 0); i++) {
+      for (let i = 0; i < 2 + (big ? 2 : 0) + hk; i++) {
         const a = ang + rand(-0.9, 0.9),
           sp = rand(160, 380);
         parts.push({
@@ -3435,7 +3497,7 @@ function doBite(A, B, ang, dashBite) {
           y: by,
           vx: Math.cos(a) * sp,
           vy: Math.sin(a) * sp,
-          r: rand(4, 6.5) * clamp(chunkR / 16, 0.7, 1.8),
+          r: rand(4, 6.5) * clamp(chunkR / 16, 0.7, 1.8) * hg, // only the picture grows: the piece's mass is the same
           t: 0,
           T: rand(0.4, 0.6),
           c: flesh(B.pal, 1),
@@ -3463,7 +3525,8 @@ function doBite(A, B, ang, dashBite) {
     if (B.kind === 'hedgehog') mission('hedge', 1);
     haptic(big ? 22 : 12);
     Sfx.stretch(ch.holdT, clamp(1.3 - chunkR / 60, 0.7, 1.3));
-    Sfx.chomp(1, clamp(1.25 - A.Rs / 400, 0.6, 1.25) * (1 + (step - 1) * 0.045));
+    if (hk) Sfx.crunch(hk);
+    else Sfx.chomp(1, clamp(1.25 - A.Rs / 400, 0.6, 1.25) * (1 + (step - 1) * 0.045));
     if (step > 1) Sfx.ding(step);
     cam.shake = Math.max(cam.shake, 3 + Math.min(6, chunkR * 0.12) + (big ? 2 : 0));
   } else if (B.isPlayer) {
@@ -3502,9 +3565,11 @@ function swallowWhole(A, B) {
     A.combo = A.comboT > 0 ? (A.combo || 0) + 1 : 1;
     A.comboT = STREAK.win;
     mission('combo', A.combo, true);
+    ann.quiet = annSwallow(B); // before the streak's stamp: a big word, when it comes, takes the screen alone
     const sugar0 = run.sugar;
     mission('kills', 1);
     onStreakBite(A, B, B.x, B.y, run.sugar - sugar0, close);
+    ann.quiet = false;
     albumEat(B);
     if (B.kind === 'piranha') mission('piranha', 1);
     floatText(A.x, A.y - A.Rs - 30 / cam.z, (A.combo > 1 ? '+' : t('float.yum') + '+') + Math.round(gain), '#ffd23f', 28); // in a streak its stamps do the talking
@@ -3747,7 +3812,26 @@ function updatePickups(dt) {
     }
   }
 }
+// a sprinkle checks only the candies whose reach covers its grid cell; each cell lists them in blobs order, so the first one
+// to eat or pull a sprinkle is the same one as when every sprinkle checked every candy
+const FOOD_CELL = 256,
+  FOOD_COLS = Math.ceil(WORLD / FOOD_CELL),
+  foodGrid = Array.from({ length: FOOD_COLS * FOOD_COLS }, () => []);
+const foodMag = (b) => (b.isPlayer && CHEAT.magnet) || b.pMagnet > 0;
+const foodReach = (b) => b.Rs * 1.5 + (foodMag(b) ? 320 : 18);
+const foodCol = (v) => Math.min(FOOD_COLS - 1, Math.max(0, Math.floor(v / FOOD_CELL))) || 0; // a NaN position (some other bug) lands in cell 0 and stays inert
+function fillFoodGrid() {
+  for (const c of foodGrid) c.length = 0;
+  for (const b of blobs) {
+    if (!b.alive) continue;
+    const r = foodReach(b),
+      x1 = foodCol(b.x + r),
+      y1 = foodCol(b.y + r);
+    for (let y = foodCol(b.y - r); y <= y1; y++) for (let x = foodCol(b.x - r); x <= x1; x++) foodGrid[y * FOOD_COLS + x].push(b);
+  }
+}
 function updateFood(dt) {
+  fillFoodGrid();
   for (let i = food.length - 1; i >= 0; i--) {
     const f = food[i];
     if (f.kind) {
@@ -3767,10 +3851,10 @@ function updateFood(dt) {
       }
       if (f.delay > 0) continue;
     }
-    for (const b of blobs) {
+    for (const b of foodGrid[foodCol(f.y) * FOOD_COLS + foodCol(f.x)]) {
       if (!b.alive || (f.owner === b && f.age < 1.5)) continue;
-      const mag = (b.isPlayer && CHEAT.magnet) || b.pMagnet > 0,
-        reach = b.Rs * 1.5 + (mag ? 320 : 18),
+      const mag = foodMag(b),
+        reach = foodReach(b),
         dx = f.x - b.x,
         dy = f.y - b.y;
       if (dx > reach || dx < -reach || dy > reach || dy < -reach) continue;
@@ -4948,6 +5032,122 @@ $('albumRows').addEventListener('click', (e) => {
 });
 renderAlbumBtn();
 
+// ---------- swallows in a row: a big word across the screen, rare like a multi-kill ----------
+// Only the player's own swallows whole count; each within ANN.win s of the last climbs the ladder (2, 3, 4, 5+).
+// The word is a page layer over the canvas, so it stays sharp when adapt lowers the canvas resolution; it pays nothing.
+const ANN = { win: 5, life: 1.4, inT: 0.18, glow: 4 };
+// n swallows in the chain, at: game time of the last one; top, bot: screen y of the candy's label and of its bottom
+const ann = { n: 0, at: -99, step: 0, t: 0, hold: false, top: 0, bot: 0, quiet: false }; // quiet: the swallow that brought the word stamps nothing
+const annEl = $('announce'),
+  annWord = annEl.querySelector('b');
+function annSwallow(B) {
+  // called from swallowWhole for the player's own swallow, before the streak's stamp; true when it brought a word
+  if (B.boss) return annReset(), false; // the Big Cake has its own win arc: it does not count and ends the chain
+  ann.n = time - ann.at <= ANN.win ? ann.n + 1 : 1;
+  ann.at = time;
+  if (ann.n < 2) return false;
+  annShow(Math.min(ann.n, 5));
+  return ann.step > 0;
+}
+const ANN_SIZE = [0, 0, 1, 1.12, 1.24, 1.36], // font scale of each step on a 34 px base
+  ANN_SPR = ['#ff5d8f', '#ffd23f', '#7ad7ff', '#9be15d', '#c49bff', '#fff6e8', '#ff9a3d'];
+let annMeasure = null;
+function annShow(step) {
+  if (state !== 'play' || !runActive) return;
+  ann.step = step;
+  ann.t = 0;
+  annWord.textContent = t('ann.' + step);
+  const glow = !calm && step >= ANN.glow;
+  annEl.className = 's' + step + (calm ? ' calm' : '') + (glow ? ' glow' : '');
+  annFit();
+  stamps.length = 0; // one word on screen: a streak stamp already up makes way
+  stampOut = null;
+  void annEl.offsetWidth; // restart the CSS animation from its first frame
+  annEl.classList.add('on');
+  if (glow) annBurst(step);
+  Sfx.announce(step);
+}
+const ANN_AVOID = ['dash', 'dodge', 'pauseBtn', 'mute', 'board'];
+function annFit() {
+  // the word goes in the band between the HUD and the top of the player's candy with its label (about 36% of the
+  // height on a phone held upright); when that band is too short for a big word (a phone held sideways, a huge candy)
+  // it goes in the band under the candy instead. Only what stands in the word's own columns counts, and it shrinks
+  // to fit the band and the screen width
+  if (!ann.step || !player) return;
+  const z = cam.z,
+    oy = H / 2 + focusOffset()[1] - cam.y * z + cam.ky;
+  // the top of the label over the candy, as drawName places it, at its biggest: a hat lifts it, a streak turns it into a
+  // ×N 1.7 times the size that pops 45% bigger on a bite. The swallow's mass is still arriving, so the bigger of R and Rs
+  const P = player,
+    R = Math.max(P.R || 0, P.Rs),
+    lfs = clamp(R * z * 0.3, 11, 17) / z,
+    labelY = P.y - R * (P.hat !== 'none' && R * z >= 8 ? 1.55 : 1.04) - 6 / z - lfs * 0.45 - 37 * ((lfs * 1.7) / 34) * 1.45;
+  ann.top = labelY * z + oy - 6; // a few px for the zoom kick of the swallow
+  ann.bot = (P.y + R) * z + oy + 6;
+  if (!annMeasure) annMeasure = document.createElement('canvas').getContext('2d');
+  annMeasure.font = `900 100px ${FONT}`;
+  const w1 = annMeasure.measureText(annWord.textContent).width / 100, // width of the word per 1 px of font
+    big = Math.min(34 * ANN_SIZE[ann.step], (W - 42) / (w1 * 1.04)),
+    half = (big * w1 * 1.04) / 2 + 6,
+    boxes = [];
+  for (const e of [...$('score').children, ...ANN_AVOID.map($)])
+    if (e && e.id !== 'feed') {
+      const b = e.getBoundingClientRect(); // a hidden one has no box (offsetParent is null for fixed ones even when shown)
+      if (b.width > 0 && b.height > 0 && b.right > W / 2 - half && b.left < W / 2 + half) boxes.push(b);
+    }
+  let upTop = 8,
+    downBot = H - 8;
+  for (const b of boxes) {
+    // a box across the candy's top (or bottom) edge closes that band in the word's columns
+    if (b.bottom <= ann.top) upTop = Math.max(upTop, b.bottom + 8);
+    else if (b.top < ann.top) upTop = ann.top;
+    if (b.top >= ann.bot) downBot = Math.min(downBot, b.top - 8);
+    else if (b.bottom > ann.bot) downBot = ann.bot;
+  }
+  // the drawn box: the shadow outline, the settle overshoot and the tilt of about 3.5°
+  const fit = (band) => Math.min(big, (band - 8) / (1.1 + w1 * 0.065)),
+    up = fit(ann.top - 4 - upTop),
+    down = fit(downBot - ann.bot - 4),
+    above = up >= Math.min(big, 24) || up >= down,
+    fs = Math.max(14, above ? up : down),
+    h = fs * 1.1 + fs * w1 * 0.065 + 8;
+  annWord.style.fontSize = fs.toFixed(1) + 'px';
+  annEl.style.top = (above ? clamp(H * 0.36, upTop + h / 2, ann.top - 4 - h / 2) : ann.bot + 4 + h / 2).toFixed(1) + 'px';
+}
+function annBurst(step) {
+  // a fountain of sprinkles out of the player's candy, fewer when adapt has lowered the detail
+  const P = player,
+    n = (24 + 8 * step) >> lod;
+  for (let i = 0; i < n; i++) {
+    const a = rand(0, Math.PI * 2),
+      sp = rand(160, 420);
+    parts.push({ x: P.x, y: P.y - P.Rs * 0.4, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 120, r: rand(3, 6), t: 0, T: rand(0.5, 0.9), c: ANN_SPR[i % ANN_SPR.length] });
+  }
+}
+addEventListener('resize', () => ann.step && annFit()); // a phone turned mid-word: refit it to the new screen
+function annHide() {
+  ann.step = 0;
+  annEl.classList.remove('on', 'hold');
+  ann.hold = false;
+}
+function annReset() {
+  ann.n = 0;
+  ann.at = -99;
+  annHide();
+}
+function annFrame(rdt, isPaused) {
+  // every frame with the real frame time: a pause holds the word where it is, the end of its life hides it
+  if (!ann.step) return;
+  if (state !== 'play') return annHide();
+  if (isPaused !== ann.hold) {
+    ann.hold = isPaused;
+    annEl.classList.toggle('hold', isPaused);
+  }
+  if (isPaused) return;
+  ann.t += rdt;
+  if (ann.t >= ANN.life) annHide();
+}
+
 // ---------- candy of the day ----------
 // One three-minute run a day with a twist that is the same for everyone on that date. The twist comes from the local date alone, no server.
 const DAILY = [
@@ -5418,6 +5618,7 @@ function finishRun() {
 }
 function die(by) {
   clearWrap();
+  annReset();
   tally();
   stick.id = -1;
   stick.on = false;
@@ -5433,6 +5634,7 @@ function die(by) {
   finishRun();
 }
 function endTimed() {
+  annReset();
   if (player && player.alive) {
     tally();
     player.alive = false;
@@ -5449,6 +5651,7 @@ function endTimed() {
 function toMenu() {
   clearAsk();
   clearWrap();
+  annReset();
   sugarSettle();
   if (state === 'play' && player && player.alive) {
     tally();
@@ -5662,6 +5865,11 @@ function bumpMass() {
 function lbRow(n, b) {
   return `<li class="${b.isPlayer ? 'me' : ''}"><span class="n">${n}</span><i style="background:${b.pal.base}"></i><span class="nm">${esc(b.isPlayer ? b.name : nameOf(b.name))}</span><span class="m">${Math.round(b.mass)}</span></li>`;
 }
+function setText(el, s) {
+  if (el.textContent !== s) el.textContent = s; // the same text written again still costs a layout
+}
+let hudBoxKey = ''; // what the table and the buttons were last measured for: their boxes move only when this changes
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => (hudBoxKey = '')); // the real typeface changes the table's height
 function updateHUD(dt) {
   const pct = player && player.alive ? clamp(1 - player.dashCd / 1.5, 0, 1) : 1;
   if (Math.abs(pct - lastDashPct) > 0.04 || (pct === 1 && lastDashPct !== 1)) {
@@ -5693,14 +5901,17 @@ function updateHUD(dt) {
     mission('time', time - player.stats.t0, true);
   }
   const tl = Math.ceil(timeLeft);
-  $('timer').textContent = runActive && timed() ? t('hud.left', `${Math.floor(tl / 60)}:${String(tl % 60).padStart(2, '0')}`) : '';
-  $('goal').textContent = !runActive
-    ? ''
-    : day
-      ? t('hud.daily', run.rule.name) + (challenge && challenge.d === run.day ? t('hud.beat', challenge.c) : '')
-      : challenge && !challenge.d && mode === 'free'
-        ? t('hud.goal', challenge.c)
-        : '';
+  setText($('timer'), runActive && timed() ? t('hud.left', `${Math.floor(tl / 60)}:${String(tl % 60).padStart(2, '0')}`) : '');
+  setText(
+    $('goal'),
+    !runActive
+      ? ''
+      : day
+        ? t('hud.daily', run.rule.name) + (challenge && challenge.d === run.day ? t('hud.beat', challenge.c) : '')
+        : challenge && !challenge.d && mode === 'free'
+          ? t('hud.goal', challenge.c)
+          : '',
+  );
   renderStage();
   renderFx();
   const list = blobs.filter((b) => b.alive && !b.kind).sort((a, b) => b.mass - a.mass),
@@ -5750,18 +5961,25 @@ function updateHUD(dt) {
           break;
         }
   }
+  const gap = player && player.alive && !top.includes(player);
   let html = top.map((b, i) => lbRow(i + 1, b)).join('');
-  if (player && player.alive && !top.includes(player)) html += '<li class="gap">…</li>' + lbRow(list.indexOf(player) + 1, player);
+  if (gap) html += '<li class="gap">…</li>' + lbRow(list.indexOf(player) + 1, player);
   if (html !== lastLb) {
     lbEl.innerHTML = html;
     lastLb = html;
   }
-  {
+  // the rows have a fixed height, so the table moves only with their count; the buttons with the screen, its insets and their size
+  const boxKey = [W, H, safe.t, safe.r, safe.b, safe.l, state, touchMode, SET.lefty, SET.bs, $('board').className, top.length + (gap ? 2 : 0)].join(
+    '|',
+  );
+  if (boxKey !== hudBoxKey) {
+    // reading a box right after the writes above forces a layout: only when the table or the buttons can have moved
+    hudBoxKey = boxKey;
     const br = $('board').getBoundingClientRect();
     boardBottom = br.bottom;
     boardLeft = br.left;
+    btnTop = touchMode && state === 'play' ? dodgeEl.getBoundingClientRect().top : H;
   }
-  btnTop = touchMode && state === 'play' ? dodgeEl.getBoundingClientRect().top : H;
 }
 
 function update(dt) {
@@ -6033,10 +6251,12 @@ function stageKind() {
   if (stg.winT > 0) return 'boss';
   return stg.cur ? stg.cur.k : STAGE_KEYS[stg.i];
 }
+// the jaws and the drops move as plain spans, each holding its own little svg: the page animates a span on the compositor,
+// while any svg element (even a whole one) is restyled every frame it moves
 const JAW_SVG =
-    '<svg class="ic jaw" viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="10" rx="4" fill="#4a0c1c"/><g class="jt"><path d="M1.5 9Q1.5 2.5 12 2.5T22.5 9V10H1.5Z" fill="#ff4f7b"/><path d="M1.5 9Q1.5 2.5 12 2.5T22.5 9" fill="none" stroke="#c8264f" stroke-width="1.4"/><path d="M4.5 9.6l2.6 4.4 2.6-4.4zM10.7 9.6l1.3 4.4 1.3-4.4h-2.6zM14.3 9.6l2.6 4.4 2.6-4.4z" fill="#fff6ea"/></g><g class="jb"><path d="M1.5 15Q1.5 21.5 12 21.5T22.5 15V14H1.5Z" fill="#ff4f7b"/><path d="M1.5 15Q1.5 21.5 12 21.5T22.5 15" fill="none" stroke="#c8264f" stroke-width="1.4"/><path d="M6 14.4l2.4-3.8 2.4 3.8zM13.2 14.4l2.4-3.8 2.4 3.8z" fill="#fff6ea"/></g></svg>',
+    '<span class="ic jaw"><svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="10" rx="4" fill="#4a0c1c"/></svg><span class="jt"><svg viewBox="0 0 24 24"><path d="M1.5 9Q1.5 2.5 12 2.5T22.5 9V10H1.5Z" fill="#ff4f7b"/><path d="M1.5 9Q1.5 2.5 12 2.5T22.5 9" fill="none" stroke="#c8264f" stroke-width="1.4"/><path d="M4.5 9.6l2.6 4.4 2.6-4.4zM10.7 9.6l1.3 4.4 1.3-4.4h-2.6zM14.3 9.6l2.6 4.4 2.6-4.4z" fill="#fff6ea"/></svg></span><span class="jb"><svg viewBox="0 0 24 24"><path d="M1.5 15Q1.5 21.5 12 21.5T22.5 15V14H1.5Z" fill="#ff4f7b"/><path d="M1.5 15Q1.5 21.5 12 21.5T22.5 15" fill="none" stroke="#c8264f" stroke-width="1.4"/><path d="M6 14.4l2.4-3.8 2.4 3.8zM13.2 14.4l2.4-3.8 2.4 3.8z" fill="#fff6ea"/></svg></span></span>',
   RAIN_SVG =
-    '<svg class="ic rain" viewBox="0 0 24 24"><path d="M6.5 14.5a3.6 3.6 0 0 1-.4-7.2 5.2 5.2 0 0 1 10-.6 3.9 3.9 0 0 1 1.4 7.8Z" fill="#d7f1ff" stroke="#3b9fd0" stroke-width="1.4" stroke-linejoin="round"/><g stroke-width="2.2" stroke-linecap="round"><path d="M8 17.2v2" stroke="#ff4f7b"/><path d="M12 17.8v2.2" stroke="#ffd23f"/><path d="M16 17.2v2" stroke="#9be15d"/></g></svg>',
+    '<span class="ic rain"><svg viewBox="0 0 24 24"><path d="M6.5 14.5a3.6 3.6 0 0 1-.4-7.2 5.2 5.2 0 0 1 10-.6 3.9 3.9 0 0 1 1.4 7.8Z" fill="#d7f1ff" stroke="#3b9fd0" stroke-width="1.4" stroke-linejoin="round"/></svg><span class="d"><svg viewBox="0 0 24 24"><path d="M8 17.2v2" stroke="#ff4f7b" stroke-width="2.2" stroke-linecap="round"/></svg></span><span class="d"><svg viewBox="0 0 24 24"><path d="M12 17.8v2.2" stroke="#ffd23f" stroke-width="2.2" stroke-linecap="round"/></svg></span><span class="d"><svg viewBox="0 0 24 24"><path d="M16 17.2v2" stroke="#9be15d" stroke-width="2.2" stroke-linecap="round"/></svg></span></span>',
   CAKE_SVG =
     '<svg class="ic" viewBox="0 0 24 24"><path d="M3 12 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5Z" fill="#f6c88a" stroke="#8a4b2a" stroke-width="1.4" stroke-linejoin="round"/><path d="M3 12 21 9v3.5q-2.2 1.8-4.2 0t-4.2 1.4-4.2-.2-3.4.8Z" fill="#ff4f7b" stroke="#c8264f" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 5.8 13.6 2.4" fill="none" stroke="#3a6b2a" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="8" r="2.5" fill="#e8274b" stroke="#a31236" stroke-width="1"/></svg>',
   STAGE_ICON = { pir: JAW_SVG, rain: RAIN_SVG, boss: CAKE_SVG },
@@ -6401,6 +6621,7 @@ function stageWin() {
 function secondShift() {
   // the same candy, mass and place; a fresh score and sugar count, the events by timers and faster
   const P = player;
+  annReset(); // a fresh shift, a fresh chain
   rollMissions();
   for (const m of M.act) m.at = m.got;
   saveM();
@@ -6432,6 +6653,14 @@ function secondShift() {
 const STREAK = { win: 4, close: 0.45, low: 0.8, words: { 2: t('w.2'), 3: t('w.3'), 5: t('w.5'), 7: t('w.7') } };
 const STREAK_COL = ['', '#9be15d', '#ff9a3c', '#ff4f7b']; // the colour of each step
 // 0: no streak (combo < 2), 1: ×2, 2: ×3-4, 3: ×5 and up
+// a streak bite felt in the body (only the picture and the sound: the numbers stay): how much the candy swells at
+// each step k = min(combo, 5); on is for tests that compare a bite with and without it
+const HEAVY = { on: true, swell: [0, 0, 0.07, 0.1, 0.13, 0.16] };
+function heavyBite(A, k) {
+  // the player's streak bite of step k: the body swells (less with reduce motion); returns how much bigger the gobs fly
+  A.swell = Math.max(A.swell || 0, HEAVY.swell[k] * (calm ? 0.5 : 1));
+  return 1 + 0.15 * (k - 1);
+}
 const streakLevel = (combo) => (combo < 2 ? 0 : combo < 3 ? 1 : combo < 5 ? 2 : 3);
 // the step the player's face and label show right now
 const streakStep = (b) => (b.isPlayer && b.comboT > 0 ? streakLevel(b.combo || 0) : 0);
@@ -6501,6 +6730,7 @@ function streakDomOff() {
   multEl.classList.remove('on');
 }
 function addStamp(txt) {
+  if (ann.quiet) return; // the swallow that brought the big word: one word on screen at a time
   if (stamps.length)
     stampOut = { txt: stamps[0].txt, hw: stamps[0].hw, t: 0, f: stamps[0].t, a0: stamps[0].t > 0.8 ? Math.max(0, 1 - (stamps[0].t - 0.8) / 0.3) : 1 }; // fades on from its current alpha
   stamps.length = 0;
@@ -6550,6 +6780,7 @@ function onStreakEnd(P) {
 }
 function streakClear() {
   // a new life or run: nothing of the old streak stays on the page
+  annReset();
   streak.on = false;
   streak.lvl = 0;
   streak.pop = 0;
@@ -8563,7 +8794,14 @@ function drawBlob(b) {
   const R = b.Rs,
     pal = b.pal,
     path = b.path,
-    z = cam.z;
+    z = cam.z,
+    sw = b.swell > 0.002; // a streak bite swells the drawing (body, face, hat) for a moment; physics keeps its size
+  if (sw) {
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.scale(1 + b.swell, 1 + b.swell);
+    ctx.translate(-b.x, -b.y);
+  }
   if (b.kind === 'hedgehog' && R * z > 5) drawSpikes(b);
   if (lod > 1 || R * z < 6) ctx.fillStyle = pal.base;
   else {
@@ -8684,6 +8922,7 @@ function drawBlob(b) {
       ctx.stroke();
     }
   }
+  if (sw) ctx.restore();
 }
 function drawChunk(c) {
   const r = c.r;
@@ -10571,11 +10810,17 @@ let fpsN = 0,
 const tick = new Float32Array(15).fill(1 / 60),
   tickS = new Float32Array(15);
 let tickI = 0,
-  fp = 1 / 60;
+  fp = 1 / 60,
+  liteLod = -1;
 function frame(now) {
   const raw = (now - last) / 1000;
   last = now;
   adapt(raw);
+  if (lod !== liteLod) {
+    // less detail also stops the HUD's endless animations: while the canvas draws every frame the page restyles each running one
+    liteLod = lod;
+    document.body.classList.toggle('lite', lod > 0);
+  }
   // a steady clock. The display ticks at a fixed rate while timers jitter around it (Safari rounds to whole milliseconds), so each frame
   // is snapped to a whole number of display ticks: bodies and camera then move by even steps instead of shivering
   let dt = raw > 0 ? raw : fp;
@@ -10590,6 +10835,7 @@ function frame(now) {
   if (n >= 1 && n <= 3 && Math.abs(dt - n * fp) < fp * 0.3) dt = n * fp;
   if (dt > 0.05) dt = 0.05;
   const w0 = performance.now();
+  annFrame(dt, paused); // the big word lives in real time: the swallow's slow-down does not drag it
   if (!paused) {
     let sc = CHEAT.slow ? 0.45 : 1;
     if (slowT > 0) {
@@ -10708,7 +10954,7 @@ function start(data) {
   applySet();
   for (let i = 0; i < FOOD_TARGET; i++) addSprinkle();
   for (let i = 0; i < BOT_TARGET; i++) spawnBot(randomBotMass(true)).spawnT = 0;
-  for (let i = 0; i < 150; i++) update(1 / 60); // let the arena get messy before the first frame
+  for (let i = 0; i < 50; i++) update(1 / 20); // 2.5 s of the arena before the first frame, in the largest step frame() allows
   menuTarget = pickMenuTarget();
   menuSwitchT = 14;
   if (menuTarget) {
@@ -10741,6 +10987,9 @@ window.__kus = {
   },
   get player() {
     return player;
+  },
+  get parts() {
+    return parts;
   },
   get blobs() {
     return blobs;
@@ -10809,6 +11058,9 @@ window.__kus = {
     lod = v;
     stepOff.lod = 1e9;
     upOffUntil = 1e9;
+  },
+  get hudBox() {
+    return { boardBottom, boardLeft, btnTop }; // where the minimap takes the table's and the buttons' places from
   },
   get quality() {
     return quality;
@@ -10890,6 +11142,17 @@ window.__kus = {
     renderMode();
   },
   toMenu,
+  die, // tests: a death without staging a bite
+  ANN,
+  get ann() {
+    return ann;
+  },
+  annShow,
+  annSwallow,
+  annReset,
+  annFrame,
+  HEAVY,
+  heavyBite,
   trophy: {
     get running() {
       return tr.running;

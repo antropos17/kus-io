@@ -307,6 +307,7 @@ function stageWin() {
 function secondShift() {
   // the same candy, mass and place; a fresh score and sugar count, the events by timers and faster
   const P = player;
+  annReset(); // a fresh shift, a fresh chain
   rollMissions();
   for (const m of M.act) m.at = m.got;
   saveM();

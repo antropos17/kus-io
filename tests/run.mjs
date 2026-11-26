@@ -1196,11 +1196,13 @@ test('streak: swallowing whole counts as a streak bite', async () => {
     out.words = k.stamps.map((s) => s.txt); out.chip = document.querySelector('#sugar .mult').textContent; out.sum = k.streak.sum;
     // the three swallows came well inside a second: every «ням» over the candy right now, floating texts and the stamp together
     out.nyam = [...k.texts.filter((t) => t.t < t.T).map((t) => t.s), ...out.words].filter((s) => /ням/i.test(s));
+    out.ann = document.querySelector('#announce b').textContent;
     return out; })()`);
-  assert(r.nyam.length === 1, `only one «ням» may hang over the candy at a time, saw ${JSON.stringify(r.nyam)}`);
+  assert(r.nyam.length <= 1, `only one «ням» may hang over the candy at a time, saw ${JSON.stringify(r.nyam)}`);
   assert(r.kills === 3, `all three small candies must be swallowed whole, got ${r.kills}`);
   assert(r.combos.join() === '1,2,3', `swallows in a row must count 1,2,3, got ${r.combos}`);
-  assert(r.words.join() === 'Ням!' && r.chip === '×3', `the third swallow must stamp Ням! and show ×3: ${r.words} ${r.chip}`);
+  // three swallows in a row are also a chain: the big word takes the screen and the streak's own stamp waits
+  assert(r.words.length === 0 && r.ann === 'Тройной кусь!!' && r.chip === '×3', `the third swallow must announce Тройной кусь!! with no stamp and show ×3: ${r.words} "${r.ann}" ${r.chip}`);
   assert(r.sum > 0, 'the swallows must add their sugar to the streak sum');
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
@@ -1718,7 +1720,8 @@ test('stages: beating the boss ends the run with a record, not with cheats; the 
     const beat = (cheat) => { const P = free(); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1); if (!S().cur) throw new Error('no boss');
       const B = S().cur.b; B.spawnT = 0; B.ai = null;
       if (cheat) k.CHEAT.heal = true;
-      B.mass = 60; k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
+      B.mass = 60; k.place(B, 600, 600, 0); for (let i = 0; i < 40; i++) { B.mass = 60; k.place(B, 600, 600, 0); k.update(1 / 60); }
+    k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
       while (k.state === 'play' && f++ < 400) { P.tx = B.x; P.ty = B.y; B.tx = B.x; B.ty = B.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); }
       k.CHEAT.heal = false; return { P, f }; };
     const out = {};
@@ -1942,7 +1945,7 @@ test('hud: cream pills fit phones; the stage pill fills and its jaws chomp when 
       const P = free(); P.stats.maxMass = 135; P.mass = 135; P.pMagnet = 4.9; run(1 / 30);
       const st = document.getElementById('stage'), fx = document.getElementById('fx');
       out.hungry = st.classList.contains('hungry'); out.chomp0 = st.classList.contains('chomp');
-      out.p = parseFloat(st.style.getPropertyValue('--p')); out.ic = !!st.querySelector('svg.ic'); out.kind = k.stages.kind();
+      out.p = parseFloat(st.style.getPropertyValue('--p')); out.ic = !!st.querySelector('.ic'); out.kind = k.stages.kind();
       document.getElementById('feed').innerHTML = ''; // hints are wider than the column by design: measure the pills
       const sr = document.getElementById('score').getBoundingClientRect(), br = document.getElementById('board').getBoundingClientRect();
       out.right = sr.right; out.hit = sr.right > br.left && sr.bottom > br.top && sr.top < br.bottom;
@@ -1988,8 +1991,77 @@ test('hud: cream pills fit phones; the stage pill fills and its jaws chomp when 
     }
 });
 
-// smarter bots: a scene with the player and a few bots, everything else parked far away
-const BOTS = `const k = window.__kus, P = k.player; k.pause(true);
+// The pill's endless animations (stripes, hungry jaws, rain drops) must run on the compositor: one the page has to lay out
+// costs a layout every frame on a phone. The game is paused after each setup (startGame unpauses it), so the HUD stays still
+// and only the pill animates; the canvas still draws every frame. Style recalcs are not counted:
+// while the canvas draws every frame, Chrome ticks the style of every running animation, composited or not.
+test('perf: the stage pill animates without a page layout every frame', async () => {
+  const g = await open({ width: 390, height: 844, touch: true, dpr: 3, play: false, returning: true });
+  const cdp = await g.page.context().newCDPSession(g.page);
+  await cdp.send('Performance.enable');
+  const counts = async () => {
+    const m = Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((x) => [x.name, x.value]));
+    return { styles: m.RecalcStyleCount, layouts: m.LayoutCount };
+  };
+  const quiet = async (state) => {
+    const a = await counts();
+    await g.page.waitForTimeout(1500);
+    const b = await counts(),
+      d = { styles: b.styles - a.styles, layouts: b.layouts - a.layouts };
+    assert(d.layouts <= 5, `${state}: ${d.layouts} layouts in 1.5 s (${d.styles} style recalcs)`);
+  };
+  const hungry = `(() => { ${STG} const P = free(); P.stats.maxMass = 135; P.mass = 135; run(1 / 30);
+    document.getElementById('feed').innerHTML = ''; k.pause(true); return document.getElementById('stage').classList.contains('hungry'); })()`;
+  assert(await g.page.evaluate(hungry), 'the pill must be hungry at mass 135');
+  await quiet('hungry jaws');
+  const rain = await g.page.evaluate(`(() => { ${STG} const P = free(); const pin = (m) => () => { P.mass = m; P.tx = P.x; P.ty = P.y; };
+    P.mass = 150; run(0.1); for (const b of S().cur.pack) b.alive = false; run(0.1); run(8.2, pin(605));
+    document.getElementById('feed').innerHTML = ''; k.pause(true); return !!(S().cur && S().cur.k === 'rain' && document.querySelector('#stage .rain')); })()`);
+  assert(rain, 'the rain must be on with its icon');
+  await quiet('rain drops');
+  await g.page.evaluate(`(() => { ${STG} free(); run(0.5); k.pause(true); document.getElementById('stage').style.setProperty('--p', '0'); })()`);
+  await g.page.waitForTimeout(600);
+  const fillW = await g.page.evaluate(() => {
+    const f = document.querySelector('#stage .fill').getBoundingClientRect(),
+      s = document.getElementById('stage').getBoundingClientRect();
+    return Math.max(0, Math.min(f.right, s.right) - Math.max(f.left, s.left)); // the part of the fill inside the pill
+  });
+  assert(fillW < 1, `an empty pill shows ${fillW}px of stripes`);
+  await g.page.emulateMedia({ reducedMotion: 'reduce' });
+  await g.page.evaluate(hungry);
+  const endless = await g.page.evaluate(
+    () =>
+      document
+        .getElementById('stage')
+        .getAnimations({ subtree: true })
+        .filter((a) => a.playState === 'running' && a.effect.getTiming().iterations === Infinity).length,
+  );
+  assert(endless === 0, `reduced motion: ${endless} endless animations still run on the pill`);
+  // a phone that adapt has already stepped down to less detail also stops the endless ones: while the canvas draws every frame,
+  // Chrome restyles every running animation each frame, composited or not
+  await g.page.emulateMedia({ reducedMotion: 'no-preference' });
+  const lite = await g.page.evaluate(hungry);
+  await g.page.evaluate(() => (window.__kus.setLod(1), window.__kus.pause(false))); // frames run, the pill stays hungry
+  await g.page.waitForTimeout(100);
+  const endlessLite = await g.page.evaluate(
+    () =>
+      document
+        .getElementById('stage')
+        .getAnimations({ subtree: true })
+        .filter((a) => a.playState === 'running' && a.effect.getTiming().iterations === Infinity).length,
+  );
+  assert(lite && endlessLite === 0, `lod 1: ${endlessLite} endless animations still run on the pill`);
+  await g.page.evaluate(() => (window.__kus.setLod(0), window.__kus.pause(false)));
+  await g.page.waitForTimeout(100);
+  const endlessFull = await g.page.evaluate(() => document.getElementById('stage').getAnimations({ subtree: true }).filter((a) => a.playState === 'running').length);
+  assert(endlessFull >= 2, `lod 0: the pill must animate again, ${endlessFull} animations run`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+// smarter bots: a scene with the player and a few bots, everything else parked far away.
+// Sound is off: Sfx.pop skips clicks by the audio clock, so with sound on Math.random is drawn a different number of times on a slower machine.
+const BOTS = `const k = window.__kus, P = k.player; k.pause(true); k.Sfx.ok = () => false;
   for (const key in k.CHEAT) k.CHEAT[key] = key === 'speed' ? 1 : false;
   for (const b of k.blobs) if (b !== P) { b.x = 300 + Math.random() * 300; b.y = 3700; b.resetPoints(); }
   P.spawnT = 0; P.ai = null;
@@ -2051,18 +2123,30 @@ test('bots: a small bot bites the back of a busy big player and backs off', asyn
 
 test('bots: a pack gathers on a big one, goes in from several sides and breaks up', async () => {
   const g = await open();
-  const r = await g.page.evaluate(`(() => { ${BOTS}
-    k.setDiff('extreme'); const t0 = k.botStat.packs; let formed = 0, size = 0, ended = 0;
-    for (let t = 0; t < 4 && k.botStat.packs === t0; t++) {
-      // members may still run off from a giant that turns their way, so try a few fresh groups
-      for (const b of k.blobs) if (b !== P && b.ai) b.alive = false;
-      P.mass = 500; k.place(P, 2000, 2000, 0); P.pShield = 99;
-      const four = [0, 1, 2, 3].map((i) => bot(70, 2000 + Math.cos(i * 1.6) * 420, 2000 + Math.sin(i * 1.6) * 420, 0));
-      run(1, () => { clear(four); k.place(P, 2000, 2000, 0); });
-      P.pShield = 0;
-      run(20, () => { clear(four); k.place(P, 2000, 2000, 0); P.biteCd = 1; if (k.packs.length) { formed = 1; size = Math.max(size, k.packs[0].m.length); } else if (formed) ended = 1; });
+  // A seeded Math.random from here on. The field before this point still comes from real frames, so runs are alike, not identical.
+  const r = await g.page.evaluate(`(() => { let seed = 1; Math.random = () => { seed = (seed + 0x6d2b79f5) >>> 0; let x = seed;
+      x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+    ${BOTS}
+    // only the four on the field: a bigger bot wandering in scares the members off, and packs between bots are not this test
+    const only = (four) => { for (const o of k.blobs) if (o !== P && four.indexOf(o) < 0) o.alive = false; k.place(P, 2000, 2000, 0); };
+    k.setDiff('extreme'); let formed = 0, size = 0, went = 0, ended = 0;
+    for (let t = 0; t < 8 && !went; t++) {
+      // members may still run off from the giant or eat each other before the pack goes in, so try a few fresh groups;
+      // a pack that falls apart holds the next one off for up to 10.4 s (packCd on extreme), so wait that out on an empty field
+      P.mass = 500; P.pShield = 99; only([]);
+      if (t) run(11, () => only([]));
+      // round its back and sides, not in front of its mouth, where a member runs off before the pack forms
+      const four = [0, 1, 2, 3].map((i) => bot(70, 2000 + Math.cos(Math.PI + (i - 1.5) * 0.9) * 420, 2000 + Math.sin(Math.PI + (i - 1.5) * 0.9) * 420, 0));
+      run(1, () => only(four));
+      P.pShield = 0; let on = 0, off = 0;
+      for (let i = 0; i < 20 * 60 && !off; i++) {
+        only(four); P.biteCd = 1;
+        const pk = k.packs.find((p) => p.tgt === P);
+        if (pk) { on = formed = 1; size = Math.max(size, pk.m.length); if (pk.go) went = 1; } else if (on) ended = off = 1;
+        k.update(1 / 60);
+      }
     }
-    return { formed, size, went: k.botStat.packs - t0, ended }; })()`);
+    return { formed, size, went, ended }; })()`);
   assert(r.formed && r.size >= 2 && r.size <= 4, `pack ${JSON.stringify(r)}`);
   assert(r.went > 0, 'the pack never went in');
   assert(r.ended, 'the pack never broke up');
@@ -2174,6 +2258,243 @@ test('settings: difficulty and graphics apply and are remembered', async () => {
   await g.close();
 });
 
+// Swallows whole in a row (each within ANN.win s of the last) climb a ladder of big words across the screen.
+const ANN = `const ann = document.getElementById('announce'), word = () => ann.querySelector('b').textContent, shown = () => ann.classList.contains('on');
+  // n tiny candies at the player's mouth, frames until they are all swallowed; returns how many were
+  const gulp = (n = 1) => { const L = []; for (let i = 0; i < n; i++) { const s = k.spawnBot(20); s.ai = null; s.spawnT = 0; L.push(s); }
+    for (let i = 0; i < 2; i++) k.update(1 / 60);
+    const k0 = P.stats.kills; let f = 0;
+    while (f++ < 240 && P.stats.kills < k0 + n) { const s = L.find((b) => b.alive); if (!s) break;
+      k.place(s, P.x + P.Rs + s.Rs - 4, P.y, 0); P.face = 0; P.tx = s.x; P.ty = s.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); }
+    return P.stats.kills - k0; };`;
+
+test('announce: swallows in a row climb the ladder; a pause over 5 s starts again', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} ${ANN} const out = {};
+    P.mass = 400; k.place(P, 2000, 2500, 0); for (let i = 0; i < 30; i++) k.update(1 / 60); k.annReset();
+    out.g1 = gulp(); out.one = shown();
+    out.g2 = gulp(); out.w2 = word(); out.on2 = shown();
+    gulp(); out.w3 = word();
+    gulp(); out.w4 = word();
+    gulp(); gulp(); out.w6 = word(); out.step6 = k.ann.step; out.n6 = k.ann.n;
+    k.annFrame(1.6, false); out.gone = !shown();
+    for (let i = 0; i < 5.2 * 60; i++) { P.mass = 400; k.update(1 / 60); }
+    gulp(); out.nAfter = k.ann.n; out.reshown = shown(); return out; })()`);
+  assert(r.g1 === 1 && r.g2 === 1, `the tiny candies must be swallowed (${r.g1}, ${r.g2})`);
+  assert(!r.one, 'one swallow must not announce anything');
+  assert(r.w2 === 'Двойной кусь!' && r.on2, `2 in a row: "${r.w2}" ${r.on2}`);
+  assert(r.w3 === 'Тройной кусь!!' && r.w4 === 'Обжорство!!!', `3 and 4 in a row: "${r.w3}", "${r.w4}"`);
+  assert(r.w6 === 'Монстр кусь!!!' && r.step6 === 5 && r.n6 === 6, `6 in a row stays on step 5: "${r.w6}" step ${r.step6} n ${r.n6}`);
+  assert(r.gone, 'the word must be gone 1.6 s after it came');
+  assert(r.nAfter === 1 && !r.reshown, `after 5.2 s the chain starts again: n ${r.nAfter}, shown ${r.reshown}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('announce: English words', async () => {
+  const g = await open({ locale: 'en-US' });
+  const r = await g.page.evaluate(`(() => { ${QUIET} ${ANN} const w = [];
+    for (const s of [2, 3, 4, 5]) { k.annShow(s); w.push(word()); } return w; })()`);
+  assert(r.join('|') === 'Double bite!|Triple bite!!|Gluttony!!!|Monster bite!!!', `English ladder: ${r.join('|')}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('announce: the boss does not count and breaks the chain; chains work in the boss fight; death, a new run and the second shift reset it', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(`(() => { ${STG} ${ANN.replace('const ann', 'let P; const ann')} const out = {};
+    P = free(); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1); if (!S().cur) throw new Error('no boss');
+    const B = S().cur.b; B.spawnT = 0; B.ai = null; k.place(B, 600, 600, 0); k.place(P, 2000, 2500, 0); k.annReset();
+    gulp(); gulp(); out.fight = word(); out.fightOn = shown(); out.n2 = k.ann.n;
+    B.mass = 60; k.place(B, 600, 600, 0); for (let i = 0; i < 40; i++) { B.mass = 60; k.place(B, 600, 600, 0); k.update(1 / 60); }
+    k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
+    while (k.state === 'play' && f++ < 400) { P.tx = B.x; P.ty = B.y; B.tx = B.x; B.ty = B.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); }
+    out.won = !!k.run.won; out.nBoss = k.ann.n; out.overOn = shown();
+    document.getElementById('again').click(); P = k.player; P.spawnT = 0; out.nShift = k.ann.n;
+    k.place(P, 2000, 2500, 0); gulp(); gulp(); out.shiftWord = word(); k.die(null); out.nDead = k.ann.n; out.deadOn = shown();
+    P = free(); out.nRun = k.ann.n; return out; })()`);
+  assert(r.fight === 'Двойной кусь!' && r.fightOn && r.n2 === 2, `chains must announce in the boss fight: "${r.fight}" ${r.fightOn} n ${r.n2}`);
+  assert(r.won && r.nBoss === 0 && !r.overOn, `the boss must not count and must break the chain: won ${r.won}, n ${r.nBoss}, shown ${r.overOn}`);
+  assert(r.nShift === 0, `the second shift must start a fresh chain: n ${r.nShift}`);
+  assert(r.shiftWord === 'Двойной кусь!', `chains announce in the second shift: "${r.shiftWord}"`);
+  assert(r.nDead === 0 && !r.deadOn, `death must hide the word and reset the chain: n ${r.nDead}, shown ${r.deadOn}`);
+  assert(r.nRun === 0, `a new run must start a fresh chain: n ${r.nRun}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('announce: not behind the menu; two swallows in one frame; a pause holds it; the stamp waits; cheats still show it', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(async () => { ${QUIET} ${ANN} const out = {};
+    P.mass = 400; k.place(P, 2000, 2500, 0); for (let i = 0; i < 30; i++) k.update(1 / 60); k.annReset();
+    const a = k.spawnBot(20), b = k.spawnBot(20), c = k.spawnBot(20); k.annSwallow(a); k.annSwallow(b); k.annSwallow(c);
+    out.same = k.ann.step; out.sameW = word(); k.annFrame(1.6, false);
+    k.annShow(2); k.pause(true); const t0 = k.ann.t; await new Promise((res) => setTimeout(res, 1500)); out.held = shown() && k.ann.t === t0;
+    out.paused = getComputedStyle(ann.querySelector('b')).animationPlayState; k.annFrame(1.6, false);
+    k.annReset(); k.stamps.length = 0; P.combo = 0; P.comboT = 0; gulp(); gulp(); out.stamps = k.stamps.length; out.onForStamp = shown();
+    k.annReset(); k.CHEAT.heal = true; gulp(); gulp(); out.cheat = word(); k.CHEAT.heal = false;
+    k.toMenu(); k.annShow(3); out.menu = shown(); return out; })()`);
+  assert(r.same === 3 && r.sameW === 'Тройной кусь!!', `three swallows in one frame: step ${r.same} "${r.sameW}"`);
+  assert(r.held && r.paused === 'paused', `a pause must hold the word (held ${r.held}, animation ${r.paused})`);
+  assert(r.onForStamp && r.stamps === 0, `while the word is up no streak stamp shows (stamps ${r.stamps})`);
+  assert(r.cheat === 'Двойной кусь!', `cheats still announce: "${r.cheat}"`);
+  assert(!r.menu, 'nothing shows behind the menu');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+// where the big word lands on a phone: on screen, clear of the controls, the HUD and the player's own candy
+const ANN_BOX = `(() => { const w = document.querySelector('#announce b');
+  for (const a of w.getAnimations()) a.currentTime = 400; // the settled word, whatever the machine's pace: past the fly-in, before the fade
+  const r = w.getBoundingClientRect(), bad = [];
+  if (r.left < 8 || r.right > innerWidth - 8 || r.top < 8) bad.push('off screen ' + [r.left, r.top, r.right, r.bottom].map(Math.round));
+  for (const id of ['dash', 'dodge', 'score', 'board', 'pauseBtn', 'mute']) { const e = document.getElementById(id); if (!e || getComputedStyle(e).display === 'none' || getComputedStyle(e).visibility === 'hidden') continue;
+    for (const q of id === 'score' ? [...e.children].filter((c) => c.id !== 'feed' && c.offsetParent && c.getBoundingClientRect().height > 0) : [e]) { const b = q.getBoundingClientRect();
+      if (b.width && r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top) bad.push('overlaps #' + (q.id || id)); } }
+  const A = window.__kus.ann;
+  if (!(A.top > 0 && A.bot > A.top)) bad.push('no ann.top / ann.bot');
+  else if (r.bottom > A.top + 0.5 && r.top < A.bot - 0.5) bad.push('covers the candy: ' + Math.round(r.top) + '..' + Math.round(r.bottom) + ' in ' + Math.round(A.top) + '..' + Math.round(A.bot));
+  return { bad, h: Math.round(r.height), fs: parseFloat(getComputedStyle(document.querySelector('#announce b')).fontSize) }; })()`;
+
+test('announce: fits 360x640 and 844x390 in both languages, clear of the buttons, the HUD and the player', async () => {
+  const fails = [];
+  for (const locale of ['ru-RU', 'en-US'])
+    for (const [width, height] of [
+      [360, 640],
+      [844, 390],
+    ]) {
+      const g = await open({ locale, width, height, touch: true, dpr: 2 });
+      for (const mass of [400, 2500]) {
+        await g.page.evaluate(`(() => { ${QUIET} P.mass = ${mass}; for (let i = 0; i < 240; i++) { P.mass = ${mass}; k.update(1 / 60); } k.annShow(5); k.pause(false); })()`);
+        await g.page.waitForTimeout(350);
+        const r = await g.page.evaluate(ANN_BOX);
+        if (r.bad.length || r.fs < 16) fails.push(`${locale} ${width}x${height} mass ${mass}: ${r.bad.join(', ')} font ${r.fs}`);
+      }
+      if (g.errors.length) fails.push(g.errors.join(' | '));
+      await g.close();
+    }
+  assert(fails.length === 0, fails.join(' | '));
+});
+
+test('announce: only the same swallow’s stamp waits; a bite under the word still stamps; an older stamp makes way', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} const out = {};
+    P.mass = 120; for (let i = 0; i < 40; i++) k.update(1 / 60);
+    const V = k.spawnBot(400); V.ai = null; V.spawnT = 0; for (let i = 0; i < 30; i++) k.update(1 / 60);
+    const bite = (combo) => { k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; V.mass = 400; P.biteCd = 0;
+      P.combo = combo; P.comboT = 4; const n0 = P.stats.bites; let f = 0;
+      while (f < 90 && P.stats.bites === n0) { k.pickups.length = 0; P.comboT = Math.max(P.comboT, 1); P.tx = V.x; P.ty = V.y; V.tx = V.x; V.ty = V.y; V.biteCd = 9; k.update(1 / 60); f++; }
+      P.biteCd = 999; V.biteCd = 999; return k.stamps.map((s) => s.txt).join(); };
+    out.before = bite(1); k.annShow(3); out.cleared = k.stamps.length;
+    out.under = bite(4); out.wordUp = k.ann.step > 0; return out; })()`);
+  assert(r.before === 'Кусь-кусь!', `a ×2 bite stamps first: "${r.before}"`);
+  assert(r.cleared === 0, `the big word clears a stamp already up: ${r.cleared} left`);
+  assert(r.wordUp && r.under === 'Хрум-хрум!', `a ×5 bite under the word still stamps Хрум-хрум!: "${r.under}" (word up ${r.wordUp})`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('announce: clear of the ×N label even with a hat on, at its biggest pop', async () => {
+  const fails = [];
+  for (const [width, height] of [
+    [360, 640],
+    [844, 390],
+  ]) {
+    const g = await open({ width, height, touch: true, dpr: 2 });
+    for (const hat of ['none', 'crown'])
+      for (const mass of [400, 2500]) {
+        const r = await g.page.evaluate(`(() => { ${QUIET} P.hat = '${hat}'; P.mass = ${mass}; for (let i = 0; i < 240; i++) { P.mass = ${mass}; k.update(1 / 60); }
+          P.combo = 3; P.comboT = 4; k.streak.pop = 1; k.annShow(5); k.render(); // drawName sets the label's top as it is drawn
+          const top = (k.streak.lt - k.cam.y) * k.cam.z + innerHeight / 2 + k.cam.ky, w = document.querySelector('#announce b');
+          for (const a of w.getAnimations()) a.currentTime = 400; const b = w.getBoundingClientRect();
+          return { top: Math.round(top), wt: Math.round(b.top), wb: Math.round(b.bottom), bot: Math.round(k.ann.bot) }; })()`);
+        if (!(r.wb <= r.top + 0.5 || r.wt >= r.bot - 0.5)) fails.push(`${width}x${height} hat ${hat} mass ${mass}: word ${r.wt}..${r.wb}, label top ${r.top}`);
+      }
+    if (g.errors.length) fails.push(g.errors.join(' | '));
+    await g.close();
+  }
+  assert(fails.length === 0, fails.join(' | '));
+});
+
+test('announce: a phone turned mid-announcement refits it', async () => {
+  const g = await open({ width: 360, height: 640, touch: true, dpr: 2 });
+  await g.page.evaluate(`(() => { ${QUIET} P.mass = 400; for (let i = 0; i < 120; i++) k.update(1 / 60); k.annShow(5); k.pause(false); })()`);
+  await g.page.waitForTimeout(150);
+  await g.page.setViewportSize({ width: 844, height: 390 });
+  await g.page.waitForTimeout(250);
+  const r = await g.page.evaluate(ANN_BOX);
+  assert(r.bad.length === 0, `after turning: ${r.bad.join(', ')}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('announce: glow and sprinkles from step 4, none in calm', async () => {
+  const look = `(() => { ${QUIET} P.mass = 400; for (let i = 0; i < 30; i++) k.update(1 / 60); const ann = document.getElementById('announce'), out = {};
+    let n0 = k.parts.length; k.annShow(3); out.glow3 = ann.classList.contains('glow'); out.parts3 = k.parts.length - n0;
+    n0 = k.parts.length; k.annShow(4); out.glow4 = ann.classList.contains('glow'); out.parts4 = k.parts.length - n0; return out; })()`;
+  const g = await open();
+  const r = await g.page.evaluate(look);
+  assert(!r.glow3 && r.parts3 === 0, `step 3 has no glow or sprinkles (${r.glow3}, ${r.parts3})`);
+  assert(r.glow4 && r.parts4 >= 8, `step 4 glows and throws sprinkles (${r.glow4}, ${r.parts4})`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce', locale: 'ru-RU' });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.addInitScript(() => localStorage.setItem('kus.best', '1'));
+  await page.goto(URL);
+  await page.waitForTimeout(400);
+  await page.evaluate(() => window.__kus.startGame());
+  await page.waitForTimeout(250);
+  const c = await page.evaluate(look);
+  assert(!c.glow4 && c.parts4 === 0, `calm: no glow or sprinkles (${c.glow4}, ${c.parts4})`);
+  assert(errors.length === 0, errors.join(' | '));
+  await ctx.close();
+});
+
+// A streak bite is felt in the body: the candy swells, crunches and throws bigger gobs; the numbers stay as they were.
+test('heavy bite: a streak bite swells the candy and crunches; swallows and bonuses do not; mass gain is unchanged', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} ${ANN} const out = { sw: [], snd: [] };
+    const S = k.Sfx, heard = []; const c0 = S.crunch, h0 = S.chomp;
+    S.crunch = function (...a) { heard.push('crunch'); return c0.apply(this, a); }; S.chomp = function (...a) { heard.push('chomp'); return h0.apply(this, a); };
+    P.mass = 120; for (let i = 0; i < 40; i++) k.update(1 / 60);
+    const V = k.spawnBot(400); V.ai = null; V.spawnT = 0; for (let i = 0; i < 30; i++) k.update(1 / 60);
+    P.combo = 0; P.comboT = 0; P.swell = 0;
+    const bite = (combo) => { k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; V.mass = 400; P.biteCd = 0;
+      if (combo !== undefined) { // the same state every time: sizes settled, no piece still in the teeth
+        for (let i = 0; i < 120; i++) { P.mass = 120; V.mass = 400; P.biteCd = V.biteCd = 9; k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs - 40, 1500, 0); k.update(1 / 60); }
+        k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; P.biteCd = 0; P.combo = combo; P.comboT = 4; P.swell = 0; }
+      heard.length = 0; const n0 = P.stats.bites; let f = 0, sw = 0;
+      while (f < 90 && P.stats.bites === n0) { k.pickups.length = 0; P.tx = V.x; P.ty = V.y; V.tx = V.x; V.ty = V.y; V.biteCd = 9; k.update(1 / 60); f++; }
+      sw = P.swell; P.biteCd = 999; V.biteCd = 999; return { sw, heard: heard.join() }; };
+    for (let n = 1; n <= 5; n++) { const b = bite(); out.sw.push(+b.sw.toFixed(3)); out.snd.push(b.heard); }
+    for (let i = 0; i < 60; i++) k.update(1 / 60); out.after = P.swell;
+    // the effect touches nothing but the swell: every number on the candy is the same before and after it
+    // (whole bites in a live scene differ by dash and wound bonuses from one try to the next, so they cannot be compared)
+    const nums = () => { const o = {}; for (const key in P) if (typeof P[key] === 'number') o[key] = P[key]; return o; };
+    P.swell = 0; const n0 = nums(), hg = k.heavyBite(P, 5), n1 = nums();
+    out.changed = Object.keys(n1).filter((key) => !Object.is(n1[key], n0[key])); out.hg = hg; out.sw5 = P.swell;
+    k.HEAVY.on = false; bite(4); out.swOff = P.swell; k.HEAVY.on = true;
+    // a swallow and a bonus in a streak: no swell, no crunch
+    k.annReset(); P.mass = 400; P.combo = 3; P.comboT = 4; P.swell = 0; heard.length = 0; gulp(); out.gulpSw = P.swell; out.gulpHeard = heard.join();
+    P.combo = 3; P.comboT = 4; P.swell = 0; heard.length = 0; k.pickups.length = 0; const pk = { type: 'speed', x: P.x, y: P.y, t: 0 }; k.pickups.push(pk);
+    for (let i = 0; i < 10 && k.pickups.includes(pk); i++) { pk.x = P.x; pk.y = P.y; P.comboT = 4; k.update(1 / 60); }
+    out.bonusSw = P.swell; out.bonusHeard = heard.join(); out.bonusCombo = P.combo;
+    S.crunch = c0; S.chomp = h0; return out; })()`);
+  assert(r.sw[0] === 0 && r.snd[0] === 'chomp', `the first bite is not a streak: swell ${r.sw[0]}, sounds ${r.snd[0]}`);
+  assert(r.sw[2] > 0.05 && r.sw[4] > r.sw[1], `streak bites swell more each step: ${r.sw}`);
+  assert(r.snd.slice(1).every((s) => s === 'crunch'), `streak bites crunch instead of chomp: ${JSON.stringify(r.snd)}`);
+  assert(r.after < 0.005, `the swell settles within a second: ${r.after}`);
+  assert(r.changed.join() === 'swell' && r.sw5 === 0.16 && Math.abs(r.hg - 1.6) < 1e-9, `the effect changes only the swell: ${r.changed} swell ${r.sw5} gobs ×${r.hg}`);
+  assert(r.swOff === 0, `with the effect off nothing swells: ${r.swOff}`);
+  assert(r.gulpSw === 0 && !r.gulpHeard.includes('crunch'), `a swallow does not swell or crunch: ${r.gulpSw} ${r.gulpHeard}`);
+  assert(r.bonusCombo === 4 && r.bonusSw === 0 && !r.bonusHeard.includes('crunch'), `a bonus does not swell or crunch: combo ${r.bonusCombo} swell ${r.bonusSw} ${r.bonusHeard}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 test('sound: every effect plays without throwing', async () => {
   const g = await open();
   const r = await g.page.evaluate(async () => {
@@ -2201,6 +2522,10 @@ test('sound: every effect plays without throwing', async () => {
       ['wrapCatch', []],
       ['wrapUp', [2]],
       ['wrapPay', [true]],
+      ['announce', [2]],
+      ['announce', [5]],
+      ['crunch', [1]],
+      ['crunch', [5]],
     ];
     // every embedded take must decode; then each effect plays from its takes and, with them switched off, from the synth
     const failed = await S.ready;
@@ -2230,15 +2555,146 @@ test('sound: every effect plays without throwing', async () => {
     }
     S.play = orig;
     S.useBuf = true;
+    // sound off, as on iOS before the first tap: the new events stay silent and throw nothing
+    const on0 = S.on;
+    let offPlays = 0;
+    S.play = () => (offPlays++, false);
+    S.on = false;
+    for (const [m, a] of calls.slice(-4))
+      try {
+        S[m](...a);
+      } catch (e) {
+        bad.push(`${m} (off): ${e.message}`);
+      }
+    S.on = on0;
+    S.play = orig;
     const expected = calls.filter(([m]) => window.__kus.SFX_DATA[m]).length;
-    return { running: !!S.ok(), bad, failed, missing, withTakes, expected, afterSynth: played - withTakes, ms: S.decodeMs };
+    return { running: !!S.ok(), bad, failed, missing, withTakes, expected, afterSynth: played - withTakes, ms: S.decodeMs, offPlays };
   });
+  assert(r.offPlays === 0, `with the sound off, ${r.offPlays} takes were started`);
   assert(r.running, 'audio context is not running, so nothing was actually tested');
   assert(r.failed === 0 && r.missing.length === 0, `takes that did not decode: ${r.failed}; events missing takes: ${r.missing.join(', ')}`);
   assert(r.withTakes === r.expected, `with takes, ${r.withTakes} of ${r.expected} calls played a take`);
   assert(r.afterSynth === 0, 'with takes switched off, a take was still played');
   assert(r.bad.length === 0, r.bad.join(' | '));
   console.log(`    takes decoded in ${r.ms.toFixed(0)} ms`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+// Reading a box forces a layout right after the HUD's own writes; the minimap still has to follow the table and the buttons.
+test('hud: the table and buttons are measured only when the layout can have moved, and unchanged text is not rewritten', async () => {
+  const g = await open({ width: 390, height: 844, touch: true, dpr: 3 });
+  const page = g.page;
+  await page.evaluate(`(() => { ${QUIET}
+    window.__reads = 0;
+    const gbr = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function () { if (this.id === 'board' || this.id === 'dodge') window.__reads++; return gbr.call(this); };
+    // every bot, and each one the respawn queue still brings, is put apart and made tame (ambling on the spot) with a frozen mass,
+    // and there are no sprinkles: nobody bites, eats or dies. After 6 s the queue (respawns come 1.5-5 s after a death) is empty,
+    // so the table changes only when the test says so
+    let slot = 0;
+    window.__mass = new Map();
+    const settle = () => { for (const b of k.blobs) if (!window.__mass.has(b)) {
+      if (b !== P) { const x = 300 + (slot % 6) * 600, y = 300 + Math.floor(slot / 6) * 500; k.place(b, x, y); b.tame = true; b.hx = x; b.hy = y; slot++; }
+      window.__mass.set(b, Math.round(Math.min(b.mass, 290)) + 0.25); } }; // under 300 nothing melts; off the rounding edge
+    k.place(P, 2000, 3600);
+    window.__run = (sec) => { for (let i = 0; i < sec * 60; i++) { settle(); for (const [b, m] of window.__mass) b.mass = m; k.food.length = 0; k.update(1 / 60); } };
+    window.__run(6); window.__reads = 0; })()`);
+  const reads = await page.evaluate(() => (window.__run(3), window.__reads));
+  assert(reads <= 2, `the table and buttons were read ${reads} times in 3 s with nothing moving (one measure reads both)`);
+  const near = (a, b) => Math.abs(a - b) < 0.5;
+  const follows = () =>
+    page.evaluate(() => {
+      const h = window.__kus.hudBox,
+        b = document.getElementById('board').getBoundingClientRect(),
+        d = document.getElementById('dodge').getBoundingClientRect();
+      return { h, b: [b.bottom, b.left], d: d.top };
+    });
+  await page.evaluate(() => (document.getElementById('board').click(), window.__run(0.3)));
+  let f = await follows();
+  assert(f.h && near(f.h.boardBottom, f.b[0]) && near(f.h.boardLeft, f.b[1]), `folded table: ${JSON.stringify(f)}`);
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.evaluate(() => (dispatchEvent(new Event('resize')), window.__run(0.3)));
+  f = await follows();
+  assert(near(f.h.boardBottom, f.b[0]) && near(f.h.btnTop, f.d), `landscape: ${JSON.stringify(f)}`);
+  await page.evaluate(() => {
+    const P = window.__kus.player;
+    window.__mass.set(P, 3000); // the player tops the table: the gap row and its own row go, the table gets shorter
+    window.__run(0.3);
+  });
+  f = await follows();
+  assert(near(f.h.boardBottom, f.b[0]), `the table changed rows: ${JSON.stringify(f)}`);
+  // live play: the masses in the table change every tick, its rows do not, so it is not measured again
+  const live = await page.evaluate(() => {
+    window.__reads = 0;
+    for (let i = 0; i < 180; i++) {
+      for (const [b, m] of window.__mass) if (!b.isPlayer) window.__mass.set(b, m + 0.5);
+      window.__run(1 / 60);
+    }
+    return window.__reads;
+  });
+  assert(live <= 2, `with only the numbers changing the table was read ${live} times in 3 s`);
+  // the button size from the pause card moves the buttons
+  await page.evaluate(() => (document.querySelector('#sizeSeg [data-v="1.18"]').click(), window.__run(0.3)));
+  f = await follows();
+  assert(near(f.h.btnTop, f.d), `bigger buttons: ${JSON.stringify(f)}`);
+  // text: the timer changes once a second, the daily goal never; neither is rewritten in between
+  const writes = (mode, id) =>
+    page.evaluate(
+      ([mode, id]) => {
+        const k = window.__kus;
+        k.pause(true);
+        k.setMode(mode);
+        if (k.state !== 'menu') k.toMenu();
+        k.startGame();
+        k.pause(true);
+        for (let i = 0; i < 30; i++) k.update(1 / 60);
+        let n = 0;
+        const mo = new MutationObserver((l) => (n += l.length));
+        mo.observe(document.getElementById(id), { childList: true, characterData: true, subtree: true });
+        for (let i = 0; i < 180; i++) k.update(1 / 60);
+        n += mo.takeRecords().length;
+        mo.disconnect();
+        return { n, text: document.getElementById(id).textContent };
+      },
+      [mode, id],
+    );
+  const tm = await writes('t3', 'timer');
+  assert(tm.text && tm.n <= 4, `3-minute timer "${tm.text}": ${tm.n} rewrites in 3 s`);
+  const gl = await writes('daily', 'goal');
+  assert(gl.text && gl.n === 0, `daily goal "${gl.text}": ${gl.n} rewrites in 3 s`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+// Who eats or pulls a sprinkle: these pin the behaviour across grid cells (256 px), at the world's edge and with a magnet's long reach.
+test('food: eating and pulling sprinkles work across cell borders, at the world edge and with a magnet', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} const out = {};
+    const clear = (x, y) => { for (const f of k.food) if (Math.hypot(f.x - x, f.y - y) < 700) { f.x = 3900; f.y = 100; f.vx = f.vy = 0; } };
+    const drop = (x, y) => { const f = { kind: 0, x, y, m: 1, c: 0, ai: 0, sz: 7 }; k.food.push(f); return f; };
+    // 1: eaten in one step by a candy in the next cell over
+    k.place(P, 1020, 2000, 0); clear(1020, 2000); let f = drop(1020 + P.Rs * 0.8, 2000), m = P.mass;
+    out.crossX = f.x; k.update(1 / 60); out.eaten = !k.food.includes(f); out.gain = P.mass - m;
+    // 2: a magnet pulls a sprinkle 300 px behind the face, two cells away; without one it stays put
+    k.place(P, 2040, 2000, 0); clear(2040, 2000); P.pMagnet = 5; f = drop(1740, 2000); k.update(1 / 60); out.pulled = f.x - 1740;
+    P.pMagnet = 0; k.place(P, 2040, 2000, 0); f = drop(1740, 2000); k.update(1 / 60); out.still = Math.abs(f.x - 1740) + Math.abs(f.y - 2000);
+    // 3: the corner of the world
+    k.place(P, P.Rs, P.Rs, Math.PI * 1.25); clear(0, 0); f = drop(5, 5); let n = 0;
+    for (; n < 30 && k.food.includes(f); n++) k.update(1 / 60); out.corner = n;
+    // 4: a bot eats across the border too
+    const B = k.blobs.find((b) => b !== P && !b.kind && b.alive); B.ai = null; k.place(B, 3060, 3000, 0); clear(3060, 3000);
+    f = drop(3060 + B.Rs * 0.8, 3000); m = B.mass; out.botX = f.x; k.update(1 / 60); out.botEaten = !k.food.includes(f); out.botGain = B.mass - m;
+    // 5: a sprinkle whose position went bad (NaN, from some other bug) lies inert instead of stopping the game
+    const bad = drop(NaN, NaN); try { k.update(1 / 60); out.nan = 'ok'; } catch (e) { out.nan = String(e); } k.food.splice(k.food.indexOf(bad), 1);
+    return out; })()`);
+  assert(r.crossX > 1024, `setup: the sprinkle at x ${r.crossX} must be in the next cell`);
+  assert(r.eaten && Math.abs(r.gain - 1) < 0.01, `a sprinkle across the cell border: eaten ${r.eaten}, mass +${r.gain}`);
+  assert(r.pulled > 5 && r.still < 0.001, `magnet: pulled ${r.pulled} px; without it moved ${r.still} px`);
+  assert(r.corner < 30, `a sprinkle in the corner was not eaten in 30 steps`);
+  assert(r.botX > 3072 && r.botEaten && Math.abs(r.botGain - 1) < 0.01, `a bot across the border: ${JSON.stringify(r)}`);
+  assert(r.nan === 'ok', `a NaN sprinkle: ${r.nan}`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
 });

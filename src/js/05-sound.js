@@ -318,4 +318,26 @@ const Sfx = {
       notes = jackpot ? [523.25, 659.25, 783.99, 1046.5] : [523.25, 659.25, 783.99];
     notes.forEach((f, i) => this.tone(t + i * 0.08, 'sine', f, f, 0.12, 0.25 + (i === notes.length - 1 ? 0.12 : 0), 0.006));
   },
+  announce(step) {
+    // swallows in a row (2..5): a rising fanfare, higher and louder each step, a low thump from step 4
+    if (!this.ok()) return;
+    if (this.play('announce', 0.8 + 0.1 * (step - 2), Math.pow(2, [0, 0, 0, 2, 4, 7][step] / 12))) return;
+    const t = this.ac.currentTime,
+      semi = [0, 4, 7, 12, 16];
+    for (let i = 0; i < Math.min(step + 1, 5); i++) {
+      const f = 392 * Math.pow(2, semi[i] / 12);
+      this.tone(t + i * 0.07, 'triangle', f, f, 0.18, 0.22, 0.006);
+    }
+    if (step >= 4) this.tone(t, 'sine', 98, 49, 0.35, 0.35, 0.006);
+  },
+  crunch(k) {
+    // a streak bite (k 1..5): a candy shell cracking, louder and lower each step
+    if (!this.ok()) return;
+    const to = this.dest();
+    if (this.play('crunch', 0.7 + 0.075 * k, 1 + 0.04 * (k - 1), to)) return;
+    const t = this.ac.currentTime,
+      d = 0.09 + 0.03 * k;
+    this.hiss(t, 1800 - k * 150, 700, 0.8, 0.35 + 0.08 * k, d, 'bandpass', to);
+    this.hiss(t, 5200, 2600, 0.7, 0.12 + 0.03 * k, 0.03, 'highpass', to);
+  },
 };

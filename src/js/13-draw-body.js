@@ -150,7 +150,14 @@ function drawBlob(b) {
   const R = b.Rs,
     pal = b.pal,
     path = b.path,
-    z = cam.z;
+    z = cam.z,
+    sw = b.swell > 0.002; // a streak bite swells the drawing (body, face, hat) for a moment; physics keeps its size
+  if (sw) {
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.scale(1 + b.swell, 1 + b.swell);
+    ctx.translate(-b.x, -b.y);
+  }
   if (b.kind === 'hedgehog' && R * z > 5) drawSpikes(b);
   if (lod > 1 || R * z < 6) ctx.fillStyle = pal.base;
   else {
@@ -271,6 +278,7 @@ function drawBlob(b) {
       ctx.stroke();
     }
   }
+  if (sw) ctx.restore();
 }
 function drawChunk(c) {
   const r = c.r;
