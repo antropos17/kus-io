@@ -74,11 +74,14 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #goal{font:800 13px/1.3 var(--font);color:#e9c9ad;text-shadow:0 2px 0 rgba(0,0,0,.5)}
 #stage{--p:0;position:relative;display:flex;align-items:center;width:178px;min-height:30px;margin-top:12px;border-radius:99px;background:var(--cream);box-shadow:0 4px 0 rgba(0,0,0,.4);overflow:hidden;font:800 13px/1 var(--font);color:var(--ink)}
 #stage.off{display:none}
-#stage .fill{position:absolute;left:0;top:0;bottom:0;width:calc(var(--p) * 100%);background:repeating-linear-gradient(-45deg,#ffd23f 0 8px,#ffe070 8px 16px);background-size:22.6px 22.6px;animation:stageSlide 1s linear infinite;border-radius:99px;transition:width .5s cubic-bezier(.22,1,.36,1)}
-@keyframes stageSlide{to{background-position:22.6px 0}}
+#stage .fill{position:absolute;left:0;top:0;bottom:0;width:100%;transform:translateX(calc((var(--p) - 1) * 100%));overflow:hidden;border-radius:99px;transition:transform .5s cubic-bezier(.22,1,.36,1)} /* slides in from the left (the pill clips it): a moving width would lay the page out every frame */
+#stage .fill:before{content:"";position:absolute;top:0;bottom:0;left:-22.6px;right:0;background:repeating-linear-gradient(-45deg,#ffd23f 0 8px,#ffe070 8px 16px);background-size:22.6px 22.6px;animation:stageSlide 1s linear infinite} /* the stripes slide by transform: the compositor moves them and the page is not restyled every frame */
+@keyframes stageSlide{to{transform:translateX(22.6px)}}
 #stage .t{position:relative;flex:1;min-width:0;padding:5px 0 5px 12px;line-height:1.1} /* a long label (second shift) wraps to a second line */
 #stage b{position:relative;flex:none;margin-right:4px;font-weight:900;font-variant-numeric:tabular-nums;white-space:nowrap}
 #stage .ic{position:relative;flex:none;width:24px;height:24px;margin-right:4px}
+#stage .ic>*{position:absolute;left:0;top:0;width:100%;height:100%}
+#stage .ic span svg{display:block;width:100%;height:100%}
 #stage .jt{transform:translateY(calc((var(--p) - 1) * 3.2px))}
 #stage .jb{transform:translateY(calc((1 - var(--p)) * 3.2px))}
 #stage .jt,#stage .jb{transition:transform .35s cubic-bezier(.3,1.5,.5,1)}
@@ -86,15 +89,16 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #stage.hungry .jb{animation:chatB .22s infinite alternate}
 #stage.chomp .jt{animation:snapT .16s 4 alternate}
 #stage.chomp .jb{animation:snapB .16s 4 alternate}
-#stage .rain g path{animation:stageDrip .9s linear infinite}
-#stage .rain g path:nth-child(2){animation-delay:-.3s}
-#stage .rain g path:nth-child(3){animation-delay:-.6s}
+#stage .rain .d{animation:stageDrip .9s linear infinite}
+#stage .rain .d:nth-child(3){animation-delay:-.3s}
+#stage .rain .d:nth-child(4){animation-delay:-.6s}
 @keyframes chatT{to{transform:translateY(.8px)}}
 @keyframes chatB{to{transform:translateY(-.8px)}}
 @keyframes snapT{from{transform:translateY(-3px)}to{transform:translateY(1px)}}
 @keyframes snapB{from{transform:translateY(3px)}to{transform:translateY(-1px)}}
 @keyframes stageDrip{0%{transform:translateY(-1.5px);opacity:0}25%{opacity:1}80%{opacity:1}100%{transform:translateY(2.5px);opacity:0}}
-@media (prefers-reduced-motion:reduce){#stage .fill,#stage.hungry .jt,#stage.hungry .jb,#stage.chomp .jt,#stage.chomp .jb,#stage .rain g path{animation:none}#stage .jt,#stage .jb{transition:none}}
+body.lite #stage .fill:before,body.lite #stage.hungry .jt,body.lite #stage.hungry .jb,body.lite #stage .rain .d{animation:none} /* adapt stepped down: no endless HUD animation */
+@media (prefers-reduced-motion:reduce){#stage .fill:before,#stage.hungry .jt,#stage.hungry .jb,#stage.chomp .jt,#stage.chomp .jb,#stage .rain .d{animation:none}#stage .jt,#stage .jb{transition:none}}
 #fx{display:flex;flex-wrap:wrap;align-items:center;gap:8px;max-width:200px;margin-top:12px}
 #fx .fxu{display:inline-flex;flex-wrap:nowrap;align-items:center;gap:4px}
 #fx:empty{display:none}

@@ -1312,7 +1312,7 @@ test('hud: cream pills fit phones; the stage pill fills and its jaws chomp when 
       const P = free(); P.stats.maxMass = 135; P.mass = 135; P.pMagnet = 4.9; run(1 / 30);
       const st = document.getElementById('stage'), fx = document.getElementById('fx');
       out.hungry = st.classList.contains('hungry'); out.chomp0 = st.classList.contains('chomp');
-      out.p = parseFloat(st.style.getPropertyValue('--p')); out.ic = !!st.querySelector('svg.ic'); out.kind = k.stages.kind();
+      out.p = parseFloat(st.style.getPropertyValue('--p')); out.ic = !!st.querySelector('.ic'); out.kind = k.stages.kind();
       document.getElementById('feed').innerHTML = ''; // hints are wider than the column by design: measure the pills
       const sr = document.getElementById('score').getBoundingClientRect(), br = document.getElementById('board').getBoundingClientRect();
       out.right = sr.right; out.hit = sr.right > br.left && sr.bottom > br.top && sr.top < br.bottom;
@@ -1356,6 +1356,74 @@ test('hud: cream pills fit phones; the stage pill fills and its jaws chomp when 
     } catch (e) {
       throw new Error(locale + ': ' + e.message);
     }
+});
+
+// The pill's endless animations (stripes, hungry jaws, rain drops) must run on the compositor: one the page has to lay out
+// costs a layout every frame on a phone. The game is paused after each setup (startGame unpauses it), so the HUD stays still
+// and only the pill animates; the canvas still draws every frame. Style recalcs are not counted:
+// while the canvas draws every frame, Chrome ticks the style of every running animation, composited or not.
+test('perf: the stage pill animates without a page layout every frame', async () => {
+  const g = await open({ width: 390, height: 844, touch: true, dpr: 3, play: false, returning: true });
+  const cdp = await g.page.context().newCDPSession(g.page);
+  await cdp.send('Performance.enable');
+  const counts = async () => {
+    const m = Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((x) => [x.name, x.value]));
+    return { styles: m.RecalcStyleCount, layouts: m.LayoutCount };
+  };
+  const quiet = async (state) => {
+    const a = await counts();
+    await g.page.waitForTimeout(1500);
+    const b = await counts(),
+      d = { styles: b.styles - a.styles, layouts: b.layouts - a.layouts };
+    assert(d.layouts <= 5, `${state}: ${d.layouts} layouts in 1.5 s (${d.styles} style recalcs)`);
+  };
+  const hungry = `(() => { ${STG} const P = free(); P.stats.maxMass = 135; P.mass = 135; run(1 / 30);
+    document.getElementById('feed').innerHTML = ''; k.pause(true); return document.getElementById('stage').classList.contains('hungry'); })()`;
+  assert(await g.page.evaluate(hungry), 'the pill must be hungry at mass 135');
+  await quiet('hungry jaws');
+  const rain = await g.page.evaluate(`(() => { ${STG} const P = free(); const pin = (m) => () => { P.mass = m; P.tx = P.x; P.ty = P.y; };
+    P.mass = 150; run(0.1); for (const b of S().cur.pack) b.alive = false; run(0.1); run(8.2, pin(605));
+    document.getElementById('feed').innerHTML = ''; k.pause(true); return !!(S().cur && S().cur.k === 'rain' && document.querySelector('#stage .rain')); })()`);
+  assert(rain, 'the rain must be on with its icon');
+  await quiet('rain drops');
+  await g.page.evaluate(`(() => { ${STG} free(); run(0.5); k.pause(true); document.getElementById('stage').style.setProperty('--p', '0'); })()`);
+  await g.page.waitForTimeout(600);
+  const fillW = await g.page.evaluate(() => {
+    const f = document.querySelector('#stage .fill').getBoundingClientRect(),
+      s = document.getElementById('stage').getBoundingClientRect();
+    return Math.max(0, Math.min(f.right, s.right) - Math.max(f.left, s.left)); // the part of the fill inside the pill
+  });
+  assert(fillW < 1, `an empty pill shows ${fillW}px of stripes`);
+  await g.page.emulateMedia({ reducedMotion: 'reduce' });
+  await g.page.evaluate(hungry);
+  const endless = await g.page.evaluate(
+    () =>
+      document
+        .getElementById('stage')
+        .getAnimations({ subtree: true })
+        .filter((a) => a.playState === 'running' && a.effect.getTiming().iterations === Infinity).length,
+  );
+  assert(endless === 0, `reduced motion: ${endless} endless animations still run on the pill`);
+  // a phone that adapt has already stepped down to less detail also stops the endless ones: while the canvas draws every frame,
+  // Chrome restyles every running animation each frame, composited or not
+  await g.page.emulateMedia({ reducedMotion: 'no-preference' });
+  const lite = await g.page.evaluate(hungry);
+  await g.page.evaluate(() => (window.__kus.setLod(1), window.__kus.pause(false))); // frames run, the pill stays hungry
+  await g.page.waitForTimeout(100);
+  const endlessLite = await g.page.evaluate(
+    () =>
+      document
+        .getElementById('stage')
+        .getAnimations({ subtree: true })
+        .filter((a) => a.playState === 'running' && a.effect.getTiming().iterations === Infinity).length,
+  );
+  assert(lite && endlessLite === 0, `lod 1: ${endlessLite} endless animations still run on the pill`);
+  await g.page.evaluate(() => (window.__kus.setLod(0), window.__kus.pause(false)));
+  await g.page.waitForTimeout(100);
+  const endlessFull = await g.page.evaluate(() => document.getElementById('stage').getAnimations({ subtree: true }).filter((a) => a.playState === 'running').length);
+  assert(endlessFull >= 2, `lod 0: the pill must animate again, ${endlessFull} animations run`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
 });
 
 // smarter bots: a scene with the player and a few bots, everything else parked far away
