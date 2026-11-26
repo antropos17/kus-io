@@ -235,7 +235,7 @@ body.touch.lefty #dash.low:after{right:auto;left:calc(100% + 12px)}
 #chestAgain{margin-top:8px;padding:8px;font-size:14px}
 #chestOdds{margin:4px 0 0;font:700 12px/1.25 var(--font);color:#7a5a49;text-align:center}
 #near{margin-top:6px}
-@media (max-height:760px){#over .card.paid.stk #near,#over .card.paid.chal #stk{display:none}#over .card.paid.chal #near{display:none}#over .card.paid #overMis{display:none}#over .card.paid .stats{margin-bottom:6px}#over .card.paid .best{margin-top:6px}}
+@media (max-height:760px){#over .card.rr #near{display:none}#over .card.rr #chestMore{display:flex;gap:8px;align-items:center;margin-top:6px}#over .card.paid #chestAgain{flex:0 0 46%;margin:0;padding:7px 4px;font-size:13px}#chestOdds{flex:1 1 0;min-width:0;margin:0;font-size:11px;text-align:left}#over .card.paid.stk #near,#over .card.paid.chal #stk{display:none}#over .card.paid.chal #near{display:none}#over .card.paid #overMis{display:none}#over .card.paid .stats{margin-bottom:6px}#over .card.paid .best{margin-top:6px}}
 #near:empty{display:none}
 #modeSeg [data-m=daily]{grid-column:1/-1;grid-row:1;display:flex;align-items:baseline;align-content:center;justify-content:center;gap:0 8px;flex-wrap:wrap}
 #modeSeg [data-m=daily] small{font:700 13px/1.2 var(--font);color:#7a5a49}
@@ -401,9 +401,10 @@ body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))}
   #chestT{margin:0;font-size:13px}
   #chestRow{grid-column:1/-1}
   #chestRow button{min-height:34px;font-size:16px}
-  #chestAgain,#chestOdds{grid-column:1/-1}
-  #chestAgain{margin-top:0;padding:6px;font-size:13px}
-  #chestOdds{margin:0;font-size:11px}
+  #chestMore{grid-column:1/-1}
+  #over .card.rr #chestMore{margin-top:0}
+  #over .card.rr #chestRow button{min-height:28px}
+  #over .card.paid #chestAgain{padding:5px 4px}
   #over .card.paid .tag{display:none}
   #over .card.paid .stats{margin-bottom:8px}
   #over .card.paid .best{margin-top:3px;font-size:13px}
@@ -567,8 +568,10 @@ document.getElementById('nojs').style.display = 'none';
       <div class="sw1"><b id="sweetN">+0</b><span data-t="sweet.round">сахара за раунд</span><span id="sweetBank"></span></div>
       <p id="chestT"></p>
       <div id="chestRow" role="group" aria-label="Три конфеты" data-ta="a.chest"></div>
-      <button id="chestAgain" class="btn2 hidden" type="button"></button>
-      <p id="chestOdds" class="hidden"></p>
+      <div id="chestMore">
+        <button id="chestAgain" class="btn2 hidden" type="button"></button>
+        <p id="chestOdds" class="hidden"></p>
+      </div>
     </div>
     <div id="overMis"></div>
     <button id="again" class="btn" type="button" data-t="over.again">Ещё кусь</button>
@@ -5014,6 +5017,7 @@ function renderReroll(picked) {
   const show = picked && !run.rerolled && sugar >= rerollPrice();
   $('chestAgain').classList.toggle('hidden', !show);
   $('chestOdds').classList.toggle('hidden', !show);
+  overEl.querySelector('.card').classList.toggle('rr', show); // short screens: the reroll row takes the «almost» line's place
   if (!show) return;
   $('chestAgain').textContent = rerollAsk ? t('chest.againAsk', rerollPrice()) : t('chest.again', rerollPrice());
   $('chestOdds').textContent = t('chest.odds');

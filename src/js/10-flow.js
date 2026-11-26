@@ -166,6 +166,7 @@ function renderReroll(picked) {
   const show = picked && !run.rerolled && sugar >= rerollPrice();
   $('chestAgain').classList.toggle('hidden', !show);
   $('chestOdds').classList.toggle('hidden', !show);
+  overEl.querySelector('.card').classList.toggle('rr', show); // short screens: the reroll row takes the «almost» line's place
   if (!show) return;
   $('chestAgain').textContent = rerollAsk ? t('chest.againAsk', rerollPrice()) : t('chest.again', rerollPrice());
   $('chestOdds').textContent = t('chest.odds');

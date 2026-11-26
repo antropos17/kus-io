@@ -565,7 +565,7 @@ test('chest: the reroll is hidden when the bank is short of its price', async ()
 for (const [w, h] of [[360, 640], [844, 390]])
   for (const locale of ['ru-RU', 'en-US'])
     test(`chest: the reroll button and odds fit the end card at ${w}x${h} ${locale}`, async () => {
-      const g = await open({ play: false, width: w, height: h, touch: true, locale });
+      const g = await open({ play: false, width: w, height: h, touch: true, dpr: 2, locale });
       const r = await g.page.evaluate(`(() => { ${CHEST_END}
         document.getElementById('chestRow').children[0].click();
         const R = (s) => { const e = document.querySelector(s); const b = e.getBoundingClientRect(); return { s, l: b.left, t: b.top, r: b.right, b: b.bottom, hid: e.classList.contains('hidden') }; };
@@ -573,6 +573,9 @@ for (const [w, h] of [[360, 640], [844, 390]])
         const hit = (a, b) => a.l < b.r - 1 && b.l < a.r - 1 && a.t < b.b - 1 && b.t < a.b - 1;
         const bad = []; for (const p of parts) { if (p.hid) bad.push(p.s + ' hidden'); if (p.l < card.l || p.r > card.r) bad.push(p.s + ' outside card x'); for (const o of others) if (hit(p, o)) bad.push(p.s + ' over ' + o.s); }
         if (hit(parts[0], parts[1])) bad.push('button over odds');
+        const cardEl = document.querySelector('#over .card'), be = document.getElementById('best'), bb = be.getBoundingClientRect(), cb = cardEl.getBoundingClientRect();
+        if (cardEl.scrollHeight > cardEl.clientHeight) bad.push('the card scrolls ' + cardEl.scrollHeight + ' > ' + cardEl.clientHeight);
+        if (!be.textContent.trim() || getComputedStyle(be).display === 'none' || bb.bottom > cb.bottom || bb.top < cb.top) bad.push('the best line is not visible');
         return { bad }; })()`);
       assert(r.bad.length === 0, `${w}x${h} ${locale}: ${r.bad.join(', ')}`);
       assert(g.errors.length === 0, g.errors.join(' | '));
