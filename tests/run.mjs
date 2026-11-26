@@ -584,11 +584,13 @@ test('streak: swallowing whole counts as a streak bite', async () => {
     out.words = k.stamps.map((s) => s.txt); out.chip = document.querySelector('#sugar .mult').textContent; out.sum = k.streak.sum;
     // the three swallows came well inside a second: every «ням» over the candy right now, floating texts and the stamp together
     out.nyam = [...k.texts.filter((t) => t.t < t.T).map((t) => t.s), ...out.words].filter((s) => /ням/i.test(s));
+    out.ann = document.querySelector('#announce b').textContent;
     return out; })()`);
-  assert(r.nyam.length === 1, `only one «ням» may hang over the candy at a time, saw ${JSON.stringify(r.nyam)}`);
+  assert(r.nyam.length <= 1, `only one «ням» may hang over the candy at a time, saw ${JSON.stringify(r.nyam)}`);
   assert(r.kills === 3, `all three small candies must be swallowed whole, got ${r.kills}`);
   assert(r.combos.join() === '1,2,3', `swallows in a row must count 1,2,3, got ${r.combos}`);
-  assert(r.words.join() === 'Ням!' && r.chip === '×3', `the third swallow must stamp Ням! and show ×3: ${r.words} ${r.chip}`);
+  // three swallows in a row are also a chain: the big word takes the screen and the streak's own stamp waits
+  assert(r.words.length === 0 && r.ann === 'Тройной кусь!!' && r.chip === '×3', `the third swallow must announce Тройной кусь!! with no stamp and show ×3: ${r.words} "${r.ann}" ${r.chip}`);
   assert(r.sum > 0, 'the swallows must add their sugar to the streak sum');
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
@@ -1088,7 +1090,8 @@ test('stages: beating the boss ends the run with a record, not with cheats; the 
     const beat = (cheat) => { const P = free(); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1); if (!S().cur) throw new Error('no boss');
       const B = S().cur.b; B.spawnT = 0; B.ai = null;
       if (cheat) k.CHEAT.heal = true;
-      B.mass = 60; k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
+      B.mass = 60; k.place(B, 600, 600, 0); for (let i = 0; i < 40; i++) { B.mass = 60; k.place(B, 600, 600, 0); k.update(1 / 60); }
+    k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
       while (k.state === 'play' && f++ < 400) { P.tx = B.x; P.ty = B.y; B.tx = B.x; B.ty = B.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); }
       k.CHEAT.heal = false; return { P, f }; };
     const out = {};
@@ -1522,6 +1525,243 @@ test('settings: difficulty and graphics apply and are remembered', async () => {
   await g.close();
 });
 
+// Swallows whole in a row (each within ANN.win s of the last) climb a ladder of big words across the screen.
+const ANN = `const ann = document.getElementById('announce'), word = () => ann.querySelector('b').textContent, shown = () => ann.classList.contains('on');
+  // n tiny candies at the player's mouth, frames until they are all swallowed; returns how many were
+  const gulp = (n = 1) => { const L = []; for (let i = 0; i < n; i++) { const s = k.spawnBot(20); s.ai = null; s.spawnT = 0; L.push(s); }
+    for (let i = 0; i < 2; i++) k.update(1 / 60);
+    const k0 = P.stats.kills; let f = 0;
+    while (f++ < 240 && P.stats.kills < k0 + n) { const s = L.find((b) => b.alive); if (!s) break;
+      k.place(s, P.x + P.Rs + s.Rs - 4, P.y, 0); P.face = 0; P.tx = s.x; P.ty = s.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); }
+    return P.stats.kills - k0; };`;
+
+test('announce: swallows in a row climb the ladder; a pause over 5 s starts again', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} ${ANN} const out = {};
+    P.mass = 400; k.place(P, 2000, 2500, 0); for (let i = 0; i < 30; i++) k.update(1 / 60); k.annReset();
+    out.g1 = gulp(); out.one = shown();
+    out.g2 = gulp(); out.w2 = word(); out.on2 = shown();
+    gulp(); out.w3 = word();
+    gulp(); out.w4 = word();
+    gulp(); gulp(); out.w6 = word(); out.step6 = k.ann.step; out.n6 = k.ann.n;
+    k.annFrame(1.6, false); out.gone = !shown();
+    for (let i = 0; i < 5.2 * 60; i++) { P.mass = 400; k.update(1 / 60); }
+    gulp(); out.nAfter = k.ann.n; out.reshown = shown(); return out; })()`);
+  assert(r.g1 === 1 && r.g2 === 1, `the tiny candies must be swallowed (${r.g1}, ${r.g2})`);
+  assert(!r.one, 'one swallow must not announce anything');
+  assert(r.w2 === 'Двойной кусь!' && r.on2, `2 in a row: "${r.w2}" ${r.on2}`);
+  assert(r.w3 === 'Тройной кусь!!' && r.w4 === 'Обжорство!!!', `3 and 4 in a row: "${r.w3}", "${r.w4}"`);
+  assert(r.w6 === 'Монстр кусь!!!' && r.step6 === 5 && r.n6 === 6, `6 in a row stays on step 5: "${r.w6}" step ${r.step6} n ${r.n6}`);
+  assert(r.gone, 'the word must be gone 1.6 s after it came');
+  assert(r.nAfter === 1 && !r.reshown, `after 5.2 s the chain starts again: n ${r.nAfter}, shown ${r.reshown}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('announce: English words', async () => {
+  const g = await open({ locale: 'en-US' });
+  const r = await g.page.evaluate(`(() => { ${QUIET} ${ANN} const w = [];
+    for (const s of [2, 3, 4, 5]) { k.annShow(s); w.push(word()); } return w; })()`);
+  assert(r.join('|') === 'Double bite!|Triple bite!!|Gluttony!!!|Monster bite!!!', `English ladder: ${r.join('|')}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('announce: the boss does not count and breaks the chain; chains work in the boss fight; death, a new run and the second shift reset it', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(`(() => { ${STG} ${ANN.replace('const ann', 'let P; const ann')} const out = {};
+    P = free(); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1); if (!S().cur) throw new Error('no boss');
+    const B = S().cur.b; B.spawnT = 0; B.ai = null; k.place(B, 600, 600, 0); k.place(P, 2000, 2500, 0); k.annReset();
+    gulp(); gulp(); out.fight = word(); out.fightOn = shown(); out.n2 = k.ann.n;
+    B.mass = 60; k.place(B, 600, 600, 0); for (let i = 0; i < 40; i++) { B.mass = 60; k.place(B, 600, 600, 0); k.update(1 / 60); }
+    k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
+    while (k.state === 'play' && f++ < 400) { P.tx = B.x; P.ty = B.y; B.tx = B.x; B.ty = B.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); }
+    out.won = !!k.run.won; out.nBoss = k.ann.n; out.overOn = shown();
+    document.getElementById('again').click(); P = k.player; P.spawnT = 0; out.nShift = k.ann.n;
+    k.place(P, 2000, 2500, 0); gulp(); gulp(); out.shiftWord = word(); k.die(null); out.nDead = k.ann.n; out.deadOn = shown();
+    P = free(); out.nRun = k.ann.n; return out; })()`);
+  assert(r.fight === 'Двойной кусь!' && r.fightOn && r.n2 === 2, `chains must announce in the boss fight: "${r.fight}" ${r.fightOn} n ${r.n2}`);
+  assert(r.won && r.nBoss === 0 && !r.overOn, `the boss must not count and must break the chain: won ${r.won}, n ${r.nBoss}, shown ${r.overOn}`);
+  assert(r.nShift === 0, `the second shift must start a fresh chain: n ${r.nShift}`);
+  assert(r.shiftWord === 'Двойной кусь!', `chains announce in the second shift: "${r.shiftWord}"`);
+  assert(r.nDead === 0 && !r.deadOn, `death must hide the word and reset the chain: n ${r.nDead}, shown ${r.deadOn}`);
+  assert(r.nRun === 0, `a new run must start a fresh chain: n ${r.nRun}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('announce: not behind the menu; two swallows in one frame; a pause holds it; the stamp waits; cheats still show it', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(async () => { ${QUIET} ${ANN} const out = {};
+    P.mass = 400; k.place(P, 2000, 2500, 0); for (let i = 0; i < 30; i++) k.update(1 / 60); k.annReset();
+    const a = k.spawnBot(20), b = k.spawnBot(20), c = k.spawnBot(20); k.annSwallow(a); k.annSwallow(b); k.annSwallow(c);
+    out.same = k.ann.step; out.sameW = word(); k.annFrame(1.6, false);
+    k.annShow(2); k.pause(true); const t0 = k.ann.t; await new Promise((res) => setTimeout(res, 1500)); out.held = shown() && k.ann.t === t0;
+    out.paused = getComputedStyle(ann.querySelector('b')).animationPlayState; k.annFrame(1.6, false);
+    k.annReset(); k.stamps.length = 0; P.combo = 0; P.comboT = 0; gulp(); gulp(); out.stamps = k.stamps.length; out.onForStamp = shown();
+    k.annReset(); k.CHEAT.heal = true; gulp(); gulp(); out.cheat = word(); k.CHEAT.heal = false;
+    k.toMenu(); k.annShow(3); out.menu = shown(); return out; })()`);
+  assert(r.same === 3 && r.sameW === 'Тройной кусь!!', `three swallows in one frame: step ${r.same} "${r.sameW}"`);
+  assert(r.held && r.paused === 'paused', `a pause must hold the word (held ${r.held}, animation ${r.paused})`);
+  assert(r.onForStamp && r.stamps === 0, `while the word is up no streak stamp shows (stamps ${r.stamps})`);
+  assert(r.cheat === 'Двойной кусь!', `cheats still announce: "${r.cheat}"`);
+  assert(!r.menu, 'nothing shows behind the menu');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+// where the big word lands on a phone: on screen, clear of the controls, the HUD and the player's own candy
+const ANN_BOX = `(() => { const w = document.querySelector('#announce b');
+  for (const a of w.getAnimations()) a.currentTime = 400; // the settled word, whatever the machine's pace: past the fly-in, before the fade
+  const r = w.getBoundingClientRect(), bad = [];
+  if (r.left < 8 || r.right > innerWidth - 8 || r.top < 8) bad.push('off screen ' + [r.left, r.top, r.right, r.bottom].map(Math.round));
+  for (const id of ['dash', 'dodge', 'score', 'board', 'pauseBtn', 'mute']) { const e = document.getElementById(id); if (!e || getComputedStyle(e).display === 'none' || getComputedStyle(e).visibility === 'hidden') continue;
+    for (const q of id === 'score' ? [...e.children].filter((c) => c.id !== 'feed' && c.offsetParent && c.getBoundingClientRect().height > 0) : [e]) { const b = q.getBoundingClientRect();
+      if (b.width && r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top) bad.push('overlaps #' + (q.id || id)); } }
+  const A = window.__kus.ann;
+  if (!(A.top > 0 && A.bot > A.top)) bad.push('no ann.top / ann.bot');
+  else if (r.bottom > A.top + 0.5 && r.top < A.bot - 0.5) bad.push('covers the candy: ' + Math.round(r.top) + '..' + Math.round(r.bottom) + ' in ' + Math.round(A.top) + '..' + Math.round(A.bot));
+  return { bad, h: Math.round(r.height), fs: parseFloat(getComputedStyle(document.querySelector('#announce b')).fontSize) }; })()`;
+
+test('announce: fits 360x640 and 844x390 in both languages, clear of the buttons, the HUD and the player', async () => {
+  const fails = [];
+  for (const locale of ['ru-RU', 'en-US'])
+    for (const [width, height] of [
+      [360, 640],
+      [844, 390],
+    ]) {
+      const g = await open({ locale, width, height, touch: true, dpr: 2 });
+      for (const mass of [400, 2500]) {
+        await g.page.evaluate(`(() => { ${QUIET} P.mass = ${mass}; for (let i = 0; i < 240; i++) { P.mass = ${mass}; k.update(1 / 60); } k.annShow(5); k.pause(false); })()`);
+        await g.page.waitForTimeout(350);
+        const r = await g.page.evaluate(ANN_BOX);
+        if (r.bad.length || r.fs < 16) fails.push(`${locale} ${width}x${height} mass ${mass}: ${r.bad.join(', ')} font ${r.fs}`);
+      }
+      if (g.errors.length) fails.push(g.errors.join(' | '));
+      await g.close();
+    }
+  assert(fails.length === 0, fails.join(' | '));
+});
+
+test('announce: only the same swallow’s stamp waits; a bite under the word still stamps; an older stamp makes way', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} const out = {};
+    P.mass = 120; for (let i = 0; i < 40; i++) k.update(1 / 60);
+    const V = k.spawnBot(400); V.ai = null; V.spawnT = 0; for (let i = 0; i < 30; i++) k.update(1 / 60);
+    const bite = (combo) => { k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; V.mass = 400; P.biteCd = 0;
+      P.combo = combo; P.comboT = 4; const n0 = P.stats.bites; let f = 0;
+      while (f < 90 && P.stats.bites === n0) { k.pickups.length = 0; P.comboT = Math.max(P.comboT, 1); P.tx = V.x; P.ty = V.y; V.tx = V.x; V.ty = V.y; V.biteCd = 9; k.update(1 / 60); f++; }
+      P.biteCd = 999; V.biteCd = 999; return k.stamps.map((s) => s.txt).join(); };
+    out.before = bite(1); k.annShow(3); out.cleared = k.stamps.length;
+    out.under = bite(4); out.wordUp = k.ann.step > 0; return out; })()`);
+  assert(r.before === 'Кусь-кусь!', `a ×2 bite stamps first: "${r.before}"`);
+  assert(r.cleared === 0, `the big word clears a stamp already up: ${r.cleared} left`);
+  assert(r.wordUp && r.under === 'Хрум-хрум!', `a ×5 bite under the word still stamps Хрум-хрум!: "${r.under}" (word up ${r.wordUp})`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('announce: clear of the ×N label even with a hat on, at its biggest pop', async () => {
+  const fails = [];
+  for (const [width, height] of [
+    [360, 640],
+    [844, 390],
+  ]) {
+    const g = await open({ width, height, touch: true, dpr: 2 });
+    for (const hat of ['none', 'crown'])
+      for (const mass of [400, 2500]) {
+        const r = await g.page.evaluate(`(() => { ${QUIET} P.hat = '${hat}'; P.mass = ${mass}; for (let i = 0; i < 240; i++) { P.mass = ${mass}; k.update(1 / 60); }
+          P.combo = 3; P.comboT = 4; k.streak.pop = 1; k.annShow(5); k.render(); // drawName sets the label's top as it is drawn
+          const top = (k.streak.lt - k.cam.y) * k.cam.z + innerHeight / 2 + k.cam.ky, w = document.querySelector('#announce b');
+          for (const a of w.getAnimations()) a.currentTime = 400; const b = w.getBoundingClientRect();
+          return { top: Math.round(top), wt: Math.round(b.top), wb: Math.round(b.bottom), bot: Math.round(k.ann.bot) }; })()`);
+        if (!(r.wb <= r.top + 0.5 || r.wt >= r.bot - 0.5)) fails.push(`${width}x${height} hat ${hat} mass ${mass}: word ${r.wt}..${r.wb}, label top ${r.top}`);
+      }
+    if (g.errors.length) fails.push(g.errors.join(' | '));
+    await g.close();
+  }
+  assert(fails.length === 0, fails.join(' | '));
+});
+
+test('announce: a phone turned mid-announcement refits it', async () => {
+  const g = await open({ width: 360, height: 640, touch: true, dpr: 2 });
+  await g.page.evaluate(`(() => { ${QUIET} P.mass = 400; for (let i = 0; i < 120; i++) k.update(1 / 60); k.annShow(5); k.pause(false); })()`);
+  await g.page.waitForTimeout(150);
+  await g.page.setViewportSize({ width: 844, height: 390 });
+  await g.page.waitForTimeout(250);
+  const r = await g.page.evaluate(ANN_BOX);
+  assert(r.bad.length === 0, `after turning: ${r.bad.join(', ')}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('announce: glow and sprinkles from step 4, none in calm', async () => {
+  const look = `(() => { ${QUIET} P.mass = 400; for (let i = 0; i < 30; i++) k.update(1 / 60); const ann = document.getElementById('announce'), out = {};
+    let n0 = k.parts.length; k.annShow(3); out.glow3 = ann.classList.contains('glow'); out.parts3 = k.parts.length - n0;
+    n0 = k.parts.length; k.annShow(4); out.glow4 = ann.classList.contains('glow'); out.parts4 = k.parts.length - n0; return out; })()`;
+  const g = await open();
+  const r = await g.page.evaluate(look);
+  assert(!r.glow3 && r.parts3 === 0, `step 3 has no glow or sprinkles (${r.glow3}, ${r.parts3})`);
+  assert(r.glow4 && r.parts4 >= 8, `step 4 glows and throws sprinkles (${r.glow4}, ${r.parts4})`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce', locale: 'ru-RU' });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.addInitScript(() => localStorage.setItem('kus.best', '1'));
+  await page.goto(URL);
+  await page.waitForTimeout(400);
+  await page.evaluate(() => window.__kus.startGame());
+  await page.waitForTimeout(250);
+  const c = await page.evaluate(look);
+  assert(!c.glow4 && c.parts4 === 0, `calm: no glow or sprinkles (${c.glow4}, ${c.parts4})`);
+  assert(errors.length === 0, errors.join(' | '));
+  await ctx.close();
+});
+
+// A streak bite is felt in the body: the candy swells, crunches and throws bigger gobs; the numbers stay as they were.
+test('heavy bite: a streak bite swells the candy and crunches; swallows and bonuses do not; mass gain is unchanged', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} ${ANN} const out = { sw: [], snd: [] };
+    const S = k.Sfx, heard = []; const c0 = S.crunch, h0 = S.chomp;
+    S.crunch = function (...a) { heard.push('crunch'); return c0.apply(this, a); }; S.chomp = function (...a) { heard.push('chomp'); return h0.apply(this, a); };
+    P.mass = 120; for (let i = 0; i < 40; i++) k.update(1 / 60);
+    const V = k.spawnBot(400); V.ai = null; V.spawnT = 0; for (let i = 0; i < 30; i++) k.update(1 / 60);
+    P.combo = 0; P.comboT = 0; P.swell = 0;
+    const bite = (combo) => { k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; V.mass = 400; P.biteCd = 0;
+      if (combo !== undefined) { // the same state every time: sizes settled, no piece still in the teeth
+        for (let i = 0; i < 120; i++) { P.mass = 120; V.mass = 400; P.biteCd = V.biteCd = 9; k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs - 40, 1500, 0); k.update(1 / 60); }
+        k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; P.biteCd = 0; P.combo = combo; P.comboT = 4; P.swell = 0; }
+      heard.length = 0; const n0 = P.stats.bites; let f = 0, sw = 0;
+      while (f < 90 && P.stats.bites === n0) { k.pickups.length = 0; P.tx = V.x; P.ty = V.y; V.tx = V.x; V.ty = V.y; V.biteCd = 9; k.update(1 / 60); f++; }
+      sw = P.swell; P.biteCd = 999; V.biteCd = 999; return { sw, heard: heard.join() }; };
+    for (let n = 1; n <= 5; n++) { const b = bite(); out.sw.push(+b.sw.toFixed(3)); out.snd.push(b.heard); }
+    for (let i = 0; i < 60; i++) k.update(1 / 60); out.after = P.swell;
+    // the effect touches nothing but the swell: every number on the candy is the same before and after it
+    // (whole bites in a live scene differ by dash and wound bonuses from one try to the next, so they cannot be compared)
+    const nums = () => { const o = {}; for (const key in P) if (typeof P[key] === 'number') o[key] = P[key]; return o; };
+    P.swell = 0; const n0 = nums(), hg = k.heavyBite(P, 5), n1 = nums();
+    out.changed = Object.keys(n1).filter((key) => !Object.is(n1[key], n0[key])); out.hg = hg; out.sw5 = P.swell;
+    k.HEAVY.on = false; bite(4); out.swOff = P.swell; k.HEAVY.on = true;
+    // a swallow and a bonus in a streak: no swell, no crunch
+    k.annReset(); P.mass = 400; P.combo = 3; P.comboT = 4; P.swell = 0; heard.length = 0; gulp(); out.gulpSw = P.swell; out.gulpHeard = heard.join();
+    P.combo = 3; P.comboT = 4; P.swell = 0; heard.length = 0; k.pickups.length = 0; const pk = { type: 'speed', x: P.x, y: P.y, t: 0 }; k.pickups.push(pk);
+    for (let i = 0; i < 10 && k.pickups.includes(pk); i++) { pk.x = P.x; pk.y = P.y; P.comboT = 4; k.update(1 / 60); }
+    out.bonusSw = P.swell; out.bonusHeard = heard.join(); out.bonusCombo = P.combo;
+    S.crunch = c0; S.chomp = h0; return out; })()`);
+  assert(r.sw[0] === 0 && r.snd[0] === 'chomp', `the first bite is not a streak: swell ${r.sw[0]}, sounds ${r.snd[0]}`);
+  assert(r.sw[2] > 0.05 && r.sw[4] > r.sw[1], `streak bites swell more each step: ${r.sw}`);
+  assert(r.snd.slice(1).every((s) => s === 'crunch'), `streak bites crunch instead of chomp: ${JSON.stringify(r.snd)}`);
+  assert(r.after < 0.005, `the swell settles within a second: ${r.after}`);
+  assert(r.changed.join() === 'swell' && r.sw5 === 0.16 && Math.abs(r.hg - 1.6) < 1e-9, `the effect changes only the swell: ${r.changed} swell ${r.sw5} gobs ×${r.hg}`);
+  assert(r.swOff === 0, `with the effect off nothing swells: ${r.swOff}`);
+  assert(r.gulpSw === 0 && !r.gulpHeard.includes('crunch'), `a swallow does not swell or crunch: ${r.gulpSw} ${r.gulpHeard}`);
+  assert(r.bonusCombo === 4 && r.bonusSw === 0 && !r.bonusHeard.includes('crunch'), `a bonus does not swell or crunch: combo ${r.bonusCombo} swell ${r.bonusSw} ${r.bonusHeard}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 test('sound: every effect plays without throwing', async () => {
   const g = await open();
   const r = await g.page.evaluate(async () => {
@@ -1549,6 +1789,10 @@ test('sound: every effect plays without throwing', async () => {
       ['wrapCatch', []],
       ['wrapUp', [2]],
       ['wrapPay', [true]],
+      ['announce', [2]],
+      ['announce', [5]],
+      ['crunch', [1]],
+      ['crunch', [5]],
     ];
     // every embedded take must decode; then each effect plays from its takes and, with them switched off, from the synth
     const failed = await S.ready;
@@ -1578,9 +1822,23 @@ test('sound: every effect plays without throwing', async () => {
     }
     S.play = orig;
     S.useBuf = true;
+    // sound off, as on iOS before the first tap: the new events stay silent and throw nothing
+    const on0 = S.on;
+    let offPlays = 0;
+    S.play = () => (offPlays++, false);
+    S.on = false;
+    for (const [m, a] of calls.slice(-4))
+      try {
+        S[m](...a);
+      } catch (e) {
+        bad.push(`${m} (off): ${e.message}`);
+      }
+    S.on = on0;
+    S.play = orig;
     const expected = calls.filter(([m]) => window.__kus.SFX_DATA[m]).length;
-    return { running: !!S.ok(), bad, failed, missing, withTakes, expected, afterSynth: played - withTakes, ms: S.decodeMs };
+    return { running: !!S.ok(), bad, failed, missing, withTakes, expected, afterSynth: played - withTakes, ms: S.decodeMs, offPlays };
   });
+  assert(r.offPlays === 0, `with the sound off, ${r.offPlays} takes were started`);
   assert(r.running, 'audio context is not running, so nothing was actually tested');
   assert(r.failed === 0 && r.missing.length === 0, `takes that did not decode: ${r.failed}; events missing takes: ${r.missing.join(', ')}`);
   assert(r.withTakes === r.expected, `with takes, ${r.withTakes} of ${r.expected} calls played a take`);

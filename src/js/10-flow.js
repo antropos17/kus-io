@@ -314,6 +314,7 @@ function finishRun() {
 }
 function die(by) {
   clearWrap();
+  annReset();
   tally();
   stick.id = -1;
   stick.on = false;
@@ -329,6 +330,7 @@ function die(by) {
   finishRun();
 }
 function endTimed() {
+  annReset();
   if (player && player.alive) {
     tally();
     player.alive = false;
@@ -344,6 +346,7 @@ function endTimed() {
 }
 function toMenu() {
   clearWrap();
+  annReset();
   sugarSettle();
   if (state === 'play' && player && player.alive) {
     tally();

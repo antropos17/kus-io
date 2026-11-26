@@ -99,6 +99,7 @@ function frame(now) {
   if (n >= 1 && n <= 3 && Math.abs(dt - n * fp) < fp * 0.3) dt = n * fp;
   if (dt > 0.05) dt = 0.05;
   const w0 = performance.now();
+  annFrame(dt, paused); // the big word lives in real time: the swallow's slow-down does not drag it
   if (!paused) {
     let sc = CHEAT.slow ? 0.45 : 1;
     if (slowT > 0) {
@@ -248,6 +249,9 @@ window.__kus = {
   get player() {
     return player;
   },
+  get parts() {
+    return parts;
+  },
   get blobs() {
     return blobs;
   },
@@ -352,6 +356,17 @@ window.__kus = {
     renderMode();
   },
   toMenu,
+  die, // tests: a death without staging a bite
+  ANN,
+  get ann() {
+    return ann;
+  },
+  annShow,
+  annSwallow,
+  annReset,
+  annFrame,
+  HEAVY,
+  heavyBite,
   trophy: {
     get running() {
       return tr.running;
