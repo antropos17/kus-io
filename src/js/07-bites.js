@@ -494,10 +494,12 @@ function doBite(A, B, ang, dashBite) {
   const big = dashBite || intoWound || weak || king;
   if (big) A.wowT = 0.7;
   if (A.isPlayer) {
-    const step = Math.min(A.combo, 6);
+    const step = Math.min(A.combo, 6),
+      hk = A.combo >= 2 && HEAVY.on ? Math.min(A.combo, 5) : 0, // a streak bite is felt in the body: swell, gobs, crunch
+      hg = hk ? heavyBite(A, hk) : 1;
     if (!lod) {
       spawnDust(bx, by, B.pal, nx, ny, 3 + step);
-      for (let i = 0; i < 2 + (big ? 2 : 0); i++) {
+      for (let i = 0; i < 2 + (big ? 2 : 0) + hk; i++) {
         const a = ang + rand(-0.9, 0.9),
           sp = rand(160, 380);
         parts.push({
@@ -505,7 +507,7 @@ function doBite(A, B, ang, dashBite) {
           y: by,
           vx: Math.cos(a) * sp,
           vy: Math.sin(a) * sp,
-          r: rand(4, 6.5) * clamp(chunkR / 16, 0.7, 1.8),
+          r: rand(4, 6.5) * clamp(chunkR / 16, 0.7, 1.8) * hg, // only the picture grows: the piece's mass is the same
           t: 0,
           T: rand(0.4, 0.6),
           c: flesh(B.pal, 1),
@@ -533,7 +535,8 @@ function doBite(A, B, ang, dashBite) {
     if (B.kind === 'hedgehog') mission('hedge', 1);
     haptic(big ? 22 : 12);
     Sfx.stretch(ch.holdT, clamp(1.3 - chunkR / 60, 0.7, 1.3));
-    Sfx.chomp(1, clamp(1.25 - A.Rs / 400, 0.6, 1.25) * (1 + (step - 1) * 0.045));
+    if (hk) Sfx.crunch(hk);
+    else Sfx.chomp(1, clamp(1.25 - A.Rs / 400, 0.6, 1.25) * (1 + (step - 1) * 0.045));
     if (step > 1) Sfx.ding(step);
     cam.shake = Math.max(cam.shake, 3 + Math.min(6, chunkR * 0.12) + (big ? 2 : 0));
   } else if (B.isPlayer) {

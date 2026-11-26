@@ -1678,6 +1678,48 @@ test('announce: glow and sprinkles from step 4, none in calm', async () => {
   await ctx.close();
 });
 
+// A streak bite is felt in the body: the candy swells, crunches and throws bigger gobs; the numbers stay as they were.
+test('heavy bite: a streak bite swells the candy and crunches; swallows and bonuses do not; mass gain is unchanged', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} ${ANN} const out = { sw: [], snd: [] };
+    const S = k.Sfx, heard = []; const c0 = S.crunch, h0 = S.chomp;
+    S.crunch = function (...a) { heard.push('crunch'); return c0.apply(this, a); }; S.chomp = function (...a) { heard.push('chomp'); return h0.apply(this, a); };
+    P.mass = 120; for (let i = 0; i < 40; i++) k.update(1 / 60);
+    const V = k.spawnBot(400); V.ai = null; V.spawnT = 0; for (let i = 0; i < 30; i++) k.update(1 / 60);
+    P.combo = 0; P.comboT = 0; P.swell = 0;
+    const bite = (combo) => { k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; V.mass = 400; P.biteCd = 0;
+      if (combo !== undefined) { // the same state every time: sizes settled, no piece still in the teeth
+        for (let i = 0; i < 120; i++) { P.mass = 120; V.mass = 400; P.biteCd = V.biteCd = 9; k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs - 40, 1500, 0); k.update(1 / 60); }
+        k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); V.wounds.length = 0; P.biteCd = 0; P.combo = combo; P.comboT = 4; P.swell = 0; }
+      heard.length = 0; const n0 = P.stats.bites; let f = 0, sw = 0;
+      while (f < 90 && P.stats.bites === n0) { k.pickups.length = 0; P.tx = V.x; P.ty = V.y; V.tx = V.x; V.ty = V.y; V.biteCd = 9; k.update(1 / 60); f++; }
+      sw = P.swell; P.biteCd = 999; V.biteCd = 999; return { sw, heard: heard.join() }; };
+    for (let n = 1; n <= 5; n++) { const b = bite(); out.sw.push(+b.sw.toFixed(3)); out.snd.push(b.heard); }
+    for (let i = 0; i < 60; i++) k.update(1 / 60); out.after = P.swell;
+    // the effect touches nothing but the swell: every number on the candy is the same before and after it
+    // (whole bites in a live scene differ by dash and wound bonuses from one try to the next, so they cannot be compared)
+    const nums = () => { const o = {}; for (const key in P) if (typeof P[key] === 'number') o[key] = P[key]; return o; };
+    P.swell = 0; const n0 = nums(), hg = k.heavyBite(P, 5), n1 = nums();
+    out.changed = Object.keys(n1).filter((key) => !Object.is(n1[key], n0[key])); out.hg = hg; out.sw5 = P.swell;
+    k.HEAVY.on = false; bite(4); out.swOff = P.swell; k.HEAVY.on = true;
+    // a swallow and a bonus in a streak: no swell, no crunch
+    k.annReset(); P.mass = 400; P.combo = 3; P.comboT = 4; P.swell = 0; heard.length = 0; gulp(); out.gulpSw = P.swell; out.gulpHeard = heard.join();
+    P.combo = 3; P.comboT = 4; P.swell = 0; heard.length = 0; k.pickups.length = 0; const pk = { type: 'speed', x: P.x, y: P.y, t: 0 }; k.pickups.push(pk);
+    for (let i = 0; i < 10 && k.pickups.includes(pk); i++) { pk.x = P.x; pk.y = P.y; P.comboT = 4; k.update(1 / 60); }
+    out.bonusSw = P.swell; out.bonusHeard = heard.join(); out.bonusCombo = P.combo;
+    S.crunch = c0; S.chomp = h0; return out; })()`);
+  assert(r.sw[0] === 0 && r.snd[0] === 'chomp', `the first bite is not a streak: swell ${r.sw[0]}, sounds ${r.snd[0]}`);
+  assert(r.sw[2] > 0.05 && r.sw[4] > r.sw[1], `streak bites swell more each step: ${r.sw}`);
+  assert(r.snd.slice(1).every((s) => s === 'crunch'), `streak bites crunch instead of chomp: ${JSON.stringify(r.snd)}`);
+  assert(r.after < 0.005, `the swell settles within a second: ${r.after}`);
+  assert(r.changed.join() === 'swell' && r.sw5 === 0.16 && Math.abs(r.hg - 1.6) < 1e-9, `the effect changes only the swell: ${r.changed} swell ${r.sw5} gobs ×${r.hg}`);
+  assert(r.swOff === 0, `with the effect off nothing swells: ${r.swOff}`);
+  assert(r.gulpSw === 0 && !r.gulpHeard.includes('crunch'), `a swallow does not swell or crunch: ${r.gulpSw} ${r.gulpHeard}`);
+  assert(r.bonusCombo === 4 && r.bonusSw === 0 && !r.bonusHeard.includes('crunch'), `a bonus does not swell or crunch: combo ${r.bonusCombo} swell ${r.bonusSw} ${r.bonusHeard}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 test('sound: every effect plays without throwing', async () => {
   const g = await open();
   const r = await g.page.evaluate(async () => {

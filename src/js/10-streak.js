@@ -3,6 +3,14 @@
 const STREAK = { win: 4, close: 0.45, low: 0.8, words: { 2: t('w.2'), 3: t('w.3'), 5: t('w.5'), 7: t('w.7') } };
 const STREAK_COL = ['', '#9be15d', '#ff9a3c', '#ff4f7b']; // the colour of each step
 // 0: no streak (combo < 2), 1: ×2, 2: ×3-4, 3: ×5 and up
+// a streak bite felt in the body (only the picture and the sound: the numbers stay): how much the candy swells at
+// each step k = min(combo, 5); on is for tests that compare a bite with and without it
+const HEAVY = { on: true, swell: [0, 0, 0.07, 0.1, 0.13, 0.16] };
+function heavyBite(A, k) {
+  // the player's streak bite of step k: the body swells (less with reduce motion); returns how much bigger the gobs fly
+  A.swell = Math.max(A.swell || 0, HEAVY.swell[k] * (calm ? 0.5 : 1));
+  return 1 + 0.15 * (k - 1);
+}
 const streakLevel = (combo) => (combo < 2 ? 0 : combo < 3 ? 1 : combo < 5 ? 2 : 3);
 // the step the player's face and label show right now
 const streakStep = (b) => (b.isPlayer && b.comboT > 0 ? streakLevel(b.combo || 0) : 0);

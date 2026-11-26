@@ -365,6 +365,8 @@ window.__kus = {
   annSwallow,
   annReset,
   annFrame,
+  HEAVY,
+  heavyBite,
   trophy: {
     get running() {
       return tr.running;
