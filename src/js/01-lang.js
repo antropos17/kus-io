@@ -47,6 +47,7 @@ const STR = {
   'look.skin': ['Узор', 'Pattern'],
   'look.hat': ['Шапка', 'Hat'],
   'look.eyes': ['Глаза', 'Eyes'],
+  'look.trail': ['След', 'Trail'],
   'sec.mis': ['Задания', 'Missions'],
   'sec.set': ['Настройки', 'Settings'],
   'sec.help': ['Как играть', 'How to play'],

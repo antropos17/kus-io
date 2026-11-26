@@ -511,6 +511,7 @@ document.getElementById('nojs').style.display = 'none';
         <div class="pk later"><span class="pl" data-t="look.skin">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор" data-ta="look.skin"></div></div>
         <div class="pk later"><span class="pl" data-t="look.hat">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка" data-ta="look.hat"></div></div>
         <div class="pk later"><span class="pl" data-t="look.eyes">Глаза</span><div id="eyes" class="pr" role="radiogroup" aria-label="Глаза" data-ta="look.eyes"></div></div>
+        <div class="pk later"><span class="pl" data-t="look.trail">След</span><div id="trail" class="pr" role="radiogroup" aria-label="След" data-ta="look.trail"></div></div>
         <p class="best later" id="rec"></p>
       </div></section>
       <section class="sec later" id="secMis"><button class="sh" type="button" aria-expanded="false" aria-controls="secMisB"><span class="sk" data-t="sec.mis">Задания</span><span class="sv" id="sumMis"></span></button><div class="sb" id="secMisB">
@@ -689,6 +690,7 @@ const STR = {
   'look.skin': ['Узор', 'Pattern'],
   'look.hat': ['Шапка', 'Hat'],
   'look.eyes': ['Глаза', 'Eyes'],
+  'look.trail': ['След', 'Trail'],
   'sec.mis': ['Задания', 'Missions'],
   'sec.set': ['Настройки', 'Settings'],
   'sec.help': ['Как играть', 'How to play'],
@@ -1704,6 +1706,7 @@ let player = null,
 let chosen = randi(PALS.length),
   chosenHat = 'none',
   chosenEyes = 'none',
+  chosenTrail = 'none',
   chosenSkin = 'plain',
   prevBest = 0,
   best = 0,
@@ -2209,6 +2212,8 @@ class Blob {
     this.dripT = 0;
     this.hat = o.hat || 'none';
     this.eyes = o.eyes || 'none';
+    this.trail = o.trail || 'none';
+    this.trailAcc = 0;
     this.skin = o.skin || 'plain';
     this.kind = o.kind || null;
     this.pSpeed = 0;
@@ -3669,6 +3674,42 @@ function spawnDust(x, y, pal, nx, ny, n) {
     });
   }
 }
+// the player's trail: a few small shapes left behind a moving candy (sh: 1 crumbs, 2 hearts, 3 stars, 4 bubbles, 5 rainbow)
+const TRAIL_SH = { crumbs: 1, hearts: 2, stars: 3, bubbles: 4, rainbow: 5 };
+function emitTrail(b, dt) {
+  const sh = TRAIL_SH[b.trail];
+  if (!sh || lod > 1) return;
+  const sp = Math.hypot(b.vx, b.vy);
+  if (sp <= 40) {
+    b.trailAcc = 0;
+    return;
+  }
+  b.trailAcc += dt * (lod ? 7 : 14);
+  for (; b.trailAcc >= 1; b.trailAcc -= 1) {
+    const ux = b.vx / sp,
+      uy = b.vy / sp;
+    parts.push({
+      x: b.x - ux * b.Rs * 0.9,
+      y: b.y - uy * b.Rs * 0.9,
+      vx: rand(-14, 14),
+      vy: rand(-14, 14),
+      r: clamp(b.Rs * 0.16, 3, 7),
+      t: 0,
+      T: 0.9,
+      c:
+        sh === 1
+          ? flesh(b.pal, 1)
+          : sh === 2
+            ? '#ff7aa2'
+            : sh === 3
+              ? '#ffd23f'
+              : sh === 4
+                ? 'rgba(200,230,255,.8)'
+                : hsl((time * 120) % 360, 90, 62),
+      sh,
+    });
+  }
+}
 function floatText(x, y, s, color, size) {
   texts.push({ x, y, s, color, size, t: 0, T: 1 });
 }
@@ -5110,6 +5151,7 @@ function spawnPlayer(spawnT) {
     spawnT,
     hat: owns('hat', chosenHat) ? chosenHat : 'none',
     eyes: owns('eyes', chosenEyes) ? chosenEyes : 'none',
+    trail: owns('trail', chosenTrail) ? chosenTrail : 'none',
     skin: skinOpen(chosenSkin) ? chosenSkin : 'plain',
   });
   blobs.push(player);
@@ -5137,6 +5179,7 @@ function startGame() {
     localStorage.setItem('kus.color', String(chosen));
     localStorage.setItem('kus.hat', chosenHat);
     localStorage.setItem('kus.eyes', chosenEyes);
+    localStorage.setItem('kus.trail', chosenTrail);
     localStorage.setItem('kus.skin', chosenSkin);
     localStorage.setItem('kus.mode', mode);
     localStorage.setItem('kus.diff', diffPick || diff);
@@ -5598,6 +5641,7 @@ function update(dt) {
   input.dodge = false;
   for (const b of blobs) if (b.alive && b.ai) botSteer(b, dt);
   for (const b of blobs) if (b.alive) updateBlob(b, dt);
+  if (player && player.alive) emitTrail(player, dt);
   collideAll(dt);
   for (const b of blobs) {
     const m = b.Rs * 0.85; // the same rim as in updateBlob: past it, next frame's wall would snap the body back in one jump
@@ -8452,6 +8496,31 @@ function drawStick() {
     ctx.fillText(t('stick.hint'), bx, by + STICK_R + 10);
   }
 }
+// one particle of the player's trail: heart, star, bubble ring or a plain dot (rainbow)
+function drawTrailShape(p, r) {
+  ctx.beginPath();
+  if (p.sh === 2) {
+    ctx.moveTo(p.x, p.y + r * 0.9);
+    ctx.bezierCurveTo(p.x - r * 1.6, p.y - r * 0.2, p.x - r * 0.7, p.y - r * 1.3, p.x, p.y - r * 0.4);
+    ctx.bezierCurveTo(p.x + r * 0.7, p.y - r * 1.3, p.x + r * 1.6, p.y - r * 0.2, p.x, p.y + r * 0.9);
+  } else if (p.sh === 3) {
+    for (let i = 0; i < 10; i++) {
+      const a = i * 0.6283 - 1.5708,
+        rr = i % 2 ? r * 0.5 : r * 1.3;
+      if (i) ctx.lineTo(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr);
+      else ctx.moveTo(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr);
+    }
+    ctx.closePath();
+  } else ctx.arc(p.x, p.y, r, 0, TAU);
+  if (p.sh === 4) {
+    ctx.strokeStyle = p.c;
+    ctx.lineWidth = Math.max(1, r * 0.3);
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = p.c;
+    ctx.fill();
+  }
+}
 function render() {
   ensurePattern();
   const z = cam.z,
@@ -8567,6 +8636,10 @@ function render() {
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r * (0.6 + 1.6 * e), 0, TAU);
       ctx.stroke();
+      continue;
+    }
+    if (p.sh > 1) {
+      drawTrailShape(p, p.r * (1 - e * 0.5));
       continue;
     }
     ctx.fillStyle = p.c;
@@ -8772,6 +8845,7 @@ $('again').addEventListener('click', startGame);
 function renderHats() {
   renderPick('hat');
   renderPick('eyes');
+  renderPick('trail');
   recEl.textContent = best ? t('rec', best) : '';
 }
 const skinsEl = $('skins'),
@@ -8785,11 +8859,13 @@ function renderBank(msg) {
   if (msg) bankT = setTimeout(() => renderBank(), 3200);
 }
 const boxOf = (slot) => $(slot === 'hat' ? 'hats' : slot === 'skin' ? 'skins' : slot);
-const chosenOf = (slot) => (slot === 'hat' ? chosenHat : slot === 'skin' ? chosenSkin : slot === 'eyes' ? chosenEyes : null);
+const chosenOf = (slot) =>
+  slot === 'hat' ? chosenHat : slot === 'skin' ? chosenSkin : slot === 'eyes' ? chosenEyes : slot === 'trail' ? chosenTrail : null;
 function choose(slot, id) {
   if (slot === 'hat') chosenHat = id;
   else if (slot === 'skin') chosenSkin = id;
   else if (slot === 'eyes') chosenEyes = id;
+  else if (slot === 'trail') chosenTrail = id;
 }
 // the price tag of a closed item: its price, «Купить?» after the first tap
 function priceTag(slot, id) {
@@ -8977,7 +9053,15 @@ const pressedText = (id) => {
 function renderSecs() {
   const pal = PALS[chosen],
     skin = SKINS.find((k) => k[0] === chosenSkin),
-    look = [nameOf(pal.name), skin && skin[1], chosenHat !== 'none' && itemName('hat', chosenHat), chosenEyes !== 'none' && itemName('eyes', chosenEyes)].filter(Boolean).join(' · ');
+    look = [
+      nameOf(pal.name),
+      skin && skin[1],
+      chosenHat !== 'none' && itemName('hat', chosenHat),
+      chosenEyes !== 'none' && itemName('eyes', chosenEyes),
+      chosenTrail !== 'none' && itemName('trail', chosenTrail),
+    ]
+      .filter(Boolean)
+      .join(' · ');
   $('sumLook').innerHTML = `<i style="background:${pal.base}"></i>${look}`;
   $('sumMode').textContent = `${t('sum.' + mode)} · ${mode === 'daily' ? t('dif.normal') : pressedText('diffSeg')}`;
   const mis = $('misList').children,
@@ -10113,6 +10197,7 @@ function start(data) {
     stored = parseInt(localStorage.getItem('kus.best'), 10) || 0;
     chosenHat = localStorage.getItem('kus.hat') || 'none';
     chosenEyes = localStorage.getItem('kus.eyes') || 'none';
+    chosenTrail = localStorage.getItem('kus.trail') || 'none';
     chosenSkin = localStorage.getItem('kus.skin') || 'plain';
     sugar = Math.max(0, parseInt(localStorage.getItem('kus.sugar'), 10) || 0);
     if (localStorage.getItem('kus.lbmin') === '1') $('board').classList.add('min');
@@ -10315,6 +10400,15 @@ window.__kus = {
   },
   set chosenEyes(v) {
     chosenEyes = v;
+  },
+  get chosenTrail() {
+    return chosenTrail;
+  },
+  set chosenTrail(v) {
+    chosenTrail = v;
+  },
+  get parts() {
+    return parts;
   },
   renderPick,
   get own() {

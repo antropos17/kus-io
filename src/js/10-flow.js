@@ -255,6 +255,7 @@ function spawnPlayer(spawnT) {
     spawnT,
     hat: owns('hat', chosenHat) ? chosenHat : 'none',
     eyes: owns('eyes', chosenEyes) ? chosenEyes : 'none',
+    trail: owns('trail', chosenTrail) ? chosenTrail : 'none',
     skin: skinOpen(chosenSkin) ? chosenSkin : 'plain',
   });
   blobs.push(player);
@@ -282,6 +283,7 @@ function startGame() {
     localStorage.setItem('kus.color', String(chosen));
     localStorage.setItem('kus.hat', chosenHat);
     localStorage.setItem('kus.eyes', chosenEyes);
+    localStorage.setItem('kus.trail', chosenTrail);
     localStorage.setItem('kus.skin', chosenSkin);
     localStorage.setItem('kus.mode', mode);
     localStorage.setItem('kus.diff', diffPick || diff);
@@ -743,6 +745,7 @@ function update(dt) {
   input.dodge = false;
   for (const b of blobs) if (b.alive && b.ai) botSteer(b, dt);
   for (const b of blobs) if (b.alive) updateBlob(b, dt);
+  if (player && player.alive) emitTrail(player, dt);
   collideAll(dt);
   for (const b of blobs) {
     const m = b.Rs * 0.85; // the same rim as in updateBlob: past it, next frame's wall would snap the body back in one jump

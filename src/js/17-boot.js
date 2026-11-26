@@ -154,6 +154,7 @@ function start(data) {
     stored = parseInt(localStorage.getItem('kus.best'), 10) || 0;
     chosenHat = localStorage.getItem('kus.hat') || 'none';
     chosenEyes = localStorage.getItem('kus.eyes') || 'none';
+    chosenTrail = localStorage.getItem('kus.trail') || 'none';
     chosenSkin = localStorage.getItem('kus.skin') || 'plain';
     sugar = Math.max(0, parseInt(localStorage.getItem('kus.sugar'), 10) || 0);
     if (localStorage.getItem('kus.lbmin') === '1') $('board').classList.add('min');
@@ -356,6 +357,15 @@ window.__kus = {
   },
   set chosenEyes(v) {
     chosenEyes = v;
+  },
+  get chosenTrail() {
+    return chosenTrail;
+  },
+  set chosenTrail(v) {
+    chosenTrail = v;
+  },
+  get parts() {
+    return parts;
   },
   renderPick,
   get own() {

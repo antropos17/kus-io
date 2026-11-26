@@ -541,7 +541,10 @@ test('chest: one paid reroll, the price is three times the base, never twice', a
     again.click(); again.click(); out.noThird = 1000 - k.sugar === out.paid - out.won;
     return out; })()`);
   assert(r.base >= 3 && r.hiddenBefore, `base ${r.base}, hidden before the pick ${r.hiddenBefore}`);
-  assert(r.shown && r.label === `Ещё раз — ${3 * r.base}` && r.oddsT === 'Каждая карта — 1 из 3: ×1, ×2, ×5', `label "${r.label}", odds "${r.oddsT}"`);
+  assert(
+    r.shown && r.label === `Ещё раз — ${3 * r.base}` && r.oddsT === 'Каждая карта — 1 из 3: ×1, ×2, ×5',
+    `label "${r.label}", odds "${r.oddsT}"`,
+  );
   assert(r.ask === `Точно? −${3 * r.base} сахара` && r.afterAsk === 1000, `first tap "${r.ask}", bank ${r.afterAsk}`);
   assert(r.paid === 3 * r.base, `paid ${r.paid}, want ${3 * r.base}`);
   assert(r.reset && r.hiddenAfter, 'cards must be "?" again and the button hidden');
@@ -553,20 +556,25 @@ test('chest: one paid reroll, the price is three times the base, never twice', a
 test('chest: the reroll is hidden when the bank is short of its price', async () => {
   const g = await open({ play: false });
   // Math.random is pinned so the shuffle keeps the order [base, 2*base, 5*base]: card 0 pays base, card 1 pays 2*base
-  const run = (bank0, card) => g.page.evaluate(`(() => { ${CHEST_END}
+  const run = (bank0, card) =>
+    g.page.evaluate(`(() => { ${CHEST_END}
     const base = k.run.chestBase, rnd = Math.random; Math.random = () => 0.999;
     k.setSugar(${bank0} * base);
     document.getElementById('chestRow').children[${card}].click();
     Math.random = rnd;
     return { base, bank: k.sugar, hidden: document.getElementById('chestAgain').classList.contains('hidden') }; })()`);
-  const lo = await run(0, 0), hi = await run(1, 1);
+  const lo = await run(0, 0),
+    hi = await run(1, 1);
   assert(lo.bank === lo.base && lo.hidden, `bank ${lo.bank} is below the price ${3 * lo.base}: the button must be hidden (hidden ${lo.hidden})`);
   assert(hi.bank === 3 * hi.base && !hi.hidden, `bank ${hi.bank} equals the price ${3 * hi.base}: the button must show (hidden ${hi.hidden})`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
 });
 
-for (const [w, h] of [[360, 640], [844, 390]])
+for (const [w, h] of [
+  [360, 640],
+  [844, 390],
+])
   for (const locale of ['ru-RU', 'en-US'])
     test(`chest: the reroll button and odds fit the end card at ${w}x${h} ${locale}`, async () => {
       const g = await open({ play: false, width: w, height: h, touch: true, dpr: 2, locale });
@@ -820,6 +828,83 @@ test('wardrobe: every eye style draws, blinks and grows in a streak without erro
   await g.close();
 });
 
+test('trail: only while moving, bounded, gone at lod 2', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = { still: 0, moving: 0, peak: 0, later: 0, drew: [], noneParts: 0 };
+    k.setSugar(100000);
+    k.pickClick('trail', 'stars');
+    k.pickClick('trail', 'stars');
+    k.startGame();
+    k.pause(true);
+    const P = k.player;
+    for (const key in k.CHEAT) k.CHEAT[key] = key === 'speed' ? 1 : false;
+    for (const b of k.blobs)
+      if (b !== P) {
+        b.x = 300 + Math.random() * 300;
+        b.y = 3700;
+        b.resetPoints();
+      }
+    P.spawnT = 0;
+    P.x = 2000;
+    P.y = 2000;
+    P.resetPoints();
+    const shaped = () => k.parts.filter((p) => p.sh === 3).length;
+    const cvsMove = (x) =>
+      document.querySelector('canvas').dispatchEvent(new PointerEvent('pointermove', { pointerType: 'mouse', clientX: x, clientY: innerHeight / 2 })); // the mouse steers the candy
+    cvsMove(innerWidth / 2);
+    for (let i = 0; i < 120; i++) {
+      P.tx = P.x;
+      P.ty = P.y;
+      k.update(1 / 60);
+      out.still = Math.max(out.still, k.parts.filter((p) => p.sh).length);
+    }
+    cvsMove(innerWidth - 20);
+    for (let i = 0; i < 180; i++) {
+      P.tx = P.x + 800;
+      P.ty = P.y;
+      if (P.x > 3000) P.x = 1000;
+      k.update(1 / 60);
+      out.peak = Math.max(out.peak, shaped());
+    }
+    out.moving = out.peak;
+    k.setLod(2);
+    for (let i = 0; i < 60; i++) k.update(1 / 60); // the old ones die out
+    k.parts.length = 0;
+    for (let i = 0; i < 120; i++) {
+      P.tx = P.x + 800;
+      P.ty = P.y;
+      if (P.x > 3000) P.x = 1000;
+      k.update(1 / 60);
+      out.later = Math.max(out.later, k.parts.filter((p) => p.sh).length);
+    }
+    k.setLod(0);
+    for (const [id] of k.WARDROBE.trail) {
+      P.trail = id;
+      k.parts.length = 0;
+      for (let i = 0; i < 60; i++) {
+        P.tx = P.x + 800;
+        P.ty = P.y;
+        if (P.x > 3000) P.x = 1000;
+        k.update(1 / 60);
+      }
+      if (id === 'none') out.noneParts = k.parts.filter((p) => p.sh).length;
+      k.render();
+      out.drew.push(id);
+    }
+    return out;
+  });
+  assert(r.still === 0, `no trail while standing still: ${r.still}`);
+  assert(r.moving > 0, 'stars must trail a moving candy');
+  assert(r.peak <= 16, `at most 16 alive at once: ${r.peak}`);
+  assert(r.later === 0, `no trail at lod 2: ${r.later}`);
+  assert(r.noneParts === 0, 'trail none leaves nothing');
+  assert(r.drew.length === 6, 'every trail renders');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 test('missions: a done mission pays sugar and opens no pattern', async () => {
   const g = await open({ play: false, returning: true });
   const r = await g.page.evaluate(() => {
@@ -922,7 +1007,10 @@ test('missions: one stuck for 5 runs is replaced, deaths inside a run count once
   });
   assert(r.has.join() === 'true,true,true,true,false', `hedge must go after the fifth run only: ${r.has}`);
   assert(r.idle4 === 4, `two deaths in a run must count once, idle after 4 runs ${r.idle4}`);
-  assert(r.len[4] === 2 && r.card.includes('hedge') === false && r.card.length > 0, `after the fifth run the stuck one is gone and the card still lists the run's missions: ${r.len} "${r.card}"`);
+  assert(
+    r.len[4] === 2 && r.card.includes('hedge') === false && r.card.length > 0,
+    `after the fifth run the stuck one is gone and the card still lists the run's missions: ${r.len} "${r.card}"`,
+  );
   assert(r.afterStart === 3, `the next start must refill to three missions: ${r.afterStart}`);
   assert(r.cheat === 0, `a cheated run must not count as idle: ${r.cheat}`);
   assert(g.errors.length === 0, g.errors.join(' | '));

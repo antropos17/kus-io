@@ -169,6 +169,42 @@ function spawnDust(x, y, pal, nx, ny, n) {
     });
   }
 }
+// the player's trail: a few small shapes left behind a moving candy (sh: 1 crumbs, 2 hearts, 3 stars, 4 bubbles, 5 rainbow)
+const TRAIL_SH = { crumbs: 1, hearts: 2, stars: 3, bubbles: 4, rainbow: 5 };
+function emitTrail(b, dt) {
+  const sh = TRAIL_SH[b.trail];
+  if (!sh || lod > 1) return;
+  const sp = Math.hypot(b.vx, b.vy);
+  if (sp <= 40) {
+    b.trailAcc = 0;
+    return;
+  }
+  b.trailAcc += dt * (lod ? 7 : 14);
+  for (; b.trailAcc >= 1; b.trailAcc -= 1) {
+    const ux = b.vx / sp,
+      uy = b.vy / sp;
+    parts.push({
+      x: b.x - ux * b.Rs * 0.9,
+      y: b.y - uy * b.Rs * 0.9,
+      vx: rand(-14, 14),
+      vy: rand(-14, 14),
+      r: clamp(b.Rs * 0.16, 3, 7),
+      t: 0,
+      T: 0.9,
+      c:
+        sh === 1
+          ? flesh(b.pal, 1)
+          : sh === 2
+            ? '#ff7aa2'
+            : sh === 3
+              ? '#ffd23f'
+              : sh === 4
+                ? 'rgba(200,230,255,.8)'
+                : hsl((time * 120) % 360, 90, 62),
+      sh,
+    });
+  }
+}
 function floatText(x, y, s, color, size) {
   texts.push({ x, y, s, color, size, t: 0, T: 1 });
 }
