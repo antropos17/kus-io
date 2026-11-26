@@ -22,29 +22,45 @@ function smoothPoly(c, P) {
 }
 let tilePat = null;
 const ghosts = [];
+// per tray: background, three slope stops, two top stops, highlight stroke. The berry, mint and gold stay as dark as the chocolate so food, bots and wounds keep their contrast.
+const TRAYS = {
+  choco: ['#1d110c', '#4b2f22', '#362117', '#22140e', '#3b251a', '#301d14', 'rgba(255,220,190,0.07)'],
+  berry: ['#210c15', '#512238', '#3b1a2a', '#26101a', '#3d1829', '#311321', 'rgba(255,190,215,0.07)'],
+  mint: ['#0b1b17', '#1f4a3f', '#173a31', '#0e231d', '#1a3a31', '#143028', 'rgba(190,255,230,0.07)'],
+  gold: ['#1d1608', '#554115', '#403010', '#271c09', '#42330f', '#362a0c', 'rgba(255,230,150,0.08)'],
+};
+function setTray(id) {
+  chosenTray = TRAYS[id] ? id : 'choco';
+  tilePat = null;
+  bgT = 0;
+  try {
+    localStorage.setItem('kus.tray', chosenTray);
+  } catch (e) {}
+}
 function ensurePattern() {
-  // one segment of a chocolate bar, repeated
+  // one segment of a chocolate bar (or another tray), repeated; rebuilt only when the tray changes
   if (tilePat) return;
-  const S = 256,
+  const C = TRAYS[chosenTray] || TRAYS.choco,
+    S = 256,
     c = document.createElement('canvas');
   c.width = c.height = S;
   const g = c.getContext('2d');
-  g.fillStyle = '#1d110c';
+  g.fillStyle = C[0];
   g.fillRect(0, 0, S, S);
   const slope = g.createLinearGradient(0, 0, S, S);
-  slope.addColorStop(0, '#4b2f22');
-  slope.addColorStop(0.5, '#362117');
-  slope.addColorStop(1, '#22140e');
+  slope.addColorStop(0, C[1]);
+  slope.addColorStop(0.5, C[2]);
+  slope.addColorStop(1, C[3]);
   g.fillStyle = slope;
   rr(g, 9, 9, S - 18, S - 18, 22);
   g.fill();
   const top = g.createLinearGradient(0, 30, 0, S - 30);
-  top.addColorStop(0, '#3b251a');
-  top.addColorStop(1, '#301d14');
+  top.addColorStop(0, C[4]);
+  top.addColorStop(1, C[5]);
   g.fillStyle = top;
   rr(g, 36, 36, S - 72, S - 72, 14);
   g.fill();
-  g.strokeStyle = 'rgba(255,220,190,0.07)';
+  g.strokeStyle = C[6];
   g.lineWidth = 3;
   rr(g, 37.5, 37.5, S - 75, S - 75, 13);
   g.stroke();

@@ -147,6 +147,7 @@ function renderHats() {
   renderPick('hat');
   renderPick('eyes');
   renderPick('trail');
+  renderPick('tray');
   recEl.textContent = best ? t('rec', best) : '';
 }
 const skinsEl = $('skins'),
@@ -161,12 +162,23 @@ function renderBank(msg) {
 }
 const boxOf = (slot) => $(slot === 'hat' ? 'hats' : slot === 'skin' ? 'skins' : slot);
 const chosenOf = (slot) =>
-  slot === 'hat' ? chosenHat : slot === 'skin' ? chosenSkin : slot === 'eyes' ? chosenEyes : slot === 'trail' ? chosenTrail : null;
+  slot === 'hat'
+    ? chosenHat
+    : slot === 'skin'
+      ? chosenSkin
+      : slot === 'eyes'
+        ? chosenEyes
+        : slot === 'trail'
+          ? chosenTrail
+          : slot === 'tray'
+            ? chosenTray
+            : null;
 function choose(slot, id) {
   if (slot === 'hat') chosenHat = id;
   else if (slot === 'skin') chosenSkin = id;
   else if (slot === 'eyes') chosenEyes = id;
   else if (slot === 'trail') chosenTrail = id;
+  else if (slot === 'tray') setTray(id);
 }
 // the price tag of a closed item: its price, «Купить?» after the first tap
 function priceTag(slot, id) {
@@ -360,6 +372,7 @@ function renderSecs() {
       chosenHat !== 'none' && itemName('hat', chosenHat),
       chosenEyes !== 'none' && itemName('eyes', chosenEyes),
       chosenTrail !== 'none' && itemName('trail', chosenTrail),
+      chosenTray !== 'choco' && itemName('tray', chosenTray),
     ]
       .filter(Boolean)
       .join(' · ');

@@ -905,6 +905,39 @@ test('trail: only while moving, bounded, gone at lod 2', async () => {
   await g.close();
 });
 
+test('tray: switching rebuilds the pattern, the menu world shows it, the choice is kept', async () => {
+  const g = await open({ play: false, returning: true });
+  const shade = () =>
+    g.page.evaluate(() => {
+      const k = window.__kus;
+      k.render();
+      const c = document.querySelector('canvas'),
+        d = c.getContext('2d').getImageData(Math.floor(c.width / 2), Math.floor(c.height / 2), 24, 24).data;
+      let s = 0;
+      for (let i = 0; i < d.length; i += 4) s += d[i] * 65536 + d[i + 1] * 256 + d[i + 2];
+      return s;
+    });
+  const before = await shade();
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus;
+    k.setSugar(100000);
+    k.pickClick('tray', 'mint');
+    k.pickClick('tray', 'mint');
+    return { chosen: k.chosenTray, saved: localStorage.getItem('kus.tray'), owned: k.owns('tray', 'mint') };
+  });
+  const after = await shade();
+  assert(r.owned && r.chosen === 'mint' && r.saved === 'mint', `the bought tray must be chosen and saved: ${JSON.stringify(r)}`);
+  assert(after !== before, 'the world behind the menu must show the new tray');
+  await g.page.reload();
+  assert((await g.page.evaluate(() => window.__kus.chosenTray)) === 'mint', 'the tray must survive a reload');
+  await g.page.evaluate(() => localStorage.setItem('kus.tray', 'gold')); // gold was never bought
+  await g.page.reload();
+  const r2 = await g.page.evaluate(() => ({ chosen: window.__kus.chosenTray, saved: localStorage.getItem('kus.tray') }));
+  assert(r2.chosen === 'choco', `an unbought tray in the save must fall back to choco: ${JSON.stringify(r2)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 test('missions: a done mission pays sugar and opens no pattern', async () => {
   const g = await open({ play: false, returning: true });
   const r = await g.page.evaluate(() => {
