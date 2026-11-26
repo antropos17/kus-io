@@ -1026,15 +1026,22 @@ test('trail: particles start outside the rim, behind the candy', async () => {
 
 test('tray: switching rebuilds the pattern, the menu world shows it, the choice is kept', async () => {
   const g = await open({ play: false, returning: true });
+  // the entities are cleared inside the same synchronous call as the render, so only the tray is under the sampled patch
   const shade = () =>
     g.page.evaluate(() => {
       const k = window.__kus;
+      k.blobs.length = 0;
+      k.food.length = 0;
+      k.parts.length = 0;
       k.render();
       const c = document.querySelector('canvas'),
-        d = c.getContext('2d').getImageData(Math.floor(c.width / 2), Math.floor(c.height / 2), 24, 24).data;
-      let s = 0;
-      for (let i = 0; i < d.length; i += 4) s += d[i] * 65536 + d[i + 1] * 256 + d[i + 2];
-      return s;
+        d = c.getContext('2d').getImageData(Math.floor(c.width * 0.5), Math.floor(c.height * 0.5), 12, 12).data;
+      let r = 0,
+        gr = 0,
+        b = 0;
+      for (let i = 0; i < d.length; i += 4) ((r += d[i]), (gr += d[i + 1]), (b += d[i + 2]));
+      const n = d.length / 4;
+      return { r: r / n, g: gr / n, b: b / n };
     });
   const before = await shade();
   const r = await g.page.evaluate(() => {
@@ -1046,7 +1053,9 @@ test('tray: switching rebuilds the pattern, the menu world shows it, the choice 
   });
   const after = await shade();
   assert(r.owned && r.chosen === 'mint' && r.saved === 'mint', `the bought tray must be chosen and saved: ${JSON.stringify(r)}`);
-  assert(after !== before, 'the world behind the menu must show the new tray');
+  // choco is red-brown (r > g > b), mint is green-teal (g > r): the patch must have moved in that direction
+  assert(before.r > before.g && before.g > before.b, `the chocolate tray must be red-brown: ${JSON.stringify(before)}`);
+  assert(after.g > after.r && after.b > before.b, `the mint tray must be green-teal: ${JSON.stringify(after)}`);
   await g.page.reload();
   assert((await g.page.evaluate(() => window.__kus.chosenTray)) === 'mint', 'the tray must survive a reload');
   await g.page.evaluate(() => localStorage.setItem('kus.tray', 'gold')); // gold was never bought
