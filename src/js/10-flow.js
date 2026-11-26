@@ -306,7 +306,6 @@ function finishRun() {
     // a mission that made no headway in this whole run (deaths inside it count once) makes way after MIS_IDLE runs
     for (const m of M.act) if (m.got < m.need) m.idle = m.got > (m.at | 0) ? 0 : (m.idle | 0) + 1;
     M.act = M.act.filter((m) => !(m.idle >= MIS_IDLE));
-    rollMissions();
     saveM();
   }
   try {

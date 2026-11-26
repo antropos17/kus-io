@@ -729,6 +729,9 @@ test('missions: a done mission pays sugar and opens no pattern', async () => {
     k.mission('bites', 1);
     k.mission('bites', 1);
     out.gain = k.run.sugar - s0;
+    k.setTimeLeft(0.001);
+    for (let i = 0; i < 300; i++) k.update(1 / 60);
+    out.card = document.getElementById('overMis').textContent;
     out.same = skin === [...k.own.skin].join() && open === k.M.open.join();
     out.feed = document.getElementById('feed').textContent;
     out.row = document.getElementById('misList').textContent;
@@ -738,6 +741,7 @@ test('missions: a done mission pays sugar and opens no pattern', async () => {
   });
   assert(r.gain >= 480 && r.gain <= 490, `a circle-1 mission must pay 480 (plus bite sugar), got ${r.gain}`);
   assert(r.same, 'a mission must not open a pattern');
+  assert(r.card.includes('+480'), `the end card must keep the finished mission with its payout: "${r.card}"`);
   assert(r.feed.includes('+480'), `the feed must say +480: "${r.feed}"`);
   assert(r.row.includes('480'), `the mission row must show the payout: "${r.row}"`);
   assert(g.errors.length === 0, g.errors.join(' | '));
@@ -782,7 +786,9 @@ test('missions: one stuck for 5 runs is replaced, deaths inside a run count once
       k.startGame();
       k.player.spawnT = 0;
       if (cheat) k.player.cheated = true;
+      for (const m of k.M.act) if (m.type !== 'hedge') m.got = Math.min(m.need - 1, m.got + 1); // the others make headway, only hedge is stuck
       for (let d = 0; d < 2; d++) {
+        k.player.alive = false;
         k.die(null);
         for (let i = 0; i < 200 && k.state !== 'play'; i++) k.update(1 / 60);
       }
@@ -794,8 +800,12 @@ test('missions: one stuck for 5 runs is replaced, deaths inside a run count once
       go(false);
       out.has.push(k.M.act.some((m) => m.type === 'hedge'));
       out.len.push(k.M.act.length);
+      if (n === 4) out.card = document.getElementById('overMis').textContent;
       if (n === 3) out.idle4 = (k.M.act.find((m) => m.type === 'hedge') || {}).idle;
     }
+    k.setMode('t3');
+    k.startGame();
+    out.afterStart = k.M.act.length;
     k.M.act = [{ type: 'hedge', need: 2, got: 0, c: 0 }];
     go(true);
     out.cheat = (k.M.act.find((m) => m.type === 'hedge') || {}).idle | 0;
@@ -803,7 +813,8 @@ test('missions: one stuck for 5 runs is replaced, deaths inside a run count once
   });
   assert(r.has.join() === 'true,true,true,true,false', `hedge must go after the fifth run only: ${r.has}`);
   assert(r.idle4 === 4, `two deaths in a run must count once, idle after 4 runs ${r.idle4}`);
-  assert(r.len[4] === 3, `three missions must be active after the replacement: ${r.len}`);
+  assert(r.len[4] === 2 && r.card.includes('hedge') === false && r.card.length > 0, `after the fifth run the stuck one is gone and the card still lists the run's missions: ${r.len} "${r.card}"`);
+  assert(r.afterStart === 3, `the next start must refill to three missions: ${r.afterStart}`);
   assert(r.cheat === 0, `a cheated run must not count as idle: ${r.cheat}`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
