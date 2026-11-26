@@ -184,8 +184,8 @@ function emitTrail(b, dt) {
     const ux = b.vx / sp,
       uy = b.vy / sp;
     parts.push({
-      x: b.x - ux * b.Rs * 0.9,
-      y: b.y - uy * b.Rs * 0.9,
+      x: b.x - ux * b.Rs * 1.15, // just outside the rim, so it never starts on the candy
+      y: b.y - uy * b.Rs * 1.15,
       vx: rand(-14, 14),
       vy: rand(-14, 14),
       r: clamp(b.Rs * 0.16, 3, 7),

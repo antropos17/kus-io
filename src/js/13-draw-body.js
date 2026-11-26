@@ -615,6 +615,14 @@ function render() {
       ctx.fill(b.path);
       ctx.restore();
     }
+  for (const p of parts)
+    if (p.sh) {
+      // the player's trail lies under the bodies
+      const e = p.t / p.T;
+      ctx.globalAlpha = 1 - e;
+      drawTrailShape(p, p.r * (1 - e * 0.5));
+    }
+  ctx.globalAlpha = 1;
   drawWrap(z, ox, oy); // the runaway wrapper runs under the bodies
   drawStreakFuse(z);
   for (const b of vis) drawBlob(b);
@@ -655,10 +663,7 @@ function render() {
       ctx.stroke();
       continue;
     }
-    if (p.sh > 1) {
-      drawTrailShape(p, p.r * (1 - e * 0.5));
-      continue;
-    }
+    if (p.sh) continue; // the trail, drawn under the bodies
     ctx.fillStyle = p.c;
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.r * (1 - e * 0.5), 0, TAU);

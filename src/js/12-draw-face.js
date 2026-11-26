@@ -523,28 +523,27 @@ function drawFace(b) {
     }
   }
   if (b.eyes === 'glasses') {
-    // two round frames and a bridge, over any state of the eyes
+    // two round frames, a bridge arched toward the brow, short arms back toward the ears; over any state of the eyes.
+    // In the face's own axes: a along the look (f), c across it (px, py); the eyes sit at a = ea, c = ±ec
     const gr = er * 1.35,
-      ga = f + 1.15;
+      ea = Math.cos(1.15) * R * 0.52,
+      ec = Math.sin(1.15) * R * 0.52,
+      ba = ea - gr * 0.42, // where the bridge leaves each frame, on its inner edge a little toward the brow
+      bc = ec - gr * 0.91,
+      tc = ec + gr; // the outer edge, where an arm starts
     ctx.strokeStyle = '#24110c';
     ctx.lineWidth = er * 0.2;
     ctx.beginPath();
-    for (const sg of [-1, 1]) {
-      const gx = b.x + Math.cos(f + sg * 1.15) * R * 0.52,
-        gy = b.y + Math.sin(f + sg * 1.15) * R * 0.52;
-      ctx.moveTo(gx + gr, gy);
-      ctx.arc(gx, gy, gr, 0, TAU);
-    }
-    // the bridge joins the inner edges of the frames
-    const hx = Math.cos(ga) * R * 0.52,
-      hy = Math.sin(ga) * R * 0.52,
-      qx = Math.cos(f - 1.15) * R * 0.52,
-      qy = Math.sin(f - 1.15) * R * 0.52,
-      dd = Math.hypot(hx - qx, hy - qy) || 1,
-      ux = (hx - qx) / dd,
-      uy = (hy - qy) / dd;
-    ctx.moveTo(b.x + qx + ux * gr, b.y + qy + uy * gr);
-    ctx.lineTo(b.x + hx - ux * gr, b.y + hy - uy * gr);
+    ctx.moveTo(b.x + fx * ea - px * ec + gr, b.y + fy * ea - py * ec);
+    ctx.arc(b.x + fx * ea - px * ec, b.y + fy * ea - py * ec, gr, 0, TAU);
+    ctx.moveTo(b.x + fx * ea + px * ec + gr, b.y + fy * ea + py * ec);
+    ctx.arc(b.x + fx * ea + px * ec, b.y + fy * ea + py * ec, gr, 0, TAU);
+    ctx.moveTo(b.x + fx * ba - px * bc, b.y + fy * ba - py * bc);
+    ctx.quadraticCurveTo(b.x + fx * (ba - gr * 0.55), b.y + fy * (ba - gr * 0.55), b.x + fx * ba + px * bc, b.y + fy * ba + py * bc);
+    ctx.moveTo(b.x + fx * ea - px * tc, b.y + fy * ea - py * tc);
+    ctx.lineTo(b.x + fx * (ea - gr * 1.3) - px * (tc + gr * 0.15), b.y + fy * (ea - gr * 1.3) - py * (tc + gr * 0.15));
+    ctx.moveTo(b.x + fx * ea + px * tc, b.y + fy * ea + py * tc);
+    ctx.lineTo(b.x + fx * (ea - gr * 1.3) + px * (tc + gr * 0.15), b.y + fy * (ea - gr * 1.3) + py * (tc + gr * 0.15));
     ctx.stroke();
   }
   if (hot === 3 && lod < 2 && R * cam.z > 16 && b.hurtT <= 0) {

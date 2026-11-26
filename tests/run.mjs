@@ -973,6 +973,57 @@ test('trail: only while moving, bounded, gone at lod 2', async () => {
   await g.close();
 });
 
+test('trail: particles start outside the rim, behind the candy', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = { n: 0, near: 1e9 };
+    k.setSugar(100000);
+    k.pickClick('trail', 'hearts');
+    k.pickClick('trail', 'hearts');
+    k.startGame();
+    k.pause(true);
+    const P = k.player;
+    for (const key in k.CHEAT) k.CHEAT[key] = key === 'speed' ? 1 : false;
+    for (const b of k.blobs)
+      if (b !== P) {
+        b.x = 300 + Math.random() * 300;
+        b.y = 3700;
+        b.resetPoints();
+      }
+    P.spawnT = 0;
+    P.mass = 400;
+    P.x = 1000;
+    P.y = 2000;
+    P.resetPoints();
+    document
+      .querySelector('canvas')
+      .dispatchEvent(new PointerEvent('pointermove', { pointerType: 'mouse', clientX: innerWidth - 20, clientY: innerHeight / 2 }));
+    const seen = new Set(k.parts);
+    for (let i = 0; i < 120; i++) {
+      P.tx = P.x + 800;
+      P.ty = P.y;
+      const x = P.x,
+        y = P.y;
+      k.update(1 / 60);
+      const sp = Math.hypot(P.vx, P.vy) || 1;
+      for (const p of k.parts)
+        if (p.sh && !seen.has(p)) {
+          seen.add(p);
+          out.n++;
+          // how far behind the centre it was born, in body radii (the centre moved at most one frame since)
+          const back = Math.min(-((p.x - x) * P.vx + (p.y - y) * P.vy) / sp, -((p.x - P.x) * P.vx + (p.y - P.y) * P.vy) / sp);
+          out.near = Math.min(out.near, back / P.Rs);
+        }
+    }
+    return out;
+  });
+  assert(r.n > 0, 'a moving candy must leave a trail');
+  assert(r.near >= 1.05, `a trail particle was born inside the body: ${r.near.toFixed(2)} radii behind the centre`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 test('tray: switching rebuilds the pattern, the menu world shows it, the choice is kept', async () => {
   const g = await open({ play: false, returning: true });
   const shade = () =>
