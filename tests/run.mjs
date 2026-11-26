@@ -783,6 +783,74 @@ test('wardrobe: a pending first tap does not outlive the menu or another tap', a
   await g.close();
 });
 
+test('wardrobe: every hat and pattern draws', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = { flat: [], empty: [], missing: [], frames: 0 };
+    k.pause(true);
+    k.startGame();
+    const P = k.player;
+    for (const b of k.blobs)
+      if (b !== P) {
+        b.x = 300 + Math.random() * 300;
+        b.y = 3700;
+        b.resetPoints();
+      }
+    P.spawnT = 0;
+    // a hat is drawn when the frame has more fills and strokes than the bare head
+    const C = CanvasRenderingContext2D.prototype,
+      fill = C.fill,
+      stroke = C.stroke;
+    let n = 0;
+    C.fill = function (...a) {
+      n++;
+      return fill.apply(this, a);
+    };
+    C.stroke = function (...a) {
+      n++;
+      return stroke.apply(this, a);
+    };
+    const ops = () => {
+      k.parts.length = 0;
+      n = 0;
+      k.render();
+      out.frames++;
+      return n;
+    };
+    P.hat = 'none';
+    const bare = ops();
+    for (const [id] of k.WARDROBE.hat) {
+      if (id === 'none') continue;
+      P.hat = id;
+      if (ops() <= bare) out.flat.push(id);
+      k.setLod(2);
+      ops();
+      k.setLod(0);
+    }
+    C.fill = fill;
+    C.stroke = stroke;
+    P.hat = 'none';
+    for (const [id] of k.WARDROBE.skin) {
+      if (!k.SKINS.some((s) => s[0] === id)) out.missing.push(id);
+      if (id === 'plain') continue;
+      const c = k.skinTile(id).c,
+        px = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      let seen = false;
+      for (let i = 3; i < px.length && !seen; i += 4) seen = px[i] > 0;
+      if (!seen) out.empty.push(id);
+      P.skin = id;
+      ops();
+    }
+    return out;
+  });
+  assert(r.flat.length === 0, `hats that draw nothing: ${r.flat}`);
+  assert(r.missing.length === 0, `patterns missing from SKINS (the shop row): ${r.missing}`);
+  assert(r.empty.length === 0, `patterns with an empty tile: ${r.empty}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 test('wardrobe: every eye style draws, blinks and grows in a streak without errors', async () => {
   const g = await open({ play: false, returning: true });
   const r = await g.page.evaluate(() => {

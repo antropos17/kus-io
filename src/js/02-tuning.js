@@ -61,6 +61,12 @@ const SKINS = [
   ['bubbles', t('skin.bubbles')],
   ['zigzag', t('skin.zigzag')],
   ['galaxy', t('skin.galaxy')],
+  ['checks', t('skin.checks')],
+  ['marble', t('skin.marble')],
+  ['leopard', t('skin.leopard')],
+  ['mosaic', t('skin.mosaic')],
+  ['foil', t('skin.foil')],
+  ['aurora', t('skin.aurora')],
 ];
 const MIS_SUGAR = 300; // a mission's payout in the first circle; each later circle adds 60% of it
 const MIS_CAP = { time: 150, combo: 8, mass: 1600 }; // targets that must stay reachable in one run
@@ -275,6 +281,149 @@ function skinTile(id) {
       g.moveTo(x - Math.cos(t) * 5, y - Math.sin(t) * 5);
       g.lineTo(x + Math.cos(t) * 5, y + Math.sin(t) * 5);
       g.stroke();
+    }
+  } else if (id === 'checks') {
+    // gingham: see-through bands across and down, lighter where they cross
+    g.fillStyle = 'rgba(255,255,255,0.27)';
+    g.fillRect(0, 0, h, S);
+    g.fillRect(0, 0, S, h);
+    span = 0.7;
+  } else if (id === 'marble') {
+    // soft pale veins, each with a fine thread down the middle
+    span = 3.2;
+    g.lineCap = 'round';
+    for (let v = 0; v < 6; v++) {
+      const y0 = 50 + v * 31 + hash1(v * 3.3) * 14,
+        a = hash1(v * 7.1) * 0.9 - 0.45;
+      g.beginPath();
+      for (let x = -12; x <= S + 12; x += 8) {
+        const y = y0 + (x - h) * a + 13 * Math.sin(x * 0.045 + v * 1.7) + 5 * Math.sin(x * 0.14 + v);
+        x < 0 ? g.moveTo(x, y) : g.lineTo(x, y);
+      }
+      g.strokeStyle = 'rgba(255,255,255,0.26)';
+      g.lineWidth = 6 + hash1(v * 5.9) * 9;
+      g.stroke();
+      g.strokeStyle = v % 2 ? 'rgba(45,12,24,0.32)' : 'rgba(255,255,255,0.55)';
+      g.lineWidth = 1.6;
+      g.stroke();
+    }
+  } else if (id === 'leopard') {
+    // rosettes: broken dark rings round a warm centre, a few loose spots between
+    span = 1;
+    g.lineCap = 'round';
+    const ros = [
+      [0.22, 0.24, 30],
+      [0.72, 0.16, 26],
+      [0.5, 0.58, 32],
+      [0.14, 0.8, 27],
+      [0.86, 0.74, 28],
+    ];
+    for (let ox = -S; ox <= S; ox += S)
+      for (let oy = -S; oy <= S; oy += S)
+        for (let i = 0; i < ros.length; i++) {
+          const x = ros[i][0] * S + ox,
+            y = ros[i][1] * S + oy,
+            r = ros[i][2];
+          if (x < -r * 2 || x > S + r * 2 || y < -r * 2 || y > S + r * 2) continue;
+          g.fillStyle = 'rgba(255,190,90,0.26)';
+          g.beginPath();
+          g.ellipse(x, y, r * 0.8, r * 0.7, i, 0, TAU);
+          g.fill();
+          g.strokeStyle = 'rgba(45,12,24,0.5)';
+          g.lineWidth = 9;
+          for (let k = 0; k < 4; k++) {
+            const a0 = k * 1.5708 + hash1(i * 3 + k) * 0.7;
+            g.beginPath();
+            g.ellipse(x, y, r, r * 0.86, i, a0, a0 + 0.85 + hash1(i + k * 5) * 0.4);
+            g.stroke();
+          }
+          g.fillStyle = 'rgba(45,12,24,0.5)';
+          g.beginPath();
+          g.arc(x + r * 1.45, y - r * 0.9, 5, 0, TAU);
+          g.fill();
+        }
+  } else if (id === 'mosaic') {
+    // little tiles in four shades set in dark grout
+    span = 1;
+    const n = 4,
+      q = S / n,
+      cols = [lite, 'rgba(255,214,110,0.34)', 'rgba(120,200,255,0.32)', 'rgba(255,120,170,0.3)', 'rgba(255,255,255,0.12)'];
+    g.fillStyle = 'rgba(45,12,24,0.36)';
+    g.fillRect(0, 0, S, S);
+    for (let j = 0; j < n; j++)
+      for (let i = 0; i < n; i++) {
+        const x = i * q,
+          y = j * q,
+          d = (k) => 6 + hash1(i * 7.1 + j * 3.7 + k) * 6;
+        g.beginPath();
+        g.moveTo(x + d(1), y + d(2));
+        g.lineTo(x + q - d(3), y + d(4));
+        g.lineTo(x + q - d(5), y + q - d(6));
+        g.lineTo(x + d(7), y + q - d(8));
+        g.closePath();
+        g.globalCompositeOperation = 'destination-out';
+        g.fillStyle = '#000';
+        g.fill();
+        g.globalCompositeOperation = 'source-over';
+        g.fillStyle = cols[(i * 3 + j * 2 + ((hash1(i + j * 9) * 3) | 0)) % cols.length];
+        g.fill();
+      }
+  } else if (id === 'foil') {
+    // crumpled gold foil: a gold wash broken into facets that catch the light
+    span = 3.2;
+    const n = 8,
+      q = S / n,
+      jit = (i, j, s) => (i % n && j % n ? (hash1(i * 7.3 + j * 1.9 + s) - 0.5) * q * 0.7 : 0),
+      px = (i, j) => i * q + jit(i, j, 0),
+      py = (i, j) => j * q + jit(i, j, 11);
+    for (let j = 0; j < n; j++)
+      for (let i = 0; i < n; i++)
+        for (let t2 = 0; t2 < 2; t2++) {
+          const s = hash1(i * 1.3 + j * 7.7 + t2 * 4.1),
+            r = Math.round(196 + 59 * s),
+            gr = Math.round(128 + 112 * s),
+            bl = Math.round(16 + 130 * s * s);
+          g.fillStyle = `rgba(${r},${gr},${bl},0.88)`; // strong enough to read as gold over any flavour
+          g.beginPath();
+          g.moveTo(px(i, j), py(i, j));
+          if (t2) {
+            g.lineTo(px(i + 1, j), py(i + 1, j));
+            g.lineTo(px(i + 1, j + 1), py(i + 1, j + 1));
+          } else {
+            g.lineTo(px(i + 1, j + 1), py(i + 1, j + 1));
+            g.lineTo(px(i, j + 1), py(i, j + 1));
+          }
+          g.closePath();
+          g.fill();
+        }
+    g.strokeStyle = 'rgba(255,255,240,0.3)';
+    g.lineWidth = 26;
+    g.beginPath();
+    g.moveTo(60, 230);
+    g.lineTo(220, 40);
+    g.stroke();
+  } else if (id === 'aurora') {
+    // northern lights: curtains of green, teal and violet hanging over a night wash
+    span = 3.2;
+    g.fillStyle = 'rgba(16,24,70,0.32)';
+    g.fillRect(0, 0, S, S);
+    const cols = ['90,255,170', '80,215,255', '200,120,255'];
+    for (let k = 0; k < 3; k++)
+      for (let x = 0; x < S; x += 2) {
+        const yc = 105 + k * 34 + 18 * Math.sin(x * 0.028 + k * 2.1) + 7 * Math.sin(x * 0.09 + k),
+          L = 44 + 22 * Math.sin(x * 0.05 + k * 1.3) + 12 * hash1(x * 0.37 + k),
+          gr = g.createLinearGradient(0, yc - L, 0, yc + 6);
+        gr.addColorStop(0, `rgba(${cols[k]},0)`);
+        gr.addColorStop(0.85, `rgba(${cols[k]},0.55)`);
+        gr.addColorStop(1, `rgba(${cols[k]},0)`);
+        g.fillStyle = gr;
+        g.fillRect(x, yc - L, 2, L + 6);
+      }
+    g.fillStyle = 'rgba(255,255,255,0.8)';
+    for (let i = 0; i < 14; i++) {
+      g.beginPath();
+      g.arc(50 + hash1(i * 2.7) * 156, 52 + hash1(i * 6.1) * 44, 1 + hash1(i * 4.3) * 1.4, 0, TAU);
+      g.fill();
     }
   }
   let pat = null;

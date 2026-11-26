@@ -341,6 +341,8 @@ window.__kus = {
   misReward,
   die,
   WARDROBE,
+  SKINS,
+  skinTile,
   priceOf,
   owns,
   buyItem,
