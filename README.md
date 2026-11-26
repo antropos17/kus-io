@@ -72,8 +72,9 @@ There are three difficulties: «Лёгкая» (easy), «Обычная» (norma
 Between runs:
 
 - Sugar is earned for bites and for eating in a run without cheats. At the end of a run you pick one of three candies with a sugar bonus inside.
-- Sugar buys patterns for your candy in the menu; missions unlock patterns too.
-- Hats are unlocked by your best mass.
+- Sugar buys hats, patterns, eyes, a trail behind your candy and the tray you play on, in the menu. Everything is earned by playing; the whole wardrobe is meant to last about 30 hours of play (the prices are not measured against that yet).
+- Missions pay sugar, more with every round of missions.
+- After you pick a chest candy you can pay sugar to shuffle and pick once more.
 - The album: swallow a candy whole and its sticker is yours. Thirty named candies in six rows, some much rarer than others; a full row pays sugar once.
 - The first visit gets a short menu (name, flavour, «Играть», play), and the first run starts with an easy snack in front of you.
 
