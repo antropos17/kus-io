@@ -220,7 +220,7 @@ function start(data) {
   applySet();
   for (let i = 0; i < FOOD_TARGET; i++) addSprinkle();
   for (let i = 0; i < BOT_TARGET; i++) spawnBot(randomBotMass(true)).spawnT = 0;
-  for (let i = 0; i < 150; i++) update(1 / 60); // let the arena get messy before the first frame
+  for (let i = 0; i < 50; i++) update(1 / 20); // 2.5 s of the arena before the first frame, in the largest step frame() allows
   menuTarget = pickMenuTarget();
   menuSwitchT = 14;
   if (menuTarget) {
