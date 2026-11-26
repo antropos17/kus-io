@@ -46,6 +46,7 @@ const STR = {
   'look.flavor': ['Вкус', 'Flavor'],
   'look.skin': ['Узор', 'Pattern'],
   'look.hat': ['Шапка', 'Hat'],
+  'look.eyes': ['Глаза', 'Eyes'],
   'sec.mis': ['Задания', 'Missions'],
   'sec.set': ['Настройки', 'Settings'],
   'sec.help': ['Как играть', 'How to play'],

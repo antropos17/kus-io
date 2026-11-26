@@ -37,6 +37,7 @@ class Blob {
     this.tongue = null;
     this.dripT = 0;
     this.hat = o.hat || 'none';
+    this.eyes = o.eyes || 'none';
     this.skin = o.skin || 'plain';
     this.kind = o.kind || null;
     this.pSpeed = 0;

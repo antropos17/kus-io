@@ -254,6 +254,7 @@ function spawnPlayer(spawnT) {
     isPlayer: true,
     spawnT,
     hat: owns('hat', chosenHat) ? chosenHat : 'none',
+    eyes: owns('eyes', chosenEyes) ? chosenEyes : 'none',
     skin: skinOpen(chosenSkin) ? chosenSkin : 'plain',
   });
   blobs.push(player);
@@ -280,6 +281,7 @@ function startGame() {
     localStorage.setItem('kus.name', typed); // the default is never saved: it follows the language
     localStorage.setItem('kus.color', String(chosen));
     localStorage.setItem('kus.hat', chosenHat);
+    localStorage.setItem('kus.eyes', chosenEyes);
     localStorage.setItem('kus.skin', chosenSkin);
     localStorage.setItem('kus.mode', mode);
     localStorage.setItem('kus.diff', diffPick || diff);

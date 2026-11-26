@@ -463,7 +463,18 @@ function drawFace(b) {
       ctx.fill(); // iris in the body's flavour
       ctx.fillStyle = '#1a0b07';
       ctx.beginPath();
-      ctx.arc(qx, qy, er * (b.wowT > 0 ? 0.48 : b.tongue || fierce ? 0.26 : 0.36) * big, 0, TAU);
+      const pr = er * (b.wowT > 0 ? 0.48 : b.tongue || fierce ? 0.26 : 0.36) * big;
+      if (b.eyes === 'stars') {
+        // a five-point star for a pupil
+        for (let i = 0; i < 10; i++) {
+          const a = look - 1.5708 + i * 0.6283,
+            r = i % 2 ? pr * 0.5 : pr * 1.45;
+          if (i) ctx.lineTo(qx + Math.cos(a) * r, qy + Math.sin(a) * r);
+          else ctx.moveTo(qx + Math.cos(a) * r, qy + Math.sin(a) * r);
+        }
+        ctx.closePath();
+      } else if (b.eyes === 'cat') ctx.ellipse(qx, qy, pr * 1.6, pr * 0.42, look, 0, TAU); // a slit along the gaze
+      else ctx.arc(qx, qy, pr, 0, TAU);
       ctx.fill();
       ctx.fillStyle = '#fff';
       ctx.beginPath();
@@ -478,6 +489,28 @@ function drawFace(b) {
       ctx.arc(ex, ey, er * 0.92, -2.6, -0.55);
       ctx.closePath();
       ctx.fill(); // lid shade
+      if (b.eyes === 'sleepy') {
+        // a heavy upper lid in the body's colour
+        ctx.fillStyle = b.pal.base;
+        ctx.beginPath();
+        ctx.arc(ex, ey, er, Math.PI + 0.1, TAU - 0.1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#24110c';
+        ctx.lineWidth = er * 0.2;
+        ctx.stroke();
+      } else if (b.eyes === 'lashes') {
+        // three short lashes over the outer edge
+        ctx.strokeStyle = '#24110c';
+        ctx.lineWidth = er * 0.2;
+        ctx.beginPath();
+        for (let i = -1; i <= 1; i++) {
+          const a = ea + i * 0.45;
+          ctx.moveTo(ex + Math.cos(a) * er * 1.05, ey + Math.sin(a) * er * 1.05);
+          ctx.lineTo(ex + Math.cos(a) * er * 1.6, ey + Math.sin(a) * er * 1.6);
+        }
+        ctx.stroke();
+      }
       if (fierce) {
         // hunter's brow
         ctx.strokeStyle = b.pal.rim;
@@ -488,6 +521,31 @@ function drawFace(b) {
         ctx.stroke();
       }
     }
+  }
+  if (b.eyes === 'glasses') {
+    // two round frames and a bridge, over any state of the eyes
+    const gr = er * 1.35,
+      ga = f + 1.15;
+    ctx.strokeStyle = '#24110c';
+    ctx.lineWidth = er * 0.2;
+    ctx.beginPath();
+    for (const sg of [-1, 1]) {
+      const gx = b.x + Math.cos(f + sg * 1.15) * R * 0.52,
+        gy = b.y + Math.sin(f + sg * 1.15) * R * 0.52;
+      ctx.moveTo(gx + gr, gy);
+      ctx.arc(gx, gy, gr, 0, TAU);
+    }
+    // the bridge joins the inner edges of the frames
+    const hx = Math.cos(ga) * R * 0.52,
+      hy = Math.sin(ga) * R * 0.52,
+      qx = Math.cos(f - 1.15) * R * 0.52,
+      qy = Math.sin(f - 1.15) * R * 0.52,
+      dd = Math.hypot(hx - qx, hy - qy) || 1,
+      ux = (hx - qx) / dd,
+      uy = (hy - qy) / dd;
+    ctx.moveTo(b.x + qx + ux * gr, b.y + qy + uy * gr);
+    ctx.lineTo(b.x + hx - ux * gr, b.y + hy - uy * gr);
+    ctx.stroke();
   }
   if (hot === 3 && lod < 2 && R * cam.z > 16 && b.hurtT <= 0) {
     // a drop of drool hangs from the corner of the mouth

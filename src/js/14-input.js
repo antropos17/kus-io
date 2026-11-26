@@ -145,6 +145,7 @@ $('play').addEventListener('click', startGame);
 $('again').addEventListener('click', startGame);
 function renderHats() {
   renderPick('hat');
+  renderPick('eyes');
   recEl.textContent = best ? t('rec', best) : '';
 }
 const skinsEl = $('skins'),
@@ -158,10 +159,11 @@ function renderBank(msg) {
   if (msg) bankT = setTimeout(() => renderBank(), 3200);
 }
 const boxOf = (slot) => $(slot === 'hat' ? 'hats' : slot === 'skin' ? 'skins' : slot);
-const chosenOf = (slot) => (slot === 'hat' ? chosenHat : slot === 'skin' ? chosenSkin : null);
+const chosenOf = (slot) => (slot === 'hat' ? chosenHat : slot === 'skin' ? chosenSkin : slot === 'eyes' ? chosenEyes : null);
 function choose(slot, id) {
   if (slot === 'hat') chosenHat = id;
   else if (slot === 'skin') chosenSkin = id;
+  else if (slot === 'eyes') chosenEyes = id;
 }
 // the price tag of a closed item: its price, «Купить?» after the first tap
 function priceTag(slot, id) {
@@ -349,7 +351,7 @@ const pressedText = (id) => {
 function renderSecs() {
   const pal = PALS[chosen],
     skin = SKINS.find((k) => k[0] === chosenSkin),
-    look = [nameOf(pal.name), skin && skin[1], chosenHat !== 'none' && itemName('hat', chosenHat)].filter(Boolean).join(' · ');
+    look = [nameOf(pal.name), skin && skin[1], chosenHat !== 'none' && itemName('hat', chosenHat), chosenEyes !== 'none' && itemName('eyes', chosenEyes)].filter(Boolean).join(' · ');
   $('sumLook').innerHTML = `<i style="background:${pal.base}"></i>${look}`;
   $('sumMode').textContent = `${t('sum.' + mode)} · ${mode === 'daily' ? t('dif.normal') : pressedText('diffSeg')}`;
   const mis = $('misList').children,

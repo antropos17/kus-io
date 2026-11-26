@@ -771,6 +771,51 @@ test('wardrobe: a pending first tap does not outlive the menu or another tap', a
   await g.close();
 });
 
+test('wardrobe: every eye style draws, blinks and grows in a streak without errors', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = { worn: [], stored: [], frames: 0, bots: true };
+    for (const [id] of k.WARDROBE.eyes) {
+      k.setSugar(100000);
+      if (!k.owns('eyes', id)) {
+        k.pickClick('eyes', id);
+        k.pickClick('eyes', id);
+      } else k.pickClick('eyes', id);
+      k.pause(true);
+      k.startGame();
+      const P = k.player;
+      out.worn.push(P.eyes === id);
+      out.stored.push(localStorage.getItem('kus.eyes') === id);
+      P.spawnT = 0;
+      for (const lod of [0, 2]) {
+        k.setLod(lod);
+        P.blink = 0.1;
+        k.render();
+        P.blink = 0;
+        P.hurtT = 0.3;
+        k.render();
+        P.hurtT = 0;
+        P.combo = 5;
+        P.comboT = 1;
+        k.render();
+        P.combo = 0;
+        P.comboT = 0;
+        k.render();
+        out.frames += 4;
+      }
+      for (const b of k.blobs) if (!b.isPlayer && b.eyes !== 'none') out.bots = false;
+      k.toMenu();
+    }
+    return out;
+  });
+  assert(r.worn.length === 6 && r.worn.every(Boolean), `the player must wear the chosen eyes: ${r.worn}`);
+  assert(r.stored.every(Boolean), `kus.eyes must be saved: ${r.stored}`);
+  assert(r.bots, 'bots must keep plain eyes');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 test('missions: a done mission pays sugar and opens no pattern', async () => {
   const g = await open({ play: false, returning: true });
   const r = await g.page.evaluate(() => {

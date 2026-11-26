@@ -80,6 +80,7 @@ let player = null,
   crumbCount = 0;
 let chosen = randi(PALS.length),
   chosenHat = 'none',
+  chosenEyes = 'none',
   chosenSkin = 'plain',
   prevBest = 0,
   best = 0,

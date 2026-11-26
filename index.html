@@ -510,6 +510,7 @@ document.getElementById('nojs').style.display = 'none';
         <div class="pk"><span class="pl" data-t="look.flavor">Вкус</span><div id="sw" class="pr" role="radiogroup" aria-label="Вкус" data-ta="look.flavor"></div></div>
         <div class="pk later"><span class="pl" data-t="look.skin">Узор</span><div id="skins" class="pr" role="radiogroup" aria-label="Узор" data-ta="look.skin"></div></div>
         <div class="pk later"><span class="pl" data-t="look.hat">Шапка</span><div id="hats" class="pr" role="radiogroup" aria-label="Шапка" data-ta="look.hat"></div></div>
+        <div class="pk later"><span class="pl" data-t="look.eyes">Глаза</span><div id="eyes" class="pr" role="radiogroup" aria-label="Глаза" data-ta="look.eyes"></div></div>
         <p class="best later" id="rec"></p>
       </div></section>
       <section class="sec later" id="secMis"><button class="sh" type="button" aria-expanded="false" aria-controls="secMisB"><span class="sk" data-t="sec.mis">Задания</span><span class="sv" id="sumMis"></span></button><div class="sb" id="secMisB">
@@ -687,6 +688,7 @@ const STR = {
   'look.flavor': ['Вкус', 'Flavor'],
   'look.skin': ['Узор', 'Pattern'],
   'look.hat': ['Шапка', 'Hat'],
+  'look.eyes': ['Глаза', 'Eyes'],
   'sec.mis': ['Задания', 'Missions'],
   'sec.set': ['Настройки', 'Settings'],
   'sec.help': ['Как играть', 'How to play'],
@@ -1701,6 +1703,7 @@ let player = null,
   crumbCount = 0;
 let chosen = randi(PALS.length),
   chosenHat = 'none',
+  chosenEyes = 'none',
   chosenSkin = 'plain',
   prevBest = 0,
   best = 0,
@@ -2205,6 +2208,7 @@ class Blob {
     this.tongue = null;
     this.dripT = 0;
     this.hat = o.hat || 'none';
+    this.eyes = o.eyes || 'none';
     this.skin = o.skin || 'plain';
     this.kind = o.kind || null;
     this.pSpeed = 0;
@@ -5105,6 +5109,7 @@ function spawnPlayer(spawnT) {
     isPlayer: true,
     spawnT,
     hat: owns('hat', chosenHat) ? chosenHat : 'none',
+    eyes: owns('eyes', chosenEyes) ? chosenEyes : 'none',
     skin: skinOpen(chosenSkin) ? chosenSkin : 'plain',
   });
   blobs.push(player);
@@ -5131,6 +5136,7 @@ function startGame() {
     localStorage.setItem('kus.name', typed); // the default is never saved: it follows the language
     localStorage.setItem('kus.color', String(chosen));
     localStorage.setItem('kus.hat', chosenHat);
+    localStorage.setItem('kus.eyes', chosenEyes);
     localStorage.setItem('kus.skin', chosenSkin);
     localStorage.setItem('kus.mode', mode);
     localStorage.setItem('kus.diff', diffPick || diff);
@@ -7641,7 +7647,18 @@ function drawFace(b) {
       ctx.fill(); // iris in the body's flavour
       ctx.fillStyle = '#1a0b07';
       ctx.beginPath();
-      ctx.arc(qx, qy, er * (b.wowT > 0 ? 0.48 : b.tongue || fierce ? 0.26 : 0.36) * big, 0, TAU);
+      const pr = er * (b.wowT > 0 ? 0.48 : b.tongue || fierce ? 0.26 : 0.36) * big;
+      if (b.eyes === 'stars') {
+        // a five-point star for a pupil
+        for (let i = 0; i < 10; i++) {
+          const a = look - 1.5708 + i * 0.6283,
+            r = i % 2 ? pr * 0.5 : pr * 1.45;
+          if (i) ctx.lineTo(qx + Math.cos(a) * r, qy + Math.sin(a) * r);
+          else ctx.moveTo(qx + Math.cos(a) * r, qy + Math.sin(a) * r);
+        }
+        ctx.closePath();
+      } else if (b.eyes === 'cat') ctx.ellipse(qx, qy, pr * 1.6, pr * 0.42, look, 0, TAU); // a slit along the gaze
+      else ctx.arc(qx, qy, pr, 0, TAU);
       ctx.fill();
       ctx.fillStyle = '#fff';
       ctx.beginPath();
@@ -7656,6 +7673,28 @@ function drawFace(b) {
       ctx.arc(ex, ey, er * 0.92, -2.6, -0.55);
       ctx.closePath();
       ctx.fill(); // lid shade
+      if (b.eyes === 'sleepy') {
+        // a heavy upper lid in the body's colour
+        ctx.fillStyle = b.pal.base;
+        ctx.beginPath();
+        ctx.arc(ex, ey, er, Math.PI + 0.1, TAU - 0.1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#24110c';
+        ctx.lineWidth = er * 0.2;
+        ctx.stroke();
+      } else if (b.eyes === 'lashes') {
+        // three short lashes over the outer edge
+        ctx.strokeStyle = '#24110c';
+        ctx.lineWidth = er * 0.2;
+        ctx.beginPath();
+        for (let i = -1; i <= 1; i++) {
+          const a = ea + i * 0.45;
+          ctx.moveTo(ex + Math.cos(a) * er * 1.05, ey + Math.sin(a) * er * 1.05);
+          ctx.lineTo(ex + Math.cos(a) * er * 1.6, ey + Math.sin(a) * er * 1.6);
+        }
+        ctx.stroke();
+      }
       if (fierce) {
         // hunter's brow
         ctx.strokeStyle = b.pal.rim;
@@ -7666,6 +7705,31 @@ function drawFace(b) {
         ctx.stroke();
       }
     }
+  }
+  if (b.eyes === 'glasses') {
+    // two round frames and a bridge, over any state of the eyes
+    const gr = er * 1.35,
+      ga = f + 1.15;
+    ctx.strokeStyle = '#24110c';
+    ctx.lineWidth = er * 0.2;
+    ctx.beginPath();
+    for (const sg of [-1, 1]) {
+      const gx = b.x + Math.cos(f + sg * 1.15) * R * 0.52,
+        gy = b.y + Math.sin(f + sg * 1.15) * R * 0.52;
+      ctx.moveTo(gx + gr, gy);
+      ctx.arc(gx, gy, gr, 0, TAU);
+    }
+    // the bridge joins the inner edges of the frames
+    const hx = Math.cos(ga) * R * 0.52,
+      hy = Math.sin(ga) * R * 0.52,
+      qx = Math.cos(f - 1.15) * R * 0.52,
+      qy = Math.sin(f - 1.15) * R * 0.52,
+      dd = Math.hypot(hx - qx, hy - qy) || 1,
+      ux = (hx - qx) / dd,
+      uy = (hy - qy) / dd;
+    ctx.moveTo(b.x + qx + ux * gr, b.y + qy + uy * gr);
+    ctx.lineTo(b.x + hx - ux * gr, b.y + hy - uy * gr);
+    ctx.stroke();
   }
   if (hot === 3 && lod < 2 && R * cam.z > 16 && b.hurtT <= 0) {
     // a drop of drool hangs from the corner of the mouth
@@ -8707,6 +8771,7 @@ $('play').addEventListener('click', startGame);
 $('again').addEventListener('click', startGame);
 function renderHats() {
   renderPick('hat');
+  renderPick('eyes');
   recEl.textContent = best ? t('rec', best) : '';
 }
 const skinsEl = $('skins'),
@@ -8720,10 +8785,11 @@ function renderBank(msg) {
   if (msg) bankT = setTimeout(() => renderBank(), 3200);
 }
 const boxOf = (slot) => $(slot === 'hat' ? 'hats' : slot === 'skin' ? 'skins' : slot);
-const chosenOf = (slot) => (slot === 'hat' ? chosenHat : slot === 'skin' ? chosenSkin : null);
+const chosenOf = (slot) => (slot === 'hat' ? chosenHat : slot === 'skin' ? chosenSkin : slot === 'eyes' ? chosenEyes : null);
 function choose(slot, id) {
   if (slot === 'hat') chosenHat = id;
   else if (slot === 'skin') chosenSkin = id;
+  else if (slot === 'eyes') chosenEyes = id;
 }
 // the price tag of a closed item: its price, «Купить?» after the first tap
 function priceTag(slot, id) {
@@ -8911,7 +8977,7 @@ const pressedText = (id) => {
 function renderSecs() {
   const pal = PALS[chosen],
     skin = SKINS.find((k) => k[0] === chosenSkin),
-    look = [nameOf(pal.name), skin && skin[1], chosenHat !== 'none' && itemName('hat', chosenHat)].filter(Boolean).join(' · ');
+    look = [nameOf(pal.name), skin && skin[1], chosenHat !== 'none' && itemName('hat', chosenHat), chosenEyes !== 'none' && itemName('eyes', chosenEyes)].filter(Boolean).join(' · ');
   $('sumLook').innerHTML = `<i style="background:${pal.base}"></i>${look}`;
   $('sumMode').textContent = `${t('sum.' + mode)} · ${mode === 'daily' ? t('dif.normal') : pressedText('diffSeg')}`;
   const mis = $('misList').children,
@@ -10046,6 +10112,7 @@ function start(data) {
   try {
     stored = parseInt(localStorage.getItem('kus.best'), 10) || 0;
     chosenHat = localStorage.getItem('kus.hat') || 'none';
+    chosenEyes = localStorage.getItem('kus.eyes') || 'none';
     chosenSkin = localStorage.getItem('kus.skin') || 'plain';
     sugar = Math.max(0, parseInt(localStorage.getItem('kus.sugar'), 10) || 0);
     if (localStorage.getItem('kus.lbmin') === '1') $('board').classList.add('min');
@@ -10242,6 +10309,12 @@ window.__kus = {
   },
   set chosenHat(v) {
     chosenHat = v;
+  },
+  get chosenEyes() {
+    return chosenEyes;
+  },
+  set chosenEyes(v) {
+    chosenEyes = v;
   },
   renderPick,
   get own() {
