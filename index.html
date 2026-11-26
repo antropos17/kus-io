@@ -169,6 +169,19 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 /* streak: the summary under the HUD, the fuse and sprinkles round the bite button, the sugar rush on the screen edges */
 #streakSum{position:absolute;left:0;margin-top:10px;padding:7px 13px;border-radius:99px;background:var(--cream);color:var(--ink);font:900 13px/1 var(--font);white-space:nowrap;box-shadow:0 4px 0 rgba(0,0,0,.4);opacity:0;visibility:hidden;transform:translateX(-14px);transition:opacity .2s,transform .2s cubic-bezier(.22,1,.36,1),visibility 0s .2s}
 #streakSum.on{opacity:1;visibility:visible;transform:none;transition:opacity .2s,transform .2s cubic-bezier(.22,1,.36,1)}
+/* swallows in a row: the big word across the screen; only transform and opacity animate */
+#announce{position:fixed;left:0;right:0;top:36%;z-index:2;pointer-events:none;text-align:center;visibility:hidden;--fs:34px;--c:#fff1dc;--o:#c8264f}
+#announce b{display:inline-block;font:900 var(--fs)/1.05 var(--font);color:var(--c);white-space:nowrap;letter-spacing:.01em;opacity:0;transform:translateY(-50%);text-shadow:3px 0 0 var(--o),-3px 0 0 var(--o),0 3px 0 var(--o),0 -3px 0 var(--o),2px 2px 0 var(--o),-2px 2px 0 var(--o),2px -2px 0 var(--o),-2px -2px 0 var(--o),0 6px 0 rgba(0,0,0,.45)}
+#announce.on{visibility:visible}
+#announce.on b{animation:annIn 1.4s linear both}
+#announce.calm.on b{animation-name:annCalm}
+#announce.hold b{animation-play-state:paused}
+#announce.s3{--c:#ffd23f;--o:#a3361a}#announce.s3 b{font-size:calc(var(--fs)*1.12)}
+#announce.s4{--c:#ff9a3c;--o:#5a1020}#announce.s4 b{font-size:calc(var(--fs)*1.24)}
+#announce.s5{--c:#ff4f7b;--o:#2a0812}#announce.s5 b{font-size:calc(var(--fs)*1.36)}
+@keyframes annIn{0%{opacity:0;transform:translateY(-50%) scale(2.4) rotate(-3deg)}9%{opacity:1;transform:translateY(-50%) scale(.94) rotate(-3deg)}13%{transform:translateY(-50%) scale(1.04) rotate(-3deg)}17%{transform:translateY(-50%) scale(1) rotate(-3deg)}30%{transform:translateY(-50%) scale(1.02) rotate(-2deg)}45%{transform:translateY(-50%) scale(1) rotate(-3.5deg)}68%{opacity:1;transform:translateY(-50%) scale(1) rotate(-3deg)}100%{opacity:0;transform:translateY(calc(-50% - 30px)) scale(1) rotate(-3deg)}}
+@keyframes annCalm{0%{opacity:0;transform:translateY(-50%)}10%{opacity:1}68%{opacity:1}100%{opacity:0;transform:translateY(-50%)}}
+@media (prefers-reduced-motion:reduce){#announce.on b{animation-name:annCalm}}
 #dash:before{content:"";position:absolute;left:-9px;top:-9px;right:-9px;bottom:-9px;border-radius:50%;background:conic-gradient(var(--fc,#9be15d) calc(var(--f,0)*360deg),rgba(0,0,0,.4) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));opacity:0;pointer-events:none}
 #dash.fuse:before{opacity:1}
 #dash.low:before{animation:fuseBlink .2s linear infinite alternate}
@@ -471,6 +484,7 @@ document.getElementById('nojs').style.display = 'none';
 </script>
 <canvas id="c" aria-label="Игровое поле" data-ta="a.field"></canvas>
 <div id="vig"></div>
+<div id="announce" aria-hidden="true"><b></b></div>
 <div id="safe"></div>
 
 <div id="hud" class="hidden">
@@ -987,6 +1001,10 @@ const STR = {
   'w.3': ['Ням!', 'Yum!'],
   'w.5': ['Хрум-хрум!', 'Crunch!'],
   'w.7': ['Обжора!', 'Nom-nom!'],
+  'ann.2': ['Двойной кусь!', 'Double bite!'],
+  'ann.3': ['Тройной кусь!!', 'Triple bite!!'],
+  'ann.4': ['Обжорство!!!', 'Gluttony!!!'],
+  'ann.5': ['Монстр кусь!!!', 'Monster bite!!!'],
   'w.close': ['На волоске!', 'Close call!'],
   'sum.streakSugar': [(c, n) => `Серия ×${c} · +${n} сахара`, (c, n) => `Streak ×${c} · +${n} sugar`],
   'sum.streak': [(c) => `Серия ×${c}`, (c) => `Streak ×${c}`],
@@ -3279,6 +3297,7 @@ function swallowWhole(A, B) {
     A.combo = A.comboT > 0 ? (A.combo || 0) + 1 : 1;
     A.comboT = STREAK.win;
     mission('combo', A.combo, true);
+    annSwallow(B); // before the streak's stamp: a big word, when it comes, takes the screen alone
     const sugar0 = run.sugar;
     mission('kills', 1);
     onStreakBite(A, B, B.x, B.y, run.sugar - sugar0, close);
@@ -4689,6 +4708,53 @@ $('albumRows').addEventListener('click', (e) => {
 });
 renderAlbumBtn();
 
+// ---------- swallows in a row: a big word across the screen, rare like a multi-kill ----------
+// Only the player's own swallows whole count; each within ANN.win s of the last climbs the ladder (2, 3, 4, 5+).
+// The word is a page layer over the canvas, so it stays sharp when adapt lowers the canvas resolution; it pays nothing.
+const ANN = { win: 5, life: 1.4, inT: 0.18, glow: 4 };
+const ann = { n: 0, at: -99, step: 0, t: 0, hold: false }; // n swallows in the chain, at: game time of the last one
+const annEl = $('announce'),
+  annWord = annEl.querySelector('b');
+function annSwallow(B) {
+  // called from swallowWhole for the player's own swallow, before the streak's stamp
+  if (B.boss) return annReset(); // the Big Cake has its own win arc: it does not count and ends the chain
+  ann.n = time - ann.at <= ANN.win ? ann.n + 1 : 1;
+  ann.at = time;
+  if (ann.n >= 2) annShow(Math.min(ann.n, 5));
+}
+function annShow(step) {
+  if (state !== 'play' || !runActive) return;
+  ann.step = step;
+  ann.t = 0;
+  annWord.textContent = t('ann.' + step);
+  annEl.className = 's' + step + (calm ? ' calm' : '');
+  void annEl.offsetWidth; // restart the CSS animation from its first frame
+  annEl.classList.add('on');
+  Sfx.announce(step);
+}
+function annHide() {
+  ann.step = 0;
+  annEl.classList.remove('on', 'hold');
+  ann.hold = false;
+}
+function annReset() {
+  ann.n = 0;
+  ann.at = -99;
+  annHide();
+}
+function annFrame(rdt, isPaused) {
+  // every frame with the real frame time: a pause holds the word where it is, the end of its life hides it
+  if (!ann.step) return;
+  if (state !== 'play') return annHide();
+  if (isPaused !== ann.hold) {
+    ann.hold = isPaused;
+    annEl.classList.toggle('hold', isPaused);
+  }
+  if (isPaused) return;
+  ann.t += rdt;
+  if (ann.t >= ANN.life) annHide();
+}
+
 // ---------- candy of the day ----------
 // One three-minute run a day with a twist that is the same for everyone on that date. The twist comes from the local date alone, no server.
 const DAILY = [
@@ -5103,6 +5169,7 @@ function finishRun() {
 }
 function die(by) {
   clearWrap();
+  annReset();
   tally();
   stick.id = -1;
   stick.on = false;
@@ -5118,6 +5185,7 @@ function die(by) {
   finishRun();
 }
 function endTimed() {
+  annReset();
   if (player && player.alive) {
     tally();
     player.alive = false;
@@ -5133,6 +5201,7 @@ function endTimed() {
 }
 function toMenu() {
   clearWrap();
+  annReset();
   sugarSettle();
   if (state === 'play' && player && player.alive) {
     tally();
@@ -6083,6 +6152,7 @@ function stageWin() {
 function secondShift() {
   // the same candy, mass and place; a fresh score and sugar count, the events by timers and faster
   const P = player;
+  annReset(); // a fresh shift, a fresh chain
   rollMissions();
   saveM();
   run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0, lap: stg.lap + 1 };
@@ -6182,6 +6252,7 @@ function streakDomOff() {
   multEl.classList.remove('on');
 }
 function addStamp(txt) {
+  if (ann.step) return; // the big word of swallows in a row is up: one word on screen at a time
   if (stamps.length)
     stampOut = { txt: stamps[0].txt, hw: stamps[0].hw, t: 0, f: stamps[0].t, a0: stamps[0].t > 0.8 ? Math.max(0, 1 - (stamps[0].t - 0.8) / 0.3) : 1 }; // fades on from its current alpha
   stamps.length = 0;
@@ -6231,6 +6302,7 @@ function onStreakEnd(P) {
 }
 function streakClear() {
   // a new life or run: nothing of the old streak stays on the page
+  annReset();
   streak.on = false;
   streak.lvl = 0;
   streak.pop = 0;
@@ -9863,6 +9935,7 @@ function frame(now) {
   if (n >= 1 && n <= 3 && Math.abs(dt - n * fp) < fp * 0.3) dt = n * fp;
   if (dt > 0.05) dt = 0.05;
   const w0 = performance.now();
+  annFrame(dt, paused); // the big word lives in real time: the swallow's slow-down does not drag it
   if (!paused) {
     let sc = CHEAT.slow ? 0.45 : 1;
     if (slowT > 0) {
@@ -10116,6 +10189,15 @@ window.__kus = {
     renderMode();
   },
   toMenu,
+  die, // tests: a death without staging a bite
+  ANN,
+  get ann() {
+    return ann;
+  },
+  annShow,
+  annSwallow,
+  annReset,
+  annFrame,
   trophy: {
     get running() {
       return tr.running;

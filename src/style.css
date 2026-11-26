@@ -136,6 +136,19 @@ body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 /* streak: the summary under the HUD, the fuse and sprinkles round the bite button, the sugar rush on the screen edges */
 #streakSum{position:absolute;left:0;margin-top:10px;padding:7px 13px;border-radius:99px;background:var(--cream);color:var(--ink);font:900 13px/1 var(--font);white-space:nowrap;box-shadow:0 4px 0 rgba(0,0,0,.4);opacity:0;visibility:hidden;transform:translateX(-14px);transition:opacity .2s,transform .2s cubic-bezier(.22,1,.36,1),visibility 0s .2s}
 #streakSum.on{opacity:1;visibility:visible;transform:none;transition:opacity .2s,transform .2s cubic-bezier(.22,1,.36,1)}
+/* swallows in a row: the big word across the screen; only transform and opacity animate */
+#announce{position:fixed;left:0;right:0;top:36%;z-index:2;pointer-events:none;text-align:center;visibility:hidden;--fs:34px;--c:#fff1dc;--o:#c8264f}
+#announce b{display:inline-block;font:900 var(--fs)/1.05 var(--font);color:var(--c);white-space:nowrap;letter-spacing:.01em;opacity:0;transform:translateY(-50%);text-shadow:3px 0 0 var(--o),-3px 0 0 var(--o),0 3px 0 var(--o),0 -3px 0 var(--o),2px 2px 0 var(--o),-2px 2px 0 var(--o),2px -2px 0 var(--o),-2px -2px 0 var(--o),0 6px 0 rgba(0,0,0,.45)}
+#announce.on{visibility:visible}
+#announce.on b{animation:annIn 1.4s linear both}
+#announce.calm.on b{animation-name:annCalm}
+#announce.hold b{animation-play-state:paused}
+#announce.s3{--c:#ffd23f;--o:#a3361a}#announce.s3 b{font-size:calc(var(--fs)*1.12)}
+#announce.s4{--c:#ff9a3c;--o:#5a1020}#announce.s4 b{font-size:calc(var(--fs)*1.24)}
+#announce.s5{--c:#ff4f7b;--o:#2a0812}#announce.s5 b{font-size:calc(var(--fs)*1.36)}
+@keyframes annIn{0%{opacity:0;transform:translateY(-50%) scale(2.4) rotate(-3deg)}9%{opacity:1;transform:translateY(-50%) scale(.94) rotate(-3deg)}13%{transform:translateY(-50%) scale(1.04) rotate(-3deg)}17%{transform:translateY(-50%) scale(1) rotate(-3deg)}30%{transform:translateY(-50%) scale(1.02) rotate(-2deg)}45%{transform:translateY(-50%) scale(1) rotate(-3.5deg)}68%{opacity:1;transform:translateY(-50%) scale(1) rotate(-3deg)}100%{opacity:0;transform:translateY(calc(-50% - 30px)) scale(1) rotate(-3deg)}}
+@keyframes annCalm{0%{opacity:0;transform:translateY(-50%)}10%{opacity:1}68%{opacity:1}100%{opacity:0;transform:translateY(-50%)}}
+@media (prefers-reduced-motion:reduce){#announce.on b{animation-name:annCalm}}
 #dash:before{content:"";position:absolute;left:-9px;top:-9px;right:-9px;bottom:-9px;border-radius:50%;background:conic-gradient(var(--fc,#9be15d) calc(var(--f,0)*360deg),rgba(0,0,0,.4) 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));opacity:0;pointer-events:none}
 #dash.fuse:before{opacity:1}
 #dash.low:before{animation:fuseBlink .2s linear infinite alternate}

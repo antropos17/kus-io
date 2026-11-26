@@ -1088,7 +1088,8 @@ test('stages: beating the boss ends the run with a record, not with cheats; the 
     const beat = (cheat) => { const P = free(); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1); if (!S().cur) throw new Error('no boss');
       const B = S().cur.b; B.spawnT = 0; B.ai = null;
       if (cheat) k.CHEAT.heal = true;
-      B.mass = 60; k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
+      B.mass = 60; k.place(B, 600, 600, 0); for (let i = 0; i < 40; i++) { B.mass = 60; k.place(B, 600, 600, 0); k.update(1 / 60); }
+    k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
       while (k.state === 'play' && f++ < 400) { P.tx = B.x; P.ty = B.y; B.tx = B.x; B.ty = B.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); }
       k.CHEAT.heal = false; return { P, f }; };
     const out = {};
@@ -1518,6 +1519,91 @@ test('settings: difficulty and graphics apply and are remembered', async () => {
   assert((await g.page.evaluate(() => window.__kus.lod)) === 2, 'light graphics must set the lowest detail');
   await g.page.click('#gfxSeg button[data-v=auto]');
   await g.page.click('#pauseX');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+// Swallows whole in a row (each within ANN.win s of the last) climb a ladder of big words across the screen.
+const ANN = `const ann = document.getElementById('announce'), word = () => ann.querySelector('b').textContent, shown = () => ann.classList.contains('on');
+  // n tiny candies at the player's mouth, frames until they are all swallowed; returns how many were
+  const gulp = (n = 1) => { const L = []; for (let i = 0; i < n; i++) { const s = k.spawnBot(20); s.ai = null; s.spawnT = 0; L.push(s); }
+    for (let i = 0; i < 2; i++) k.update(1 / 60);
+    const k0 = P.stats.kills; let f = 0;
+    while (f++ < 240 && P.stats.kills < k0 + n) { const s = L.find((b) => b.alive); if (!s) break;
+      k.place(s, P.x + P.Rs + s.Rs - 4, P.y, 0); P.face = 0; P.tx = s.x; P.ty = s.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); }
+    return P.stats.kills - k0; };`;
+
+test('announce: swallows in a row climb the ladder; a pause over 5 s starts again', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(() => { ${QUIET} ${ANN} const out = {};
+    P.mass = 400; k.place(P, 2000, 2500, 0); for (let i = 0; i < 30; i++) k.update(1 / 60); k.annReset();
+    out.g1 = gulp(); out.one = shown();
+    out.g2 = gulp(); out.w2 = word(); out.on2 = shown();
+    gulp(); out.w3 = word();
+    gulp(); out.w4 = word();
+    gulp(); gulp(); out.w6 = word(); out.step6 = k.ann.step; out.n6 = k.ann.n;
+    k.annFrame(1.6, false); out.gone = !shown();
+    for (let i = 0; i < 5.2 * 60; i++) { P.mass = 400; k.update(1 / 60); }
+    gulp(); out.nAfter = k.ann.n; out.reshown = shown(); return out; })()`);
+  assert(r.g1 === 1 && r.g2 === 1, `the tiny candies must be swallowed (${r.g1}, ${r.g2})`);
+  assert(!r.one, 'one swallow must not announce anything');
+  assert(r.w2 === 'Двойной кусь!' && r.on2, `2 in a row: "${r.w2}" ${r.on2}`);
+  assert(r.w3 === 'Тройной кусь!!' && r.w4 === 'Обжорство!!!', `3 and 4 in a row: "${r.w3}", "${r.w4}"`);
+  assert(r.w6 === 'Монстр кусь!!!' && r.step6 === 5 && r.n6 === 6, `6 in a row stays on step 5: "${r.w6}" step ${r.step6} n ${r.n6}`);
+  assert(r.gone, 'the word must be gone 1.6 s after it came');
+  assert(r.nAfter === 1 && !r.reshown, `after 5.2 s the chain starts again: n ${r.nAfter}, shown ${r.reshown}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('announce: English words', async () => {
+  const g = await open({ locale: 'en-US' });
+  const r = await g.page.evaluate(`(() => { ${QUIET} ${ANN} const w = [];
+    for (const s of [2, 3, 4, 5]) { k.annShow(s); w.push(word()); } return w; })()`);
+  assert(r.join('|') === 'Double bite!|Triple bite!!|Gluttony!!!|Monster bite!!!', `English ladder: ${r.join('|')}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('announce: the boss does not count and breaks the chain; chains work in the boss fight; death, a new run and the second shift reset it', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(`(() => { ${STG} ${ANN.replace('const ann', 'let P; const ann')} const out = {};
+    P = free(); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1); if (!S().cur) throw new Error('no boss');
+    const B = S().cur.b; B.spawnT = 0; B.ai = null; k.place(B, 600, 600, 0); k.place(P, 2000, 2500, 0); k.annReset();
+    gulp(); gulp(); out.fight = word(); out.fightOn = shown(); out.n2 = k.ann.n;
+    B.mass = 60; k.place(B, 600, 600, 0); for (let i = 0; i < 40; i++) { B.mass = 60; k.place(B, 600, 600, 0); k.update(1 / 60); }
+    k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
+    while (k.state === 'play' && f++ < 400) { P.tx = B.x; P.ty = B.y; B.tx = B.x; B.ty = B.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); }
+    out.won = !!k.run.won; out.nBoss = k.ann.n; out.overOn = shown();
+    document.getElementById('again').click(); P = k.player; P.spawnT = 0; out.nShift = k.ann.n;
+    k.place(P, 2000, 2500, 0); gulp(); gulp(); out.shiftWord = word(); k.die(null); out.nDead = k.ann.n; out.deadOn = shown();
+    P = free(); out.nRun = k.ann.n; return out; })()`);
+  assert(r.fight === 'Двойной кусь!' && r.fightOn && r.n2 === 2, `chains must announce in the boss fight: "${r.fight}" ${r.fightOn} n ${r.n2}`);
+  assert(r.won && r.nBoss === 0 && !r.overOn, `the boss must not count and must break the chain: won ${r.won}, n ${r.nBoss}, shown ${r.overOn}`);
+  assert(r.nShift === 0, `the second shift must start a fresh chain: n ${r.nShift}`);
+  assert(r.shiftWord === 'Двойной кусь!', `chains announce in the second shift: "${r.shiftWord}"`);
+  assert(r.nDead === 0 && !r.deadOn, `death must hide the word and reset the chain: n ${r.nDead}, shown ${r.deadOn}`);
+  assert(r.nRun === 0, `a new run must start a fresh chain: n ${r.nRun}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('announce: not behind the menu; two swallows in one frame; a pause holds it; the stamp waits; cheats still show it', async () => {
+  const g = await open();
+  const r = await g.page.evaluate(`(async () => { ${QUIET} ${ANN} const out = {};
+    P.mass = 400; k.place(P, 2000, 2500, 0); for (let i = 0; i < 30; i++) k.update(1 / 60); k.annReset();
+    const a = k.spawnBot(20), b = k.spawnBot(20), c = k.spawnBot(20); k.annSwallow(a); k.annSwallow(b); k.annSwallow(c);
+    out.same = k.ann.step; out.sameW = word(); k.annFrame(1.6, false);
+    k.annShow(2); k.pause(true); const t0 = k.ann.t; await new Promise((res) => setTimeout(res, 1500)); out.held = shown() && k.ann.t === t0;
+    out.paused = getComputedStyle(ann.querySelector('b')).animationPlayState; k.annFrame(1.6, false);
+    k.annReset(); k.stamps.length = 0; P.combo = 0; P.comboT = 0; gulp(); gulp(); out.stamps = k.stamps.length; out.onForStamp = shown();
+    k.annReset(); k.CHEAT.heal = true; gulp(); gulp(); out.cheat = word(); k.CHEAT.heal = false;
+    k.toMenu(); k.annShow(3); out.menu = shown(); return out; })()`);
+  assert(r.same === 3 && r.sameW === 'Тройной кусь!!', `three swallows in one frame: step ${r.same} "${r.sameW}"`);
+  assert(r.held && r.paused === 'paused', `a pause must hold the word (held ${r.held}, animation ${r.paused})`);
+  assert(r.onForStamp && r.stamps === 0, `while the word is up no streak stamp shows (stamps ${r.stamps})`);
+  assert(r.cheat === 'Двойной кусь!', `cheats still announce: "${r.cheat}"`);
+  assert(!r.menu, 'nothing shows behind the menu');
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
 });

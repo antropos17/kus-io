@@ -72,6 +72,7 @@ function streakDomOff() {
   multEl.classList.remove('on');
 }
 function addStamp(txt) {
+  if (ann.step) return; // the big word of swallows in a row is up: one word on screen at a time
   if (stamps.length)
     stampOut = { txt: stamps[0].txt, hw: stamps[0].hw, t: 0, f: stamps[0].t, a0: stamps[0].t > 0.8 ? Math.max(0, 1 - (stamps[0].t - 0.8) / 0.3) : 1 }; // fades on from its current alpha
   stamps.length = 0;
@@ -121,6 +122,7 @@ function onStreakEnd(P) {
 }
 function streakClear() {
   // a new life or run: nothing of the old streak stays on the page
+  annReset();
   streak.on = false;
   streak.lvl = 0;
   streak.pop = 0;

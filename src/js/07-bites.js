@@ -572,6 +572,7 @@ function swallowWhole(A, B) {
     A.combo = A.comboT > 0 ? (A.combo || 0) + 1 : 1;
     A.comboT = STREAK.win;
     mission('combo', A.combo, true);
+    annSwallow(B); // before the streak's stamp: a big word, when it comes, takes the screen alone
     const sugar0 = run.sugar;
     mission('kills', 1);
     onStreakBite(A, B, B.x, B.y, run.sugar - sugar0, close);
