@@ -322,6 +322,9 @@ window.__kus = {
     stepOff.lod = 1e9;
     upOffUntil = 1e9;
   },
+  get hudBox() {
+    return { boardBottom, boardLeft, btnTop }; // where the minimap takes the table's and the buttons' places from
+  },
   get quality() {
     return quality;
   },

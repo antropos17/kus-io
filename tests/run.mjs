@@ -1659,6 +1659,78 @@ test('sound: every effect plays without throwing', async () => {
   await g.close();
 });
 
+// Reading a box forces a layout right after the HUD's own writes; the minimap still has to follow the table and the buttons.
+test('hud: the table and buttons are measured only when the layout can have moved, and unchanged text is not rewritten', async () => {
+  const g = await open({ width: 390, height: 844, touch: true, dpr: 3 });
+  const page = g.page;
+  await page.evaluate(`(() => { ${QUIET}
+    window.__reads = 0;
+    const gbr = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function () { if (this.id === 'board' || this.id === 'dodge') window.__reads++; return gbr.call(this); };
+    // every bot, and each one the respawn queue still brings, is put apart and made tame (ambling on the spot) with a frozen mass,
+    // and there are no sprinkles: nobody bites, eats or dies. After 6 s the queue (respawns come 1.5-5 s after a death) is empty,
+    // so the table changes only when the test says so
+    let slot = 0;
+    window.__mass = new Map();
+    const settle = () => { for (const b of k.blobs) if (!window.__mass.has(b)) {
+      if (b !== P) { const x = 300 + (slot % 6) * 600, y = 300 + Math.floor(slot / 6) * 500; k.place(b, x, y); b.tame = true; b.hx = x; b.hy = y; slot++; }
+      window.__mass.set(b, Math.round(Math.min(b.mass, 290)) + 0.25); } }; // under 300 nothing melts; off the rounding edge
+    k.place(P, 2000, 3600);
+    window.__run = (sec) => { for (let i = 0; i < sec * 60; i++) { settle(); for (const [b, m] of window.__mass) b.mass = m; k.food.length = 0; k.update(1 / 60); } };
+    window.__run(6); window.__reads = 0; })()`);
+  const reads = await page.evaluate(() => (window.__run(3), window.__reads));
+  assert(reads <= 2, `the table and buttons were read ${reads} times in 3 s with nothing moving (one measure reads both)`);
+  const near = (a, b) => Math.abs(a - b) < 0.5;
+  const follows = () =>
+    page.evaluate(() => {
+      const h = window.__kus.hudBox,
+        b = document.getElementById('board').getBoundingClientRect(),
+        d = document.getElementById('dodge').getBoundingClientRect();
+      return { h, b: [b.bottom, b.left], d: d.top };
+    });
+  await page.evaluate(() => (document.getElementById('board').click(), window.__run(0.3)));
+  let f = await follows();
+  assert(f.h && near(f.h.boardBottom, f.b[0]) && near(f.h.boardLeft, f.b[1]), `folded table: ${JSON.stringify(f)}`);
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.evaluate(() => (dispatchEvent(new Event('resize')), window.__run(0.3)));
+  f = await follows();
+  assert(near(f.h.boardBottom, f.b[0]) && near(f.h.btnTop, f.d), `landscape: ${JSON.stringify(f)}`);
+  await page.evaluate(() => {
+    const P = window.__kus.player;
+    window.__mass.set(P, 3000); // the player tops the table: the gap row and its own row go, the table gets shorter
+    window.__run(0.3);
+  });
+  f = await follows();
+  assert(near(f.h.boardBottom, f.b[0]), `the table changed rows: ${JSON.stringify(f)}`);
+  // text: the timer changes once a second, the daily goal never; neither is rewritten in between
+  const writes = (mode, id) =>
+    page.evaluate(
+      ([mode, id]) => {
+        const k = window.__kus;
+        k.pause(true);
+        k.setMode(mode);
+        if (k.state !== 'menu') k.toMenu();
+        k.startGame();
+        k.pause(true);
+        for (let i = 0; i < 30; i++) k.update(1 / 60);
+        let n = 0;
+        const mo = new MutationObserver((l) => (n += l.length));
+        mo.observe(document.getElementById(id), { childList: true, characterData: true, subtree: true });
+        for (let i = 0; i < 180; i++) k.update(1 / 60);
+        n += mo.takeRecords().length;
+        mo.disconnect();
+        return { n, text: document.getElementById(id).textContent };
+      },
+      [mode, id],
+    );
+  const tm = await writes('t3', 'timer');
+  assert(tm.text && tm.n <= 4, `3-minute timer "${tm.text}": ${tm.n} rewrites in 3 s`);
+  const gl = await writes('daily', 'goal');
+  assert(gl.text && gl.n === 0, `daily goal "${gl.text}": ${gl.n} rewrites in 3 s`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 // Who eats or pulls a sprinkle: these pin the behaviour across grid cells (256 px), at the world's edge and with a magnet's long reach.
 test('food: eating and pulling sprinkles work across cell borders, at the world edge and with a magnet', async () => {
   const g = await open();
