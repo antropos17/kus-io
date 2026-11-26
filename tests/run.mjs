@@ -1611,7 +1611,9 @@ test('announce: not behind the menu; two swallows in one frame; a pause holds it
 });
 
 // where the big word lands on a phone: on screen, clear of the controls, the HUD and the player's own candy
-const ANN_BOX = `(() => { const r = document.querySelector('#announce b').getBoundingClientRect(), bad = [];
+const ANN_BOX = `(() => { const w = document.querySelector('#announce b');
+  for (const a of w.getAnimations()) a.currentTime = 400; // the settled word, whatever the machine's pace: past the fly-in, before the fade
+  const r = w.getBoundingClientRect(), bad = [];
   if (r.left < 8 || r.right > innerWidth - 8 || r.top < 8) bad.push('off screen ' + [r.left, r.top, r.right, r.bottom].map(Math.round));
   for (const id of ['dash', 'dodge', 'score', 'board', 'pauseBtn', 'mute']) { const e = document.getElementById(id); if (!e || getComputedStyle(e).display === 'none' || getComputedStyle(e).visibility === 'hidden') continue;
     for (const q of id === 'score' ? [...e.children].filter((c) => c.id !== 'feed' && c.offsetParent && c.getBoundingClientRect().height > 0) : [e]) { const b = q.getBoundingClientRect();
