@@ -742,8 +742,8 @@ function update(dt) {
   flashT = Math.max(0, flashT - dt);
   if (player && player.alive && state === 'play' && player.ai) botSteer(player, dt);
   else if (player && player.alive && state === 'play') {
-    if (touchMode) {
-      // joystick: direction and how hard it is pushed
+    if (touchMode || padMode) {
+      // joystick or gamepad stick: direction and how hard it is pushed
       const reach = stick.mag > 0 ? (player.Rs * 1.1 + 40) * (0.25 + 1.35 * stick.mag) : 0;
       player.tx = player.x + stick.vx * reach;
       player.ty = player.y + stick.vy * reach;

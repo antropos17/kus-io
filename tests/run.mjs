@@ -3379,6 +3379,182 @@ test('fonts: the font tool refuses a lost weight and a download that is not woff
   assert(throws(() => checkFace('Nunito', "@font-face{font-family:'Nunito';font-weight: 700 900;src:url(x)}", html)), 'an HTML page was taken as a font');
 });
 
+// A fake standard gamepad: window.__pad holds its axes and buttons, __press(i, on, value) presses one.
+// Triggers (6, 7) can be given a value with pressed false, as an analogue trigger half way down.
+const PADFAKE = `window.__pad = { axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })) };
+  navigator.getGamepads = () => [{ id: 'fake', index: 0, mapping: 'standard', connected: true, axes: __pad.axes, buttons: __pad.buttons }];
+  window.__press = (i, on = true, value) => { __pad.buttons[i] = { pressed: value === undefined ? on : false, value: value === undefined ? (on ? 1 : 0) : value }; };`;
+
+test('gamepad: the stick moves like the touch joystick, the dead zone stops the candy', async () => {
+  const g = await open({ init: PADFAKE });
+  const o = await g.page.evaluate(`(() => { ${QUIET}
+    const out = {};
+    __pad.axes[0] = 0.9;
+    k.padPoll(1 / 60);
+    out.mode = document.body.classList.contains('pad');
+    out.vx = k.stick.vx;
+    out.mag = k.stick.mag;
+    const x0 = P.x;
+    for (let i = 0; i < 60; i++) { k.padPoll(1 / 60); k.update(1 / 60); }
+    out.dx = P.x - x0;
+    out.v0 = Math.hypot(P.vx, P.vy);
+    __pad.axes[0] = 0.1; __pad.axes[1] = 0.05;
+    k.padPoll(1 / 60);
+    out.mag2 = k.stick.mag;
+    for (let i = 0; i < 60; i++) { k.padPoll(1 / 60); k.update(1 / 60); }
+    out.v1 = Math.hypot(P.vx, P.vy);
+    return out; })()`);
+  assert(o.mode, 'the stick did not switch to pad mode');
+  assert(Math.abs(o.vx - 1) < 0.01 && Math.abs(o.mag - (0.9 - 0.18) / 0.82) < 0.01, `stick vx ${o.vx}, mag ${o.mag}`);
+  assert(o.dx > 30, `the candy moved ${o.dx} in a second`);
+  assert(o.mag2 === 0 && o.v1 < o.v0 * 0.2, `dead zone: mag ${o.mag2}, speed ${o.v0} -> ${o.v1}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+  // a pad that drifts a little from the start does not take over
+  const d = await open({ init: PADFAKE + '__pad.axes[0] = 0.1;' });
+  const mode = await d.page.evaluate(() => {
+    window.__kus.padPoll(1 / 60);
+    return document.body.classList.contains('pad');
+  });
+  assert(!mode, 'a drifting stick (0.1) switched to pad mode');
+  await d.close();
+});
+
+test('gamepad: A bites once on a press and again only after the cooldown; B tongues; Start pauses; Select mutes', async () => {
+  const g = await open({ init: PADFAKE });
+  const o = await g.page.evaluate(`(() => { ${QUIET}
+    const out = {};
+    let starts = 0, was = 0;
+    const run = (n, each) => {
+      for (let i = 0; i < n; i++) {
+        if (each) each(i);
+        k.padPoll(1 / 60);
+        k.update(1 / 60);
+        if (was <= 0 && P.dashT > 0) starts++;
+        was = P.dashT;
+      }
+    };
+    const fresh = () => { starts = 0; was = 0; P.dashCd = 0; P.dashT = 0; };
+    fresh();
+    run(60, (i) => __press(0, i === 0));
+    out.tap = starts;
+    fresh();
+    run(90, () => __press(0, true));
+    out.holdPad = starts;
+    __press(0, false);
+    k.padPoll(1 / 60);
+    k.setPad(false);
+    k.setTouch(true);
+    fresh();
+    run(90, () => { k.input.dashHeld = true; });
+    out.holdTouch = starts;
+    k.input.dashHeld = false;
+    k.setTouch(false);
+    fresh();
+    run(30, (i) => __press(7, false, i === 0 ? 0.8 : 0));
+    out.rt = starts;
+    __press(1, true);
+    k.padPoll(1 / 60);
+    out.b = k.input.dodge;
+    k.update(1 / 60);
+    __press(1, false);
+    k.padPoll(1 / 60);
+    __press(6, false, 0.8);
+    k.padPoll(1 / 60);
+    out.lt = k.input.dodge;
+    k.update(1 / 60);
+    __press(6, false, 0);
+    k.padPoll(1 / 60);
+    k.pause(false);
+    const card = () => !document.getElementById('pause').classList.contains('hidden');
+    __press(9, true); k.padPoll(1 / 60); out.paused = card();
+    __press(9, false); k.padPoll(1 / 60);
+    __press(9, true); k.padPoll(1 / 60); out.resumed = !card();
+    __press(9, false); k.padPoll(1 / 60);
+    const s0 = k.Sfx.on;
+    __press(8, true); k.padPoll(1 / 60); out.muted = k.Sfx.on !== s0;
+    __press(8, false); k.padPoll(1 / 60);
+    k.pause(true);
+    return out; })()`);
+  assert(o.tap === 1, `one press of A gave ${o.tap} lunges`);
+  assert(Math.abs(o.holdPad - o.holdTouch) <= 1 && o.holdPad >= 1, `holding A gave ${o.holdPad} lunges, holding the touch button ${o.holdTouch}`);
+  assert(o.rt === 1, `RT at 0.8 gave ${o.rt} lunges`);
+  assert(o.b && o.lt, `B tongue ${o.b}, LT tongue ${o.lt}`);
+  assert(o.paused && o.resumed, `Start: paused ${o.paused}, resumed ${o.resumed}`);
+  assert(o.muted, 'Select did not toggle the sound');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+  // A held down in the menu and still held when the run starts gives no lunge
+  const m = await open({ init: PADFAKE, play: false, returning: true });
+  const r = await m.page.evaluate(() => {
+    const k = window.__kus;
+    __press(0, true);
+    k.padPoll(1 / 60);
+    k.startGame();
+    k.pause(true);
+    const P = k.player;
+    P.spawnT = 0;
+    P.dashCd = 0;
+    let lunged = false;
+    for (let i = 0; i < 30; i++) {
+      k.padPoll(1 / 60);
+      k.update(1 / 60);
+      if (P.dashT > 0) lunged = true;
+    }
+    return { state: k.state, lunged, held: k.input.dashHeld };
+  });
+  assert(r.state === 'play' && !r.lunged && !r.held, `A held from the menu: ${JSON.stringify(r)}`);
+  assert(m.errors.length === 0, m.errors.join(' | '));
+  await m.close();
+});
+
+test('gamepad: a mouse move or a key hands control back; a disconnect pauses the run', async () => {
+  const g = await open({ init: PADFAKE });
+  const look = () => g.page.evaluate(() => ({ pad: document.body.classList.contains('pad'), sx: window.__kus.input.sx }));
+  const on = async () => {
+    await g.page.evaluate(() => {
+      __pad.axes[0] = 0.9;
+      window.__kus.padPoll(1 / 60);
+      __pad.axes[0] = 0;
+      window.__kus.padPoll(1 / 60);
+    });
+    return look();
+  };
+  await g.page.evaluate(`(() => { ${QUIET} })()`);
+  const a = await on();
+  await g.page.mouse.move(700, 450);
+  const b = await look();
+  assert(a.pad && !b.pad, `a mouse move left pad mode on: ${JSON.stringify([a, b])}`);
+  assert(b.sx === a.sx, `the mouse move that ended pad mode pulled the candy: sx ${a.sx} -> ${b.sx}`);
+  const c = await on();
+  await g.page.keyboard.press('KeyX');
+  const d = await look();
+  assert(c.pad && !d.pad, 'a key left pad mode on');
+  await on();
+  const paused = await g.page.evaluate(() => {
+    window.__kus.pause(false);
+    dispatchEvent(new Event('gamepaddisconnected'));
+    return !document.getElementById('pause').classList.contains('hidden');
+  });
+  assert(paused, 'a disconnect in pad mode did not pause the run');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('gamepad: with two pads only the first standard one drives', async () => {
+  const g = await open({});
+  const o = await g.page.evaluate(`(() => { ${QUIET}
+    const btns = () => Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+    navigator.getGamepads = () => [null, { index: 1, mapping: '', connected: true, axes: [0.9, 0, 0, 0], buttons: btns() },
+      { index: 2, mapping: 'standard', connected: true, axes: [-0.9, 0, 0, 0], buttons: btns() },
+      { index: 3, mapping: 'standard', connected: true, axes: [0, 0.9, 0, 0], buttons: btns() }];
+    k.padPoll(1 / 60);
+    return { vx: k.stick.vx, vy: k.stick.vy, idx: k.pad.idx }; })()`);
+  assert(Math.abs(o.vx + 1) < 0.01 && Math.abs(o.vy) < 0.01 && o.idx === 2, `two pads: ${JSON.stringify(o)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 for (const [name, fn] of tests) {
   if (only && !name.includes(only)) continue;
   const t0 = Date.now();

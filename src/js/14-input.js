@@ -29,6 +29,7 @@ function stickEnd(e) {
 cvs.addEventListener('pointermove', (e) => {
   if (e.pointerType === 'mouse') {
     setTouch(false);
+    if (padMode) return setPad(false); // the move that hands control back does not pull the candy yet
     input.sx = e.clientX;
     input.sy = e.clientY;
   } else if (e.pointerId === stick.id) stickMove(e);
