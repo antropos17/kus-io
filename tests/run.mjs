@@ -3677,6 +3677,7 @@ test('gamepad: A presses, B goes back, LB/RB step through open items of a row', 
     out.focusInRow = !!document.activeElement.closest('#hats');
     tap(4);
     out.h3 = idx('#hats');
+    document.querySelector('#sw [role=radio]').click(); // a first visit picks a random flavour: start from the first, rows do not wrap
     document.getElementById('play').focus();
     out.f0 = idx('#sw');
     tap(5);
