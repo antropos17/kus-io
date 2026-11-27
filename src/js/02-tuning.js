@@ -636,19 +636,25 @@ function drawSkin(b) {
   const a = skinTile(b.skin);
   if (!a.pat) return;
   const f = a.fx,
-    live = f && !lod && !calm && b.Rs * cam.z >= FX_MIN, // the living layer only at full detail, on a candy big enough, never with reduced motion
+    px = b.Rs * cam.z,
+    // the rainbow's own flow costs no fill, so only reduced motion stops it; the overlays need full detail and a candy big enough,
+    // and fade in over 8 px above FX_MIN, so a lod step or a camera kick never makes them pop
+    live = f && !lod && !calm && px >= FX_MIN,
     T = last / 1000 + b.ph,
     W = a.c.width;
   try {
-    skinAt(a.pat, W, a.span, b, b.fa, live && f.kind === 'flow' ? ((T / f.period) % 1) * W : 0);
+    skinAt(a.pat, W, a.span, b, b.fa, f && !calm && f.kind === 'flow' ? ((T / f.period) % 1) * W : 0);
     if (!live || !f.pat) return;
-    const V = f.c.width;
-    if (f.kind === 'sweep') skinAt(f.pat, V, a.span, b, b.fa, (((T / f.period) % 1) - 0.5) * V);
-    else if (f.kind === 'drift') {
-      ctx.globalAlpha = 0.55 + 0.45 * Math.sin(T * 0.9);
+    const V = f.c.width,
+      fade = Math.min(1, (px - FX_MIN) / 8);
+    if (f.kind === 'sweep') {
+      ctx.globalAlpha = fade;
+      skinAt(f.pat, V, a.span, b, b.fa, (((T / f.period) % 1) - 0.5) * V);
+    } else if (f.kind === 'drift') {
+      ctx.globalAlpha = (0.55 + 0.45 * Math.sin(T * 0.9)) * fade;
       skinAt(f.pat, V, a.span, b, b.fa, Math.sin(T * 0.35) * V * 0.08);
     } else {
-      ctx.globalAlpha = 0.6 + 0.4 * Math.sin(T * f.pulse);
+      ctx.globalAlpha = (0.6 + 0.4 * Math.sin(T * f.pulse)) * fade;
       skinAt(f.pat, V, a.span, b, b.fa + T * f.speed, 0);
     }
     ctx.globalAlpha = 1;

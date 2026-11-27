@@ -1055,6 +1055,85 @@ test('skins: the living layer adds one fill at full detail, none at lod 1, when 
   await c.close();
 });
 
+test('skins: the rainbow keeps flowing at lod 1 and on a small candy; the overlays fade in above FX_MIN instead of popping', async () => {
+  const g = await open({});
+  await g.page.evaluate(QUIET);
+  const r = await g.page.evaluate(async () => {
+    const k = window.__kus,
+      P = k.player,
+      out = {};
+    // the rainbow: its own transform moves with time whatever the detail or the size
+    const rainbow = k.skinTile('rainbow').pat,
+      set = CanvasPattern.prototype.setTransform;
+    let seen = [];
+    CanvasPattern.prototype.setTransform = function (m) {
+      if (this === rainbow) seen.push(m.e + ',' + m.f);
+      return set.call(this, m);
+    };
+    const moves = async (lod, z) => {
+      k.setLod(lod);
+      k.cam.z = z;
+      P.skin = 'rainbow';
+      seen = [];
+      k.render();
+      const a = seen[seen.length - 1];
+      await new Promise((res) => setTimeout(res, 300));
+      k.setLod(lod);
+      k.cam.z = z;
+      k.render();
+      return a !== seen[seen.length - 1];
+    };
+    out.lod1 = await moves(1, 40 / P.Rs);
+    out.small = await moves(0, 12 / P.Rs);
+    CanvasPattern.prototype.setTransform = set;
+    // the overlays: the alpha their pattern is filled with, just above FX_MIN and well above it
+    const C = CanvasRenderingContext2D.prototype,
+      fill = C.fill;
+    const alpha = (id, px) => {
+      const fx = k.skinTile(id).fx.pat;
+      let a = -1;
+      C.fill = function (...x) {
+        if (this.fillStyle === fx) a = this.globalAlpha;
+        return fill.apply(this, x);
+      };
+      k.setLod(0);
+      k.cam.z = px / P.Rs;
+      P.skin = id;
+      k.render();
+      C.fill = fill;
+      return a;
+    };
+    for (const id of ['foil', 'aurora', 'galaxy']) out[id] = [alpha(id, 17), alpha(id, 60)];
+    return out;
+  });
+  assert(r.lod1, 'the rainbow stops flowing at lod 1');
+  assert(r.small, 'the rainbow stops flowing on a small candy');
+  for (const id of ['foil', 'aurora', 'galaxy']) {
+    const [lo, hi] = r[id];
+    assert(lo >= 0 && lo <= 0.13, `${id}: the overlay pops in at full strength just above FX_MIN (alpha ${lo})`);
+    assert(hi >= 0.099, `${id}: the overlay is fainter than its own breathing allows on a big candy (alpha ${hi})`); // aurora breathes down to 0.1
+  }
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('skins: a candy takes its twinkle phase without drawing from Math.random', async () => {
+  const g = await open({});
+  await g.page.evaluate(QUIET);
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      rnd = Math.random;
+    Math.random = () => 0.5; // the same draw every time: a phase from it would repeat
+    const a = k.spawnBot(60),
+      b = k.spawnBot(60);
+    Math.random = rnd;
+    return [a.ph, b.ph];
+  });
+  assert(r[0] !== r[1], `two candies got the same phase from a repeating Math.random: ${r}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 test('skins: drawing patterns makes no DOMMatrix per frame', async () => {
   const g = await open({});
   await g.page.evaluate(QUIET);

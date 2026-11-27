@@ -8,7 +8,7 @@ const annEl = $('announce'),
   annWord = annEl.querySelector('b');
 function annSwallow(B) {
   // called from swallowWhole for the player's own swallow, before the streak's stamp; true when it brought a word
-  if (B.boss) return (annReset(), false); // the Big Cake has its own win arc: it does not count and ends the chain
+  if (B.boss) return annReset(), false; // the Big Cake has its own win arc: it does not count and ends the chain
   ann.n = time - ann.at <= ANN.win ? ann.n + 1 : 1;
   ann.at = time;
   if (ann.n < 2) return false;
@@ -87,16 +87,7 @@ function annBurst(step) {
   for (let i = 0; i < n; i++) {
     const a = rand(0, Math.PI * 2),
       sp = rand(160, 420);
-    parts.push({
-      x: P.x,
-      y: P.y - P.Rs * 0.4,
-      vx: Math.cos(a) * sp,
-      vy: Math.sin(a) * sp - 120,
-      r: rand(3, 6),
-      t: 0,
-      T: rand(0.5, 0.9),
-      c: ANN_SPR[i % ANN_SPR.length],
-    });
+    parts.push({ x: P.x, y: P.y - P.Rs * 0.4, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 120, r: rand(3, 6), t: 0, T: rand(0.5, 0.9), c: ANN_SPR[i % ANN_SPR.length] });
   }
 }
 addEventListener('resize', () => ann.step && annFit()); // a phone turned mid-word: refit it to the new screen
