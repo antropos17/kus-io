@@ -1024,9 +1024,10 @@ test('skins: the living layer adds one fill at full detail, none at lod 1, when 
       const k = window.__kus,
         P = k.player,
         set = CanvasPattern.prototype.setTransform,
+        rainbow = k.skinTile('rainbow').pat,
         seen = [];
       CanvasPattern.prototype.setTransform = function (m) {
-        seen.push(m.e + ',' + m.f);
+        if (this === rainbow) seen.push(m.e + ',' + m.f); // parked bots draw their own patterns in the same frame
         return set.call(this, m);
       };
       k.setLod(0);
