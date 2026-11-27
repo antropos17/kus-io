@@ -12,8 +12,9 @@ let slowT = 0,
   slowDip = 0.32,
   frameNo = 0;
 const PUBLIC_URL = 'https://antropos17.github.io/kus-io/';
-// where the page runs: 'app' inside the Capacitor phone app, 'steam' inside the desktop wrapper (its preload sets
-// window.KUS_PLATFORM), 'web' everywhere else. The web page never changes because of it.
+// where the page runs: 'app' inside the Capacitor phone app, 'steam' inside the desktop wrapper (its preload calls
+// contextBridge.exposeInMainWorld('KUS_PLATFORM', 'steam'): a plain window.KUS_PLATFORM = … in a preload stays in its
+// isolated world and the page would see 'web'), 'web' everywhere else. The web page never changes because of it.
 const PLATFORM = (() => {
   try {
     if (window.Capacitor && window.Capacitor.isNativePlatform() === true) return 'app';
