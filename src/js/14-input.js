@@ -294,6 +294,7 @@ function renderSkins() {
           y = 46 - t / 2 + j * t;
         if (x > 92 || y > 92 || x + t < 0 || y + t < 0) continue;
         g.drawImage(art.c, x, y, t, t);
+        if (art.fx && art.fx.c) g.drawImage(art.fx.c, x, y, t, t); // the living layer, standing still
       }
     g.restore();
     g.lineWidth = 4;

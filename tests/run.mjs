@@ -40,8 +40,16 @@ async function open({
   locale = 'ru-RU',
   init = '',
   origin = '',
+  reducedMotion = 'no-preference',
 } = {}) {
-  const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: dpr, hasTouch: touch, isMobile: touch, locale });
+  const ctx = await browser.newContext({
+    viewport: { width, height },
+    deviceScaleFactor: dpr,
+    hasTouch: touch,
+    isMobile: touch,
+    locale,
+    reducedMotion,
+  });
   const page = await ctx.newPage();
   if (returning) await page.addInitScript(() => localStorage.getItem('kus.best') === null && localStorage.setItem('kus.best', '0'));
   if (init) await page.addInitScript(init);
@@ -952,6 +960,124 @@ test('wardrobe: every hat and pattern draws', async () => {
   assert(r.flat.length === 0, `hats that draw nothing: ${r.flat}`);
   assert(r.missing.length === 0, `patterns missing from SKINS (the shop row): ${r.missing}`);
   assert(r.empty.length === 0, `patterns with an empty tile: ${r.empty}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+const LIVE = ['rainbow', 'foil', 'aurora', 'galaxy'];
+test('skins: whole-body patterns are 512, the rest 256; only rainbow, foil, aurora and galaxy live; nothing newer than iOS 15', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = { size: [], live: [] };
+    for (const [id] of k.SKINS) {
+      if (id === 'plain') continue;
+      const a = k.skinTile(id);
+      if (a.c.width !== (a.span === 3.2 ? 512 : 256)) out.size.push(`${id} ${a.c.width}`);
+      if (a.fx) out.live.push(id);
+    }
+    return out;
+  });
+  assert(r.size.length === 0, `tiles of the wrong size: ${r.size}`);
+  assert(r.live.sort().join() === [...LIVE].sort().join(), `living patterns: ${r.live}`);
+  const src = readFileSync(join(root, 'src', 'js', '02-tuning.js'), 'utf8');
+  assert(!/\.filter\s*=|roundRect|createConicGradient/.test(src), 'the patterns use canvas calls iOS 15 Safari does not have');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+// fills of one frame with the player in a pattern, minus the same frame in dots; the tile is painted before counting
+const LIVE_EXTRA = `(ids) => {
+  const k = window.__kus, P = k.player, C = CanvasRenderingContext2D.prototype, fill = C.fill;
+  let n = 0;
+  C.fill = function (...a) { n++; return fill.apply(this, a); };
+  const count = (id) => { P.skin = id; k.skinTile(id); k.parts.length = 0; n = 0; k.render(); return n; };
+  const base = count('dots'), out = {};
+  for (const id of ids) out[id] = count(id) - base;
+  C.fill = fill;
+  return out;
+}`;
+test('skins: the living layer adds one fill at full detail, none at lod 1, when small or with reduced motion', async () => {
+  const g = await open({});
+  await g.page.evaluate(QUIET);
+  const full = await g.page.evaluate(`(${LIVE_EXTRA})(${JSON.stringify(LIVE)})`);
+  assert(full.foil === 1 && full.aurora === 1 && full.galaxy === 1 && full.rainbow === 0, `extra fills at lod 0: ${JSON.stringify(full)}`);
+  await g.page.evaluate(() => window.__kus.setLod(1));
+  const lite = await g.page.evaluate(`(${LIVE_EXTRA})(${JSON.stringify(LIVE)})`);
+  assert(
+    Object.values(lite).every((v) => v === 0),
+    `extra fills at lod 1: ${JSON.stringify(lite)}`,
+  );
+  await g.page.evaluate(() => {
+    const k = window.__kus;
+    k.setLod(0);
+    k.cam.z = 12 / k.player.Rs; // drawn with its pattern (over 7 px) but under FX_MIN
+  });
+  const small = await g.page.evaluate(`(${LIVE_EXTRA})(${JSON.stringify(LIVE)})`);
+  assert(
+    Object.values(small).every((v) => v === 0),
+    `extra fills on a small candy: ${JSON.stringify(small)}`,
+  );
+  // the rainbow's own tile flows with time
+  const flow = (page) =>
+    page.evaluate(async () => {
+      const k = window.__kus,
+        P = k.player,
+        set = CanvasPattern.prototype.setTransform,
+        seen = [];
+      CanvasPattern.prototype.setTransform = function (m) {
+        seen.push(m.e + ',' + m.f);
+        return set.call(this, m);
+      };
+      k.setLod(0);
+      k.cam.z = 1;
+      P.skin = 'rainbow';
+      k.render();
+      const a = seen[seen.length - 1];
+      await new Promise((r) => setTimeout(r, 300));
+      k.render();
+      CanvasPattern.prototype.setTransform = set;
+      return a !== seen[seen.length - 1];
+    });
+  assert(await flow(g.page), 'the rainbow stands still at full detail');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+  const c = await open({ reducedMotion: 'reduce' });
+  await c.page.evaluate(QUIET);
+  const calm = await c.page.evaluate(`(${LIVE_EXTRA})(${JSON.stringify(LIVE)})`);
+  assert(
+    Object.values(calm).every((v) => v === 0),
+    `extra fills with reduced motion: ${JSON.stringify(calm)}`,
+  );
+  assert(!(await flow(c.page)), 'the rainbow flows with reduced motion');
+  assert(c.errors.length === 0, c.errors.join(' | '));
+  await c.close();
+});
+
+test('skins: drawing patterns makes no DOMMatrix per frame', async () => {
+  const g = await open({});
+  await g.page.evaluate(QUIET);
+  const made = await g.page.evaluate(() => {
+    const k = window.__kus,
+      P = k.player,
+      D = window.DOMMatrix;
+    let n = 0;
+    window.DOMMatrix = function (...a) {
+      n++;
+      return new D(...a);
+    };
+    const four = [P, ...k.blobs.filter((b) => b !== P && !b.kind).slice(0, 3)];
+    ['foil', 'galaxy', 'rainbow', 'tiger'].forEach((id, i) => {
+      four[i].skin = id;
+      k.skinTile(id);
+      k.place(four[i], P.x + (i % 2 ? 1 : -1) * P.Rs * 1.4, P.y + (i < 2 ? -1 : 1) * P.Rs * 1.4, 0);
+    });
+    k.setLod(0);
+    for (let i = 0; i < 60; i++) k.render();
+    window.DOMMatrix = D;
+    return n;
+  });
+  assert(made <= 1, `DOMMatrix made while drawing 60 frames of four patterned candies: ${made}`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
 });

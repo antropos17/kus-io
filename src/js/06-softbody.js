@@ -24,6 +24,7 @@ class Blob {
     this.R = massToR(this.mass);
     this.Rs = this.R;
     this.face = rand(-Math.PI, Math.PI);
+    this.ph = rand(0, 60); // a phase of its own for a pattern's living layer, so twins do not twinkle together
     this.tx = this.x;
     this.ty = this.y;
     this.wounds = [];

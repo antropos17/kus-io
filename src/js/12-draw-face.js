@@ -473,7 +473,8 @@ function drawFace(b) {
           else ctx.moveTo(qx + Math.cos(a) * r, qy + Math.sin(a) * r);
         }
         ctx.closePath();
-      } else if (b.eyes === 'cat') ctx.ellipse(qx, qy, pr * 1.6, pr * 0.42, look, 0, TAU); // a slit along the gaze
+      } else if (b.eyes === 'cat')
+        ctx.ellipse(qx, qy, pr * 1.6, pr * 0.42, look, 0, TAU); // a slit along the gaze
       else ctx.arc(qx, qy, pr, 0, TAU);
       ctx.fill();
       ctx.fillStyle = '#fff';

@@ -94,11 +94,14 @@ function skinTile(id) {
   const S = 256,
     h = S / 2,
     c = document.createElement('canvas');
-  c.width = c.height = S;
+  const sc = SKIN_BIG[id] ? 2 : 1; // whole-body pictures are painted at twice the size, in the same 256 space
+  c.width = c.height = S * sc;
   const g = c.getContext('2d'),
     lite = 'rgba(255,255,255,0.36)',
     dark = 'rgba(45,12,24,0.34)';
-  let span = 0.8; // how many body radii one tile covers; 3.2 = a single picture centred on the body
+  let span = 0.8, // how many body radii one tile covers; 3.2 = a single picture centred on the body
+    fx = null; // the living layer of the dearest patterns, moved by drawSkin
+  g.scale(sc, sc);
   g.lineJoin = 'round';
   if (id === 'stripes') {
     g.strokeStyle = lite;
@@ -214,16 +217,27 @@ function skinTile(id) {
       g.fill();
     }
   } else if (id === 'rainbow') {
-    g.lineWidth = S * 0.09;
-    span = 0.9;
-    const cols = ['rgba(255,80,110,.5)', 'rgba(255,190,60,.5)', 'rgba(120,220,90,.5)', 'rgba(90,180,255,.5)'];
-    for (let k = 0; k < 8; k++) {
-      g.strokeStyle = cols[k % 4];
+    // puffy ribbons in four colours, each with a shine down the middle; the tile flows along them (drawSkin)
+    span = 1.6;
+    const cols = ['rgba(255,80,110,.55)', 'rgba(255,190,60,.55)', 'rgba(120,220,90,.55)', 'rgba(90,180,255,.55)'],
+      d = S * 0.085; // half the ribbon across x + y
+    for (let k = -1; k <= 9; k++) {
+      const c0 = k * h * 0.5,
+        p = new Path2D();
+      p.moveTo(-40, c0 - d + 40);
+      p.lineTo(S + 40, c0 - d - S - 40);
+      p.lineTo(S + 40, c0 + d - S - 40);
+      p.lineTo(-40, c0 + d + 40);
+      p.closePath();
+      puff(g, p, cols[((k % 4) + 4) % 4], 4, sc, 'rgba(45,12,24,0.2)');
+      g.strokeStyle = 'rgba(255,255,255,0.4)';
+      g.lineWidth = 3;
       g.beginPath();
-      g.moveTo(k * h * 0.5 + 30, -30);
-      g.lineTo(-30, k * h * 0.5 + 30);
+      g.moveTo(-40, c0 + 40);
+      g.lineTo(S + 40, c0 - S - 40);
       g.stroke();
     }
+    fx = { kind: 'flow', period: 6 };
   } else if (id === 'bubbles') {
     g.strokeStyle = lite;
     g.lineWidth = S * 0.035;
@@ -252,21 +266,61 @@ function skinTile(id) {
       g.stroke();
     }
   } else if (id === 'galaxy') {
+    // a night wash with three nebulae, a dust lane and fine star dust; the bright stars turn and twinkle in the living layer
     span = 3.2;
-    const gg = g.createRadialGradient(h, h, 10, h, h, 120);
-    gg.addColorStop(0, 'rgba(30,10,70,0.15)');
-    gg.addColorStop(1, 'rgba(20,5,50,0.62)');
+    const gg = g.createRadialGradient(h, h, 10, h, h, 92);
+    gg.addColorStop(0, 'rgba(40,15,90,0.25)');
+    gg.addColorStop(1, 'rgba(14,4,44,0.72)');
     g.fillStyle = gg;
     g.fillRect(0, 0, S, S);
-    for (let i = 0; i < 46; i++) {
+    for (const [x, y, r, col, al] of [
+      [-26, -14, 52, '170,90,255', 0.4],
+      [30, 22, 46, '60,210,230', 0.3],
+      [6, -36, 34, '255,100,190', 0.3],
+    ]) {
+      const ng = g.createRadialGradient(h + x, h + y, 0, h + x, h + y, r);
+      ng.addColorStop(0, `rgba(${col},${al})`);
+      ng.addColorStop(1, `rgba(${col},0)`);
+      g.fillStyle = ng;
+      g.fillRect(0, 0, S, S);
+    }
+    g.save();
+    g.translate(h, h);
+    g.rotate(-0.5);
+    g.scale(1, 0.22);
+    const dl = g.createRadialGradient(0, 0, 0, 0, 0, 90);
+    dl.addColorStop(0, 'rgba(255,240,255,0.22)');
+    dl.addColorStop(1, 'rgba(255,240,255,0)');
+    g.fillStyle = dl;
+    g.beginPath();
+    g.arc(0, 0, 90, 0, TAU);
+    g.fill();
+    g.restore();
+    for (let i = 0; i < 150; i++) {
       const a = hash1(i * 2.3) * TAU,
-        r = hash1(i * 5.1) * 100,
-        q = 1 + hash1(i * 9.7) * 2.6;
-      g.fillStyle = i % 5 ? 'rgba(255,255,255,0.85)' : 'rgba(255,220,120,0.95)';
+        r = Math.sqrt(hash1(i * 5.1)) * 86;
+      g.fillStyle = `rgba(255,255,255,${0.5 + hash1(i * 3.7) * 0.5})`;
       g.beginPath();
-      g.arc(h + Math.cos(a) * r, h + Math.sin(a) * r, q, 0, TAU);
+      g.arc(h + Math.cos(a) * r, h + Math.sin(a) * r, 0.35 + hash1(i * 9.7) * 0.7, 0, TAU);
       g.fill();
     }
+    fx = { kind: 'spin', speed: 0.12, pulse: 2.1 };
+    fx.c = skinLayer((f) => {
+      for (let i = 0; i < 18; i++) {
+        const a = hash1(i * 7.9) * TAU,
+          r = 10 + Math.sqrt(hash1(i * 1.3)) * 70,
+          x = h + Math.cos(a) * r,
+          y = h + Math.sin(a) * r;
+        f.shadowColor = i % 4 ? 'rgba(200,220,255,0.9)' : 'rgba(255,220,140,0.9)';
+        f.shadowBlur = 8;
+        f.fillStyle = i % 4 ? '#fff' : '#ffe9b0';
+        f.beginPath();
+        f.arc(x, y, 0.9 + hash1(i * 4.4) * 1.1, 0, TAU);
+        f.fill();
+      }
+      f.shadowBlur = 0;
+      for (let i = 0; i < 3; i++) glint(f, h + (hash1(i * 6.1) - 0.5) * 110, h + (hash1(i * 3.9) - 0.5) * 110, 7 + i * 2);
+    }, 2);
   } else if (id === 'glaze') {
     // icing poured over the back of the head, with sprinkles
     span = 3.2;
@@ -407,35 +461,56 @@ function skinTile(id) {
           g.closePath();
           g.fill();
         }
-    g.strokeStyle = 'rgba(255,255,240,0.3)';
-    g.lineWidth = 26;
-    g.beginPath();
-    g.moveTo(60, 230);
-    g.lineTo(220, 40);
-    g.stroke();
-  } else if (id === 'aurora') {
-    // northern lights: curtains of green, teal and violet hanging over a night wash
-    span = 3.2;
-    g.fillStyle = 'rgba(16,24,70,0.32)';
-    g.fillRect(0, 0, S, S);
-    const cols = ['90,255,170', '80,215,255', '200,120,255'];
-    for (let k = 0; k < 3; k++)
-      for (let x = 0; x < S; x += 2) {
-        const yc = 105 + k * 34 + 18 * Math.sin(x * 0.028 + k * 2.1) + 7 * Math.sin(x * 0.09 + k),
-          L = 44 + 22 * Math.sin(x * 0.05 + k * 1.3) + 12 * hash1(x * 0.37 + k),
-          gr = g.createLinearGradient(0, yc - L, 0, yc + 6);
-        gr.addColorStop(0, `rgba(${cols[k]},0)`);
-        gr.addColorStop(0.85, `rgba(${cols[k]},0.55)`);
-        gr.addColorStop(1, `rgba(${cols[k]},0)`);
-        g.fillStyle = gr;
-        g.fillRect(x, yc - L, 2, L + 6);
+    // creases: each fold catches light on one side and shade on the other, and a few sparkles; a shine sweeps across (living layer)
+    g.lineWidth = 0.8;
+    for (let j = 0; j < n; j++)
+      for (let i = 0; i < n; i++) {
+        g.strokeStyle = (i + j) % 2 ? 'rgba(255,255,225,0.5)' : 'rgba(110,60,0,0.35)';
+        g.beginPath();
+        g.moveTo(px(i, j), py(i, j));
+        g.lineTo(px(i + 1, j + 1), py(i + 1, j + 1));
+        g.moveTo(px(i + 1, j), py(i + 1, j));
+        g.lineTo(px(i + 1, j + 1), py(i + 1, j + 1));
+        g.stroke();
       }
+    for (let i = 0; i < 6; i++) glint(g, h + (hash1(i * 4.7) - 0.5) * 130, h + (hash1(i * 8.3) - 0.5) * 130, 5 + hash1(i * 2.9) * 6);
+    fx = { kind: 'sweep', period: 2.6 };
+    fx.c = skinLayer((f) => {
+      const gr = f.createLinearGradient(S * 0.36, 0, S * 0.64, 0);
+      gr.addColorStop(0, 'rgba(255,255,235,0)');
+      gr.addColorStop(0.5, 'rgba(255,255,235,0.75)');
+      gr.addColorStop(1, 'rgba(255,255,235,0)');
+      f.fillStyle = gr;
+      f.fillRect(0, 0, S, S);
+    }, 1);
+  } else if (id === 'aurora') {
+    // northern lights: curtains of green, teal and violet over a starry night; a second veil drifts and breathes (living layer)
+    span = 3.2;
+    const curtains = (f, cols, y0, al) => {
+      for (let k = 0; k < cols.length; k++)
+        for (let x = 0; x < S; x += 2) {
+          const yc = y0 + k * 34 + 18 * Math.sin(x * 0.028 + k * 2.1) + 7 * Math.sin(x * 0.09 + k),
+            L = 44 + 22 * Math.sin(x * 0.05 + k * 1.3) + 12 * hash1(x * 0.37 + k),
+            gr = f.createLinearGradient(0, yc - L, 0, yc + 6);
+          gr.addColorStop(0, `rgba(${cols[k]},0)`);
+          gr.addColorStop(0.85, `rgba(${cols[k]},${al})`);
+          gr.addColorStop(1, `rgba(${cols[k]},0)`);
+          f.fillStyle = gr;
+          f.fillRect(x, yc - L, 2, L + 6);
+        }
+    };
+    g.fillStyle = 'rgba(16,24,70,0.36)';
+    g.fillRect(0, 0, S, S);
     g.fillStyle = 'rgba(255,255,255,0.8)';
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 30; i++) {
       g.beginPath();
-      g.arc(50 + hash1(i * 2.7) * 156, 52 + hash1(i * 6.1) * 44, 1 + hash1(i * 4.3) * 1.4, 0, TAU);
+      g.arc(h + (hash1(i * 2.7) - 0.5) * 150, h + (hash1(i * 6.1) - 0.5) * 150, 0.5 + hash1(i * 4.3) * 1.1, 0, TAU);
       g.fill();
     }
+    curtains(g, ['90,255,170', '80,215,255', '200,120,255'], 105, 0.55);
+    for (let i = 0; i < 3; i++) glint(g, h + (hash1(i * 5.3) - 0.5) * 120, h - 30 - hash1(i * 2.2) * 40, 5 + i * 1.5);
+    fx = { kind: 'drift' };
+    fx.c = skinLayer((f) => curtains(f, ['255,130,210', '120,255,220'], 120, 0.45), 2);
   }
   let pat = null;
   try {
@@ -444,23 +519,107 @@ function skinTile(id) {
   } catch (e) {
     pat = null;
   }
-  return (skinArt[id] = { c, pat, span });
+  if (fx && fx.c && pat) fx.pat = ctx.createPattern(fx.c, 'repeat');
+  return (skinArt[id] = { c, pat, span, fx });
+}
+const FX_MIN = 16, // on-screen radius in px under which a pattern's living layer is not drawn
+  SKIN_BIG = { swirl: 1, tiger: 1, cow: 1, glaze: 1, marble: 1, foil: 1, aurora: 1, galaxy: 1 }; // whole-body pictures, painted at 512
+let skinM = null; // one matrix for every pattern fill: nothing is made per body per frame
+function skinAt(pat, W, span, b, ang, dx) {
+  // a tile of W pixels on the body: centred on it, span radii wide, turned by ang, slid by dx tile pixels along its own x
+  const k = (span * b.Rs) / W,
+    cs = Math.cos(ang) * k,
+    sn = Math.sin(ang) * k,
+    m = skinM || (skinM = new DOMMatrix());
+  m.a = cs;
+  m.b = sn;
+  m.c = -sn;
+  m.d = cs;
+  m.e = b.x - (cs - sn) * W * 0.5 + cs * dx;
+  m.f = b.y - (sn + cs) * W * 0.5 + sn * dx;
+  pat.setTransform(m);
+  ctx.fillStyle = pat;
+  ctx.fill(b.path);
 }
 function drawSkin(b) {
   // the pattern rides on the body: centred on it, scaled with it, turning with the face
   const a = skinTile(b.skin);
   if (!a.pat) return;
-  const k = (a.span * b.Rs) / 256,
-    cs = Math.cos(b.fa) * k,
-    sn = Math.sin(b.fa) * k;
+  const f = a.fx,
+    live = f && !lod && !calm && b.Rs * cam.z >= FX_MIN, // the living layer only at full detail, on a candy big enough, never with reduced motion
+    T = last / 1000 + b.ph,
+    W = a.c.width;
   try {
-    a.pat.setTransform(new DOMMatrix([cs, sn, -sn, cs, b.x - (cs - sn) * 128, b.y - (sn + cs) * 128]));
+    skinAt(a.pat, W, a.span, b, b.fa, live && f.kind === 'flow' ? ((T / f.period) % 1) * W : 0);
+    if (!live || !f.pat) return;
+    const V = f.c.width;
+    if (f.kind === 'sweep') skinAt(f.pat, V, a.span, b, b.fa, (((T / f.period) % 1) - 0.5) * V);
+    else if (f.kind === 'drift') {
+      ctx.globalAlpha = 0.55 + 0.45 * Math.sin(T * 0.9);
+      skinAt(f.pat, V, a.span, b, b.fa, Math.sin(T * 0.35) * V * 0.08);
+    } else {
+      ctx.globalAlpha = 0.6 + 0.4 * Math.sin(T * f.pulse);
+      skinAt(f.pat, V, a.span, b, b.fa + T * f.speed, 0);
+    }
+    ctx.globalAlpha = 1;
   } catch (e) {
     a.pat = null;
-    return;
+    ctx.globalAlpha = 1;
   }
-  ctx.fillStyle = a.pat;
-  ctx.fill(b.path);
+}
+// the shared material of the patterns: a soft contact shadow, the fill, a soft rim just inside the edge and a fine contour.
+// all of it is round, so it reads the same whichever way the tile turns with the face
+function puff(g, p, fill, k, sc, halo, rim) {
+  g.save();
+  g.shadowColor = halo || 'rgba(45,12,24,0.36)';
+  g.shadowBlur = k * 1.4 * sc;
+  g.fillStyle = fill;
+  g.fill(p);
+  g.restore();
+  g.save();
+  g.clip(p);
+  g.shadowColor = rim || 'rgba(45,12,24,0.4)';
+  g.shadowBlur = k * sc;
+  g.lineWidth = k;
+  g.strokeStyle = rim || 'rgba(45,12,24,0.2)';
+  g.stroke(p);
+  g.restore();
+  g.lineWidth = Math.max(0.6, k * 0.18);
+  g.strokeStyle = 'rgba(45,12,24,0.16)';
+  g.stroke(p);
+}
+function gloss(g, x, y, r, al) {
+  // a round shine
+  const gr = g.createRadialGradient(x, y, 0, x, y, r);
+  gr.addColorStop(0, `rgba(255,255,255,${al})`);
+  gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr;
+  g.beginPath();
+  g.arc(x, y, r, 0, TAU);
+  g.fill();
+}
+function glint(g, x, y, r) {
+  // a four-pointed sparkle with a soft glow
+  gloss(g, x, y, r * 0.6, 0.7);
+  g.fillStyle = 'rgba(255,255,250,0.95)';
+  for (let q = 0; q < 2; q++) {
+    const ax = q ? 0 : 1,
+      ay = q;
+    g.beginPath();
+    g.moveTo(x - ax * r, y - ay * r);
+    g.quadraticCurveTo(x + ay * r * 0.1, y + ax * r * 0.1, x + ax * r, y + ay * r);
+    g.quadraticCurveTo(x - ay * r * 0.1, y - ax * r * 0.1, x - ax * r, y - ay * r);
+    g.fill();
+  }
+}
+function skinLayer(paint, sc) {
+  // the living layer's own see-through tile, in the same 256 space as the pattern
+  const c = document.createElement('canvas');
+  c.width = c.height = 256 * sc;
+  const f = c.getContext('2d');
+  f.scale(sc, sc);
+  paint(f);
+  return c;
 }
 const SPRINKLES_C = ['#ff5d8f', '#ffd23f', '#3fb8ff', '#6fd13c', '#b57bff', '#ff8a2a'];
 const SPRINKLES = ['#ff5d8f', '#ffd23f', '#7ad7ff', '#9be15d', '#c49bff', '#fff6e8', '#ff9a3d', '#4fe3c1'];
