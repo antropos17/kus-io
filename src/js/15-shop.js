@@ -3,7 +3,7 @@
 //   ad() → 'reward' | 'closed' | 'error'; products(ids) → [{ id, price }]; buy(id) → { status, tx }; onPurchase(cb).
 // Without the bridge, and on the web and Steam, there is no shop at all.
 const NATIVE = PLATFORM === 'app' && window.KUS_NATIVE ? window.KUS_NATIVE : null;
-const SHOP = { adWait: 30000, priceWait: 10000, buyWait: 60000 }; // ms; past adWait an ad counts as failed
+const SHOP = { adWait: 120000, priceWait: 10000, buyWait: 60000 }; // ms; past adWait an ad counts as failed (it counts loading, a whole video and its end card)
 const shopEl = $('shop'),
   shopBtn = $('shopBtn'),
   adBtn = $('adBtn');

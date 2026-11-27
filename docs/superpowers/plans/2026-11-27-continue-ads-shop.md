@@ -35,7 +35,7 @@ The web does not change.
 - **Ads:** `AD_SUGAR = 300`, `AD_DAY = 3` a day by the local date (`dayKey`). The attempt is spent only on `'reward'`.
 - **Packs:** `PACKS = [{ id: 'sugar_s', sugar: 5000 }, { id: 'sugar_m', sugar: 15000 }, { id: 'sugar_l', sugar: 40000 }]`. The price comes only from `KUS_NATIVE.products()`.
 - **Bridge timeouts:**
-  - `ad()` 30 s, then `'error'`;
+  - `ad()` 120 s, then `'error'` (raised from 30 s after the final review);
   - `products()` 10 s, then «недоступен»;
   - `buy()` is never abandoned; after 60 s the buttons unlock with «ждём ответа магазина».
 - **Saves:** `kus.ads` = `{ d, n }`, `kus.tx` = the last 50 credited transaction ids.

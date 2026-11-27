@@ -5475,7 +5475,7 @@ function annFrame(rdt, isPaused) {
 // The web never sees it. A death in a free run in 'app' or 'steam' holds the run's payout and offers to come back
 // with the mass the candy had in its last seconds; «Нет», the timer or leaving to the menu pay the run as before.
 const CONT = { delay: 1.1, secs: 5, back: 3, lock: 0.5, step: 0.25, span: 3 };
-const cont = { pend: false, on: false, left: 0 };
+const cont = { pend: false, on: false, left: 0, at: 0 }; // at: when the window showed, for the click lock
 const contLogM = new Float32Array(Math.ceil(CONT.span / CONT.step)); // the mass every CONT.step s, a ring
 let contAcc = 0,
   contI = 0;
@@ -5507,6 +5507,7 @@ function contHide() {
 }
 function contShow() {
   cont.on = true;
+  cont.at = performance.now();
   cont.left = CONT.secs;
   $('contN').textContent = CONT.secs;
   contEl.style.setProperty('--p', '1');
@@ -5532,15 +5533,25 @@ function contNo() {
   showOver();
 }
 function contFrame(rdt) {
-  if (!cont.on || document.hidden) return; // real time; an app in the background keeps its seconds
+  if (!cont.on) return; // real time
   cont.left -= rdt;
   if (cont.left <= 0) return contNo();
   const s = Math.ceil(cont.left);
   if ($('contN').textContent !== String(s)) $('contN').textContent = s;
   contEl.style.setProperty('--p', (cont.left / CONT.secs).toFixed(3));
 }
-$('contYes').addEventListener('click', contYes);
-$('contNo').addEventListener('click', contNo);
+// a click that was a bite mashed through the death must not choose: the first CONT.lock s of the window ignore clicks
+const contClick = (fn) => () => {
+  if (performance.now() - cont.at >= CONT.lock * 1000) fn();
+};
+$('contYes').addEventListener('click', contClick(contYes));
+$('contNo').addEventListener('click', contClick(contNo));
+// leaving the app or closing the window while the offer is up pays the run at once: a backgrounded app may be killed
+// and the run's sugar and record must not go with it (the continue is the price of leaving)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) contNo();
+});
+addEventListener('pagehide', contNo);
 
 // ---------- candy of the day ----------
 // One three-minute run a day with a twist that is the same for everyone on that date. The twist comes from the local date alone, no server.
@@ -10625,7 +10636,7 @@ updateCheatTag();
 //   ad() → 'reward' | 'closed' | 'error'; products(ids) → [{ id, price }]; buy(id) → { status, tx }; onPurchase(cb).
 // Without the bridge, and on the web and Steam, there is no shop at all.
 const NATIVE = PLATFORM === 'app' && window.KUS_NATIVE ? window.KUS_NATIVE : null;
-const SHOP = { adWait: 30000, priceWait: 10000, buyWait: 60000 }; // ms; past adWait an ad counts as failed
+const SHOP = { adWait: 120000, priceWait: 10000, buyWait: 60000 }; // ms; past adWait an ad counts as failed (it counts loading, a whole video and its end card)
 const shopEl = $('shop'),
   shopBtn = $('shopBtn'),
   adBtn = $('adBtn');

@@ -4181,7 +4181,7 @@ test('continue: in steam and the app a free-run death offers «Продолжи�
       dieNow();
       out.cont = until('cont'); out.over = shown('over'); out.state = k.state;
       out.bankSame = localStorage.getItem('kus.sugar') === bank0;
-      document.getElementById('contYes').click();
+      k.contYes();
       out.after = k.state; out.alive = k.player.alive; out.used = k.run.contUsed; out.contGone = !shown('cont');
       dieNow();
       out.over2 = until('over'); out.cont2 = shown('cont');
@@ -4225,7 +4225,7 @@ test('continue: «Нет», the timer and leaving to the menu pay the run exactl
       dieNow(); until('cont');
       for (let i = 0; i < 60; i++) k.update(1 / 60); // past the timed mode's respawn moment
       out.held = k.state === 'dead' && shown('cont') && !k.player.alive;
-      if ('${how}' === 'no') document.getElementById('contNo').click();
+      if ('${how}' === 'no') k.contNo();
       else if ('${how}' === 'timer') for (let i = 0; i < 6; i++) k.contFrame(1);
       else k.toMenu();
       out.got = k.run.got; out.paid = k.sugar - bank0; out.ls = +localStorage.getItem('kus.sugar') - bank0;
@@ -4242,18 +4242,44 @@ test('continue: «Нет», the timer and leaving to the menu pay the run exactl
   }
 });
 
-test('continue: the timer stands while the page is hidden', async () => {
+test('continue: hiding or leaving the page pays the run at once', async () => {
+  for (const ev of ['visibilitychange', 'pagehide']) {
+    const g = await open({ init: STEAMFAKE });
+    const o = await g.page.evaluate(`(() => { ${QUIET} ${DIE}
+      k.run.sugar = 40;
+      const bank0 = +localStorage.getItem('kus.sugar');
+      dieNow(); until('cont');
+      if ('${ev}' === 'visibilitychange') {
+        Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+        document.dispatchEvent(new Event('visibilitychange'));
+      } else window.dispatchEvent(new Event('pagehide'));
+      return { paid: +localStorage.getItem('kus.sugar') - bank0, got: k.run.got, cont: shown('cont'), pend: k.cont.pend }; })()`);
+    assert(o.got > 0 && o.paid === o.got && !o.cont && !o.pend, `${ev}: ${JSON.stringify(o)}`);
+    assert(g.errors.length === 0, `${ev}: ${g.errors.join(' | ')}`);
+    await g.close();
+  }
+});
+
+test('continue: a click in the first 0.5 s of the window does not choose', async () => {
   const g = await open({ init: STEAMFAKE });
-  const o = await g.page.evaluate(`(() => { ${QUIET} ${DIE}
+  const o = await g.page.evaluate(`(async () => { ${QUIET} ${DIE}
+    const out = {};
     dieNow(); until('cont');
-    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
-    for (let i = 0; i < 10; i++) k.contFrame(1);
-    const still = shown('cont') && !shown('over');
-    Object.defineProperty(document, 'hidden', { value: false, configurable: true });
-    for (let i = 0; i < 6; i++) k.contFrame(1);
-    return { still, over: shown('over'), cont: shown('cont') }; })()`);
-  assert(o.still && o.over && !o.cont, JSON.stringify(o));
+    document.getElementById('contNo').click();
+    out.early = shown('cont') && k.cont.pend;
+    await new Promise((r) => setTimeout(r, 650));
+    document.getElementById('contNo').click();
+    out.later = !shown('cont') && shown('over');
+    return out; })()`);
+  assert(o.early && o.later, JSON.stringify(o));
   assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('ads: the ad timeout leaves room for a whole rewarded video', async () => {
+  const g = await open({ init: NATFAKE, play: false, returning: true });
+  const w = await g.page.evaluate(() => window.__kus.SHOP.adWait);
+  assert(w >= 120000, `adWait ${w} ms`);
   await g.close();
 });
 
