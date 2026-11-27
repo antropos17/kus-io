@@ -678,6 +678,17 @@ body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))}
   #pauseBtn{bottom:170px}
   #adm .seg{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+/* gamepad mode (body.pad, 14-gamepad): Xbox-style glyphs instead of key hints, the pad's help lines, page text 12 px for Steam Deck */
+.pg{display:none}
+body.pad .pg{display:inline-grid;place-items:center;width:22px;height:22px;margin-top:4px;border-radius:50%;background:var(--ink);color:#fff;font:900 13px/1 var(--font);font-style:normal}
+body.pad #dash .pg{background:#3f9b2f}
+body.pad #dodge .pg{background:#d23c3c}
+body.pad #dash small,body.pad #dodge small,body.pad #pauseBtn svg{display:none}
+body.pad #pauseBtn .pg{margin:0;width:auto;height:auto;background:none;color:var(--ink);font-size:20px}
+.help .pd{display:none}
+body.pad .help .kb,body.pad .help .tc{display:none}
+body.pad .help .pd{display:list-item}
+body.pad #skins .pz,body.pad #hats .pz,body.pad #eyes .pz,body.pad #trail .pz,body.pad #tray .pz,body.pad .st .sn,body.pad .st i,body.pad #trTiles span,body.pad #fpsTag{font-size:12px}
 </style>
 </head>
 <body>
@@ -705,9 +716,9 @@ document.getElementById('nojs').style.display = 'none';
 
 <div id="hud" class="hidden">
   <div id="score"><div id="mass">0</div><div class="lbl" data-t="hud.mass">масса</div><div id="sugar" aria-label="сахар 0"><span class="sock"><svg viewBox="0 0 24 24"><path d="M12 2.5 21 7.2 12 11.9 3 7.2Z" fill="#fffaf0" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M3 7.2 12 11.9V21.5L3 16.8Z" fill="#efe1c8" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M21 7.2 12 11.9V21.5L21 16.8Z" fill="#d6bd95" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><circle cx="9.5" cy="6.6" r=".9" fill="#fff"/><circle cx="14.2" cy="7.6" r=".7" fill="#fff"/><circle cx="6.5" cy="12" r=".6" fill="#fff"/></svg></span><span class="num"></span><span class="mult"></span></div><div id="timer"></div><div id="goal"></div><div id="stage" class="off"><span class="fill"></span><span class="t"></span><b></b></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="streakSum" role="status"></div><div id="feed" aria-live="polite"></div></div>
-  <button id="pauseBtn" type="button" aria-label="Пауза" title="Пауза (Esc)" data-ta="pause" data-tt="pause.tip"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
-  <button id="dash" type="button" aria-label="Рывок с укусом" data-ta="a.dash" data-tc="dash.low"><span><b data-t="btn.kus">Кусь</b><small data-t="btn.space">пробел</small></span></button>
-  <button id="dodge" type="button" aria-label="Язык-присоска" data-ta="a.tongue"><span><b data-t="btn.tongue">Язык</b><small>shift</small></span></button>
+  <button id="pauseBtn" type="button" aria-label="Пауза" title="Пауза (Esc)" data-ta="pause" data-tt="pause.tip"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg><i class="pg" aria-hidden="true">☰</i></button>
+  <button id="dash" type="button" aria-label="Рывок с укусом" data-ta="a.dash" data-tc="dash.low"><span><b data-t="btn.kus">Кусь</b><small data-t="btn.space">пробел</small><i class="pg" aria-hidden="true">A</i></span></button>
+  <button id="dodge" type="button" aria-label="Язык-присоска" data-ta="a.tongue"><span><b data-t="btn.tongue">Язык</b><small>shift</small><i class="pg" aria-hidden="true">B</i></span></button>
 </div>
 
 <div id="board"><div class="bt" data-t="board.t">Самые сладкие</div><ol id="lb"></ol></div>
@@ -753,6 +764,8 @@ document.getElementById('nojs').style.display = 'none';
       <li class="kb"><span data-th="help.shift"><b>Shift, правый клик или «Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
       <li class="tc"><span data-th="help.finger"><b>Води пальцем по экрану</b>: под ним появится джойстик</span></li>
       <li class="tc"><span data-th="help.kus"><b>«Кусь»</b>: рывок с укусом посильнее, можно держать</span></li>
+      <li class="pd"><span data-th="help.pad1"><b>Левый стик</b>: плыть. <b>A</b> или <b>RT</b>: кусь, <b>B</b> или <b>LT</b>: язык</span></li>
+      <li class="pd"><span data-th="help.pad2"><b>Start</b>: пауза, <b>Select</b>: звук. В меню <b>крестовина</b> и <b>A</b>, <b>B</b>: назад, <b>LB</b> и <b>RB</b>: листать ряд</span></li>
       <li class="tc"><span data-th="help.tongue"><b>«Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
       <li><span data-th="help.t1">Кусает только пасть, так что заходи со спины</span></li>
       <li><span data-th="help.t2">Тебя тоже будут кусать: ранки затянутся, а есть можно дальше</span></li>
@@ -929,6 +942,14 @@ const STR = {
   ],
   'help.finger': ['<b>Води пальцем по экрану</b>: под ним появится джойстик', '<b>Drag a finger on the screen</b>: a joystick appears under it'],
   'help.kus': ['<b>«Кусь»</b>: рывок с укусом посильнее, можно держать', '<b>“Kusь!”</b>: a dash with a stronger bite, you can hold it'],
+  'help.pad1': [
+    '<b>Левый стик</b>: плыть. <b>A</b> или <b>RT</b>: кусь, <b>B</b> или <b>LT</b>: язык',
+    '<b>Left stick</b>: swim. <b>A</b> or <b>RT</b>: bite, <b>B</b> or <b>LT</b>: tongue',
+  ],
+  'help.pad2': [
+    '<b>Start</b>: пауза, <b>Select</b>: звук. В меню <b>крестовина</b> и <b>A</b>, <b>B</b>: назад, <b>LB</b> и <b>RB</b>: листать ряд',
+    '<b>Start</b>: pause, <b>Select</b>: sound. In menus the <b>d-pad</b> and <b>A</b>, <b>B</b>: back, <b>LB</b> and <b>RB</b>: flip through a row',
+  ],
   'help.tongue': ['<b>«Язык»</b>: язык-присоска, тянет добычу к пасти', '<b>“Tongue”</b>: a sticky tongue pulls prey to your mouth'],
   'help.t1': ['Кусает только пасть, так что заходи со спины', 'Only the mouth bites, so come in from behind'],
   'help.t2': ['Тебя тоже будут кусать: ранки затянутся, а есть можно дальше', 'You will get bitten too: wounds heal, and you can keep eating'],
@@ -2136,6 +2157,8 @@ function setPad(on) {
   if (!on) {
     stick.mag = 0; // the mouse or a finger takes over from a standstill
     input.dashHeld = false;
+    const f = document.activeElement;
+    if (f && f !== document.body && f.tagName !== 'INPUT' && f.blur) f.blur(); // no focus ring left behind for the mouse
   }
 }
 function haptic(ms) {

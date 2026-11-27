@@ -3823,6 +3823,104 @@ test('gamepad: a whole run from the menu to the end card with the pad alone', as
   await g.close();
 });
 
+test('gamepad: pad glyphs replace key hints and go back with the mouse', async () => {
+  const shown = `const shown = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+    const glyph = (id) => { const g = document.querySelector('#' + id + ' .pg'); return shown(g) ? g.textContent.trim() : ''; };
+    const look = () => ({ pad: document.body.classList.contains('pad'), dash: glyph('dash'), dodge: glyph('dodge'), pause: glyph('pauseBtn'),
+      space: shown(document.querySelector('#dash small')), shift: shown(document.querySelector('#dodge small')), bars: shown(document.querySelector('#pauseBtn svg')),
+      pad1: shown(document.querySelector('[data-th="help.pad1"]')) ? document.querySelector('[data-th="help.pad1"]').textContent : '',
+      pad2: shown(document.querySelector('[data-th="help.pad2"]')),
+      mouse: shown(document.querySelector('[data-th="help.mouse"]')), space2: shown(document.querySelector('[data-th="help.space"]')),
+      ring: document.activeElement !== document.body && document.activeElement.matches(':focus-visible') });`;
+  for (const [locale, word] of [
+    ['ru-RU', 'стик'],
+    ['en-US', 'stick'],
+  ]) {
+    // the help lines, in the menu with «Как играть» open
+    const m = await open({ init: PADFAKE, play: false, returning: true, locale });
+    const a = await m.page.evaluate(`(() => { ${shown}
+      const k = window.__kus;
+      document.querySelector('#secHelp .sh').click();
+      __press(13, true); k.padPoll(1 / 60); __press(13, false); k.padPoll(1 / 60);
+      return look(); })()`);
+    await m.page.mouse.move(600, 300);
+    await m.page.mouse.move(620, 310);
+    const b = await m.page.evaluate(`(() => { ${shown} return look(); })()`);
+    assert(a.pad && a.pad1.includes(word) && a.pad2 && !a.mouse && !a.space2, `${locale} menu, pad: ${JSON.stringify(a)}`);
+    assert(!b.pad && !b.pad1 && !b.pad2 && b.mouse && b.space2 && !b.ring, `${locale} menu, after the mouse: ${JSON.stringify(b)}`);
+    assert(m.errors.length === 0, m.errors.join(' | '));
+    await m.close();
+  }
+  // the buttons of a run
+  const g = await open({ init: PADFAKE });
+  const c = await g.page.evaluate(`(() => { ${shown}
+    __pad.axes[0] = 0.9; window.__kus.padPoll(1 / 60); __pad.axes[0] = 0; window.__kus.padPoll(1 / 60);
+    return look(); })()`);
+  await g.page.mouse.move(600, 300);
+  await g.page.mouse.move(620, 310);
+  const d = await g.page.evaluate(`(() => { ${shown} return look(); })()`);
+  assert(c.pad && c.dash === 'A' && c.dodge === 'B' && c.pause === '☰' && !c.space && !c.shift && !c.bars, `run, pad: ${JSON.stringify(c)}`);
+  assert(!d.pad && !d.dash && !d.dodge && !d.pause && d.space && d.shift && d.bars, `run, after the mouse: ${JSON.stringify(d)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('gamepad: 1280x800 — nothing off screen and page text is 12 px or more', async () => {
+  const kinds = (bad) => [...new Set(bad.map((x) => x.replace(/ "[^"]*"/, '')))].join(' | '); // one line per kind of offender
+  // every visible element with text of its own: font 12 px or more; inside the screen, or inside a scrolling box that is
+  const check = `const check = (where) => {
+    const bad = [], W = innerWidth, H = innerHeight;
+    const scroller = (el) => { for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) { const s = getComputedStyle(p);
+      if (/(auto|scroll)/.test(s.overflowX + s.overflowY)) return p; } return null; };
+    const inside = (r, b) => r.left >= b.left - 1 && r.right <= b.right + 1 && r.top >= b.top - 1 && r.bottom <= b.bottom + 1;
+    for (const el of document.body.querySelectorAll('*')) {
+      if (el.closest('#err, script, style, canvas, svg')) continue;
+      const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+      if (!own || !el.getClientRects().length || getComputedStyle(el).visibility === 'hidden') continue;
+      const name = where + ' ' + (el.id || el.className || el.tagName) + ' "' + el.textContent.trim().slice(0, 16) + '"';
+      const fs = parseFloat(getComputedStyle(el).fontSize);
+      if (fs < 12) bad.push(name + ' ' + fs + 'px');
+      const r = el.getBoundingClientRect(), box = scroller(el);
+      if (!inside(r, box ? box.getBoundingClientRect() : { left: 0, top: 0, right: W, bottom: H }) && !box) bad.push(name + ' off screen');
+      if (box && !inside(box.getBoundingClientRect(), { left: 0, top: 0, right: W, bottom: H })) bad.push(name + ' in a box off screen');
+      if ((el.matches('.st .sn, .pz') && el.scrollWidth > el.clientWidth + 1)) bad.push(name + ' does not fit its tile');
+    }
+    return bad;
+  };`;
+  const m = await open({ init: PADFAKE, play: false, returning: true, width: 1280, height: 800 });
+  const menu = await m.page.evaluate(`(() => { ${check}
+    const k = window.__kus;
+    k.setPad(true);
+    k.padPoll(1 / 60);
+    let bad = check('menu');
+    for (const sh of document.querySelectorAll('#menu .sec .sh')) { if (sh.getAttribute('aria-expanded') !== 'true') sh.click(); bad = bad.concat(check('menu ' + sh.parentElement.id)); }
+    document.getElementById('albumBtn').click();
+    k.padPoll(1 / 60);
+    return bad.concat(check('album')); })()`);
+  assert(menu.length === 0, kinds(menu));
+  assert(m.errors.length === 0, m.errors.join(' | '));
+  await m.close();
+  const g = await open({ init: PADFAKE, width: 1280, height: 800 });
+  const run = await g.page.evaluate(`(() => { ${QUIET} ${check}
+    k.setPad(true);
+    k.update(1 / 60);
+    let bad = check('run');
+    k.pause(false);
+    __press(9, true); k.padPoll(1 / 60); __press(9, false); k.padPoll(1 / 60);
+    bad = bad.concat(check('pause'));
+    __press(9, true); k.padPoll(1 / 60); __press(9, false); k.padPoll(1 / 60);
+    k.pause(true);
+    P.alive = false;
+    k.die(null);
+    const over = document.getElementById('over');
+    for (let f = 0; over.classList.contains('hidden') && f < 300; f++) k.update(1 / 60);
+    k.padPoll(1 / 60);
+    return bad.concat(check('end card')); })()`);
+  assert(run.length === 0, kinds(run));
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 for (const [name, fn] of tests) {
   if (only && !name.includes(only)) continue;
   const t0 = Date.now();

@@ -132,6 +132,8 @@ function setPad(on) {
   if (!on) {
     stick.mag = 0; // the mouse or a finger takes over from a standstill
     input.dashHeld = false;
+    const f = document.activeElement;
+    if (f && f !== document.body && f.tagName !== 'INPUT' && f.blur) f.blur(); // no focus ring left behind for the mouse
   }
 }
 function haptic(ms) {
