@@ -5,6 +5,11 @@
 //     limit  game seconds per run; a run ends at the player's first death or at the limit
 //     weak   the same autopilot made clearly worse (slower reactions, less fear, less hunger), see WEAK_MUL below;
 //            weaker is a second, harsher step of the same knobs
+//   SHIFTS=1 plays on through the wins: on the Big Cake's fall the run records it (won, fight: the first win) and calls startGame(),
+//     which is «Вторая смена», and goes on until the limit or a death. Adds per run shifts, peak (the player's top mass over all
+//     shifts), tTo {3000,6000,10000} (first second at that mass), diedAfter6k, peakAt {300,600,900,1200}; and to the summary peak,
+//     reach6k, reach10k, reach10kAt, diedAfter6k, tTo. Without SHIFTS a run still ends at the win and nothing above changes.
+//   HTML=file measures another build than index.html (a frozen copy, say).
 //   OUT=file.json saves every run and the summary. Progress goes to stderr, the summary to stdout.
 // Stages (pages that have them): when each event began, whether the Big Cake was beaten, the fight and the clear time.
 //   A run that beats the cake ends there, as the game ends it with the win screen.
@@ -16,11 +21,12 @@ import { dirname, join } from 'node:path';
 import { writeFileSync } from 'node:fs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const URL = pathToFileURL(join(root, 'index.html')).href;
+const URL = pathToFileURL(process.env.HTML || join(root, 'index.html')).href;
 const [nArg, diffArg, limArg, weakArg] = process.argv.slice(2);
 const N = +nArg || 40,
   DIFF = diffArg || 'normal',
   LIMIT = +limArg || 600,
+  SHIFTS = !!process.env.SHIFTS,
   WEAK = weakArg === 'weak' || weakArg === 'weaker';
 // the weak player: newAI() rolls react 0.2-0.38 s between decisions, fear 0.75-1.3, aggro 0.65-1.35
 const WEAK_MUL = weakArg === 'weaker' ? { react: 4, fear: 0.35, aggro: 0.5 } : { react: 2.5, fear: 0.55, aggro: 0.7 };
@@ -46,7 +52,7 @@ async function oneRun() {
   await p.goto(URL);
   await p.waitForTimeout(400);
   const r = await p.evaluate(
-    ({ LIMIT, WEAK, WEAK_MUL, MENU_WARMUP }) => {
+    ({ LIMIT, SHIFTS, WEAK, WEAK_MUL, MENU_WARMUP }) => {
       const k = window.__kus,
         dt = 1 / 60;
       k.pause(true);
@@ -86,7 +92,14 @@ async function oneRun() {
         fight: null, // seconds from the cake's arrival to the win
         bites: 0,
         kills: 0,
+        shifts: 0,
+        peak: P.mass,
+        tTo: { 3000: null, 6000: null, 10000: null },
+        diedAfter6k: false,
+        peakAt: {},
       };
+      let bites0 = 0, // bites and kills of the finished shifts (a shift resets the player's stats)
+        kills0 = 0;
       const TH = [60, 80, 100, 150, 200, 300, 400, 600, 800, 1200, 1600, 2500];
       let lastBites = 0,
         lastKills = 0;
@@ -99,10 +112,20 @@ async function oneRun() {
         const S = k.stages && k.stages.stg;
         if (S && S.cur && r.ev[S.cur.k] === undefined) r.ev[S.cur.k] = +t.toFixed(1);
         if (k.state === 'won') {
-          r.won = +t.toFixed(1);
-          r.fight = +(t - r.ev.boss).toFixed(1);
-          r.t = r.won;
-          break;
+          r.shifts++;
+          if (r.won === null) {
+            r.won = +t.toFixed(1);
+            r.fight = +(t - r.ev.boss).toFixed(1);
+          }
+          if (!SHIFTS) {
+            r.t = r.won;
+            break;
+          }
+          bites0 += P.stats.bites;
+          kills0 += P.stats.kills;
+          lastBites = lastKills = 0;
+          k.startGame(); // «Вторая смена»: the same candy and mass, fresh stats
+          continue;
         }
         for (const b of k.blobs) {
           if (!known.has(b.id)) {
@@ -138,11 +161,15 @@ async function oneRun() {
           lastKills = P.stats.kills;
         }
         if (P.alive && P.mass > r.maxMass) r.maxMass = P.mass;
+        if (P.alive && P.mass > r.peak) r.peak = P.mass;
+        if (P.alive) for (const th of [3000, 6000, 10000]) if (r.tTo[th] === null && P.mass >= th) r.tTo[th] = +t.toFixed(1);
+        if (f % 60 === 0) for (const s of [300, 600, 900, 1200]) if (f === s * 60) r.peakAt[s] = Math.round(r.peak);
         if (P.alive) for (const th of TH) if (r.reach[th] === undefined && P.mass >= th) r.reach[th] = +t.toFixed(1);
         if (f % 900 === 0 && P.alive) r.mass15.push(Math.round(P.mass));
         if (!P.alive) {
           r.died = true;
           r.t = +t.toFixed(2);
+          r.diedAfter6k = r.peak >= 6000;
           r.massAtDeath = Math.round(P.mass);
           // the swallower has just started its gulp
           let best = null,
@@ -159,11 +186,12 @@ async function oneRun() {
         }
       }
       r.maxMass = Math.round(r.maxMass);
-      r.bites = P.stats.bites;
-      r.kills = P.stats.kills;
+      r.peak = Math.round(r.peak);
+      r.bites = bites0 + P.stats.bites;
+      r.kills = kills0 + P.stats.kills;
       return r;
     },
-    { LIMIT, WEAK, WEAK_MUL, MENU_WARMUP },
+    { LIMIT, SHIFTS, WEAK, WEAK_MUL, MENU_WARMUP },
   );
   if (errors.length) r.errors = errors;
   await ctx.close();
@@ -209,6 +237,15 @@ for (let i = 0; i < maxI; i++) {
   sum.mass15.push({ t: i * 15, alive: a.length, p25: q(a, 0.25), med: q(a, 0.5), p75: q(a, 0.75) });
 }
 sum.maxMass = qs(rows.map((r) => r.maxMass));
+sum.peak = qs(rows.map((r) => r.peak));
+sum.shifts = qs(rows.map((r) => r.shifts));
+sum.reach6k = share(rows.filter((r) => r.peak >= 6000).length);
+sum.reach10k = share(rows.filter((r) => r.peak >= 10000).length);
+sum.reach10kAt = {};
+for (const s of [900, 1200]) sum.reach10kAt[s] = share(rows.filter((r) => r.tTo[10000] !== null && r.tTo[10000] <= s).length);
+sum.diedAfter6k = rows.filter((r) => r.diedAfter6k).length;
+sum.tTo = {};
+for (const th of [3000, 6000, 10000]) sum.tTo[th] = qs(rows.filter((r) => r.tTo[th] !== null).map((r) => r.tTo[th]));
 sum.reach = {};
 for (const th of [60, 80, 100, 150, 200, 300, 400, 600, 800, 1200, 1600, 2500]) {
   const a = rows.filter((r) => r.reach[th] !== undefined).map((r) => r.reach[th]);

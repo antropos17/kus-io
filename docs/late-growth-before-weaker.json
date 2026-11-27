@@ -1,0 +1,3477 @@
+{
+ "sum": {
+  "runs": 40,
+  "diff": "normal",
+  "weak": {
+   "react": 4,
+   "fear": 0.35,
+   "aggro": 0.5
+  },
+  "limit": 600,
+  "menuWarmup": 5,
+  "check": {
+   "diff": [
+    "normal"
+   ],
+   "mode": [
+    "free"
+   ],
+   "cheats": [],
+   "errors": 0
+  },
+  "length": {
+   "n": 40,
+   "p25": 35,
+   "med": 65.8,
+   "p75": 179.9,
+   "p90": 241.6
+  },
+  "aliveAt": {
+   "30": 0.775,
+   "60": 0.525,
+   "120": 0.425,
+   "180": 0.4,
+   "300": 0.275,
+   "600": 0.275
+  },
+  "mass15": [
+   {
+    "t": 0,
+    "alive": 40,
+    "p25": 40,
+    "med": 40,
+    "p75": 40
+   },
+   {
+    "t": 15,
+    "alive": 40,
+    "p25": 59,
+    "med": 77,
+    "p75": 94.8
+   },
+   {
+    "t": 30,
+    "alive": 31,
+    "p25": 28,
+    "med": 115,
+    "p75": 159.5
+   },
+   {
+    "t": 45,
+    "alive": 26,
+    "p25": 41.5,
+    "med": 122.5,
+    "p75": 286.8
+   },
+   {
+    "t": 60,
+    "alive": 21,
+    "p25": 53,
+    "med": 179,
+    "p75": 421
+   },
+   {
+    "t": 75,
+    "alive": 19,
+    "p25": 115,
+    "med": 302,
+    "p75": 651
+   },
+   {
+    "t": 90,
+    "alive": 19,
+    "p25": 78,
+    "med": 324,
+    "p75": 1116.5
+   },
+   {
+    "t": 105,
+    "alive": 17,
+    "p25": 121,
+    "med": 532,
+    "p75": 953
+   },
+   {
+    "t": 120,
+    "alive": 16,
+    "p25": 247.3,
+    "med": 856,
+    "p75": 1476
+   },
+   {
+    "t": 135,
+    "alive": 15,
+    "p25": 343,
+    "med": 1013,
+    "p75": 1399
+   },
+   {
+    "t": 150,
+    "alive": 12,
+    "p25": 666.8,
+    "med": 1161,
+    "p75": 1583.3
+   },
+   {
+    "t": 165,
+    "alive": 12,
+    "p25": 650,
+    "med": 1401,
+    "p75": 1998.8
+   },
+   {
+    "t": 180,
+    "alive": 10,
+    "p25": 166.3,
+    "med": 1128,
+    "p75": 1917
+   },
+   {
+    "t": 195,
+    "alive": 7,
+    "p25": 643.5,
+    "med": 1339,
+    "p75": 1722.5
+   },
+   {
+    "t": 210,
+    "alive": 6,
+    "p25": 891.5,
+    "med": 1619,
+    "p75": 1947.5
+   },
+   {
+    "t": 225,
+    "alive": 5,
+    "p25": 676,
+    "med": 1776,
+    "p75": 1838
+   },
+   {
+    "t": 240,
+    "alive": 5,
+    "p25": 333,
+    "med": 1454,
+    "p75": 1538
+   },
+   {
+    "t": 255,
+    "alive": 3,
+    "p25": 705,
+    "med": 1111,
+    "p75": 1893
+   },
+   {
+    "t": 270,
+    "alive": 2,
+    "p25": 367.8,
+    "med": 652.5,
+    "p75": 937.3
+   },
+   {
+    "t": 285,
+    "alive": 2,
+    "p25": 408,
+    "med": 723,
+    "p75": 1038
+   }
+  ],
+  "maxMass": {
+   "n": 40,
+   "p25": 136,
+   "med": 247,
+   "p75": 2504.5,
+   "p90": 2946.9
+  },
+  "peak": {
+   "n": 40,
+   "p25": 136,
+   "med": 247,
+   "p75": 2504.5,
+   "p90": 2946.9
+  },
+  "shifts": {
+   "n": 40,
+   "p25": 0,
+   "med": 0,
+   "p75": 1,
+   "p90": 1
+  },
+  "reach6k": 0,
+  "reach10k": 0,
+  "reach10kAt": {
+   "900": 0,
+   "1200": 0
+  },
+  "diedAfter6k": 0,
+  "tTo": {
+   "3000": {
+    "n": 4,
+    "p25": 139.2,
+    "med": 169.8,
+    "p75": 191.5,
+    "p90": 220.8
+   },
+   "6000": {
+    "n": 0,
+    "p25": null,
+    "med": null,
+    "p75": null,
+    "p90": null
+   },
+   "10000": {
+    "n": 0,
+    "p25": null,
+    "med": null,
+    "p75": null,
+    "p90": null
+   }
+  },
+  "reach": {
+   "60": {
+    "share": 0.975,
+    "medT": 7,
+    "p25T": 6.3,
+    "p75T": 7.7
+   },
+   "80": {
+    "share": 0.925,
+    "medT": 12.4,
+    "p25T": 8.6,
+    "p75T": 15.4
+   },
+   "100": {
+    "share": 0.8,
+    "medT": 17.4,
+    "p25T": 10.7,
+    "p75T": 20.8
+   },
+   "150": {
+    "share": 0.675,
+    "medT": 27.2,
+    "p25T": 17.7,
+    "p75T": 32.8
+   },
+   "200": {
+    "share": 0.575,
+    "medT": 38.1,
+    "p25T": 23.3,
+    "p75T": 55.4
+   },
+   "300": {
+    "share": 0.45,
+    "medT": 50.2,
+    "p25T": 29.7,
+    "p75T": 76
+   },
+   "400": {
+    "share": 0.4,
+    "medT": 63.5,
+    "p25T": 47.9,
+    "p75T": 88
+   },
+   "600": {
+    "share": 0.375,
+    "medT": 78.7,
+    "p25T": 50.4,
+    "p75T": 119.5
+   },
+   "800": {
+    "share": 0.35,
+    "medT": 82.8,
+    "p25T": 57.7,
+    "p75T": 119.3
+   },
+   "1200": {
+    "share": 0.3,
+    "medT": 100,
+    "p25T": 81.7,
+    "p75T": 123.6
+   },
+   "1600": {
+    "share": 0.3,
+    "medT": 129,
+    "p25T": 90.1,
+    "p75T": 152.7
+   },
+   "2500": {
+    "share": 0.25,
+    "medT": 154.6,
+    "p25T": 143.5,
+    "p75T": 172.1
+   }
+  },
+  "specials": {
+   "hedgehog": {
+    "atStartShare": 1,
+    "spawnedShare": 0.025,
+    "firstSpawnT": 20.2,
+    "firstSpawnMass": 104,
+    "spawnsPerRun": 0,
+    "spawnsPerMinute": 0.01,
+    "metShare": 0.8,
+    "firstMeetT": 28.9,
+    "firstMeetMass": 131
+   },
+   "piranha": {
+    "atStartShare": 0,
+    "spawnedShare": 0.725,
+    "firstSpawnT": 28.1,
+    "firstSpawnMass": 151,
+    "spawnsPerRun": 1,
+    "spawnsPerMinute": 0.73,
+    "metShare": 0.725,
+    "firstMeetT": 28.1,
+    "firstMeetMass": 151
+   },
+   "cake": {
+    "atStartShare": 0,
+    "spawnedShare": 0.3,
+    "firstSpawnT": 129,
+    "firstSpawnMass": 1670.5,
+    "spawnsPerRun": 0,
+    "spawnsPerMinute": 0.17,
+    "metShare": 0.3,
+    "firstMeetT": 129,
+    "firstMeetMass": 1670.5
+   }
+  },
+  "cake": {
+   "runsBitingCake": 0.3,
+   "runsCherry": 0.3,
+   "runsAteCake": 0.275,
+   "cakeBitesTotal": 203,
+   "cherryBitesTotal": 57,
+   "cakesEatenTotal": 11
+  },
+  "death": {
+   "died": 0.725,
+   "bot": 0.862,
+   "piranha": 0.034,
+   "hedgehog": 0.069,
+   "cake": 0,
+   "boss": 0.034,
+   "unknown": 0,
+   "massAtDeath": {
+    "n": 29,
+    "p25": 25,
+    "med": 40,
+    "p75": 75,
+    "p90": 123
+   },
+   "killerToPlayer": 9.7
+  },
+  "actions": {
+   "bites": {
+    "n": 40,
+    "p25": 8,
+    "med": 18.5,
+    "p75": 42.3,
+    "p90": 54.7
+   },
+   "kills": {
+    "n": 40,
+    "p25": 1,
+    "med": 2.5,
+    "p75": 6.3,
+    "p90": 9
+   },
+   "bitesPerMin": 15.2,
+   "killsPerMin": 2
+  },
+  "stages": {
+   "pir": {
+    "share": 0.725,
+    "medT": 28.1,
+    "p25T": 18.8,
+    "p75T": 44.8
+   },
+   "rain": {
+    "share": 0.425,
+    "medT": 89,
+    "p25T": 70.6,
+    "p75T": 120
+   },
+   "boss": {
+    "share": 0.3,
+    "medT": 129,
+    "p25T": 92.5,
+    "p75T": 152.8
+   },
+   "fight": {
+    "met": 12,
+    "wonShareOfMet": 0.917,
+    "diedInFightShareOfMet": 0.083,
+    "unfinishedAtLimit": 0,
+    "fightT": {
+     "n": 11,
+     "p25": 39.9,
+     "med": 51.8,
+     "p75": 87.3,
+     "p90": 93.8
+    },
+    "clearT": {
+     "n": 11,
+     "p25": 145.3,
+     "med": 177.5,
+     "p75": 226,
+     "p90": 256.3
+    }
+   }
+  },
+  "wallSeconds": 100
+ },
+ "rows": [
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 193,
+   "died": false,
+   "cause": null,
+   "killerMass": null,
+   "massAtDeath": null,
+   "maxMass": 2891,
+   "mass15": [
+    40,
+    104,
+    149,
+    176,
+    53,
+    101,
+    93,
+    145,
+    384,
+    656,
+    883,
+    1540,
+    2319
+   ],
+   "reach": {
+    "60": 6.3,
+    "80": 7.8,
+    "100": 11.6,
+    "150": 30.8,
+    "200": 46.2,
+    "300": 117.8,
+    "400": 121,
+    "600": 126.7,
+    "800": 146.8,
+    "1200": 158.3,
+    "1600": 159.4,
+    "2500": 174.9
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      30.8,
+      151
+     ],
+     [
+      174,
+      2031
+     ],
+     [
+      174,
+      2030
+     ]
+    ],
+    "cake": [
+     [
+      159.4,
+      1713
+     ]
+    ]
+   },
+   "meet": {
+    "hedgehog": [
+     45.4,
+     176
+    ],
+    "piranha": [
+     30.8,
+     151
+    ],
+    "cake": [
+     159.4,
+     1713
+    ]
+   },
+   "cakeBites": 9,
+   "cherryBites": 2,
+   "cakeEaten": 1,
+   "ev": {
+    "pir": 30.8,
+    "rain": 120,
+    "boss": 159.4
+   },
+   "won": 193,
+   "fight": 33.6,
+   "bites": 38,
+   "kills": 7,
+   "shifts": 1,
+   "peak": 2891,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 43.95,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 1079,
+   "massAtDeath": 49,
+   "maxMass": 225,
+   "mass15": [
+    40,
+    77,
+    193
+   ],
+   "reach": {
+    "60": 5.9,
+    "80": 16,
+    "100": 21.5,
+    "150": 28.1,
+    "200": 30.2
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      28.1,
+      151
+     ]
+    ],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": null,
+    "piranha": [
+     28.1,
+     151
+    ],
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 28.1
+   },
+   "won": null,
+   "fight": null,
+   "bites": 13,
+   "kills": 3,
+   "shifts": 0,
+   "peak": 225,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 15.63,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 136,
+   "massAtDeath": 18,
+   "maxMass": 59,
+   "mass15": [
+    40,
+    14
+   ],
+   "reach": {},
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": null,
+    "piranha": null,
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {},
+   "won": null,
+   "fight": null,
+   "bites": 6,
+   "kills": 0,
+   "shifts": 0,
+   "peak": 59,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 52.08,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 653,
+   "massAtDeath": 8,
+   "maxMass": 175,
+   "mass15": [
+    40,
+    78,
+    130,
+    12
+   ],
+   "reach": {
+    "60": 8.2,
+    "80": 15.4,
+    "100": 20.7,
+    "150": 30
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      30,
+      150
+     ]
+    ],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     25.6,
+     140
+    ],
+    "piranha": [
+     30,
+     150
+    ],
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 30
+   },
+   "won": null,
+   "fight": null,
+   "bites": 8,
+   "kills": 2,
+   "shifts": 0,
+   "peak": 175,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 144.5,
+   "died": false,
+   "cause": null,
+   "killerMass": null,
+   "massAtDeath": null,
+   "maxMass": 2657,
+   "mass15": [
+    40,
+    76,
+    214,
+    571,
+    727,
+    918,
+    1790,
+    1834,
+    1469,
+    1297
+   ],
+   "reach": {
+    "60": 7.8,
+    "80": 16,
+    "100": 21.3,
+    "150": 23,
+    "200": 23.7,
+    "300": 35.6,
+    "400": 38.5,
+    "600": 46.2,
+    "800": 63.9,
+    "1200": 83.4,
+    "1600": 87.3,
+    "2500": 143.7
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      23,
+      171
+     ],
+     [
+      118,
+      1255
+     ],
+     [
+      140.3,
+      1893
+     ]
+    ],
+    "cake": [
+     [
+      87.3,
+      1608
+     ]
+    ]
+   },
+   "meet": {
+    "hedgehog": [
+     23.3,
+     173
+    ],
+    "piranha": [
+     23,
+     171
+    ],
+    "cake": [
+     87.3,
+     1608
+    ]
+   },
+   "cakeBites": 18,
+   "cherryBites": 6,
+   "cakeEaten": 1,
+   "ev": {
+    "pir": 23,
+    "rain": 61,
+    "boss": 87.3
+   },
+   "won": 144.5,
+   "fight": 57.2,
+   "bites": 39,
+   "kills": 7,
+   "shifts": 1,
+   "peak": 2657,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 20.57,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 146,
+   "massAtDeath": 25,
+   "maxMass": 64,
+   "mass15": [
+    40,
+    61
+   ],
+   "reach": {
+    "60": 9.4
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": null,
+    "piranha": null,
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {},
+   "won": null,
+   "fight": null,
+   "bites": 4,
+   "kills": 0,
+   "shifts": 0,
+   "peak": 64,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 47.97,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 93,
+   "massAtDeath": 20,
+   "maxMass": 147,
+   "mass15": [
+    40,
+    75,
+    23,
+    27
+   ],
+   "reach": {
+    "60": 6.8,
+    "80": 17.2,
+    "100": 23.1
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      45,
+      27
+     ]
+    ],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     23.1,
+     100
+    ],
+    "piranha": [
+     45,
+     27
+    ],
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 45
+   },
+   "won": null,
+   "fight": null,
+   "bites": 11,
+   "kills": 1,
+   "shifts": 0,
+   "peak": 147,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 55.45,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 1447,
+   "massAtDeath": 131,
+   "maxMass": 386,
+   "mass15": [
+    40,
+    48,
+    155,
+    271
+   ],
+   "reach": {
+    "60": 5.6,
+    "80": 6.6,
+    "100": 8,
+    "150": 27.2,
+    "200": 42.9,
+    "300": 49.9
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      27.2,
+      151
+     ]
+    ],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     19,
+     51
+    ],
+    "piranha": [
+     27.2,
+     151
+    ],
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 27.2
+   },
+   "won": null,
+   "fight": null,
+   "bites": 19,
+   "kills": 4,
+   "shifts": 0,
+   "peak": 386,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 188.7,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 1050,
+   "massAtDeath": 39,
+   "maxMass": 492,
+   "mass15": [
+    40,
+    163,
+    87,
+    292,
+    421,
+    240,
+    54,
+    42,
+    110,
+    121,
+    24,
+    48,
+    126
+   ],
+   "reach": {
+    "60": 3.6,
+    "80": 3.8,
+    "100": 5.4,
+    "150": 9.2,
+    "200": 38.1,
+    "300": 53.1,
+    "400": 54.9
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      9.3,
+      151
+     ]
+    ],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     7.6,
+     122
+    ],
+    "piranha": [
+     9.3,
+     151
+    ],
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 9.3,
+    "rain": 120
+   },
+   "won": null,
+   "fight": null,
+   "bites": 43,
+   "kills": 10,
+   "shifts": 0,
+   "peak": 492,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 244.8,
+   "died": true,
+   "cause": "boss",
+   "killerMass": 1793,
+   "massAtDeath": 331,
+   "maxMass": 2198,
+   "mass15": [
+    40,
+    46,
+    123,
+    154,
+    464,
+    720,
+    1224,
+    1320,
+    939,
+    1794,
+    1734,
+    1677,
+    1233,
+    1203,
+    653,
+    676,
+    333
+   ],
+   "reach": {
+    "60": 6.7,
+    "80": 8.5,
+    "100": 9.1,
+    "150": 33,
+    "200": 45.7,
+    "300": 50.5,
+    "400": 54.3,
+    "600": 71.8,
+    "800": 75.9,
+    "1200": 88.5,
+    "1600": 132
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      33,
+      173
+     ],
+     [
+      151.2,
+      1729
+     ]
+    ],
+    "cake": [
+     [
+      132,
+      1606
+     ]
+    ]
+   },
+   "meet": {
+    "hedgehog": [
+     78.1,
+     1001
+    ],
+    "piranha": [
+     33,
+     173
+    ],
+    "cake": [
+     132,
+     1606
+    ]
+   },
+   "cakeBites": 32,
+   "cherryBites": 11,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 33,
+    "rain": 71.8,
+    "boss": 132
+   },
+   "won": null,
+   "fight": null,
+   "bites": 66,
+   "kills": 8,
+   "shifts": 0,
+   "peak": 2198,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {},
+   "diedInFight": true
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 24.08,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 611,
+   "massAtDeath": 75,
+   "maxMass": 113,
+   "mass15": [
+    40,
+    56
+   ],
+   "reach": {
+    "60": 8.5,
+    "80": 10.3,
+    "100": 13.4
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": null,
+    "piranha": null,
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {},
+   "won": null,
+   "fight": null,
+   "bites": 8,
+   "kills": 1,
+   "shifts": 0,
+   "peak": 113,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 202.73,
+   "died": true,
+   "cause": "hedgehog",
+   "killerMass": 315,
+   "massAtDeath": 36,
+   "maxMass": 804,
+   "mass15": [
+    40,
+    76,
+    119,
+    28,
+    55,
+    168,
+    269,
+    102,
+    293,
+    317,
+    709,
+    799,
+    287,
+    39
+   ],
+   "reach": {
+    "60": 8.8,
+    "80": 15.7,
+    "100": 21,
+    "150": 74.2,
+    "200": 76.7,
+    "300": 94.2,
+    "400": 143,
+    "600": 147.2,
+    "800": 160.5
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      45,
+      28
+     ]
+    ],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     168.9,
+     796
+    ],
+    "piranha": [
+     45,
+     28
+    ],
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 45,
+    "rain": 120
+   },
+   "won": null,
+   "fight": null,
+   "bites": 33,
+   "kills": 6,
+   "shifts": 0,
+   "peak": 804,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 52.93,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 163,
+   "massAtDeath": 18,
+   "maxMass": 258,
+   "mass15": [
+    40,
+    85,
+    144,
+    88
+   ],
+   "reach": {
+    "60": 7,
+    "80": 12.4,
+    "100": 21.2,
+    "150": 31.1,
+    "200": 35.2
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      31.2,
+      170
+     ]
+    ],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     34.6,
+     179
+    ],
+    "piranha": [
+     31.2,
+     170
+    ],
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 31.2
+   },
+   "won": null,
+   "fight": null,
+   "bites": 11,
+   "kills": 1,
+   "shifts": 0,
+   "peak": 258,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 20.62,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 897,
+   "massAtDeath": 73,
+   "maxMass": 155,
+   "mass15": [
+    40,
+    93
+   ],
+   "reach": {
+    "60": 6.8,
+    "80": 8.6,
+    "100": 11.1,
+    "150": 14.3
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      14.3,
+      155
+     ]
+    ],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     7.6,
+     67
+    ],
+    "piranha": [
+     14.3,
+     155
+    ],
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 14.3
+   },
+   "won": null,
+   "fight": null,
+   "bites": 8,
+   "kills": 1,
+   "shifts": 0,
+   "peak": 155,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 186.95,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 3184,
+   "massAtDeath": 152,
+   "maxMass": 664,
+   "mass15": [
+    40,
+    131,
+    226,
+    76,
+    126,
+    328,
+    63,
+    96,
+    98,
+    399,
+    540,
+    203,
+    99
+   ],
+   "reach": {
+    "60": 6.7,
+    "80": 9.1,
+    "100": 9.9,
+    "150": 16.6,
+    "200": 20.2,
+    "300": 28.1,
+    "400": 69.8,
+    "600": 150.6
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      16.6,
+      152
+     ]
+    ],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     65.5,
+     233
+    ],
+    "piranha": [
+     16.6,
+     152
+    ],
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 16.6,
+    "rain": 120
+   },
+   "won": null,
+   "fight": null,
+   "bites": 40,
+   "kills": 9,
+   "shifts": 0,
+   "peak": 664,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 105.73,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 2431,
+   "massAtDeath": 121,
+   "maxMass": 324,
+   "mass15": [
+    40,
+    213,
+    53,
+    134,
+    20,
+    19,
+    18,
+    121
+   ],
+   "reach": {
+    "60": 8.1,
+    "80": 8.8,
+    "100": 11.1,
+    "150": 12.2,
+    "200": 13.1,
+    "300": 16.6
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      12.2,
+      152
+     ]
+    ],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     100,
+     163
+    ],
+    "piranha": [
+     12.2,
+     152
+    ],
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 12.2
+   },
+   "won": null,
+   "fight": null,
+   "bites": 31,
+   "kills": 3,
+   "shifts": 0,
+   "peak": 324,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 17.98,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 491,
+   "massAtDeath": 73,
+   "maxMass": 74,
+   "mass15": [
+    40,
+    44
+   ],
+   "reach": {
+    "60": 5.4
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": null,
+    "piranha": null,
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {},
+   "won": null,
+   "fight": null,
+   "bites": 6,
+   "kills": 1,
+   "shifts": 0,
+   "peak": 74,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 290.08,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 1503,
+   "massAtDeath": 120,
+   "maxMass": 998,
+   "mass15": [
+    40,
+    85,
+    78,
+    714,
+    179,
+    302,
+    183,
+    45,
+    28,
+    52,
+    274,
+    60,
+    70,
+    84,
+    140,
+    29,
+    130,
+    299,
+    83,
+    93
+   ],
+   "reach": {
+    "60": 7.5,
+    "80": 12.4,
+    "100": 17.5,
+    "150": 32.6,
+    "200": 33.1,
+    "300": 34.4,
+    "400": 35.1,
+    "600": 37.3,
+    "800": 39.3
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      32.6,
+      176
+     ]
+    ],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     32.7,
+     178
+    ],
+    "piranha": [
+     32.6,
+     176
+    ],
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 32.6,
+    "rain": 70.6
+   },
+   "won": null,
+   "fight": null,
+   "bites": 66,
+   "kills": 5,
+   "shifts": 0,
+   "peak": 998,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 24.6,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 317,
+   "massAtDeath": 56,
+   "maxMass": 86,
+   "mass15": [
+    40,
+    55
+   ],
+   "reach": {
+    "60": 7,
+    "80": 16.8
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     8.5,
+     65
+    ],
+    "piranha": null,
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {},
+   "won": null,
+   "fight": null,
+   "bites": 7,
+   "kills": 0,
+   "shifts": 0,
+   "peak": 86,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 296.9,
+   "died": false,
+   "cause": null,
+   "killerMass": null,
+   "massAtDeath": null,
+   "maxMass": 2581,
+   "mass15": [
+    40,
+    74,
+    21,
+    24,
+    51,
+    257,
+    495,
+    664,
+    1147,
+    369,
+    882,
+    866,
+    1042,
+    1339,
+    1607,
+    1838,
+    1538,
+    1111,
+    1222,
+    1353
+   ],
+   "reach": {
+    "60": 10.3,
+    "80": 15.2,
+    "100": 15.8,
+    "150": 68.1,
+    "200": 70.2,
+    "300": 82.8,
+    "400": 84.7,
+    "600": 95.1,
+    "800": 106.7,
+    "1200": 120.1,
+    "1600": 205.1,
+    "2500": 296.1
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      45,
+      24
+     ],
+     [
+      222.7,
+      1682
+     ],
+     [
+      291.1,
+      1740
+     ]
+    ],
+    "cake": [
+     [
+      205.1,
+      1657
+     ]
+    ]
+   },
+   "meet": {
+    "hedgehog": [
+     13.3,
+     70
+    ],
+    "piranha": [
+     45,
+     24
+    ],
+    "cake": [
+     205.1,
+     1657
+    ]
+   },
+   "cakeBites": 29,
+   "cherryBites": 8,
+   "cakeEaten": 1,
+   "ev": {
+    "pir": 45,
+    "rain": 95.1,
+    "boss": 205.1
+   },
+   "won": 296.9,
+   "fight": 91.8,
+   "bites": 81,
+   "kills": 9,
+   "shifts": 1,
+   "peak": 2581,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 35.2,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 134,
+   "massAtDeath": 20,
+   "maxMass": 143,
+   "mass15": [
+    40,
+    136,
+    17
+   ],
+   "reach": {
+    "60": 6.6,
+    "80": 7.3,
+    "100": 11.6
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     10.3,
+     98
+    ],
+    "piranha": null,
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {},
+   "won": null,
+   "fight": null,
+   "bites": 11,
+   "kills": 1,
+   "shifts": 0,
+   "peak": 143,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 20.75,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 424,
+   "massAtDeath": 30,
+   "maxMass": 94,
+   "mass15": [
+    40,
+    60
+   ],
+   "reach": {
+    "60": 7.1,
+    "80": 13.8
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     12.3,
+     74
+    ],
+    "piranha": null,
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {},
+   "won": null,
+   "fight": null,
+   "bites": 2,
+   "kills": 0,
+   "shifts": 0,
+   "peak": 94,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 17.32,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 936,
+   "massAtDeath": 48,
+   "maxMass": 96,
+   "mass15": [
+    40,
+    49
+   ],
+   "reach": {
+    "60": 6.9,
+    "80": 8.6
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": null,
+    "piranha": null,
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {},
+   "won": null,
+   "fight": null,
+   "bites": 4,
+   "kills": 1,
+   "shifts": 0,
+   "peak": 96,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 91.5,
+   "died": false,
+   "cause": null,
+   "killerMass": null,
+   "massAtDeath": null,
+   "maxMass": 3730,
+   "mass15": [
+    40,
+    221,
+    746,
+    1306,
+    2230,
+    2748,
+    3498
+   ],
+   "reach": {
+    "60": 7.4,
+    "80": 9.9,
+    "100": 10.2,
+    "150": 11.3,
+    "200": 12.2,
+    "300": 15.8,
+    "400": 18.3,
+    "600": 25.1,
+    "800": 30.8,
+    "1200": 43.7,
+    "1600": 47.1,
+    "2500": 61.9
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      11.3,
+      155
+     ],
+     [
+      79.7,
+      2775
+     ],
+     [
+      88.3,
+      2854
+     ]
+    ],
+    "cake": [
+     [
+      72.3,
+      2822
+     ]
+    ]
+   },
+   "meet": {
+    "hedgehog": [
+     32.3,
+     836
+    ],
+    "piranha": [
+     11.3,
+     155
+    ],
+    "cake": [
+     72.3,
+     2822
+    ]
+   },
+   "cakeBites": 5,
+   "cherryBites": 2,
+   "cakeEaten": 1,
+   "ev": {
+    "pir": 11.3,
+    "rain": 49.3,
+    "boss": 72.3
+   },
+   "won": 91.5,
+   "fight": 19.2,
+   "bites": 34,
+   "kills": 5,
+   "shifts": 1,
+   "peak": 3730,
+   "tTo": {
+    "3000": 63.7,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 177.5,
+   "died": false,
+   "cause": null,
+   "killerMass": null,
+   "massAtDeath": null,
+   "maxMass": 3198,
+   "mass15": [
+    40,
+    80,
+    164,
+    380,
+    895,
+    1159,
+    1009,
+    953,
+    1232,
+    1519,
+    1439,
+    2529
+   ],
+   "reach": {
+    "60": 7.6,
+    "80": 14.7,
+    "100": 23.8,
+    "150": 25.7,
+    "200": 36,
+    "300": 41.4,
+    "400": 51,
+    "600": 54.6,
+    "800": 55.6,
+    "1200": 76.7,
+    "1600": 126,
+    "2500": 163.6
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      25.7,
+      161
+     ],
+     [
+      162.7,
+      2037
+     ],
+     [
+      172.4,
+      2320
+     ]
+    ],
+    "cake": [
+     [
+      126,
+      1612
+     ]
+    ]
+   },
+   "meet": {
+    "hedgehog": [
+     68.2,
+     904
+    ],
+    "piranha": [
+     25.7,
+     161
+    ],
+    "cake": [
+     126,
+     1612
+    ]
+   },
+   "cakeBites": 8,
+   "cherryBites": 2,
+   "cakeEaten": 1,
+   "ev": {
+    "pir": 25.7,
+    "rain": 63.7,
+    "boss": 126
+   },
+   "won": 177.5,
+   "fight": 51.5,
+   "bites": 54,
+   "kills": 6,
+   "shifts": 1,
+   "peak": 3198,
+   "tTo": {
+    "3000": 175.2,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 166.5,
+   "died": false,
+   "cause": null,
+   "killerMass": null,
+   "massAtDeath": null,
+   "maxMass": 3580,
+   "mass15": [
+    40,
+    86,
+    24,
+    63,
+    185,
+    129,
+    324,
+    153,
+    393,
+    1013,
+    1858,
+    3147
+   ],
+   "reach": {
+    "60": 6.7,
+    "80": 13.2,
+    "100": 17.3,
+    "150": 55.3,
+    "200": 62.1,
+    "300": 79.2,
+    "400": 120.7,
+    "600": 123,
+    "800": 124.3,
+    "1200": 139.7,
+    "1600": 147.7,
+    "2500": 155.8
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      45,
+      63
+     ],
+     [
+      154.9,
+      2160
+     ],
+     [
+      163.4,
+      2472
+     ]
+    ],
+    "cake": [
+     [
+      147.7,
+      1616
+     ]
+    ]
+   },
+   "meet": {
+    "hedgehog": [
+     16.4,
+     94
+    ],
+    "piranha": [
+     45,
+     63
+    ],
+    "cake": [
+     147.7,
+     1616
+    ]
+   },
+   "cakeBites": 5,
+   "cherryBites": 2,
+   "cakeEaten": 1,
+   "ev": {
+    "pir": 45,
+    "rain": 120,
+    "boss": 147.7
+   },
+   "won": 166.5,
+   "fight": 18.8,
+   "bites": 42,
+   "kills": 9,
+   "shifts": 1,
+   "peak": 3580,
+   "tTo": {
+    "3000": 164.3,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 147.4,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 2822,
+   "massAtDeath": 121,
+   "maxMass": 244,
+   "mass15": [
+    40,
+    83,
+    150,
+    111,
+    19,
+    77,
+    63,
+    209,
+    54,
+    117
+   ],
+   "reach": {
+    "60": 7.5,
+    "80": 13.9,
+    "100": 19.5,
+    "150": 29.9,
+    "200": 101.9
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      29.9,
+      150
+     ]
+    ],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     129.3,
+     155
+    ],
+    "piranha": [
+     29.9,
+     150
+    ],
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 29.9,
+    "rain": 120
+   },
+   "won": null,
+   "fight": null,
+   "bites": 37,
+   "kills": 2,
+   "shifts": 0,
+   "peak": 244,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 124.2,
+   "died": false,
+   "cause": null,
+   "killerMass": null,
+   "massAtDeath": null,
+   "maxMass": 2896,
+   "mass15": [
+    40,
+    198,
+    366,
+    622,
+    1280,
+    1344,
+    1715,
+    1555,
+    2146
+   ],
+   "reach": {
+    "60": 6.3,
+    "80": 9.4,
+    "100": 9.4,
+    "150": 11.6,
+    "200": 14.1,
+    "300": 22.4,
+    "400": 38.7,
+    "600": 44.6,
+    "800": 52.1,
+    "1200": 57.5,
+    "1600": 78.1,
+    "2500": 120.3
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      11.6,
+      175
+     ],
+     [
+      86.8,
+      1566
+     ],
+     [
+      119.8,
+      2149
+     ]
+    ],
+    "cake": [
+     [
+      78.1,
+      1684
+     ]
+    ]
+   },
+   "meet": {
+    "hedgehog": [
+     68,
+     1394
+    ],
+    "piranha": [
+     11.6,
+     175
+    ],
+    "cake": [
+     78.1,
+     1684
+    ]
+   },
+   "cakeBites": 19,
+   "cherryBites": 5,
+   "cakeEaten": 1,
+   "ev": {
+    "pir": 11.6,
+    "rain": 49.6,
+    "boss": 78.1
+   },
+   "won": 124.2,
+   "fight": 46.1,
+   "bites": 49,
+   "kills": 3,
+   "shifts": 1,
+   "peak": 2896,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 24.13,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 122,
+   "massAtDeath": 34,
+   "maxMass": 82,
+   "mass15": [
+    40,
+    77
+   ],
+   "reach": {
+    "60": 8.5,
+    "80": 17.3
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     17.8,
+     81
+    ],
+    "piranha": null,
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {},
+   "won": null,
+   "fight": null,
+   "bites": 3,
+   "kills": 0,
+   "shifts": 0,
+   "peak": 82,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 59.58,
+   "died": true,
+   "cause": "piranha",
+   "killerMass": 21,
+   "massAtDeath": 9,
+   "maxMass": 195,
+   "mass15": [
+    40,
+    10,
+    32,
+    150
+   ],
+   "reach": {
+    "60": 7.4,
+    "80": 8.1,
+    "100": 44.3,
+    "150": 44.8
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      44.8,
+      150
+     ]
+    ],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": null,
+    "piranha": [
+     44.8,
+     150
+    ],
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 44.8
+   },
+   "won": null,
+   "fight": null,
+   "bites": 18,
+   "kills": 1,
+   "shifts": 0,
+   "peak": 195,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 71.32,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 274,
+   "massAtDeath": 36,
+   "maxMass": 143,
+   "mass15": [
+    40,
+    38,
+    70,
+    49,
+    111
+   ],
+   "reach": {
+    "60": 7.5,
+    "80": 30.5,
+    "100": 31.3
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      45,
+      49
+     ]
+    ],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     41,
+     76
+    ],
+    "piranha": [
+     45,
+     49
+    ],
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 45
+   },
+   "won": null,
+   "fight": null,
+   "bites": 15,
+   "kills": 2,
+   "shifts": 0,
+   "peak": 143,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 37.25,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 1361,
+   "massAtDeath": 79,
+   "maxMass": 246,
+   "mass15": [
+    40,
+    164,
+    115
+   ],
+   "reach": {
+    "60": 5,
+    "80": 6.8,
+    "100": 8.2,
+    "150": 14.9,
+    "200": 15.5
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      14.9,
+      164
+     ]
+    ],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": null,
+    "piranha": [
+     14.9,
+     164
+    ],
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 14.9
+   },
+   "won": null,
+   "fight": null,
+   "bites": 14,
+   "kills": 2,
+   "shifts": 0,
+   "peak": 246,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 241.2,
+   "died": false,
+   "cause": null,
+   "killerMass": null,
+   "massAtDeath": null,
+   "maxMass": 3448,
+   "mass15": [
+    40,
+    77,
+    21,
+    21,
+    33,
+    57,
+    197,
+    532,
+    773,
+    1262,
+    1513,
+    1943,
+    2145,
+    2249,
+    2053,
+    2179,
+    2946
+   ],
+   "reach": {
+    "60": 9.8,
+    "80": 15.3,
+    "100": 17.8,
+    "150": 18.8,
+    "200": 90.8,
+    "300": 93,
+    "400": 98,
+    "600": 116,
+    "800": 122.3,
+    "1200": 134.1,
+    "1600": 158.3,
+    "2500": 181.9
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      18.8,
+      159
+     ],
+     [
+      215.2,
+      2199
+     ],
+     [
+      234.7,
+      2502
+     ]
+    ],
+    "cake": [
+     [
+      158.3,
+      1641
+     ]
+    ]
+   },
+   "meet": {
+    "hedgehog": [
+     18.5,
+     120
+    ],
+    "piranha": [
+     18.8,
+     159
+    ],
+    "cake": [
+     158.3,
+     1641
+    ]
+   },
+   "cakeBites": 14,
+   "cherryBites": 2,
+   "cakeEaten": 1,
+   "ev": {
+    "pir": 18.8,
+    "rain": 116,
+    "boss": 158.3
+   },
+   "won": 241.2,
+   "fight": 82.9,
+   "bites": 61,
+   "kills": 9,
+   "shifts": 1,
+   "peak": 3448,
+   "tTo": {
+    "3000": 240.4,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 34.55,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 156,
+   "massAtDeath": 39,
+   "maxMass": 115,
+   "mass15": [
+    40,
+    100,
+    41
+   ],
+   "reach": {
+    "60": 6.4,
+    "80": 9.9,
+    "100": 10.8
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     7.8,
+     64
+    ],
+    "piranha": null,
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {},
+   "won": null,
+   "fight": null,
+   "bites": 6,
+   "kills": 0,
+   "shifts": 0,
+   "peak": 115,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 60.2,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 387,
+   "massAtDeath": 40,
+   "maxMass": 196,
+   "mass15": [
+    40,
+    80,
+    24,
+    39,
+    40
+   ],
+   "reach": {
+    "60": 6.1,
+    "80": 14.9,
+    "100": 18.5,
+    "150": 20.3
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      20.3,
+      151
+     ]
+    ],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     14.5,
+     78
+    ],
+    "piranha": [
+     20.3,
+     151
+    ],
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 20.3
+   },
+   "won": null,
+   "fight": null,
+   "bites": 12,
+   "kills": 2,
+   "shifts": 0,
+   "peak": 196,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 256.3,
+   "died": false,
+   "cause": null,
+   "killerMass": null,
+   "massAtDeath": null,
+   "maxMass": 2919,
+   "mass15": [
+    40,
+    72,
+    170,
+    202,
+    272,
+    496,
+    944,
+    941,
+    1497,
+    1383,
+    1542,
+    2166,
+    2250,
+    1845,
+    1631,
+    1776,
+    1454,
+    2675
+   ],
+   "reach": {
+    "60": 7.8,
+    "80": 17,
+    "100": 20,
+    "150": 22.8,
+    "200": 43.8,
+    "300": 61,
+    "400": 62.9,
+    "600": 78.7,
+    "800": 83.5,
+    "1200": 111.4,
+    "1600": 150.8,
+    "2500": 153.4
+   },
+   "spawn": {
+    "hedgehog": [
+     [
+      20.2,
+      104
+     ]
+    ],
+    "piranha": [
+     [
+      22.9,
+      171
+     ],
+     [
+      178.5,
+      1889
+     ],
+     [
+      253.2,
+      2224
+     ]
+    ],
+    "cake": [
+     [
+      150.9,
+      1699
+     ]
+    ]
+   },
+   "meet": {
+    "hedgehog": [
+     62.8,
+     394
+    ],
+    "piranha": [
+     22.9,
+     171
+    ],
+    "cake": [
+     150.9,
+     1699
+    ]
+   },
+   "cakeBites": 24,
+   "cherryBites": 7,
+   "cakeEaten": 1,
+   "ev": {
+    "pir": 22.9,
+    "rain": 78.7,
+    "boss": 150.9
+   },
+   "won": 256.3,
+   "fight": 105.4,
+   "bites": 51,
+   "kills": 8,
+   "shifts": 1,
+   "peak": 2919,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 210.8,
+   "died": false,
+   "cause": null,
+   "killerMass": null,
+   "massAtDeath": null,
+   "maxMass": 2479,
+   "mass15": [
+    40,
+    79,
+    17,
+    8,
+    240,
+    447,
+    705,
+    771,
+    1669,
+    1415,
+    1707,
+    1262,
+    1214,
+    1600,
+    2476
+   ],
+   "reach": {
+    "60": 7.4,
+    "80": 15.2,
+    "100": 18.3,
+    "150": 54.6,
+    "200": 56.3,
+    "300": 66.6,
+    "400": 67.7,
+    "600": 89,
+    "800": 110.4,
+    "1200": 115,
+    "1600": 117
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      45,
+      9
+     ],
+     [
+      177.8,
+      1428
+     ],
+     [
+      206.6,
+      1617
+     ]
+    ],
+    "cake": [
+     [
+      117,
+      1708
+     ]
+    ]
+   },
+   "meet": {
+    "hedgehog": [
+     54,
+     143
+    ],
+    "piranha": [
+     45,
+     9
+    ],
+    "cake": [
+     117,
+     1708
+    ]
+   },
+   "cakeBites": 23,
+   "cherryBites": 7,
+   "cakeEaten": 1,
+   "ev": {
+    "pir": 45,
+    "rain": 89,
+    "boss": 117
+   },
+   "won": 210.8,
+   "fight": 93.8,
+   "bites": 49,
+   "kills": 8,
+   "shifts": 1,
+   "peak": 2479,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 41.77,
+   "died": true,
+   "cause": "hedgehog",
+   "killerMass": 420,
+   "massAtDeath": 21,
+   "maxMass": 87,
+   "mass15": [
+    40,
+    48,
+    13
+   ],
+   "reach": {
+    "60": 5.3,
+    "80": 5.8
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     25.5,
+     17
+    ],
+    "piranha": null,
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {},
+   "won": null,
+   "fight": null,
+   "bites": 14,
+   "kills": 0,
+   "shifts": 0,
+   "peak": 87,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 146,
+   "died": false,
+   "cause": null,
+   "killerMass": null,
+   "massAtDeath": null,
+   "maxMass": 2848,
+   "mass15": [
+    40,
+    72,
+    358,
+    373,
+    292,
+    582,
+    1343,
+    1675,
+    1514,
+    1583
+   ],
+   "reach": {
+    "60": 7.6,
+    "80": 16.6,
+    "100": 18.6,
+    "150": 21.8,
+    "200": 22.9,
+    "300": 25.9,
+    "400": 64.1,
+    "600": 71.2,
+    "800": 82.2,
+    "1200": 87.1,
+    "1600": 91.1,
+    "2500": 143.4
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      21.8,
+      174
+     ],
+     [
+      139.6,
+      1676
+     ],
+     [
+      141.2,
+      2101
+     ]
+    ],
+    "cake": [
+     [
+      94.2,
+      1781
+     ]
+    ]
+   },
+   "meet": {
+    "hedgehog": [
+     74.8,
+     583
+    ],
+    "piranha": [
+     21.8,
+     174
+    ],
+    "cake": [
+     94.2,
+     1781
+    ]
+   },
+   "cakeBites": 17,
+   "cherryBites": 3,
+   "cakeEaten": 1,
+   "ev": {
+    "pir": 21.8,
+    "rain": 71.2,
+    "boss": 94.2
+   },
+   "won": 146,
+   "fight": 51.8,
+   "bites": 47,
+   "kills": 5,
+   "shifts": 1,
+   "peak": 2848,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  },
+  {
+   "diff": "normal",
+   "mode": "free",
+   "cheats": [],
+   "atStart": {
+    "hedgehog": 2,
+    "piranha": 0,
+    "cake": 0
+   },
+   "t": 103.73,
+   "died": true,
+   "cause": "bot",
+   "killerMass": 1315,
+   "massAtDeath": 67,
+   "maxMass": 248,
+   "mass15": [
+    40,
+    126,
+    57,
+    104,
+    106,
+    37,
+    53
+   ],
+   "reach": {
+    "60": 5.2,
+    "80": 6.1,
+    "100": 6.7,
+    "150": 46.5,
+    "200": 54.5
+   },
+   "spawn": {
+    "hedgehog": [],
+    "piranha": [
+     [
+      45,
+      104
+     ]
+    ],
+    "cake": []
+   },
+   "meet": {
+    "hedgehog": [
+     39.9,
+     96
+    ],
+    "piranha": [
+     45,
+     104
+    ],
+    "cake": null
+   },
+   "cakeBites": 0,
+   "cherryBites": 0,
+   "cakeEaten": 0,
+   "ev": {
+    "pir": 45
+   },
+   "won": null,
+   "fight": null,
+   "bites": 26,
+   "kills": 4,
+   "shifts": 0,
+   "peak": 248,
+   "tTo": {
+    "3000": null,
+    "6000": null,
+    "10000": null
+   },
+   "diedAfter6k": false,
+   "peakAt": {}
+  }
+ ]
+}

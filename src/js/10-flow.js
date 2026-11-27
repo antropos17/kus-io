@@ -819,6 +819,7 @@ function update(dt) {
     b.ly = b.y;
     b.lR = b.Rs;
   }
+  for (const b of blobs) capMass(b); // mass added by bites and food after updateBlob must not outlive the frame
   updateParts(dt);
   if (blobs.some((b) => !b.alive)) blobs = blobs.filter((b) => b.alive);
   population();
