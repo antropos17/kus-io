@@ -5,6 +5,8 @@
 //     WxH    viewport in CSS pixels; the page is a touch phone (isMobile, hasTouch), so the game takes its phone pixel budget
 //   MASS=<n> sets the player's mass to n after the run starts and holds it there (the game's cap and melting would pull it down),
 //     so the frame cost is measured at that mass. HTML=file measures another build than index.html (a frozen copy, say).
+//   SKIN=<id> dresses every candy on the field in that pattern (bots spawned later too, held every 50 ms like MASS): the worst case
+//     for a pattern, a living one (rainbow, foil, aurora, galaxy) above all; compare it with SKIN=dots on the same build.
 //   Per run: the first game frame after loading, then a free run on the autopilot (Math.random seeded, no deaths) with 10 s of
 //   real frames (adapt free to step down), then 300 hand-stepped frames at lod 0 timing update() and render() apart.
 //   render() time is recording the canvas commands only: drawing the pixels happens later on the GPU and is not in any number here.
@@ -22,7 +24,8 @@ const CPU = +cpuArg || 6,
   DPR = +dprArg || 3;
 const REAL_S = 10,
   STEPS = 300,
-  MASS = +process.env.MASS || 0;
+  MASS = +process.env.MASS || 0,
+  SKIN = process.env.SKIN || '';
 
 const launch = {};
 if (process.env.CHROME) launch.executablePath = process.env.CHROME;
@@ -75,24 +78,32 @@ async function oneRun() {
   await page.goto(URL);
   await page.waitForFunction(() => window.__ff > 0);
   const firstFrameMs = await page.evaluate(() => window.__ff);
-  await page.evaluate((mass) => {
-    const k = window.__kus;
-    k.startGame();
-    k.player.ai = k.newAI();
-    k.CHEAT.god = true; // the run must not end; it changes no drawing cost
-    if (mass) {
-      k.player.mass = mass;
-      window.__hold = setInterval(() => (k.player.mass = mass), 50); // the cap and melting pull it down between frames
-    }
-    window.__fr = [];
-    let last = 0;
-    const f = (t) => {
-      if (last) window.__fr.push(t - last);
-      last = t;
+  await page.evaluate(
+    ({ mass, skin }) => {
+      const k = window.__kus;
+      k.startGame();
+      k.player.ai = k.newAI();
+      k.CHEAT.god = true; // the run must not end; it changes no drawing cost
+      if (mass) {
+        k.player.mass = mass;
+        window.__hold = setInterval(() => (k.player.mass = mass), 50); // the cap and melting pull it down between frames
+      }
+      if (skin) {
+        const dress = () => k.blobs.forEach((b) => !b.kind && (b.skin = skin));
+        dress();
+        window.__dress = setInterval(dress, 50); // bots keep spawning in their own patterns
+      }
+      window.__fr = [];
+      let last = 0;
+      const f = (t) => {
+        if (last) window.__fr.push(t - last);
+        last = t;
+        requestAnimationFrame(f);
+      };
       requestAnimationFrame(f);
-    };
-    requestAnimationFrame(f);
-  }, MASS);
+    },
+    { mass: MASS, skin: SKIN },
+  );
   await page.waitForTimeout(1000);
   const metrics = async () => Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((m) => [m.name, m.value]));
   const m0 = await metrics();
@@ -102,7 +113,7 @@ async function oneRun() {
   const fr = await page.evaluate(() => window.__fr.splice(0));
   const per = (k, ms) => ((m1[k] - m0[k]) * (ms ? 1000 : 1)) / REAL_S;
   const step = await page.evaluate(
-    ({ n, mass }) => {
+    ({ n, mass, skin }) => {
       const k = window.__kus,
         up = [],
         rd = [];
@@ -110,6 +121,7 @@ async function oneRun() {
       k.setLod(0);
       for (let i = 0; i < n; i++) {
         if (mass) k.player.mass = mass;
+        if (skin) k.blobs.forEach((b) => !b.kind && (b.skin = skin));
         const t0 = performance.now();
         k.update(1 / 60);
         const t1 = performance.now();
@@ -119,7 +131,7 @@ async function oneRun() {
       }
       return { up, rd };
     },
-    { n: STEPS, mass: MASS },
+    { n: STEPS, mass: MASS, skin: SKIN },
   );
   await ctx.close();
   if (errors.length) throw new Error('page errors: ' + errors.join(' | '));
@@ -153,6 +165,7 @@ console.log(
     size: `${VW}x${VH}`,
     dpr: DPR,
     runs: RUNS,
+    skin: SKIN || undefined,
     firstFrameMs: md('firstFrameMs'),
     real: { fps: md('fps'), p95Ms: md('p95Ms'), worstMs: md('worstMs'), over33: md('over33') },
     perSec: { scriptMs: md('scriptMs'), styleMs: md('styleMs'), layoutMs: md('layoutMs'), styles: md('styles'), layouts: md('layouts') },
