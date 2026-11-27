@@ -78,6 +78,7 @@ const SUGAR = { bites: 1, food: 0.2, kills: 6, wound: 1, tongue: 2, pickup: 2, p
 // the runaway wrapper after a ×min streak: seconds to catch it, sugar and odds per tier (plain, rare, jackpot), the chance it grows a tier in the reveal,
 // its speed as a multiple of the player's top speed at birth (v0) and after tire seconds (v1)
 // Melt of a big candy: the bots' rate grows with mass, the player's is linear and the player's cap is higher.
+const LATE = { from: 1500, span: 6000, maxShare: 0.45, lo: 0.08, hi: 0.25 };
 const MELT = { from: 300, k: 0.004, kPlayer: 0.004, cap: 3500, capPlayer: 20000 };
 function meltRate(b) {
   if (b.kind === 'cake' || b.mass <= MELT.from) return 0;

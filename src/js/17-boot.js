@@ -317,6 +317,9 @@ window.__kus = {
   WRAP,
   MELT,
   meltRate,
+  LATE,
+  lateShare,
+  randomBotMass,
   sugarFly,
   hud: {
     get sugarShown() {
@@ -502,6 +505,9 @@ window.__kus = {
     streak: dailyStreak,
     get rec() {
       return dailyRec;
+    },
+    set day(v) {
+      day = v;
     },
     get day() {
       return day;

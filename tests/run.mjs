@@ -1917,6 +1917,51 @@ test('melt: the player melts linearly and gentler than a bot of the same mass; c
   await g.close();
 });
 
+test('late bots: bigger bots come only when the player is huge and alive', async () => {
+  const g = await open({ play: true });
+  const r = await g.page.evaluate(`(() => { ${QUIET}
+    const out = { s: [1000, 1500, 3000, 9000].map((m) => k.lateShare(m)) };
+    const draw = () => { const a = []; for (let i = 0; i < 2000; i++) a.push(k.randomBotMass()); return a; };
+    P.mass = 8000; const a = draw(); const big = a.filter((v) => v >= 640);
+    out.share = big.length / 2000; out.bigOk = big.every((v) => v <= 2000);
+    P.mass = 1000; out.max1000 = Math.max(...draw());
+    P.mass = 8000; P.alive = false; out.maxDead = Math.max(...draw()); P.alive = true;
+    out.maxFirst = Math.max(...Array.from({ length: 2000 }, () => k.randomBotMass(true)));
+    const prev = k.daily.day; k.daily.day = 'small'; out.maxSmall = Math.max(...draw()); k.daily.day = prev;
+    return out; })()`);
+  assert(r.s[0] === 0 && r.s[1] === 0 && Math.abs(r.s[2] - 0.25) < 1e-9 && r.s[3] === 0.45, `lateShare: ${r.s}`);
+  assert(Math.abs(r.share - 0.45) <= 0.05, `late share at 8000: ${r.share}`);
+  assert(r.bigOk, 'a late bot is outside 8-25% of the mass');
+  assert(r.max1000 <= 350, `no late bots at 1000: ${r.max1000}`);
+  assert(r.maxDead <= 350, `no late bots for a dead player: ${r.maxDead}`);
+  assert(r.maxFirst <= 600, `the first fill is unchanged: ${r.maxFirst}`);
+  assert(r.maxSmall <= 50, `the small twist wins: ${r.maxSmall}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('late bots: a bot that eats a late bot stays under 3500', async () => {
+  const g = await open({ play: true });
+  const r = await g.page.evaluate(`(() => { ${QUIET}
+    const B = k.blobs.find((b) => b.ai && !b.kind && b !== P);
+    B.mass = 5400; k.place(B, 3500, 3500, 0); k.update(1 / 60); k.update(1 / 60); return B.mass; })()`);
+  assert(r <= 3520, `a bot's mass: ${r}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('late bots: t3 with a huge player takes the same branch', async () => {
+  const g = await open({ play: false });
+  const r = await g.page.evaluate(`(() => { const k = window.__kus; k.pause(true); k.setMode('t3'); k.startGame();
+    const P = k.player; P.spawnT = 0; P.mass = 8000;
+    let n = 0; for (let i = 0; i < 2000; i++) if (k.randomBotMass() >= 640) n++;
+    return { state: k.state, alive: P.alive, share: n / 2000 }; })()`);
+  assert(r.state === 'play' && r.alive, `t3 run: ${JSON.stringify(r)}`);
+  assert(Math.abs(r.share - 0.45) <= 0.05, `late share in t3: ${r.share}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 test('melt: a second shift keeps a mass above 3500', async () => {
   const g = await open({ play: false, returning: true });
   const r = await g.page.evaluate(`(() => { ${STG}

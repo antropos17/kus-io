@@ -641,10 +641,14 @@ function packTick() {
   });
   packs.push(P);
 }
+function lateShare(m) {
+  return clamp((m - LATE.from) / LATE.span, 0, LATE.maxShare);
+}
 function randomBotMass(first) {
   const r = Math.random();
   if (day === 'small') return rand(12, 50);
   if (first) return r < 0.55 ? rand(12, 40) : r < 0.88 ? rand(40, 140) : r < 0.98 ? rand(140, 380) : rand(380, 600);
+  if (state === 'play' && player && player.alive && Math.random() < lateShare(player.mass)) return rand(LATE.lo, LATE.hi) * player.mass;
   return r < 0.7 ? rand(12, 45) : r < 0.95 ? rand(45, 150) : rand(150, 350);
 }
 function findSpawn(clear, avoidPlayer) {
