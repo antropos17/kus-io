@@ -104,86 +104,114 @@ function skinTile(id) {
   g.scale(sc, sc);
   g.lineJoin = 'round';
   if (id === 'stripes') {
-    g.strokeStyle = lite;
-    g.lineWidth = S * 0.17;
-    for (let k = 0; k <= 4; k++) {
-      g.beginPath();
-      g.moveTo(k * h + 30, -30);
-      g.lineTo(-30, k * h + 30);
-      g.stroke();
-    }
+    // puffy candy-cane ribbons with a shine down the middle
     span = 0.85;
-  } else if (id === 'dots') {
-    g.fillStyle = lite;
-    for (const [x, y] of [
-      [0.25, 0.25],
-      [0.75, 0.75],
-    ]) {
-      g.beginPath();
-      g.arc(x * S, y * S, S * 0.13, 0, TAU);
-      g.fill();
+    for (let k = -1; k <= 5; k++) {
+      puff(g, band(k * h, S * 0.12), lite, 5, sc);
+      shine(g, k * h, 0.35);
     }
+  } else if (id === 'dots') {
+    // puffy sugar dots, big and small
     span = 0.7;
+    const p = new Path2D();
+    for (const [x, y, r] of [
+      [0.25, 0.25, 0.13],
+      [0.75, 0.75, 0.13],
+      [0.75, 0.25, 0.05],
+      [0.25, 0.75, 0.05],
+    ]) {
+      p.moveTo((x + r) * S, y * S);
+      p.arc(x * S, y * S, r * S, 0, TAU);
+    }
+    puff(g, p, 'rgba(255,255,255,0.42)', 5, sc);
   } else if (id === 'waffle') {
-    g.strokeStyle = dark;
-    g.lineWidth = S * 0.1;
+    // raised ridges with a pale crest, the cells sinking darker towards their middle
+    span = 0.5;
+    for (const [x, y] of [
+      [0, 0],
+      [S, 0],
+      [0, S],
+      [S, S],
+    ]) {
+      const cg = g.createRadialGradient(x, y, 0, x, y, h * 0.75);
+      cg.addColorStop(0, 'rgba(45,12,24,0.22)');
+      cg.addColorStop(1, 'rgba(45,12,24,0)');
+      g.fillStyle = cg;
+      g.fillRect(0, 0, S, S);
+    }
+    const w = S * 0.11,
+      p = new Path2D();
+    p.rect(h - w / 2, -20, w, S + 40);
+    p.rect(-20, h - w / 2, S + 40, w);
+    puff(g, p, 'rgba(255,238,210,0.26)', 5, sc, 'rgba(45,12,24,0.34)');
+    g.strokeStyle = 'rgba(255,255,255,0.3)';
+    g.lineWidth = 2.5;
     g.beginPath();
     g.moveTo(h, 0);
     g.lineTo(h, S);
     g.moveTo(0, h);
     g.lineTo(S, h);
     g.stroke();
-    g.strokeStyle = 'rgba(255,255,255,0.2)';
-    g.lineWidth = S * 0.03;
-    g.beginPath();
-    g.moveTo(h + S * 0.075, 0);
-    g.lineTo(h + S * 0.075, S);
-    g.moveTo(0, h + S * 0.075);
-    g.lineTo(S, h + S * 0.075);
-    g.stroke();
-    span = 0.5;
   } else if (id === 'hearts') {
-    g.fillStyle = lite;
+    // puffy sugar hearts with a shine on each lobe, and a bead between them
+    span = 0.9;
     for (const [x, y] of [
       [0.25 * S, 0.27 * S],
       [0.75 * S, 0.77 * S],
     ]) {
-      const q = S * 0.14;
-      g.beginPath();
-      g.moveTo(x, y + q * 0.9);
-      g.bezierCurveTo(x - q * 1.3, y - q * 0.1, x - q * 0.6, y - q, x, y - q * 0.35);
-      g.bezierCurveTo(x + q * 0.6, y - q, x + q * 1.3, y - q * 0.1, x, y + q * 0.9);
-      g.fill();
+      const q = S * 0.15,
+        p = new Path2D();
+      p.moveTo(x, y + q * 0.9);
+      p.bezierCurveTo(x - q * 1.3, y - q * 0.1, x - q * 0.6, y - q, x, y - q * 0.35);
+      p.bezierCurveTo(x + q * 0.6, y - q, x + q * 1.3, y - q * 0.1, x, y + q * 0.9);
+      p.closePath();
+      puff(g, p, 'rgba(255,255,255,0.66)', 7, sc, 'rgba(45,12,24,0.3)');
+      gloss(g, x - q * 0.5, y - q * 0.3, q * 0.3, 0.6);
+      gloss(g, x + q * 0.5, y - q * 0.3, q * 0.3, 0.6);
     }
-    span = 0.9;
+    for (const [x, y] of [
+      [0.75 * S, 0.25 * S],
+      [0.25 * S, 0.77 * S],
+    ]) {
+      const p = new Path2D();
+      p.arc(x, y, S * 0.035, 0, TAU);
+      puff(g, p, 'rgba(255,255,255,0.6)', 4, sc, 'rgba(45,12,24,0.3)');
+      gloss(g, x, y - S * 0.008, S * 0.018, 0.7);
+    }
   } else if (id === 'stars') {
-    g.fillStyle = lite;
+    // puffy stars with a round shine, little sparkles between them
+    span = 0.9;
     for (const [x, y] of [
       [0.25 * S, 0.25 * S],
       [0.75 * S, 0.75 * S],
     ]) {
-      g.beginPath();
+      const p = new Path2D();
       for (let i = 0; i < 10; i++) {
         const a = -Math.PI / 2 + (i * Math.PI) / 5,
-          r = S * (i % 2 ? 0.07 : 0.16);
-        i ? g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r) : g.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+          r = S * (i % 2 ? 0.075 : 0.165);
+        i ? p.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r) : p.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
       }
-      g.closePath();
-      g.fill();
+      p.closePath();
+      puff(g, p, 'rgba(255,255,255,0.6)', 6, sc, 'rgba(45,12,24,0.3)');
+      gloss(g, x, y, S * 0.06, 0.55);
     }
-    span = 0.9;
+    glint(g, 0.75 * S, 0.22 * S, 9);
+    glint(g, 0.22 * S, 0.76 * S, 7);
   } else if (id === 'swirl') {
-    g.fillStyle = lite;
+    // a lollipop: six puffy arms turning out of a sugar bead
     span = 3.2;
+    const p = new Path2D();
     for (let a = 0; a < 6; a++) {
       const a0 = (a * TAU) / 6;
-      g.beginPath();
-      g.moveTo(h, h);
-      for (let r = 0; r <= h * 1.3; r += 6) g.lineTo(h + Math.cos(a0 + r * 0.022) * r, h + Math.sin(a0 + r * 0.022) * r);
-      for (let r = h * 1.3; r >= 0; r -= 6) g.lineTo(h + Math.cos(a0 + r * 0.022 + TAU / 12) * r, h + Math.sin(a0 + r * 0.022 + TAU / 12) * r);
-      g.closePath();
-      g.fill();
+      p.moveTo(h, h);
+      for (let r = 0; r <= h * 1.3; r += 6) p.lineTo(h + Math.cos(a0 + r * 0.022) * r, h + Math.sin(a0 + r * 0.022) * r);
+      for (let r = h * 1.3; r >= 0; r -= 6) p.lineTo(h + Math.cos(a0 + r * 0.022 + TAU / 12) * r, h + Math.sin(a0 + r * 0.022 + TAU / 12) * r);
+      p.closePath();
     }
+    puff(g, p, 'rgba(255,255,255,0.42)', 3, sc);
+    const bead = new Path2D();
+    bead.arc(h, h, 9, 0, TAU);
+    puff(g, bead, 'rgba(255,255,255,0.6)', 3, sc);
   } else if (id === 'tiger') {
     // tapered stripes reaching in from both flanks, some of them forked, short marks across the crown and the chin
     span = 3.2;
@@ -249,28 +277,14 @@ function skinTile(id) {
   } else if (id === 'rainbow') {
     // puffy ribbons in four colours, each with a shine down the middle; the tile flows along them (drawSkin)
     span = 1.6;
-    const cols = ['rgba(255,80,110,.55)', 'rgba(255,190,60,.55)', 'rgba(120,220,90,.55)', 'rgba(90,180,255,.55)'],
-      d = S * 0.085; // half the ribbon across x + y
+    const cols = ['rgba(255,80,110,.55)', 'rgba(255,190,60,.55)', 'rgba(120,220,90,.55)', 'rgba(90,180,255,.55)'];
     for (let k = -1; k <= 9; k++) {
-      const c0 = k * h * 0.5,
-        p = new Path2D();
-      p.moveTo(-40, c0 - d + 40);
-      p.lineTo(S + 40, c0 - d - S - 40);
-      p.lineTo(S + 40, c0 + d - S - 40);
-      p.lineTo(-40, c0 + d + 40);
-      p.closePath();
-      puff(g, p, cols[((k % 4) + 4) % 4], 4, sc, 'rgba(45,12,24,0.2)');
-      g.strokeStyle = 'rgba(255,255,255,0.4)';
-      g.lineWidth = 3;
-      g.beginPath();
-      g.moveTo(-40, c0 + 40);
-      g.lineTo(S + 40, c0 - S - 40);
-      g.stroke();
+      puff(g, band(k * h * 0.5, S * 0.085), cols[((k % 4) + 4) % 4], 4, sc, 'rgba(45,12,24,0.2)');
+      shine(g, k * h * 0.5, 0.4);
     }
     fx = { kind: 'flow', period: 6 };
   } else if (id === 'bubbles') {
-    g.strokeStyle = lite;
-    g.lineWidth = S * 0.035;
+    // sugar bubbles: a puffy ring round a faint film, with two shines facing each other
     span = 0.9;
     for (const [x, y, r] of [
       [0.25, 0.25, 0.15],
@@ -278,21 +292,43 @@ function skinTile(id) {
       [0.75, 0.22, 0.07],
       [0.22, 0.75, 0.07],
     ]) {
+      const cx = x * S,
+        cy = y * S,
+        R = r * S,
+        t = Math.max(4, R * 0.22),
+        p = new Path2D();
+      g.fillStyle = 'rgba(255,255,255,0.08)';
       g.beginPath();
-      g.arc(x * S, y * S, r * S, 0, TAU);
-      g.stroke();
+      g.arc(cx, cy, R, 0, TAU);
+      g.fill();
+      p.arc(cx, cy, R + t / 2, 0, TAU);
+      p.moveTo(cx + R - t / 2, cy);
+      p.arc(cx, cy, R - t / 2, 0, TAU, true);
+      puff(g, p, 'rgba(255,255,255,0.5)', 3, sc);
+      gloss(g, cx - R * 0.45, cy - R * 0.45, R * 0.3, 0.6);
+      gloss(g, cx + R * 0.45, cy + R * 0.45, R * 0.22, 0.4);
     }
   } else if (id === 'zigzag') {
-    g.strokeStyle = lite;
-    g.lineWidth = S * 0.08;
+    // a piped ribbon running in zigzags, with a shine along it
     span = 0.7;
+    const w = S * 0.045;
     for (const y0 of [0.25, 0.75]) {
-      g.beginPath();
+      const xs = [],
+        ys = [],
+        p = new Path2D();
       for (let i = -1; i <= 5; i++) {
-        const x = i * S * 0.25,
-          y = y0 * S + (i % 2 ? -1 : 1) * S * 0.09;
-        i === -1 ? g.moveTo(x, y) : g.lineTo(x, y);
+        xs.push(i * S * 0.25);
+        ys.push(y0 * S + (i % 2 ? -1 : 1) * S * 0.09);
       }
+      p.moveTo(xs[0], ys[0] - w);
+      for (let i = 1; i < xs.length; i++) p.lineTo(xs[i], ys[i] - w);
+      for (let i = xs.length - 1; i >= 0; i--) p.lineTo(xs[i], ys[i] + w);
+      p.closePath();
+      puff(g, p, 'rgba(255,255,255,0.45)', 4, sc);
+      g.strokeStyle = 'rgba(255,255,255,0.4)';
+      g.lineWidth = 2.5;
+      g.beginPath();
+      for (let i = 0; i < xs.length; i++) i ? g.lineTo(xs[i], ys[i]) : g.moveTo(xs[i], ys[i]);
       g.stroke();
     }
   } else if (id === 'galaxy') {
@@ -386,10 +422,23 @@ function skinTile(id) {
       puff(g, rod(x, y, hash1(i * 1.9) * TAU, 14, 4.6), SPRINKLES_C[i % SPRINKLES_C.length], 1.2, sc, 'rgba(45,12,24,0.25)');
     }
   } else if (id === 'checks') {
-    // gingham: see-through bands across and down, lighter where they cross
+    // gingham: see-through bands across and down, lighter where they cross, woven of fine threads
     g.fillStyle = 'rgba(255,255,255,0.27)';
     g.fillRect(0, 0, h, S);
     g.fillRect(0, 0, S, h);
+    g.lineWidth = 1.2;
+    for (let x = 2; x < h; x += 5) {
+      g.strokeStyle = 'rgba(255,255,255,0.16)';
+      g.beginPath();
+      g.moveTo(x, 0);
+      g.lineTo(x, S);
+      g.stroke();
+      g.strokeStyle = 'rgba(45,12,24,0.08)';
+      g.beginPath();
+      g.moveTo(0, x + 2);
+      g.lineTo(S, x + 2);
+      g.stroke();
+    }
     span = 0.7;
   } else if (id === 'marble') {
     // soft pale veins, each with a fine thread down the middle
@@ -652,6 +701,25 @@ function glint(g, x, y, r) {
     g.quadraticCurveTo(x - ay * r * 0.1, y - ax * r * 0.1, x - ax * r, y - ay * r);
     g.fill();
   }
+}
+function band(c, d) {
+  // a diagonal ribbon over a 256 tile: every point with |x + y - c| <= d, drawn past the edges so tiles meet
+  const p = new Path2D();
+  p.moveTo(-40, c - d + 40);
+  p.lineTo(296, c - d - 296);
+  p.lineTo(296, c + d - 296);
+  p.lineTo(-40, c + d + 40);
+  p.closePath();
+  return p;
+}
+function shine(g, c, al) {
+  // a thin light line down the middle of a band(c, …)
+  g.strokeStyle = `rgba(255,255,255,${al})`;
+  g.lineWidth = 3;
+  g.beginPath();
+  g.moveTo(-40, c + 40);
+  g.lineTo(296, c - 296);
+  g.stroke();
 }
 function lump(p, x, y, rx, ry, a, seed) {
   // add a soft lump of uneven outline to path p: nine points round an ellipse, joined by curves through their midpoints
