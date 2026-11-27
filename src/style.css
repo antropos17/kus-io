@@ -453,3 +453,10 @@ body.pad #pauseBtn .pg{margin:0;width:auto;height:auto;background:none;color:var
 body.pad .help .kb,body.pad .help .tc{display:none}
 body.pad .help .pd{display:list-item}
 body.pad #skins .pz,body.pad #hats .pz,body.pad #eyes .pz,body.pad #trail .pz,body.pad #tray .pz,body.pad .st .sn,body.pad .st i,body.pad #trTiles span,body.pad #fpsTag{font-size:12px}
+
+/* «Продолжить»: a small card over the living field, the seconds on a ring */
+#cont .card{width:min(340px,100%);text-align:center;padding:22px 22px 18px}
+#cont h2{margin:0 0 12px;font:900 clamp(24px,5vw,30px)/1.05 var(--font)}
+#cont .cring{width:74px;height:74px;margin:0 auto 14px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient(var(--berry) calc(var(--p,1)*360deg),#ead2b9 0)}
+#cont .cring b{width:58px;height:58px;border-radius:50%;background:var(--cream);display:flex;align-items:center;justify-content:center;font:900 28px/1 var(--font)}
+@media (max-height:420px){#cont .card{padding:14px 18px 12px}#cont h2{margin-bottom:8px}#cont .cring{width:56px;height:56px;margin-bottom:10px}#cont .cring b{width:44px;height:44px;font-size:22px}}

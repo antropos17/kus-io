@@ -689,6 +689,13 @@ body.pad #pauseBtn .pg{margin:0;width:auto;height:auto;background:none;color:var
 body.pad .help .kb,body.pad .help .tc{display:none}
 body.pad .help .pd{display:list-item}
 body.pad #skins .pz,body.pad #hats .pz,body.pad #eyes .pz,body.pad #trail .pz,body.pad #tray .pz,body.pad .st .sn,body.pad .st i,body.pad #trTiles span,body.pad #fpsTag{font-size:12px}
+
+/* «Продолжить»: a small card over the living field, the seconds on a ring */
+#cont .card{width:min(340px,100%);text-align:center;padding:22px 22px 18px}
+#cont h2{margin:0 0 12px;font:900 clamp(24px,5vw,30px)/1.05 var(--font)}
+#cont .cring{width:74px;height:74px;margin:0 auto 14px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient(var(--berry) calc(var(--p,1)*360deg),#ead2b9 0)}
+#cont .cring b{width:58px;height:58px;border-radius:50%;background:var(--cream);display:flex;align-items:center;justify-content:center;font:900 28px/1 var(--font)}
+@media (max-height:420px){#cont .card{padding:14px 18px 12px}#cont h2{margin-bottom:8px}#cont .cring{width:56px;height:56px;margin-bottom:10px}#cont .cring b{width:44px;height:44px;font-size:22px}}
 </style>
 </head>
 <body>
@@ -791,6 +798,9 @@ document.getElementById('nojs').style.display = 'none';
   </div></div>
 </div>
 
+<div id="cont" class="ov center hidden" role="dialog" aria-label="Продолжить забег?" data-ta="cont.a">
+  <div class="card"><h2 data-t="cont.t">Ещё не конец!</h2><div class="cring" aria-hidden="true"><b id="contN">5</b></div><button id="contYes" class="btn" type="button" data-t="cont.yes">Продолжить</button><button id="contNo" class="btn2" type="button" data-t="cont.no">Нет, к итогу</button></div>
+</div>
 <div id="over" class="ov center hidden">
   <div class="wrap" id="overWrap"><button class="x" id="overX" type="button" aria-label="Закрыть" title="Закрыть" data-ta="a.close" data-tt="a.close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
     <svg id="trMedal" viewBox="-40 -40 80 80" aria-hidden="true"><circle r="36" fill="#ffe3ea" stroke="#ffc3d2" stroke-width="3"/><ellipse cy="22" rx="30" ry="6" fill="#f0d3b2"/><rect x="-25" y="-4" width="50" height="26" rx="6" fill="#7a3f26"/><rect x="-25" y="6" width="50" height="5" fill="#ff8fb0"/><g fill="#fff6e8"><rect x="-27" y="-11" width="54" height="12" rx="6"/><path d="M-20.2 1a3.2 3.2 0 006.4 0zM-7.2 1a3.2 3.2 0 006.4 0zM7.8 1a3.2 3.2 0 006.4 0zM16.8 1a3.2 3.2 0 006.4 0z"/><rect x="-20.2" y="-2" width="6.4" height="3"/><rect x="-7.2" y="-2" width="6.4" height="3"/><rect x="7.8" y="-2" width="6.4" height="3"/><rect x="16.8" y="-2" width="6.4" height="3"/></g><g stroke-width="2" stroke-linecap="round"><path stroke="#ff5d8f" d="M-18.3 -7L-13.7 -5"/><path stroke="#ffd23f" d="M-4.5 -10L-7.5 -6"/><path stroke="#7ad7ff" d="M4.6 -7.1L7.4 -2.9"/><path stroke="#9be15d" d="M18.4 -8.8L13.6 -7.2"/><path stroke="#c49bff" d="M-10.9 -5.5L-11.1 -0.5"/><path stroke="#fff6e8" d="M9.5 -2.5L14.5 -1.5"/></g><path d="M0-18Q2-27 8-30" fill="none" stroke="#5a8a2a" stroke-width="2"/><circle cy="-15" r="7.5" fill="#e8274b"/><circle cx="-2.6" cy="-18" r="2.2" fill="#fff" fill-opacity=".75"/></svg>
@@ -1117,6 +1127,10 @@ const STR = {
   'mis.bites': ['Откуси кусков', 'Bite off pieces'],
   'mis.food': ['Собери посыпки', 'Collect sprinkles'],
   'mis.kills': ['Съешь конфет целиком', 'Swallow candies whole'],
+  'cont.t': ['Ещё не конец!', 'Not over yet!'],
+  'cont.yes': ['Продолжить', 'Continue'],
+  'cont.no': ['Нет, к итогу', 'No, show results'],
+  'cont.a': ['Продолжить забег?', 'Continue the run?'],
   'mis.mass': ['Набери массу за одну жизнь', 'Reach this mass in one life'],
   'mis.wound': ['Укуси в свежую ранку', 'Bite into a fresh wound'],
   'mis.tongue': ['Поймай конфет языком', 'Catch candies with your tongue'],
@@ -5401,6 +5415,77 @@ function annFrame(rdt, isPaused) {
   if (ann.t >= ANN.life) annHide();
 }
 
+// ---------- «Продолжить»: once per free run in the store builds ----------
+// The web never sees it. A death in a free run in 'app' or 'steam' holds the run's payout and offers to come back
+// with the mass the candy had in its last seconds; «Нет», the timer or leaving to the menu pay the run as before.
+const CONT = { delay: 1.1, secs: 5, back: 3, lock: 0.5, step: 0.25, span: 3 };
+const cont = { pend: false, on: false, left: 0 };
+const contLogM = new Float32Array(Math.ceil(CONT.span / CONT.step)); // the mass every CONT.step s, a ring
+let contAcc = 0,
+  contI = 0;
+const contEl = $('cont');
+function contCan() {
+  return PLATFORM !== 'web' && mode === 'free' && !run.contUsed;
+}
+function contClear() {
+  contLogM.fill(0);
+  contAcc = 0;
+  contI = 0;
+}
+function contLog(dt) {
+  contAcc += dt;
+  if (contAcc < CONT.step) return;
+  contAcc -= CONT.step;
+  contLogM[contI] = player.mass;
+  contI = (contI + 1) % contLogM.length;
+}
+function contMass() {
+  let m = DIFFS[diff].start;
+  for (let i = 0; i < contLogM.length; i++) m = Math.max(m, contLogM[i]);
+  return m;
+}
+function contHide() {
+  cont.pend = false;
+  cont.on = false;
+  contEl.classList.add('hidden');
+}
+function contShow() {
+  cont.on = true;
+  cont.left = CONT.secs;
+  $('contN').textContent = CONT.secs;
+  contEl.style.setProperty('--p', '1');
+  contEl.classList.remove('hidden');
+}
+function contYes() {
+  if (!cont.pend) return;
+  const peak = player ? player.stats.maxMass : 0,
+    m = contMass();
+  contHide();
+  run.contUsed = true;
+  spawnPlayer(CONT.back);
+  player.mass = m;
+  shownMass = m;
+  player.stats.maxMass = Math.max(peak, m);
+  contClear();
+  hudT = 0;
+}
+function contNo() {
+  if (!cont.pend) return;
+  contHide();
+  finishRun();
+  showOver();
+}
+function contFrame(rdt) {
+  if (!cont.on || document.hidden) return; // real time; an app in the background keeps its seconds
+  cont.left -= rdt;
+  if (cont.left <= 0) return contNo();
+  const s = Math.ceil(cont.left);
+  if ($('contN').textContent !== String(s)) $('contN').textContent = s;
+  contEl.style.setProperty('--p', (cont.left / CONT.secs).toFixed(3));
+}
+$('contYes').addEventListener('click', contYes);
+$('contNo').addEventListener('click', contNo);
+
 // ---------- candy of the day ----------
 // One three-minute run a day with a twist that is the same for everyone on that date. The twist comes from the local date alone, no server.
 const DAILY = [
@@ -5797,6 +5882,7 @@ function startGame() {
   run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0, mis: [] };
   for (const m of M.act) m.at = m.got;
   clearWrap();
+  contClear();
   sugarReset();
   runActive = true;
   timeLeft = timed() ? 180 : 0;
@@ -5881,6 +5967,10 @@ function die(by) {
   state = 'dead';
   deadT = 0;
   killer = by;
+  if (contCan()) {
+    cont.pend = true; // the payout waits for «Продолжить» or «Нет» (10-continue)
+    return;
+  }
   if (timed() && runActive && timeLeft > 0) {
     run.deaths++;
     addFeed(t('feed.back'));
@@ -5908,6 +5998,10 @@ function toMenu() {
   clearWrap();
   annReset();
   sugarSettle();
+  if (cont.pend) {
+    contHide(); // leaving the offer pays the run as «Нет» does
+    finishRun();
+  }
   if (state === 'play' && player && player.alive) {
     tally();
     player.alive = false;
@@ -6321,9 +6415,12 @@ function update(dt) {
       endTimed();
     }
   }
+  if (state === 'play' && mode === 'free' && player && player.alive) contLog(dt);
   if (state === 'dead') {
     deadT += dt;
-    if (runActive) {
+    if (cont.pend) {
+      if (deadT > CONT.delay && !cont.on) contShow();
+    } else if (runActive) {
       if (deadT > 1.6) {
         spawnPlayer(3);
         hudT = 0;
@@ -6883,6 +6980,7 @@ function secondShift() {
   saveM();
   run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0, lap: stg.lap + 1, mis: [] };
   sugarReset();
+  contClear();
   runActive = true;
   state = 'play';
   P.safe = false;
@@ -9731,8 +9829,8 @@ addEventListener('gamepaddisconnected', () => {
 // The d-pad (or the stick past half way) moves the focus to the nearest button that way, A presses it, B goes back,
 // LB/RB step through the open items of a choice row. Nothing here knows the screens' buttons: any visible button,
 // radio or link of the top window is a stop, so new screens and rows work by themselves.
-const PAD_ROOTS = ['album', 'adm', 'pause', 'over', 'menu']; // the top window first
-const PAD_HOME = { menu: 'play', pause: 'resume', over: 'again', album: 'albumX' }; // each screen's main button
+const PAD_ROOTS = ['album', 'adm', 'pause', 'cont', 'over', 'menu']; // the top window first
+const PAD_HOME = { menu: 'play', pause: 'resume', cont: 'contYes', over: 'again', album: 'albumX' }; // each screen's main button
 const padShown = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
 function padRoot() {
   for (const id of PAD_ROOTS) {
@@ -9802,6 +9900,7 @@ function padNav(dir) {
 function padBack(root) {
   if (root.id === 'album') closeAlbum();
   else if (root.id === 'pause') closePause();
+  else if (root.id === 'cont') contNo();
   else if (root.id === 'over' && padShown($('overX'))) $('overX').click();
 }
 function padRow(root, step) {
@@ -9836,7 +9935,7 @@ function padScreens(rdt) {
     // and the end card ignores the buttons for a moment, so A mashed through a death does not skip it
     pad.dir = dir;
     pad.hold = Infinity;
-    pad.lockT = root && root.id === 'over' ? 0.5 : 0;
+    pad.lockT = root && (root.id === 'over' || root.id === 'cont') ? 0.5 : 0; // A mashed for bites must not choose
   }
   if (!root) return;
   if (pad.lockT > 0) pad.lockT -= rdt;
@@ -9965,6 +10064,10 @@ addEventListener('keydown', (e) => {
   if (albumOpen()) {
     if (e.key === 'Escape') closeAlbum();
     return;
+  }
+  if (cont.on) {
+    if (e.key === 'Escape') contNo();
+    if (e.key === 'Escape' || e.code === 'Space') return;
   }
   if (e.key === 'Escape' || (e.code === 'KeyP' && !(e.target && e.target.tagName === 'INPUT'))) {
     if (!admEl.classList.contains('hidden')) closeAdmin();
@@ -11331,6 +11434,7 @@ function frame(now) {
   if (dt > 0.05) dt = 0.05;
   const w0 = performance.now();
   padPoll(dt); // the gamepad, before the run reads its input
+  contFrame(dt); // the «Продолжить» timer, in real time
   annFrame(dt, paused); // the big word lives in real time: the swallow's slow-down does not drag it
   if (!paused) {
     let sc = CHEAT.slow ? 0.45 : 1;
@@ -11603,6 +11707,13 @@ window.__kus = {
   renderMissions,
   misReward,
   die,
+  cont,
+  CONT,
+  contShow,
+  contYes,
+  contNo,
+  contFrame,
+  contMass,
   WARDROBE,
   SKINS,
   skinTile,

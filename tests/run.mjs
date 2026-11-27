@@ -30,7 +30,17 @@ function assert(cond, msg) {
 // locale: the browser language; Russian by default, since headless Chrome is English and the game picks its language from it.
 // init: a script run before the page's own (to fake a wrapper, for example); origin: serve index.html from that address
 // instead of file:// (an app wrapper serves it from https://localhost).
-async function open({ width = 1200, height = 720, touch = false, dpr = 1, play = true, returning = false, locale = 'ru-RU', init = '', origin = '' } = {}) {
+async function open({
+  width = 1200,
+  height = 720,
+  touch = false,
+  dpr = 1,
+  play = true,
+  returning = false,
+  locale = 'ru-RU',
+  init = '',
+  origin = '',
+} = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: dpr, hasTouch: touch, isMobile: touch, locale });
   const page = await ctx.newPage();
   if (returning) await page.addInitScript(() => localStorage.getItem('kus.best') === null && localStorage.setItem('kus.best', '0'));
@@ -713,7 +723,12 @@ test('missions: the sugar of a mission finished in a run the app never ended is 
   // say what the reloaded page found in storage, now and a moment later, and any page errors
   let why = '';
   if (a2.bank !== 50 + a.paid || a3 !== 50 + a.paid) {
-    const look = () => g.page.evaluate(() => ({ sugar: localStorage.getItem('kus.sugar'), m: (localStorage.getItem('kus.m') || '').slice(0, 80), keys: Object.keys(localStorage).length }));
+    const look = () =>
+      g.page.evaluate(() => ({
+        sugar: localStorage.getItem('kus.sugar'),
+        m: (localStorage.getItem('kus.m') || '').slice(0, 80),
+        keys: Object.keys(localStorage).length,
+      }));
     const now = await look();
     await g.page.waitForTimeout(1500);
     why = ` (storage ${JSON.stringify(now)}, 1.5 s later ${JSON.stringify(await look())}; page errors: ${g.errors.join(' | ') || 'none'})`;
@@ -1292,7 +1307,10 @@ test('streak: swallowing whole counts as a streak bite', async () => {
   assert(r.kills === 3, `all three small candies must be swallowed whole, got ${r.kills}`);
   assert(r.combos.join() === '1,2,3', `swallows in a row must count 1,2,3, got ${r.combos}`);
   // three swallows in a row are also a chain: the big word takes the screen and the streak's own stamp waits
-  assert(r.words.length === 0 && r.ann === 'Тройной кусь!!' && r.chip === '×3', `the third swallow must announce Тройной кусь!! with no stamp and show ×3: ${r.words} "${r.ann}" ${r.chip}`);
+  assert(
+    r.words.length === 0 && r.ann === 'Тройной кусь!!' && r.chip === '×3',
+    `the third swallow must announce Тройной кусь!! with no stamp and show ×3: ${r.words} "${r.ann}" ${r.chip}`,
+  );
   assert(r.sum > 0, 'the swallows must add their sugar to the streak sum');
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
@@ -2143,7 +2161,13 @@ test('perf: the stage pill animates without a page layout every frame', async ()
   assert(lite && endlessLite === 0, `lod 1: ${endlessLite} endless animations still run on the pill`);
   await g.page.evaluate(() => (window.__kus.setLod(0), window.__kus.pause(false)));
   await g.page.waitForTimeout(100);
-  const endlessFull = await g.page.evaluate(() => document.getElementById('stage').getAnimations({ subtree: true }).filter((a) => a.playState === 'running').length);
+  const endlessFull = await g.page.evaluate(
+    () =>
+      document
+        .getElementById('stage')
+        .getAnimations({ subtree: true })
+        .filter((a) => a.playState === 'running').length,
+  );
   assert(endlessFull >= 2, `lod 0: the pill must animate again, ${endlessFull} animations run`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
@@ -2455,7 +2479,9 @@ test('announce: fits 360x640 and 844x390 in both languages, clear of the buttons
     ]) {
       const g = await open({ locale, width, height, touch: true, dpr: 2 });
       for (const mass of [400, 2500]) {
-        await g.page.evaluate(`(() => { ${QUIET} P.mass = ${mass}; for (let i = 0; i < 240; i++) { P.mass = ${mass}; k.update(1 / 60); } k.annShow(5); k.pause(false); })()`);
+        await g.page.evaluate(
+          `(() => { ${QUIET} P.mass = ${mass}; for (let i = 0; i < 240; i++) { P.mass = ${mass}; k.update(1 / 60); } k.annShow(5); k.pause(false); })()`,
+        );
         await g.page.waitForTimeout(350);
         const r = await g.page.evaluate(ANN_BOX);
         if (r.bad.length || r.fs < 16) fails.push(`${locale} ${width}x${height} mass ${mass}: ${r.bad.join(', ')} font ${r.fs}`);
@@ -2493,12 +2519,14 @@ test('announce: clear of the ×N label even with a hat on, at its biggest pop', 
     const g = await open({ width, height, touch: true, dpr: 2 });
     for (const hat of ['none', 'crown'])
       for (const mass of [400, 2500]) {
-        const r = await g.page.evaluate(`(() => { ${QUIET} P.hat = '${hat}'; P.mass = ${mass}; for (let i = 0; i < 240; i++) { P.mass = ${mass}; k.update(1 / 60); }
+        const r = await g.page
+          .evaluate(`(() => { ${QUIET} P.hat = '${hat}'; P.mass = ${mass}; for (let i = 0; i < 240; i++) { P.mass = ${mass}; k.update(1 / 60); }
           P.combo = 3; P.comboT = 4; k.streak.pop = 1; k.annShow(5); k.render(); // drawName sets the label's top as it is drawn
           const top = (k.streak.lt - k.cam.y) * k.cam.z + innerHeight / 2 + k.cam.ky, w = document.querySelector('#announce b');
           for (const a of w.getAnimations()) a.currentTime = 400; const b = w.getBoundingClientRect();
           return { top: Math.round(top), wt: Math.round(b.top), wb: Math.round(b.bottom), bot: Math.round(k.ann.bot) }; })()`);
-        if (!(r.wb <= r.top + 0.5 || r.wt >= r.bot - 0.5)) fails.push(`${width}x${height} hat ${hat} mass ${mass}: word ${r.wt}..${r.wb}, label top ${r.top}`);
+        if (!(r.wb <= r.top + 0.5 || r.wt >= r.bot - 0.5))
+          fails.push(`${width}x${height} hat ${hat} mass ${mass}: word ${r.wt}..${r.wb}, label top ${r.top}`);
       }
     if (g.errors.length) fails.push(g.errors.join(' | '));
     await g.close();
@@ -2575,12 +2603,21 @@ test('heavy bite: a streak bite swells the candy and crunches; swallows and bonu
     S.crunch = c0; S.chomp = h0; return out; })()`);
   assert(r.sw[0] === 0 && r.snd[0] === 'chomp', `the first bite is not a streak: swell ${r.sw[0]}, sounds ${r.snd[0]}`);
   assert(r.sw[2] > 0.05 && r.sw[4] > r.sw[1], `streak bites swell more each step: ${r.sw}`);
-  assert(r.snd.slice(1).every((s) => s === 'crunch'), `streak bites crunch instead of chomp: ${JSON.stringify(r.snd)}`);
+  assert(
+    r.snd.slice(1).every((s) => s === 'crunch'),
+    `streak bites crunch instead of chomp: ${JSON.stringify(r.snd)}`,
+  );
   assert(r.after < 0.005, `the swell settles within a second: ${r.after}`);
-  assert(r.changed.join() === 'swell' && r.sw5 === 0.16 && Math.abs(r.hg - 1.6) < 1e-9, `the effect changes only the swell: ${r.changed} swell ${r.sw5} gobs ×${r.hg}`);
+  assert(
+    r.changed.join() === 'swell' && r.sw5 === 0.16 && Math.abs(r.hg - 1.6) < 1e-9,
+    `the effect changes only the swell: ${r.changed} swell ${r.sw5} gobs ×${r.hg}`,
+  );
   assert(r.swOff === 0, `with the effect off nothing swells: ${r.swOff}`);
   assert(r.gulpSw === 0 && !r.gulpHeard.includes('crunch'), `a swallow does not swell or crunch: ${r.gulpSw} ${r.gulpHeard}`);
-  assert(r.bonusCombo === 4 && r.bonusSw === 0 && !r.bonusHeard.includes('crunch'), `a bonus does not swell or crunch: combo ${r.bonusCombo} swell ${r.bonusSw} ${r.bonusHeard}`);
+  assert(
+    r.bonusCombo === 4 && r.bonusSw === 0 && !r.bonusHeard.includes('crunch'),
+    `a bonus does not swell or crunch: combo ${r.bonusCombo} swell ${r.bonusSw} ${r.bonusHeard}`,
+  );
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
 });
@@ -3285,6 +3322,10 @@ test('platform: web, app and steam; the store builds hide the admin, ignore save
       for (const key in k.CHEAT) k.CHEAT[key] = key === 'speed' ? 1 : false;
       k.player.alive = false;
       k.die(null);
+      if (k.PLATFORM !== 'web') {
+        for (let i = 0; i < 300 && document.getElementById('cont').classList.contains('hidden'); i++) k.update(1 / 60);
+        k.contNo(); // the store builds offer «Продолжить» first
+      }
       for (let i = 0; i < 300 && document.getElementById('over').classList.contains('hidden'); i++) k.update(1 / 60);
       document.getElementById('chalBtn').click();
       o.link = document.getElementById('chalLink').value;
@@ -3367,7 +3408,10 @@ test('icons: truePng and ico write what they claim', async () => {
   ]);
   assert(icon.subarray(0, 6).equals(Buffer.from([0, 0, 1, 0, 2, 0])), `ico header ${[...icon.subarray(0, 6)]}`);
   assert(icon[6] === 2 && icon[6 + 16] === 0, `ico sizes ${icon[6]} and ${icon[22]} (0 means 256)`);
-  assert(icon.readUInt32LE(6 + 12) === 6 + 16 * 2 && icon.subarray(38, 46).equals(rgba.subarray(0, 8)), 'the first image does not start right after the directory');
+  assert(
+    icon.readUInt32LE(6 + 12) === 6 + 16 * 2 && icon.subarray(38, 46).equals(rgba.subarray(0, 8)),
+    'the first image does not start right after the directory',
+  );
 });
 
 test('fonts: the font tool refuses a lost weight and a download that is not woff2', async () => {
@@ -3381,10 +3425,22 @@ test('fonts: the font tool refuses a lost weight and a download that is not woff
     }
     return false;
   };
-  assert(!throws(() => checkFace('Nunito', "@font-face{font-family:'Nunito';font-weight: 700 900;src:url(x)}", woff2)), 'a good Nunito face was refused');
-  assert(!throws(() => checkFace('Rubik Bubbles', "@font-face{font-family:'Rubik Bubbles';font-weight: 400;src:url(x)}", woff2)), 'a good Rubik Bubbles face was refused');
-  assert(throws(() => checkFace('Nunito', "@font-face{font-family:'Nunito';font-weight: 700;src:url(x)}", woff2)), 'a Nunito face of weight 700 only (800 and 900 lost) was taken');
-  assert(throws(() => checkFace('Nunito', "@font-face{font-family:'Nunito';font-weight: 700 900;src:url(x)}", html)), 'an HTML page was taken as a font');
+  assert(
+    !throws(() => checkFace('Nunito', "@font-face{font-family:'Nunito';font-weight: 700 900;src:url(x)}", woff2)),
+    'a good Nunito face was refused',
+  );
+  assert(
+    !throws(() => checkFace('Rubik Bubbles', "@font-face{font-family:'Rubik Bubbles';font-weight: 400;src:url(x)}", woff2)),
+    'a good Rubik Bubbles face was refused',
+  );
+  assert(
+    throws(() => checkFace('Nunito', "@font-face{font-family:'Nunito';font-weight: 700;src:url(x)}", woff2)),
+    'a Nunito face of weight 700 only (800 and 900 lost) was taken',
+  );
+  assert(
+    throws(() => checkFace('Nunito', "@font-face{font-family:'Nunito';font-weight: 700 900;src:url(x)}", html)),
+    'an HTML page was taken as a font',
+  );
 });
 
 // A fake standard gamepad: window.__pad holds its axes and buttons, __press(i, on, value) presses one.
@@ -3654,6 +3710,20 @@ test('gamepad: every button on every screen is reachable with the d-pad', async 
   walked(won.w, 'trophy card');
   assert(w.errors.length === 0, w.errors.join(' | '));
   await w.close();
+  // «Продолжить» in a store build
+  const c = await open({ init: STEAMFAKE + PADFAKE });
+  const co = await c.page.evaluate(`(() => { ${QUIET} ${PADWALK}
+    k.setPad(true);
+    P.alive = false;
+    k.die(null);
+    const el = document.getElementById('cont');
+    for (let f = 0; el.classList.contains('hidden') && f < 300; f++) k.update(1 / 60);
+    k.padPoll(1 / 60);
+    return { home: first(), w: reach() }; })()`);
+  assert(co.home === 'contYes', `the continue window's first focus is ${co.home}`);
+  walked(co.w, 'continue');
+  assert(c.errors.length === 0, c.errors.join(' | '));
+  await c.close();
 });
 
 test('gamepad: A presses, B goes back, LB/RB step through open items of a row', async () => {
@@ -4067,6 +4137,231 @@ test('gamepad: a pad that vanishes without a disconnect event stops the candy', 
     return { before, mag: k.stick.mag, held: k.input.dashHeld }; })()`);
   assert(o.before.mag > 0 && o.before.held, `the pad was not driving: ${JSON.stringify(o)}`);
   assert(o.mag === 0 && !o.held, `the candy kept going after the pad vanished: ${JSON.stringify(o)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+const STEAMFAKE = "window.KUS_PLATFORM = 'steam';";
+const APPFAKE = 'window.Capacitor = { isNativePlatform: () => true };';
+// a death and waiting for a window, in the page: dieNow() kills the player, until(id) steps the game until #id shows
+const DIE = `const dieNow = () => { k.player.alive = false; k.die(null); };
+  const shown = (id) => !document.getElementById(id).classList.contains('hidden');
+  const until = (id, n = 300) => { for (let f = 0; !shown(id) && f < n; f++) k.update(1 / 60); return shown(id); };`;
+
+test('continue: the web goes straight to the end card, no #cont', async () => {
+  const g = await open();
+  const o = await g.page.evaluate(`(() => { ${QUIET} ${DIE}
+    dieNow(); const over = until('over'); return { over, cont: shown('cont') }; })()`);
+  assert(o.over && !o.cont, `web: ${JSON.stringify(o)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('continue: in steam and the app a free-run death offers «Продолжить» once', async () => {
+  for (const [tag, fake] of [
+    ['steam', STEAMFAKE],
+    ['app', APPFAKE],
+  ]) {
+    const g = await open({ init: fake });
+    const o = await g.page.evaluate(`(() => { ${QUIET} ${DIE}
+      const out = {}, bank0 = localStorage.getItem('kus.sugar');
+      dieNow();
+      out.cont = until('cont'); out.over = shown('over'); out.state = k.state;
+      out.bankSame = localStorage.getItem('kus.sugar') === bank0;
+      document.getElementById('contYes').click();
+      out.after = k.state; out.alive = k.player.alive; out.used = k.run.contUsed; out.contGone = !shown('cont');
+      dieNow();
+      out.over2 = until('over'); out.cont2 = shown('cont');
+      return out; })()`);
+    assert(o.cont && !o.over && o.state === 'dead' && o.bankSame, `${tag}, the offer: ${JSON.stringify(o)}`);
+    assert(o.after === 'play' && o.alive && o.used === true && o.contGone, `${tag}, after «Продолжить»: ${JSON.stringify(o)}`);
+    assert(o.over2 && !o.cont2, `${tag}, the second death: ${JSON.stringify(o)}`);
+    assert(g.errors.length === 0, `${tag}: ${g.errors.join(' | ')}`);
+    await g.close();
+  }
+});
+
+test('continue: the mass comes back from the last 3 s and the peak of the life is kept', async () => {
+  const g = await open({ init: STEAMFAKE });
+  const o = await g.page.evaluate(`(() => { ${QUIET} ${DIE}
+    const out = {};
+    for (let i = 0; i < 60; i++) { P.mass = 400; k.update(1 / 60); }
+    P.mass = 30; P.stats.maxMass = 500; P.stats.bites = 7;
+    dieNow(); until('cont'); k.contYes();
+    out.mass = k.player.mass; out.peak = k.player.stats.maxMass; out.bites = k.player.stats.bites; out.fresh = k.player !== P;
+    k.toMenu(); k.startGame();
+    const Q = k.player, m0 = Q.mass; Q.spawnT = 0; out.m0 = m0;
+    for (let i = 0; i < 60; i++) { Q.mass = 5; k.update(1 / 60); }
+    dieNow(); until('cont'); k.contYes();
+    out.small = k.player.mass;
+    return out; })()`);
+  assert(o.fresh && Math.abs(o.mass - 400) <= 3, `the mass after «Продолжить»: ${JSON.stringify(o)}`);
+  assert(o.peak === 500 && o.bites === 0, `the life's numbers: ${JSON.stringify(o)}`);
+  assert(o.small >= o.m0 - 0.01, `a tiny candy comes back at least at the start mass: ${JSON.stringify(o)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('continue: «Нет», the timer and leaving to the menu pay the run exactly once', async () => {
+  for (const how of ['no', 'timer', 'menu']) {
+    const g = await open({ init: STEAMFAKE });
+    const o = await g.page.evaluate(`(() => { ${QUIET} ${DIE}
+      const out = {};
+      k.run.sugar = 40;
+      const bank0 = k.sugar;
+      dieNow(); until('cont');
+      for (let i = 0; i < 60; i++) k.update(1 / 60); // past the timed mode's respawn moment
+      out.held = k.state === 'dead' && shown('cont') && !k.player.alive;
+      if ('${how}' === 'no') document.getElementById('contNo').click();
+      else if ('${how}' === 'timer') for (let i = 0; i < 6; i++) k.contFrame(1);
+      else k.toMenu();
+      out.got = k.run.got; out.paid = k.sugar - bank0; out.ls = +localStorage.getItem('kus.sugar') - bank0;
+      out.over = shown('over'); out.cont = shown('cont');
+      for (let i = 0; i < 200; i++) k.update(1 / 60);
+      out.state = k.state; out.alive = k.player && k.player.alive && k.state === 'play'; out.later = k.sugar - bank0;
+      return out; })()`);
+    assert(o.held, `${how}: the window did not hold the death: ${JSON.stringify(o)}`);
+    assert(o.got > 0 && o.paid === o.got && o.ls === o.got && o.later === o.got, `${how}: paid ${JSON.stringify(o)}`);
+    assert(!o.cont && o.over === (how !== 'menu'), `${how}: windows ${JSON.stringify(o)}`);
+    assert(!o.alive && o.state === (how === 'menu' ? 'menu' : 'dead'), `${how}: respawned or wrong state ${JSON.stringify(o)}`);
+    assert(g.errors.length === 0, `${how}: ${g.errors.join(' | ')}`);
+    await g.close();
+  }
+});
+
+test('continue: the timer stands while the page is hidden', async () => {
+  const g = await open({ init: STEAMFAKE });
+  const o = await g.page.evaluate(`(() => { ${QUIET} ${DIE}
+    dieNow(); until('cont');
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+    for (let i = 0; i < 10; i++) k.contFrame(1);
+    const still = shown('cont') && !shown('over');
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+    for (let i = 0; i < 6; i++) k.contFrame(1);
+    return { still, over: shown('over'), cont: shown('cont') }; })()`);
+  assert(o.still && o.over && !o.cont, JSON.stringify(o));
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('continue: «Вторая смена» gets its own «Продолжить», t3 and daily never show it', async () => {
+  const g = await open({ init: STEAMFAKE, play: false, returning: true });
+  const o = await g.page.evaluate(`(() => { ${STG} ${DIE}
+    const out = {};
+    let P = free();
+    P.alive = false; k.die(null); until('cont'); k.contYes(); out.used = k.run.contUsed;
+    P = k.player; P.spawnT = 0;
+    P.mass = 1600; S().i = 2; S().endT = -99; run(0.1);
+    const B = S().cur.b; B.spawnT = 0; B.ai = null;
+    B.mass = 60; k.place(B, 600, 600, 0); for (let i = 0; i < 40; i++) { B.mass = 60; k.place(B, 600, 600, 0); k.update(1 / 60); }
+    k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
+    while (k.state === 'play' && f++ < 400) { P.tx = B.x; P.ty = B.y; B.tx = B.x; B.ty = B.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); }
+    out.won = k.state;
+    k.startGame(); // «Вторая смена»
+    out.shift = k.state; out.fresh = !k.run.contUsed;
+    k.player.spawnT = 0; dieNow(); out.shiftCont = until('cont');
+    k.contNo(); k.toMenu();
+    for (const m of ['t3', 'daily']) {
+      k.setMode(m); k.startGame(); k.player.spawnT = 0;
+      dieNow();
+      let seen = false;
+      for (let i = 0; i < 200; i++) { k.update(1 / 60); if (shown('cont')) seen = true; }
+      out[m] = seen;
+      k.toMenu();
+    }
+    return out; })()`);
+  assert(o.used === true && o.won === 'won', `the first shift: ${JSON.stringify(o)}`);
+  assert(o.shift === 'play' && o.fresh && o.shiftCont, `the second shift: ${JSON.stringify(o)}`);
+  assert(!o.t3 && !o.daily, `t3 or daily showed «Продолжить»: ${JSON.stringify(o)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('continue: the gamepad lands on «Продолжить», B says no, A is ignored for 0.5 s', async () => {
+  const g = await open({ init: STEAMFAKE + PADFAKE });
+  const o = await g.page.evaluate(`(() => { ${QUIET} ${DIE}
+    const out = {};
+    k.setPad(true);
+    dieNow(); until('cont');
+    k.padPoll(1 / 60);
+    out.home = document.activeElement.id;
+    __press(0, true); k.padPoll(1 / 60); __press(0, false); k.padPoll(1 / 60);
+    out.afterA = k.state; out.contUp = shown('cont');
+    for (let i = 0; i < 40; i++) k.padPoll(1 / 60);
+    __press(1, true); k.padPoll(1 / 60); __press(1, false); k.padPoll(1 / 60);
+    out.over = shown('over'); out.cont = shown('cont');
+    return out; })()`);
+  assert(o.home === 'contYes', `first focus ${o.home}`);
+  assert(o.afterA === 'dead' && o.contUp, `a mashed A took the choice: ${JSON.stringify(o)}`);
+  assert(o.over && !o.cont, `B did not say no: ${JSON.stringify(o)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('continue: #cont fits at 360x640 and 844x390 in ru and en', async () => {
+  for (const [width, height] of [
+    [360, 640],
+    [844, 390],
+  ])
+    for (const locale of ['ru-RU', 'en-US']) {
+      const g = await open({ init: STEAMFAKE, width, height, locale });
+      const bad = await g.page.evaluate(`(() => { ${QUIET} ${DIE}
+        dieNow(); until('cont');
+        const out = [];
+        for (const id of ['contYes', 'contNo']) {
+          const el = document.getElementById(id), r = el.getBoundingClientRect();
+          if (r.left < 0 || r.top < 0 || r.right > innerWidth || r.bottom > innerHeight || !r.width) out.push(id + ' off screen');
+          else if (!el.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2))) out.push(id + ' covered');
+        }
+        return out; })()`);
+      assert(bad.length === 0, `${width}x${height} ${locale}: ${bad.join(', ')}`);
+      assert(g.errors.length === 0, g.errors.join(' | '));
+      await g.close();
+    }
+});
+
+test('continue: an autopilot run that takes «Продолжить» does not break or get stuck', async () => {
+  const g = await open({ init: STEAMFAKE });
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      shown = (id) => !document.getElementById(id).classList.contains('hidden'),
+      bad = [];
+    k.pause(true);
+    k.player.ai = k.newAI();
+    k.player.spawnT = 0;
+    let seed = 11,
+      T = 0,
+      conts = 0,
+      killed = false;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    while (T < 90) {
+      const dt = rnd() < 0.08 ? 0.05 : 1 / 144 + rnd() * (1 / 24 - 1 / 144);
+      if (!killed && T > 20 && k.state === 'play') {
+        killed = true;
+        k.player.alive = false;
+        k.die(null);
+      }
+      if (shown('cont')) {
+        k.contYes();
+        conts++;
+        k.player.ai = k.newAI();
+      } else if (k.state === 'dead' && shown('over')) {
+        k.startGame();
+        if (k.state === 'play') k.player.ai = k.newAI();
+      }
+      k.update(dt);
+      k.contFrame(dt);
+      T += dt;
+      const P = k.player;
+      if (P && P.alive) {
+        if (!Number.isFinite(P.x + P.y + P.mass)) bad.push('NaN');
+        if (P.x < -1 || P.y < -1 || P.x > 4001 || P.y > 4001) bad.push('offTray');
+      }
+    }
+    return { conts, bad: [...new Set(bad)], state: k.state };
+  });
+  assert(r.conts >= 1, `no «Продолжить» was taken: ${JSON.stringify(r)}`);
+  assert(r.bad.length === 0, `broke: ${JSON.stringify(r)}`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
 });

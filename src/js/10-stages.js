@@ -313,6 +313,7 @@ function secondShift() {
   saveM();
   run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0, lap: stg.lap + 1, mis: [] };
   sugarReset();
+  contClear();
   runActive = true;
   state = 'play';
   P.safe = false;
