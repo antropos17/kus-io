@@ -3555,6 +3555,274 @@ test('gamepad: with two pads only the first standard one drives', async () => {
   await g.close();
 });
 
+// From the screen's first focus, walk the d-pad in all four directions from every button reached: the set reached must be
+// every candidate of the top window (padItems), and never the name field or the admin button.
+const PADWALK = `const reach = () => {
+    const k = window.__kus, root = k.padRoot(), items = k.padItems(root);
+    k.padHome(root);
+    const start = document.activeElement, seen = new Set([start]), q = [start];
+    while (q.length) {
+      const el = q.shift();
+      for (const d of ['up', 'down', 'left', 'right']) {
+        el.focus({ preventScroll: true });
+        if (k.padNav(d) && !seen.has(document.activeElement)) { seen.add(document.activeElement); q.push(document.activeElement); }
+      }
+    }
+    const name = (x) => x.id || (x.getAttribute('aria-label') || x.textContent || x.className).trim().slice(0, 24);
+    return { root: root && root.id, n: items.length, miss: items.filter((x) => !seen.has(x)).map(name),
+      extra: [...seen].filter((x) => !items.includes(x)).map(name), skipped: items.filter((x) => x.id === 'nick' || x.id === 'pAdmin').length };
+  };
+  const first = () => document.activeElement && document.activeElement.id;`;
+const walked = (w, label) => {
+  assert(w.n > 0 && w.miss.length === 0 && w.extra.length === 0 && w.skipped === 0, `${label}: ${JSON.stringify(w)}`);
+};
+
+test('gamepad: every button on every screen is reachable with the d-pad', async () => {
+  // the menu, one folding section open at a time
+  const m = await open({ init: PADFAKE, play: false, returning: true });
+  const menu = await m.page.evaluate(`(() => { ${PADWALK}
+    const k = window.__kus, out = { secs: [] };
+    k.setPad(true);
+    k.padPoll(1 / 60);
+    out.home = first();
+    out.closed = reach();
+    for (const sh of document.querySelectorAll('#menu .sec .sh')) {
+      if (sh.getAttribute('aria-expanded') !== 'true') sh.click();
+      out.secs.push([sh.parentElement.id, reach()]);
+    }
+    return out; })()`);
+  assert(menu.home === 'play', `the menu's first focus is ${menu.home}`);
+  walked(menu.closed, 'menu');
+  assert(menu.secs.length >= 4, `sections: ${menu.secs.length}`);
+  for (const [id, w] of menu.secs) walked(w, `menu, ${id} open`);
+  // the album over the menu
+  const album = await m.page.evaluate(`(() => { ${PADWALK}
+    const k = window.__kus;
+    document.getElementById('albumBtn').click();
+    k.padPoll(1 / 60);
+    return { home: first(), w: reach() }; })()`);
+  assert(album.home === 'albumX', `the album's first focus is ${album.home}`);
+  walked(album.w, 'album');
+  assert(m.errors.length === 0, m.errors.join(' | '));
+  await m.close();
+  // the pause and the end card of a run
+  const g = await open({ init: PADFAKE });
+  const run = await g.page.evaluate(`(() => { ${QUIET} ${PADWALK}
+    const out = {};
+    k.pause(false);
+    k.setPad(true);
+    __press(9, true); k.padPoll(1 / 60); __press(9, false); k.padPoll(1 / 60);
+    out.pauseHome = first();
+    out.pause = reach();
+    __press(9, true); k.padPoll(1 / 60); __press(9, false); k.padPoll(1 / 60);
+    k.pause(true);
+    P.alive = false;
+    k.die(null);
+    const over = document.getElementById('over');
+    for (let f = 0; over.classList.contains('hidden') && f < 300; f++) k.update(1 / 60);
+    k.padPoll(1 / 60);
+    out.overHome = first();
+    out.over = reach();
+    return out; })()`);
+  assert(run.pauseHome === 'resume', `the pause's first focus is ${run.pauseHome}`);
+  walked(run.pause, 'pause');
+  assert(run.overHome === 'again', `the end card's first focus is ${run.overHome}`);
+  walked(run.over, 'end card');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+  // the trophy card after beating the Big Cake
+  const w = await open({ init: PADFAKE, play: false, returning: true });
+  const won = await w.page.evaluate(`(() => { ${STG} ${PADWALK}
+    const P = free(); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1);
+    const B = S().cur.b; B.spawnT = 0; B.ai = null;
+    B.mass = 60; k.place(B, 600, 600, 0); for (let i = 0; i < 40; i++) { B.mass = 60; k.place(B, 600, 600, 0); k.update(1 / 60); }
+    k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
+    while (k.state === 'play' && f++ < 400) { P.tx = B.x; P.ty = B.y; B.tx = B.x; B.ty = B.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); }
+    k.setPad(true);
+    k.padPoll(1 / 60);
+    return { state: k.state, home: first(), w: reach() }; })()`);
+  assert(won.state === 'won' && won.home === 'again', `the trophy card: state ${won.state}, first focus ${won.home}`);
+  walked(won.w, 'trophy card');
+  assert(w.errors.length === 0, w.errors.join(' | '));
+  await w.close();
+});
+
+test('gamepad: A presses, B goes back, LB/RB step through open items of a row', async () => {
+  const own = `localStorage.setItem('kus.own', JSON.stringify({ v: 1, hat: ['bow', 'chef'] }));`; // bow and chef owned, cap (between) locked
+  const g = await open({ init: PADFAKE + own, play: false, returning: true });
+  const o = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {},
+      tap = (i) => {
+        __press(i, true);
+        k.padPoll(1 / 60);
+        __press(i, false);
+        k.padPoll(1 / 60);
+      },
+      idx = (row) => [...document.querySelectorAll(row + ' [role=radio]')].findIndex((x) => x.getAttribute('aria-checked') === 'true');
+    k.setPad(true);
+    k.padPoll(1 / 60);
+    const sh = document.querySelector('#secLook .sh');
+    sh.focus();
+    tap(0);
+    out.open = sh.getAttribute('aria-expanded');
+    const hats = [...document.querySelectorAll('#hats [role=radio]')];
+    out.openHats = hats.map((x, i) => (x.classList.contains('lock') ? -1 : i)).filter((i) => i >= 0);
+    hats[idx('#hats')].focus();
+    out.h0 = idx('#hats');
+    tap(5);
+    out.h1 = idx('#hats');
+    tap(5);
+    out.h2 = idx('#hats');
+    out.focusInRow = !!document.activeElement.closest('#hats');
+    tap(4);
+    out.h3 = idx('#hats');
+    document.getElementById('play').focus();
+    out.f0 = idx('#sw');
+    tap(5);
+    out.f1 = idx('#sw');
+    // holding the d-pad down for a second from the top of the menu
+    let moves = 0;
+    const count = () => moves++;
+    k.padItems(k.padRoot())[0].focus();
+    addEventListener('focusin', count);
+    __press(13, true);
+    for (let i = 0; i < 60; i++) k.padPoll(1 / 60);
+    __press(13, false);
+    k.padPoll(1 / 60);
+    removeEventListener('focusin', count);
+    out.moves = moves;
+    // B closes the album
+    document.getElementById('albumBtn').click();
+    k.padPoll(1 / 60);
+    tap(1);
+    out.albumShut = document.getElementById('album').classList.contains('hidden');
+    return out;
+  });
+  assert(o.open === 'true', `A on the Look head left it ${o.open}`);
+  assert(o.openHats.length >= 3 && o.h0 === o.openHats[0] && o.h1 === o.openHats[1] && o.h2 === o.openHats[2], `RB on hats: ${JSON.stringify(o)}`);
+  assert(o.focusInRow && o.h3 === o.openHats[1], `LB on hats went to ${o.h3}, focus in the row ${o.focusInRow}`);
+  assert(o.f1 === o.f0 + 1, `RB outside a row changed the flavour ${o.f0} -> ${o.f1}`);
+  assert(Math.abs(o.moves - (1 + Math.floor((1 - 0.4) / 0.12) + 1)) <= 1, `holding the d-pad for 1 s moved ${o.moves} times`);
+  assert(o.albumShut, 'B did not close the album');
+  // B resumes from the pause and leaves the end card for the menu
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {},
+      tap = (i) => {
+        __press(i, true);
+        k.padPoll(1 / 60);
+        __press(i, false);
+        k.padPoll(1 / 60);
+      };
+    k.startGame();
+    k.player.spawnT = 0;
+    tap(9);
+    out.paused = !document.getElementById('pause').classList.contains('hidden');
+    tap(1);
+    out.resumed = document.getElementById('pause').classList.contains('hidden') && k.state === 'play';
+    k.pause(true);
+    k.player.alive = false;
+    k.die(null);
+    const over = document.getElementById('over');
+    for (let f = 0; over.classList.contains('hidden') && f < 300; f++) k.update(1 / 60);
+    tap(1);
+    out.menu = !document.getElementById('menu').classList.contains('hidden') && over.classList.contains('hidden');
+    return out;
+  });
+  assert(r.paused && r.resumed, `B in the pause: ${JSON.stringify(r)}`);
+  assert(r.menu, 'B on the end card did not go to the menu');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('gamepad: focus follows the top window and survives a vanished button', async () => {
+  const g = await open({ init: PADFAKE, play: false, returning: true });
+  const o = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {},
+      tap = (i) => {
+        __press(i, true);
+        k.padPoll(1 / 60);
+        __press(i, false);
+        k.padPoll(1 / 60);
+      },
+      inside = (id) => !!document.activeElement.closest('#' + id);
+    k.setPad(true);
+    k.padPoll(1 / 60);
+    document.getElementById('albumBtn').click();
+    k.padPoll(1 / 60);
+    out.album = inside('album');
+    tap(1);
+    out.backInMenu = inside('menu');
+    // a button that goes away under the focus
+    const sh = document.querySelector('#secMis .sh');
+    sh.focus();
+    sh.remove();
+    out.nav = k.padNav('down');
+    out.after = document.activeElement.id;
+    k.startGame();
+    k.player.spawnT = 0;
+    tap(9);
+    out.pause = inside('pause');
+    return out;
+  });
+  assert(o.album && o.backInMenu, `the album over the menu: ${JSON.stringify(o)}`);
+  assert(o.nav && o.after === 'play', `after the focused button vanished: ${JSON.stringify(o)}`);
+  assert(o.pause, 'the pause over the run did not take the focus');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('gamepad: a whole run from the menu to the end card with the pad alone', async () => {
+  const g = await open({ init: PADFAKE, play: false, returning: true });
+  const o = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {},
+      step = (n = 1) => {
+        for (let i = 0; i < n; i++) {
+          k.padPoll(1 / 60);
+          k.update(1 / 60);
+        }
+      },
+      tap = (i) => {
+        __press(i, true);
+        step();
+        __press(i, false);
+        step();
+      };
+    k.pause(true);
+    tap(0); // A: «Играть» has the first focus
+    out.started = k.state;
+    const P = k.player;
+    P.spawnT = 0;
+    P.dashCd = 0;
+    const x0 = P.x;
+    __pad.axes[0] = 0.9;
+    step(30);
+    out.moved = P.x - x0;
+    __press(0, true);
+    step();
+    out.bit = P.dashT > 0;
+    __press(0, false);
+    __pad.axes[0] = 0;
+    step();
+    P.alive = false;
+    k.die(null);
+    const over = document.getElementById('over');
+    for (let f = 0; over.classList.contains('hidden') && f < 300; f++) step();
+    k.padPoll(1 / 60); // the card came up at the end of that frame: the next poll gives it the focus
+    out.home = document.activeElement.id;
+    tap(0); // A: «Ещё кусь»
+    out.again = k.state;
+    return out;
+  });
+  assert(o.started === 'play' && o.moved > 10 && o.bit, `the run: ${JSON.stringify(o)}`);
+  assert(o.home === 'again' && o.again === 'play', `the end card: ${JSON.stringify(o)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 for (const [name, fn] of tests) {
   if (only && !name.includes(only)) continue;
   const t0 = Date.now();

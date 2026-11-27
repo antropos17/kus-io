@@ -12,6 +12,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--ground);color:va
 #vig{position:fixed;left:0;top:0;right:0;bottom:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,rgba(10,4,2,0) 58%,rgba(10,4,2,.4) 100%)}
 #c{touch-action:none;position:fixed;left:0;top:0;right:0;bottom:0;width:100%;height:100%;display:block;cursor:crosshair}
 .hidden{display:none!important}
+body.pad :focus{outline:4px solid var(--lemon)!important;outline-offset:4px!important;box-shadow:0 0 0 4px var(--ink)!important} /* the gamepad's focus: lemon on a dark ring, seen on cream and on the dark field */
 body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #safe{position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
 #score{position:fixed;left:calc(16px + env(safe-area-inset-left,0px));top:calc(12px + env(safe-area-inset-top,0px));z-index:2;pointer-events:none}
