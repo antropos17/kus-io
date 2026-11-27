@@ -709,10 +709,18 @@ test('missions: the sugar of a mission finished in a run the app never ended is 
   const a2 = await g.page.evaluate(() => ({ bank: window.__kus.sugar, kills: window.__kus.M.act.some((m) => m.type === 'kills') }));
   await reload();
   const a3 = await g.page.evaluate(() => window.__kus.sugar);
-  const kept = await g.page.evaluate(() => localStorage.getItem('kus.sugar')); // shows why, if the next check fails
+  // this check has failed now and then in full runs (the bank came back 0) and never in isolation: if it fails again,
+  // say what the reloaded page found in storage, now and a moment later, and any page errors
+  let why = '';
+  if (a2.bank !== 50 + a.paid || a3 !== 50 + a.paid) {
+    const look = () => g.page.evaluate(() => ({ sugar: localStorage.getItem('kus.sugar'), m: (localStorage.getItem('kus.m') || '').slice(0, 80), keys: Object.keys(localStorage).length }));
+    const now = await look();
+    await g.page.waitForTimeout(1500);
+    why = ` (storage ${JSON.stringify(now)}, 1.5 s later ${JSON.stringify(await look())}; page errors: ${g.errors.join(' | ') || 'none'})`;
+  }
   assert(a.done && a.paid > 0 && a.bank === 50, `mission done ${a.done}, paid ${a.paid}, bank mid-run ${a.bank}`);
-  assert(a2.bank === 50 + a.paid && !a2.kills, `after the restart the bank is ${a2.bank}, want ${50 + a.paid}`);
-  assert(a3 === a2.bank, `a second restart changed the bank: ${a2.bank} -> ${a3} (kus.sugar ${kept}; page errors: ${g.errors.join(' | ') || 'none'})`);
+  assert(a2.bank === 50 + a.paid && !a2.kills, `after the restart the bank is ${a2.bank}, want ${50 + a.paid}${why}`);
+  assert(a3 === a2.bank, `a second restart changed the bank: ${a2.bank} -> ${a3}${why}`);
   // a run that ends as usual pays the mission inside its own sugar, and a restart adds nothing
   const b = await finish(true);
   await reload();
