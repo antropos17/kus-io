@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(root, p), 'utf8').replace(/\r\n/g, '\n');
 
-const css = read('src/style.css').trimEnd();
+// src/fonts.css (made by tools/fonts.mjs) carries the embedded fonts and goes first
+const css = read('src/fonts.css').trimEnd() + '\n' + read('src/style.css').trimEnd();
 // The fragments are pasted in file-name order into ONE block scope, so they share variables and the order matters.
 const js = readdirSync(join(root, 'src/js'))
   .filter((f) => f.endsWith('.js'))

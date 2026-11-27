@@ -3196,6 +3196,41 @@ test('lang: the English stage pill says the number before an event is mass, not 
   await g.close();
 });
 
+test('fonts: the page makes no network request and the logo and text use the embedded fonts, offline', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 360, height: 640 }, locale: 'ru-RU' });
+  const asked = [];
+  await ctx.route(/^https?:/, (r) => {
+    asked.push(r.request().url());
+    r.abort();
+  });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto(URL);
+  await page.waitForTimeout(600);
+  const r = await page.evaluate(async () => {
+    const nun = await document.fonts.load('900 20px Nunito', 'Кусь io');
+    const rub = await document.fonts.load('20px "Rubik Bubbles"', 'КУСЬ.io');
+    return { nun: nun.length, rub: rub.length, logo: getComputedStyle(document.querySelector('.logo')).fontFamily };
+  });
+  assert(asked.length === 0, `requests: ${asked.join(' ')}`);
+  assert(r.nun > 0 && r.rub > 0, `embedded faces loaded: ${JSON.stringify(r)}`);
+  // a name with letters outside the latin and cyrillic subsets falls back to a system font and draws without errors
+  await page.fill('#nick', 'Şəkər');
+  await page.click('#play');
+  await page.waitForTimeout(250);
+  await page.evaluate(() => {
+    const k = window.__kus;
+    k.pause(true);
+    for (let i = 0; i < 5; i++) {
+      k.update(1 / 60);
+      k.render();
+    }
+  });
+  assert(errors.length === 0, errors.join(' | '));
+  await ctx.close();
+});
+
 for (const [name, fn] of tests) {
   if (only && !name.includes(only)) continue;
   const t0 = Date.now();
