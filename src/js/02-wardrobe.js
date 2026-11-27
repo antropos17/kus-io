@@ -1,5 +1,11 @@
 // The wardrobe: what can be bought with sugar, what it costs, what the player owns.
 // Top-level code here must not touch `sugar`, `M` or `chosenSkin` (later files): only functions do.
+// sugar packs of the app; the price is the store's, never written here; the sizes are a first guess
+const PACKS = [
+  { id: 'sugar_s', sugar: 5000 },
+  { id: 'sugar_m', sugar: 15000 },
+  { id: 'sugar_l', sugar: 40000 },
+];
 const PRICE_K = 1; // one multiplier over every price, tuned against the measured income
 // per slot: [id, base price] in the order shown; price 0 is free
 const WARDROBE = {

@@ -471,3 +471,10 @@ body.pad #skins .pz,body.pad #hats .pz,body.pad #eyes .pz,body.pad #trail .pz,bo
 #adBtn:disabled{filter:grayscale(.6);opacity:.7;cursor:default}
 #shopMsg{min-height:1.3em;margin:12px 0 0;text-align:center}
 @media (max-height:420px){#shop .card{padding:16px 18px 12px}#shopBank{margin-bottom:8px}#adBtn{font-size:16px;padding:11px}}
+#packs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+#packs p,#packs #packRetry{grid-column:1/-1;margin:0;text-align:center}
+#packs [data-id]{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:64px;padding:10px 4px;font:800 14px/1.1 var(--font);color:var(--ink);background:#fff;border:2px solid #ead2b9;border-radius:14px;cursor:pointer}
+#packs [data-id] b{font:900 18px/1 var(--font);color:var(--berry2);font-variant-numeric:tabular-nums}
+#packs [data-id]:disabled{opacity:.6;cursor:default}
+#packs [data-id].busy{opacity:1;border-color:var(--berry)}
+@media (max-height:420px){#packs{margin-top:8px}#packs [data-id]{min-height:52px;padding:7px 4px}}

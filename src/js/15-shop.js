@@ -46,6 +46,7 @@ function openShop() {
   shopSay('');
   shopBank();
   renderAd();
+  loadPrices();
   shopEl.classList.remove('hidden');
   setTimeout(() => (adBtn.disabled ? $('shopX') : adBtn).focus({ preventScroll: true }), 30);
 }
@@ -94,3 +95,102 @@ async function adWatch() {
 shopBtn.addEventListener('click', openShop);
 $('shopX').addEventListener('click', closeShop);
 adBtn.addEventListener('click', adWatch);
+
+// ---------- sugar packs: the store names the price, one credit per transaction ----------
+let packBusy = false;
+const packFmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); // 15 000
+function credit(id, tx) {
+  // true when it paid; a transaction already paid (from buy or onPurchase, before or after a restart) pays nothing
+  const p = PACKS.find((q) => q.id === id);
+  if (!p) return false;
+  let seen = [];
+  try {
+    seen = JSON.parse(localStorage.getItem('kus.tx') || '[]') || [];
+  } catch (e) {}
+  if (tx && seen.includes(tx)) return false;
+  sugar += p.sugar;
+  saveSugar();
+  if (tx) {
+    seen.push(tx);
+    try {
+      localStorage.setItem('kus.tx', JSON.stringify(seen.slice(-50)));
+    } catch (e) {}
+  }
+  Sfx.power();
+  return true;
+}
+function packLock(id) {
+  for (const b of $('packs').querySelectorAll('[data-id]')) {
+    b.disabled = !!id;
+    b.classList.toggle('busy', b.dataset.id === id);
+    const s = b.querySelector('span');
+    s.textContent = b.dataset.id === id ? t('pack.busy') : b.dataset.price;
+  }
+}
+async function loadPrices() {
+  if (!NATIVE) return;
+  const box = $('packs');
+  box.innerHTML = `<p class="best">${t('pack.load')}</p>`;
+  let list = null;
+  try {
+    list = await Promise.race([NATIVE.products(PACKS.map((p) => p.id)), new Promise((ok) => setTimeout(() => ok(null), SHOP.priceWait))]);
+  } catch (e) {}
+  const got = Array.isArray(list) ? PACKS.filter((p) => list.some((q) => q && q.id === p.id)) : [];
+  if (!got.length) {
+    box.innerHTML = `<button id="packRetry" class="btn2" type="button">${t('pack.retry')}</button>`;
+    shopSay('pack.off');
+    return;
+  }
+  box.innerHTML = got
+    .map((p) => {
+      const price = String(list.find((q) => q.id === p.id).price || '');
+      return `<button type="button" data-id="${p.id}" data-price="${esc(price)}" aria-label="${esc(t('pack.a', packFmt(p.sugar), price))}"><b>${packFmt(p.sugar)}</b><span>${esc(price)}</span></button>`;
+    })
+    .join('');
+  if ($('shopMsg').textContent === t('pack.off')) shopSay('');
+  if (packBusy) packLock('-');
+}
+function packSay(key, n) {
+  if (shopOpen()) {
+    shopSay(key, n);
+    shopBank();
+  } else if (key) late(t(key, n));
+}
+async function buyPack(id) {
+  if (!NATIVE || packBusy) return;
+  const p = PACKS.find((q) => q.id === id);
+  if (!p) return;
+  packBusy = true;
+  packLock(id);
+  shopSay('');
+  const slow = setTimeout(() => {
+    packBusy = false; // the store may still answer: the sugar comes then, or later through onPurchase
+    packLock(null);
+    shopSay('pack.slow');
+  }, SHOP.buyWait);
+  let r = null;
+  try {
+    r = await NATIVE.buy(id);
+  } catch (e) {}
+  clearTimeout(slow);
+  packBusy = false;
+  packLock(null);
+  const st = r && r.status;
+  if (st === 'ok') packSay(credit(id, r.tx) ? 'pack.got' : '', p.sugar);
+  else if (st === 'cancel') shopSay('');
+  else packSay(st === 'pending' ? 'pack.wait' : 'pack.err');
+}
+$('packs').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.id === 'packRetry') loadPrices();
+  else buyPack(b.dataset.id);
+});
+if (NATIVE && NATIVE.onPurchase)
+  NATIVE.onPurchase((q) => {
+    // a purchase that went through later: after 'pending', or after the app was killed in the middle of one
+    if (!q || !credit(q.id, q.tx)) return;
+    const n = PACKS.find((p) => p.id === q.id).sugar;
+    if (shopOpen()) packSay('pack.got', n);
+    else late(t('pack.late', n));
+  });

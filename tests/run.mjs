@@ -4575,6 +4575,142 @@ test('shop: the window fits at 360x640 and 844x390 in ru and en', async () => {
     }
 });
 
+const PRICED = NATFAKE.replace(
+  'prices: null',
+  "prices: [{ id: 'sugar_s', price: '1,99 €' }, { id: 'sugar_m', price: '4,99 €' }, { id: 'sugar_l', price: '9,99 €' }]",
+);
+
+test('packs: prices come from the store; no prices means «недоступен» and «Ещё раз»', async () => {
+  const g = await open({ init: NATFAKE, play: false, returning: true });
+  const o = await g.page.evaluate(`(async () => { ${SLEEP}
+    const out = {}, packs = () => [...document.querySelectorAll('#packs [data-id]')];
+    k.openShop(); await sleep(60);
+    out.offMsg = document.getElementById('shopMsg').textContent === k.t('pack.off');
+    out.retry = !!document.getElementById('packRetry'); out.none = packs().length;
+    __nat.prices = [{ id: 'sugar_s', price: '1,99 €' }, { id: 'sugar_m', price: '4,99 €' }, { id: 'sugar_l', price: '9,99 €' }];
+    document.getElementById('packRetry').click(); await sleep(60);
+    out.texts = packs().map((b) => b.dataset.id + ' ' + b.textContent);
+    out.msgAfter = document.getElementById('shopMsg').textContent;
+    k.closeShop();
+    window.KUS_NATIVE.products = () => new Promise(() => {});
+    k.SHOP.priceWait = 30;
+    k.openShop(); await sleep(90);
+    out.hung = document.getElementById('shopMsg').textContent === k.t('pack.off');
+    return out; })()`);
+  assert(o.offMsg && o.retry && o.none === 0, `no prices: ${JSON.stringify(o)}`);
+  assert(o.texts.length === 3, `the packs: ${JSON.stringify(o)}`);
+  for (const [i, [n, p]] of [
+    ['5', '1,99 €'],
+    ['15', '4,99 €'],
+    ['40', '9,99 €'],
+  ].entries())
+    assert(new RegExp('^\\S+ ' + n + '\\s?000').test(o.texts[i]) && o.texts[i].includes(p), `pack ${i}: ${o.texts[i]}`);
+  assert(o.hung, `a store that never answers: ${JSON.stringify(o)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('packs: ok pays once; cancel pays nothing; error says money was not taken; pending waits', async () => {
+  const g = await open({ init: PRICED, play: false, returning: true });
+  const o = await g.page.evaluate(`(async () => { ${SLEEP}
+    const out = {}, msg = () => document.getElementById('shopMsg').textContent, btn = (id) => document.querySelector('#packs [data-id="' + id + '"]');
+    k.openShop(); await sleep(60);
+    let bank = k.sugar;
+    btn('sugar_m').click(); await sleep(60);
+    out.ok = { paid: k.sugar - bank, tx: JSON.parse(localStorage.getItem('kus.tx') || '[]'), msg: msg() === k.t('pack.got', 15000) };
+    for (const st of ['cancel', 'error', 'pending']) {
+      bank = k.sugar;
+      __nat.buy = { status: st };
+      btn('sugar_s').click(); await sleep(60);
+      out[st] = { paid: k.sugar - bank, msg: msg(), on: !btn('sugar_s').disabled && !btn('sugar_l').disabled };
+    }
+    out.wantErr = k.t('pack.err'); out.wantWait = k.t('pack.wait');
+    __nat.buy = { status: 'ok', tx: 't2' }; __nat.buyMs = 200;
+    btn('sugar_s').click(); await sleep(40);
+    out.busy = { others: btn('sugar_m').disabled && btn('sugar_l').disabled, text: btn('sugar_s').textContent.includes(k.t('pack.busy')) };
+    await sleep(250);
+    out.busyAfter = !btn('sugar_m').disabled;
+    return out; })()`);
+  assert(o.ok.paid === 15000 && o.ok.tx.includes('t1') && o.ok.msg, `ok: ${JSON.stringify(o.ok)}`);
+  assert(o.cancel.paid === 0 && o.cancel.on, `cancel: ${JSON.stringify(o.cancel)}`);
+  assert(o.error.paid === 0 && o.error.msg === o.wantErr && o.error.on, `error: ${JSON.stringify(o.error)}`);
+  assert(o.pending.paid === 0 && o.pending.msg === o.wantWait, `pending: ${JSON.stringify(o.pending)}`);
+  assert(o.busy.others && o.busy.text && o.busyAfter, `during a purchase: ${JSON.stringify(o)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('packs: the same transaction from buy and from onPurchase pays once, also after a reload', async () => {
+  const g = await open({ init: PRICED, play: false, returning: true });
+  const a = await g.page.evaluate(`(async () => { ${SLEEP}
+    const out = {}, bank0 = k.sugar;
+    __nat.buy = { status: 'ok', tx: 't9' };
+    k.openShop(); await sleep(60);
+    document.querySelector('#packs [data-id="sugar_s"]').click(); await sleep(60);
+    out.first = k.sugar - bank0;
+    __nat.cb({ id: 'sugar_s', tx: 't9' });
+    out.again = k.sugar - bank0;
+    k.closeShop();
+    return out; })()`);
+  assert(a.first === 5000 && a.again === 5000, `before the reload: ${JSON.stringify(a)}`);
+  await g.page.reload();
+  await g.page.waitForTimeout(400);
+  const b = await g.page.evaluate(`(async () => { ${SLEEP}
+    const out = {}, bank0 = k.sugar;
+    __nat.cb({ id: 'sugar_s', tx: 't9' });
+    out.replay = k.sugar - bank0;
+    __nat.cb({ id: 'sugar_l', tx: 't10' });
+    out.late = k.sugar - bank0;
+    out.bank = document.getElementById('bank').textContent === k.t('pack.late', 40000);
+    __nat.cb({ id: 'nope', tx: 't11' });
+    out.unknown = k.sugar - bank0; out.t11 = JSON.parse(localStorage.getItem('kus.tx')).includes('t11');
+    __nat.buy = { status: 'ok' };
+    k.openShop(); await sleep(60);
+    document.querySelector('#packs [data-id="sugar_s"]').click(); await sleep(60);
+    out.noTx = k.sugar - bank0;
+    out.ls = +localStorage.getItem('kus.sugar') - bank0;
+    return out; })()`);
+  assert(b.replay === 0, `a replayed transaction paid again: ${JSON.stringify(b)}`);
+  assert(b.late === 40000 && b.bank, `a late purchase in the menu: ${JSON.stringify(b)}`);
+  assert(b.unknown === 40000 && !b.t11, `an unknown pack: ${JSON.stringify(b)}`);
+  assert(b.noTx === 45000 && b.ls === 45000, `ok without a transaction id: ${JSON.stringify(b)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('packs: a late purchase during a run pays at once and tells in the menu after the run', async () => {
+  const g = await open({ init: PRICED });
+  const o = await g.page.evaluate(() => {
+    const k = window.__kus,
+      bank0 = +localStorage.getItem('kus.sugar');
+    k.pause(true);
+    __nat.cb({ id: 'sugar_s', tx: 'r1' });
+    const now = +localStorage.getItem('kus.sugar') - bank0;
+    k.toMenu();
+    return { now, bank: document.getElementById('bank').textContent, want: k.t('pack.late', 5000) };
+  });
+  assert(o.now === 5000 && o.bank === o.want, JSON.stringify(o));
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('packs: a buy with no answer unlocks the buttons after buyWait and still pays when it answers', async () => {
+  const g = await open({ init: PRICED, play: false, returning: true });
+  const o = await g.page.evaluate(`(async () => { ${SLEEP}
+    const out = {}, bank0 = k.sugar, btn = (id) => document.querySelector('#packs [data-id="' + id + '"]');
+    k.openShop(); await sleep(60);
+    k.SHOP.buyWait = 40; __nat.buyMs = 200;
+    btn('sugar_s').click(); await sleep(90);
+    out.on = !btn('sugar_m').disabled && !btn('sugar_s').disabled; out.slow = document.getElementById('shopMsg').textContent === k.t('pack.slow');
+    out.early = k.sugar - bank0;
+    await sleep(250);
+    out.paid = k.sugar - bank0;
+    return out; })()`);
+  assert(o.on && o.slow && o.early === 0 && o.paid === 5000, JSON.stringify(o));
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 for (const [name, fn] of tests) {
   if (only && !name.includes(only)) continue;
   const t0 = Date.now();
