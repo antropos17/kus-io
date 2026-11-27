@@ -273,10 +273,10 @@ function updateBlob(b, dt) {
       }
     }
   }
-  if (b.mass > 300 && b.kind !== 'cake') b.mass -= (b.mass - 300) * 0.004 * (1 + b.mass / 1000) * dt; // giants slowly melt
+  b.mass -= meltRate(b) * dt; // giants slowly melt
   if (b.kind === 'piranha' && b.mass > 30) b.mass = 30;
   else if (b.kind === 'hedgehog' && b.mass > 420) b.mass = 420;
-  if (b.mass > 3500) b.mass = 3500;
+  b.mass = Math.min(b.mass, b.isPlayer ? MELT.capPlayer : MELT.cap);
   const dx = b.tx - b.x,
     dy = b.ty - b.y,
     dist = Math.hypot(dx, dy),

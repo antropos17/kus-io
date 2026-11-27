@@ -77,6 +77,13 @@ const misReward = (m) => Math.round(MIS_SUGAR * (1 + 0.6 * (m.c | 0)));
 const SUGAR = { bites: 1, food: 0.2, kills: 6, wound: 1, tongue: 2, pickup: 2, piranha: 2, hedge: 3, cake: 3 }; // sugar per action in a clean run
 // the runaway wrapper after a ×min streak: seconds to catch it, sugar and odds per tier (plain, rare, jackpot), the chance it grows a tier in the reveal,
 // its speed as a multiple of the player's top speed at birth (v0) and after tire seconds (v1)
+// Melt of a big candy: the bots' rate grows with mass, the player's is linear and the player's cap is higher.
+const MELT = { from: 300, k: 0.004, kPlayer: 0.004, cap: 3500, capPlayer: 20000 };
+function meltRate(b) {
+  if (b.kind === 'cake' || b.mass <= MELT.from) return 0;
+  if (b.isPlayer) return (b.mass - MELT.from) * MELT.kPlayer;
+  return (b.mass - MELT.from) * MELT.k * (1 + b.mass / 1000);
+}
 const WRAP = { min: 5, life: 5, amt: [60, 135, 360], odds: [0.55, 0.33, 0.12], up: 0.45, v0: 1.1, v1: 0.4, tire: 1.2 };
 const skinArt = {};
 function skinTile(id) {

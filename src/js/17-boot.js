@@ -315,6 +315,8 @@ window.__kus = {
   spawnWrap,
   clearWrap,
   WRAP,
+  MELT,
+  meltRate,
   sugarFly,
   hud: {
     get sugarShown() {

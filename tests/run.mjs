@@ -1897,6 +1897,42 @@ test('stages: beating the boss ends the run with a record, not with cheats; the 
   await g.close();
 });
 
+test('melt: the player melts linearly and gentler than a bot of the same mass; caps differ', async () => {
+  const g = await open({ play: true });
+  const r = await g.page.evaluate(`(() => { ${QUIET}
+    const B = k.blobs.find((b) => b.ai && !b.kind && b !== P); const out = {};
+    P.mass = 6000; out.p = k.meltRate(P); B.mass = 6000; out.b = k.meltRate(B);
+    P.mass = 300; out.p300 = k.meltRate(P); P.mass = 250; out.p250 = k.meltRate(P);
+    const C = k.spawnSpecial('cake')[0]; C.mass = 6000; out.cake = k.meltRate(C);
+    // food eaten later in a frame may add a few grams; the cap holds at the next frame, within a few grams
+    P.mass = 25000; k.update(1 / 60); k.update(1 / 60); out.pCap = P.mass;
+    B.mass = 5000; k.place(B, 3500, 3500, 0); k.update(1 / 60); k.update(1 / 60); out.bCap = B.mass; out.kPlayer = k.MELT.kPlayer;
+    return out; })()`);
+  assert(Math.abs(r.p - 5700 * r.kPlayer) < 0.01, `player melt at 6000: ${r.p}`);
+  assert(Math.abs(r.b - 159.6) < 0.01, `bot melt at 6000: ${r.b}`);
+  assert(r.p300 === 0 && r.p250 === 0 && r.cake === 0, `no melt at or under 300 and none for the cake: ${JSON.stringify(r)}`);
+  assert(r.pCap <= 20020 && r.pCap > 19000, `the player's cap: ${r.pCap}`);
+  assert(r.bCap <= 3520, `a bot's cap: ${r.bCap}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('melt: a second shift keeps a mass above 3500', async () => {
+  const g = await open({ play: false, returning: true });
+  const r = await g.page.evaluate(`(() => { ${STG}
+    const P = free(); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1); if (!S().cur) throw new Error('no boss');
+    const B = S().cur.b; B.spawnT = 0; B.ai = null; B.mass = 60; k.place(B, 600, 600, 0);
+    for (let i = 0; i < 40; i++) { B.mass = 60; k.place(B, 600, 600, 0); k.update(1 / 60); }
+    k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
+    while (k.state === 'play' && f++ < 400) { P.mass = 5000; P.tx = B.x; P.ty = B.y; B.tx = B.x; B.ty = B.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); }
+    const out = { won: k.state, wonMass: k.stages.stg.wonMass };
+    document.getElementById('again').click(); out.state = k.state; out.mass = k.player.mass; return out; })()`);
+  assert(r.won === 'won', `the win did not come: ${r.won}`);
+  assert(r.state === 'play' && r.mass > 4500, `second shift: ${r.state}, mass ${r.mass} (won with ${r.wonMass})`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
 test('stages: the trophy card fits a phone: close button out of the bitten corner, the card scrolls in landscape', async () => {
   for (const locale of ['ru-RU', 'en-US'])
     try {
