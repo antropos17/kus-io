@@ -202,6 +202,11 @@ function woundLoad(b) {
   for (const w of b.wounds) l += w.d * w.heal;
   return l;
 }
+function capMass(b) {
+  if (b.kind === 'piranha' && b.mass > 30) b.mass = 30;
+  else if (b.kind === 'hedgehog' && b.mass > 420) b.mass = 420;
+  b.mass = Math.min(b.mass, b.isPlayer ? MELT.capPlayer : MELT.cap);
+}
 function updateBlob(b, dt) {
   if (b.swell) b.swell = b.swell > 0.001 ? b.swell * Math.exp(-dt * 7) : 0; // a streak bite's swell settles in about a second
   b.R = massToR(b.mass);
@@ -274,9 +279,7 @@ function updateBlob(b, dt) {
     }
   }
   b.mass -= meltRate(b) * dt; // giants slowly melt
-  if (b.kind === 'piranha' && b.mass > 30) b.mass = 30;
-  else if (b.kind === 'hedgehog' && b.mass > 420) b.mass = 420;
-  b.mass = Math.min(b.mass, b.isPlayer ? MELT.capPlayer : MELT.cap);
+  capMass(b);
   const dx = b.tx - b.x,
     dy = b.ty - b.y,
     dist = Math.hypot(dx, dy),

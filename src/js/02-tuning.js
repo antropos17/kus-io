@@ -79,10 +79,10 @@ const SUGAR = { bites: 1, food: 0.2, kills: 6, wound: 1, tongue: 2, pickup: 2, p
 // its speed as a multiple of the player's top speed at birth (v0) and after tire seconds (v1)
 // Melt of a big candy: the bots' rate grows with mass, the player's is linear and the player's cap is higher.
 const LATE = { from: 1500, span: 6000, maxShare: 0.45, lo: 0.08, hi: 0.25 };
-const MELT = { from: 300, k: 0.004, kPlayer: 0.004, cap: 3500, capPlayer: 20000 };
+const MELT = { from: 300, k: 0.004, kPlayer: 0.004, soft: 3000, cap: 3500, capPlayer: 20000 };
 function meltRate(b) {
   if (b.kind === 'cake' || b.mass <= MELT.from) return 0;
-  if (b.isPlayer) return (b.mass - MELT.from) * MELT.kPlayer;
+  if (b.isPlayer) return (b.mass - MELT.from) * MELT.kPlayer * (1 + b.mass / MELT.soft);
   return (b.mass - MELT.from) * MELT.k * (1 + b.mass / 1000);
 }
 const WRAP = { min: 5, life: 5, amt: [60, 135, 360], odds: [0.55, 0.33, 0.12], up: 0.45, v0: 1.1, v1: 0.4, tire: 1.2 };

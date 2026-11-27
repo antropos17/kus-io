@@ -1897,22 +1897,40 @@ test('stages: beating the boss ends the run with a record, not with cheats; the 
   await g.close();
 });
 
-test('melt: the player melts linearly and gentler than a bot of the same mass; caps differ', async () => {
+test('melt: the player melts on a soft curve, slower than a bot of the same mass', async () => {
   const g = await open({ play: true });
   const r = await g.page.evaluate(`(() => { ${QUIET}
-    const B = k.blobs.find((b) => b.ai && !b.kind && b !== P); const out = {};
-    P.mass = 6000; out.p = k.meltRate(P); B.mass = 6000; out.b = k.meltRate(B);
+    const B = k.blobs.find((b) => b.ai && !b.kind && b !== P); const out = { kp: k.MELT.kPlayer, soft: k.MELT.soft };
+    P.mass = 3400; out.p3400 = k.meltRate(P); B.mass = 3400; out.b3400 = k.meltRate(B);
+    P.mass = 10000; out.p10000 = k.meltRate(P);
     P.mass = 300; out.p300 = k.meltRate(P); P.mass = 250; out.p250 = k.meltRate(P);
     const C = k.spawnSpecial('cake')[0]; C.mass = 6000; out.cake = k.meltRate(C);
-    // food eaten later in a frame may add a few grams; the cap holds at the next frame, within a few grams
-    P.mass = 25000; k.update(1 / 60); k.update(1 / 60); out.pCap = P.mass;
-    B.mass = 5000; k.place(B, 3500, 3500, 0); k.update(1 / 60); k.update(1 / 60); out.bCap = B.mass; out.kPlayer = k.MELT.kPlayer;
     return out; })()`);
-  assert(Math.abs(r.p - 5700 * r.kPlayer) < 0.01, `player melt at 6000: ${r.p}`);
-  assert(Math.abs(r.b - 159.6) < 0.01, `bot melt at 6000: ${r.b}`);
+  assert(Math.abs(r.p3400 - 3100 * r.kp * (1 + 3400 / r.soft)) < 0.01, `player melt at 3400: ${r.p3400}`);
+  assert(Math.abs(r.p10000 - 9700 * r.kp * (1 + 10000 / r.soft)) < 0.01, `player melt at 10000: ${r.p10000}`);
+  assert(Math.abs(r.b3400 - 3100 * 0.004 * 4.4) < 0.01 && r.p3400 < r.b3400, `bot melt at 3400: ${r.b3400}, player ${r.p3400}`);
   assert(r.p300 === 0 && r.p250 === 0 && r.cake === 0, `no melt at or under 300 and none for the cake: ${JSON.stringify(r)}`);
-  assert(r.pCap <= 20020 && r.pCap > 19000, `the player's cap: ${r.pCap}`);
-  assert(r.bCap <= 3520, `a bot's cap: ${r.bCap}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('melt: no candy ends a frame above its cap, also after swallowing a bot whole', async () => {
+  const g = await open({ play: true });
+  const r = await g.page.evaluate(`(() => { ${QUIET}
+    const out = { pMax: 0, bMax: 0, pSwallowed: false, bSwallowed: false };
+    const V = k.spawnBot(2000); V.ai = null; V.spawnT = 0; P.mass = 19900;
+    k.place(V, 2000, 1500, 0); k.place(P, 2000 - V.Rs - P.Rs + 4, 1500, 0); P.biteCd = 0;
+    for (let i = 0; i < 200 && V.alive; i++) { k.food.length = 0; P.tx = V.x; P.ty = V.y; V.tx = V.x; V.ty = V.y; V.biteCd = 9; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); out.pMax = Math.max(out.pMax, P.mass); }
+    out.pSwallowed = !V.alive;
+    const B = k.blobs.find((b) => b.ai && !b.kind && b !== P && b.alive); const W = k.spawnBot(800); W.ai = null; W.spawnT = 0; B.ai = null; B.spawnT = 0; B.mass = 3490;
+    k.place(W, 2500, 2500, 0); k.place(B, 2500 - W.Rs - B.Rs + 4, 2500, 0); B.biteCd = 0;
+    for (let i = 0; i < 200 && W.alive; i++) { k.food.length = 0; B.tx = W.x; B.ty = W.y; W.tx = W.x; W.ty = W.y; W.biteCd = 9; B.biteCd = Math.min(B.biteCd, 0); P.biteCd = 999; k.update(1 / 60); out.bMax = Math.max(out.bMax, B.mass); }
+    out.bSwallowed = !W.alive;
+    return out; })()`);
+  assert(r.pSwallowed, 'the player did not swallow the bot whole');
+  assert(r.pMax <= 20000, `the player ended a frame at ${r.pMax}`);
+  assert(r.bSwallowed, 'the bot did not swallow the small bot');
+  assert(r.bMax <= 3500, `a bot ended a frame at ${r.bMax}`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
 });
