@@ -6,6 +6,8 @@ import { chromium } from 'playwright-core';
 import { pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { truePng, ico, rgbaOf } from '../tools/png.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const URL = pathToFileURL(join(root, 'index.html')).href;
@@ -3270,6 +3272,76 @@ test('platform: web, app and steam; the store builds hide the admin, ignore save
     assert(g.errors.length === 0, `${tag}: ${g.errors.join(' | ')}`);
     await g.close();
   }
+});
+
+test('icons: the tab icon is drawn by drawIcon, the store icon is opaque, the Android foreground stays inside the safe circle', async () => {
+  const K = +(readFileSync(join(root, 'tools', 'icons.mjs'), 'utf8').match(/const FG_K = ([\d.]+)/) || [])[1];
+  assert(K > 0 && K <= 1, `FG_K in tools/icons.mjs: ${K}`);
+  const g = await open({ play: false });
+  const o = await g.page.evaluate((K) => {
+    const k = window.__kus,
+      canvas = (s) => {
+        const c = document.createElement('canvas');
+        c.width = c.height = s;
+        return c;
+      };
+    const tab = canvas(180);
+    k.drawIcon(tab.getContext('2d'), 180);
+    const o = { tab: tab.toDataURL('image/png') === document.querySelector('link[rel=apple-touch-icon]').href };
+    const full = canvas(1024),
+      fg = canvas(1024);
+    k.drawIcon(full.getContext('2d'), 1024);
+    k.drawIcon(fg.getContext('2d'), 1024, { bg: false, k: K });
+    const a = full.getContext('2d').getImageData(0, 0, 1024, 1024).data,
+      f = fg.getContext('2d').getImageData(0, 0, 1024, 1024).data,
+      R = (66 / 108 / 2) * 1024;
+    o.seeThrough = 0;
+    o.outside = 0;
+    o.inside = 0;
+    for (let i = 0; i < 1024 * 1024; i++) {
+      if (a[i * 4 + 3] !== 255) o.seeThrough++;
+      if (f[i * 4 + 3] > 0) {
+        const x = (i % 1024) + 0.5 - 512,
+          y = Math.floor(i / 1024) + 0.5 - 512;
+        if (x * x + y * y > R * R) o.outside++;
+        else o.inside++;
+      }
+    }
+    o.share = o.inside / (Math.PI * R * R);
+    // with no square of its own the icon must not erase what is under it (the splash draws it on the dark ground)
+    const sp = canvas(1024),
+      sg = sp.getContext('2d');
+    sg.fillStyle = '#140b08';
+    sg.fillRect(0, 0, 1024, 1024);
+    k.drawIcon(sg, 1024, { bg: false });
+    o.bite = [...sg.getImageData(Math.round((150 / 180) * 1024), Math.round((40 / 180) * 1024), 1, 1).data].join();
+    return o;
+  }, K);
+  assert(o.tab, 'the tab icon is not what drawIcon(g, 180) draws');
+  assert(o.seeThrough === 0, `${o.seeThrough} see-through pixels in the opaque icon`);
+  assert(o.outside === 0, `${o.outside} foreground pixels outside the Android safe circle`);
+  assert(o.bite === '20,11,8,255', `the bite erased the ground under the icon: ${o.bite}`);
+  assert(o.share > 0.3, `the foreground candy covers only ${(o.share * 100).toFixed(0)}% of the safe circle`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('icons: truePng and ico write what they claim', async () => {
+  const px = Buffer.from([255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 10, 20, 30, 255]);
+  const rgb = truePng(px, 2, 2, false),
+    rgba = truePng(px, 2, 2);
+  assert(rgb[25] === 2 && rgba[25] === 6, `IHDR colour types ${rgb[25]} and ${rgba[25]}`);
+  const page = await browser.newPage();
+  const back = await rgbaOf(page, rgb);
+  await page.close();
+  assert(back.equals(px), `decoded ${[...back]}`);
+  const icon = ico([
+    { size: 2, png: rgba },
+    { size: 256, png: rgba },
+  ]);
+  assert(icon.subarray(0, 6).equals(Buffer.from([0, 0, 1, 0, 2, 0])), `ico header ${[...icon.subarray(0, 6)]}`);
+  assert(icon[6] === 2 && icon[6 + 16] === 0, `ico sizes ${icon[6]} and ${icon[22]} (0 means 256)`);
+  assert(icon.readUInt32LE(6 + 12) === 6 + 16 * 2 && icon.subarray(38, 46).equals(rgba.subarray(0, 8)), 'the first image does not start right after the directory');
 });
 
 for (const [name, fn] of tests) {

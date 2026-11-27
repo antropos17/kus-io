@@ -2,6 +2,8 @@
 //   rgbaOf(page, png)          decode a screenshot to raw RGBA in a blank browser page
 //   indexedPng(rgba, w, h, n)  a palette PNG with up to n colours (median cut, nearest-colour mapping, zlib)
 //   apng(frames, w, h, ms, n)  an animated PNG of equal-size RGBA frames sharing one palette, looping forever
+//   truePng(rgba, w, h, alpha) a full-colour PNG, RGBA or (alpha false) RGB with no alpha channel, as app stores want
+//   ico(images)                a Windows .ico holding PNG images of the given sizes
 import { deflateSync } from 'node:zlib';
 
 // Decode a PNG buffer to raw RGBA using a page that runs nothing else (the game page keeps its loop running).
@@ -128,12 +130,12 @@ function chunk(type, data) {
   out.writeUInt32BE((c ^ -1) >>> 0, 8 + data.length);
   return out;
 }
-function header(w, h) {
+function header(w, h, type = 3) {
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(w, 0);
   ihdr.writeUInt32BE(h, 4);
   ihdr[8] = 8;
-  ihdr[9] = 3; // palette
+  ihdr[9] = type; // 3 palette, 2 RGB, 6 RGBA
   return [Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr)];
 }
 
@@ -145,6 +147,31 @@ export function indexedPng(px, w, h, max = 256) {
     chunk('IDAT', deflateSync(indices(px, w, h, pal, new Map()), { level: 9 })),
     chunk('IEND', Buffer.alloc(0)),
   ]);
+}
+
+export function truePng(px, w, h, alpha = true) {
+  const n = alpha ? 4 : 3,
+    raw = Buffer.alloc((w * n + 1) * h); // each row starts with filter 0
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) for (let c = 0; c < n; c++) raw[y * (w * n + 1) + 1 + x * n + c] = px[(y * w + x) * 4 + c];
+  return Buffer.concat([...header(w, h, alpha ? 6 : 2), chunk('IDAT', deflateSync(raw, { level: 9 })), chunk('IEND', Buffer.alloc(0))]);
+}
+
+// images: [{ size, png }]; the directory says 0 for a side of 256
+export function ico(images) {
+  const head = Buffer.alloc(6 + 16 * images.length);
+  head.writeUInt16LE(1, 2);
+  head.writeUInt16LE(images.length, 4);
+  let at = head.length;
+  images.forEach(({ size, png }, i) => {
+    const e = 6 + 16 * i;
+    head[e] = head[e + 1] = size >= 256 ? 0 : size;
+    head.writeUInt16LE(1, e + 4); // colour planes
+    head.writeUInt16LE(32, e + 6); // bits per pixel
+    head.writeUInt32LE(png.length, e + 8);
+    head.writeUInt32LE(at, e + 12);
+    at += png.length;
+  });
+  return Buffer.concat([head, ...images.map((m) => m.png)]);
 }
 
 export function apng(frames, w, h, ms, max = 256) {

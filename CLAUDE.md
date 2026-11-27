@@ -22,6 +22,7 @@ node tools/sugar-curve.mjs 8 35 normal [weak]    hours of play to the whole ward
 node tools/announce-curve.mjs 20 normal    how often each word of swallows in a row comes per run (add weak, or daily=<twist>)
 node tools/perf.mjs 6 3    frame cost on an emulated phone (CPU x6, 390x844): first frame, real-loop fps, style/layout per second, update/render ms
 npm run check      exit with an error if index.html does not match src/
+npm run icons      rebuild the store icons and splash in store/ (App Store 1024, Android adaptive layers, 2732 splash, Play 512, Windows .ico) from drawIcon
 npm run og         rebuild og.png, the 1200×630 link preview picture, from a real frame of the game
 npm run shots      rebuild the README screenshots in docs/media/ from real frames of the game
 npm run fonts      rebuild src/fonts.css (the fonts embedded as woff2 data, with their OFL licence texts) from Google Fonts, then build (needs the network)
@@ -37,6 +38,8 @@ Deploying: `npm test`, commit `src/` together with the built `index.html`, `git 
 `index.html` in the root is GENERATED. Edit only `src/`, then `npm run build`. The built file is committed: Pages serves it, and it is also a self-contained page (one file, no network requests: the fonts are embedded) that can be sent around or opened as `file://`.
 
 `og.png` in the root is the preview picture for chats (`og:image`). It is a separate file next to the page: the page does not load it, so it does not break the "one file" rule. The tab icon is embedded in `<head>` as a data-URI SVG.
+
+`store/` holds the app store icons and the splash screen made by `npm run icons` (names as `@capacitor/assets` expects them, plus `play-512.png` and `kus.ico`). The page does not load them; they are committed so the app and desktop wrappers can be built without Chrome.
 
 Sound takes are made outside the repository with earshot (https://github.com/Leonxlnx/earshot, MIT) and embedded as data, so the page stays one file. `tools/sfx.json` says which earshot design plays each event and names the folder with the takes (`src`); `node tools/sfx.mjs pick <event> <design|synth>` swaps one and rebuilds. An event set to `null` there plays the synth. `SFX_SRC=<folder> node tools/sfx.mjs` builds from another takes folder (with a `candidates.json` and `variants/<event>__v<N>.wav`); events that folder has no candidates for keep the takes already in `05-sound-data.js` unchanged, so one machine can add an event without the others' wav files. The takes were picked from earshot's descriptions and measurements: nobody has listened to them in the game yet.
 
@@ -76,7 +79,7 @@ Sound takes are made outside the repository with earshot (https://github.com/Leo
 | `15-admin` | the admin panel with cheats |
 | `16-settings` | pause, settings (one set, moved by `setHome` between the menu section and the pause card), the challenge link |
 | `16-trophy` | the live glaze frame of the trophy win card (canvas, drawn only while the card is shown) |
-| `17-boot` | `adapt` (automatic graphics tuning), `frame`, startup, `window.__kus` |
+| `17-boot` | `adapt` (automatic graphics tuning), `frame`, startup, `drawIcon` (the game's icon: the tab icon and `tools/icons.mjs` draw with it), `window.__kus` |
 
 A frame: `frame` → `update(dt)` (bots, bodies, collisions, bites, food, rings of points, camera, HUD) → `render()`.
 
