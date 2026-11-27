@@ -248,6 +248,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:var(--ground);color:va
 #vig{position:fixed;left:0;top:0;right:0;bottom:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,rgba(10,4,2,0) 58%,rgba(10,4,2,.4) 100%)}
 #c{touch-action:none;position:fixed;left:0;top:0;right:0;bottom:0;width:100%;height:100%;display:block;cursor:crosshair}
 .hidden{display:none!important}
+body.pad :focus{outline:4px solid var(--lemon)!important;outline-offset:4px!important;box-shadow:0 0 0 4px var(--ink)!important} /* the gamepad's focus: lemon on a dark ring, seen on cream and on the dark field */
 body{position:fixed;left:0;top:0;right:0;bottom:0;width:100%}
 #safe{position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
 #score{position:fixed;left:calc(16px + env(safe-area-inset-left,0px));top:calc(12px + env(safe-area-inset-top,0px));z-index:2;pointer-events:none}
@@ -677,6 +678,17 @@ body.first.touch #feed div{max-width:min(calc(50vw - 52px),calc(100vw - 206px))}
   #pauseBtn{bottom:170px}
   #adm .seg{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+/* gamepad mode (body.pad, 14-gamepad): Xbox-style glyphs instead of key hints, the pad's help lines, page text 12 px for Steam Deck */
+.pg{display:none}
+body.pad .pg{display:inline-grid;place-items:center;width:22px;height:22px;margin-top:4px;border-radius:50%;background:var(--ink);color:#fff;font:900 13px/1 var(--font);font-style:normal}
+body.pad #dash .pg{background:#3f9b2f}
+body.pad #dodge .pg{background:#d23c3c}
+body.pad #dash small,body.pad #dodge small,body.pad #pauseBtn svg{display:none}
+body.pad #pauseBtn .pg{margin:0;width:auto;height:auto;background:none;color:var(--ink);font-size:20px}
+.help .pd{display:none}
+body.pad .help .kb,body.pad .help .tc{display:none}
+body.pad .help .pd{display:list-item}
+body.pad #skins .pz,body.pad #hats .pz,body.pad #eyes .pz,body.pad #trail .pz,body.pad #tray .pz,body.pad .st .sn,body.pad .st i,body.pad #trTiles span,body.pad #fpsTag{font-size:12px}
 </style>
 </head>
 <body>
@@ -704,9 +716,9 @@ document.getElementById('nojs').style.display = 'none';
 
 <div id="hud" class="hidden">
   <div id="score"><div id="mass">0</div><div class="lbl" data-t="hud.mass">масса</div><div id="sugar" aria-label="сахар 0"><span class="sock"><svg viewBox="0 0 24 24"><path d="M12 2.5 21 7.2 12 11.9 3 7.2Z" fill="#fffaf0" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M3 7.2 12 11.9V21.5L3 16.8Z" fill="#efe1c8" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><path d="M21 7.2 12 11.9V21.5L21 16.8Z" fill="#d6bd95" stroke="rgba(58,33,24,.28)" stroke-width=".7" stroke-linejoin="round"/><circle cx="9.5" cy="6.6" r=".9" fill="#fff"/><circle cx="14.2" cy="7.6" r=".7" fill="#fff"/><circle cx="6.5" cy="12" r=".6" fill="#fff"/></svg></span><span class="num"></span><span class="mult"></span></div><div id="timer"></div><div id="goal"></div><div id="stage" class="off"><span class="fill"></span><span class="t"></span><b></b></div><div id="cheatTag"></div><div id="fpsTag"></div><div id="fx"></div><div id="streakSum" role="status"></div><div id="feed" aria-live="polite"></div></div>
-  <button id="pauseBtn" type="button" aria-label="Пауза" title="Пауза (Esc)" data-ta="pause" data-tt="pause.tip"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg></button>
-  <button id="dash" type="button" aria-label="Рывок с укусом" data-ta="a.dash" data-tc="dash.low"><span><b data-t="btn.kus">Кусь</b><small data-t="btn.space">пробел</small></span></button>
-  <button id="dodge" type="button" aria-label="Язык-присоска" data-ta="a.tongue"><span><b data-t="btn.tongue">Язык</b><small>shift</small></span></button>
+  <button id="pauseBtn" type="button" aria-label="Пауза" title="Пауза (Esc)" data-ta="pause" data-tt="pause.tip"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5"/><rect x="14" y="4" width="5" height="16" rx="1.5"/></svg><i class="pg" aria-hidden="true">☰</i></button>
+  <button id="dash" type="button" aria-label="Рывок с укусом" data-ta="a.dash" data-tc="dash.low"><span><b data-t="btn.kus">Кусь</b><small data-t="btn.space">пробел</small><i class="pg" aria-hidden="true">A</i></span></button>
+  <button id="dodge" type="button" aria-label="Язык-присоска" data-ta="a.tongue"><span><b data-t="btn.tongue">Язык</b><small>shift</small><i class="pg" aria-hidden="true">B</i></span></button>
 </div>
 
 <div id="board"><div class="bt" data-t="board.t">Самые сладкие</div><ol id="lb"></ol></div>
@@ -752,6 +764,8 @@ document.getElementById('nojs').style.display = 'none';
       <li class="kb"><span data-th="help.shift"><b>Shift, правый клик или «Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
       <li class="tc"><span data-th="help.finger"><b>Води пальцем по экрану</b>: под ним появится джойстик</span></li>
       <li class="tc"><span data-th="help.kus"><b>«Кусь»</b>: рывок с укусом посильнее, можно держать</span></li>
+      <li class="pd"><span data-th="help.pad1"><b>Левый стик</b>: плыть. <b>A</b> или <b>RT</b>: кусь, <b>B</b> или <b>LT</b>: язык</span></li>
+      <li class="pd"><span data-th="help.pad2"><b>Start</b>: пауза, <b>Select</b>: звук. В меню <b>крестовина</b> и <b>A</b>, <b>B</b>: назад, <b>LB</b> и <b>RB</b>: листать ряд</span></li>
       <li class="tc"><span data-th="help.tongue"><b>«Язык»</b>: язык-присоска, тянет добычу к пасти</span></li>
       <li><span data-th="help.t1">Кусает только пасть, так что заходи со спины</span></li>
       <li><span data-th="help.t2">Тебя тоже будут кусать: ранки затянутся, а есть можно дальше</span></li>
@@ -928,6 +942,14 @@ const STR = {
   ],
   'help.finger': ['<b>Води пальцем по экрану</b>: под ним появится джойстик', '<b>Drag a finger on the screen</b>: a joystick appears under it'],
   'help.kus': ['<b>«Кусь»</b>: рывок с укусом посильнее, можно держать', '<b>“Kusь!”</b>: a dash with a stronger bite, you can hold it'],
+  'help.pad1': [
+    '<b>Левый стик</b>: плыть. <b>A</b> или <b>RT</b>: кусь, <b>B</b> или <b>LT</b>: язык',
+    '<b>Left stick</b>: swim. <b>A</b> or <b>RT</b>: bite, <b>B</b> or <b>LT</b>: tongue',
+  ],
+  'help.pad2': [
+    '<b>Start</b>: пауза, <b>Select</b>: звук. В меню <b>крестовина</b> и <b>A</b>, <b>B</b>: назад, <b>LB</b> и <b>RB</b>: листать ряд',
+    '<b>Start</b>: pause, <b>Select</b>: sound. In menus the <b>d-pad</b> and <b>A</b>, <b>B</b>: back, <b>LB</b> and <b>RB</b>: flip through a row',
+  ],
   'help.tongue': ['<b>«Язык»</b>: язык-присоска, тянет добычу к пасти', '<b>“Tongue”</b>: a sticky tongue pulls prey to your mouth'],
   'help.t1': ['Кусает только пасть, так что заходи со спины', 'Only the mouth bites, so come in from behind'],
   'help.t2': ['Тебя тоже будут кусать: ранки затянутся, а есть можно дальше', 'You will get bitten too: wounds heal, and you can keep eating'],
@@ -1158,6 +1180,7 @@ const STR = {
   'tip.touchL': ['Справа води пальцем, слева <b>Кусь</b> и <b>Язык</b>', 'Drag on the right, <b>Kusь!</b> and <b>Tongue</b> on the left'],
   'tip.touchR': ['Слева води пальцем, справа <b>Кусь</b> и <b>Язык</b>', 'Drag on the left, <b>Kusь!</b> and <b>Tongue</b> on the right'],
   'tip.colorsT': ['<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты', 'A <b>red</b> outline will eat you, a <b>green</b> one you can eat'],
+  'tip.pad': ['<b>Левый стик</b>: плыви, пасть смотрит, куда плывёшь', '<b>Left stick</b>: swim, the mouth looks where you go'],
   'tip.mouse': ['Веди мышью: пасть смотрит на курсор', 'Move the mouse: the mouth looks at the cursor'],
   'tip.colorsM': [
     '<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты',
@@ -1207,6 +1230,10 @@ const STR = {
   'tip.biteT': [
     'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Кусь</b>: рывок с укусом',
     'Reach a <b>green</b> candy with your mouth, it bites by itself. <b>Kusь!</b>: dash and bite',
+  ],
+  'tip.biteP': [
+    'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>A</b>: рывок с укусом',
+    'Reach a <b>green</b> candy with your mouth, it bites by itself. <b>A</b>: dash and bite',
   ],
   'tip.biteM': [
     'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Клик</b>: рывок с укусом',
@@ -2126,6 +2153,18 @@ function setTouch(on) {
   if (touchMode === on) return;
   touchMode = on;
   document.body.classList.toggle('touch', on);
+}
+let padMode = false; // playing with a gamepad (14-gamepad): body.pad shows its glyphs and the focus ring
+function setPad(on) {
+  if (padMode === on) return;
+  padMode = on;
+  document.body.classList.toggle('pad', on);
+  if (!on) {
+    stick.mag = 0; // the mouse or a finger takes over from a standstill
+    input.dashHeld = false;
+    const f = document.activeElement;
+    if (f && f !== document.body && f.tagName !== 'INPUT' && f.blur) f.blur(); // no focus ring left behind for the mouse
+  }
 }
 function haptic(ms) {
   // a tap in the hand on every bite, where the device allows it
@@ -5775,7 +5814,7 @@ function startGame() {
   if (touchMode) {
     addFeed(SET.lefty ? t('tip.touchL') : t('tip.touchR'));
     if (!tutor) addFeed(t('tip.colorsT')); // the first run tells this after the first bite
-  } else if (tutor) addFeed(t('tip.mouse'));
+  } else if (tutor) addFeed(padMode ? t('tip.pad') : t('tip.mouse'));
   else addFeed(t('tip.colorsM'));
   if (day) {
     if (tutor)
@@ -6155,7 +6194,8 @@ function updateHUD(dt) {
         q.tame = false;
         tutor = null;
         if (player.stats.bites > 0) addFeed(touchMode ? t('tip.colorsT') : t('tip.colorsM'), 5200);
-      } else if (Math.hypot(q.x - player.x, q.y - player.y) - q.Rs - player.Rs < 50) hint('bite', touchMode ? t('tip.biteT') : t('tip.biteM'));
+      } else if (Math.hypot(q.x - player.x, q.y - player.y) - q.Rs - player.Rs < 50)
+        hint('bite', touchMode ? t('tip.biteT') : padMode ? t('tip.biteP') : t('tip.biteM'));
     }
     if (run.dayNote && !tutor) {
       let live = 0;
@@ -6204,8 +6244,8 @@ function update(dt) {
   flashT = Math.max(0, flashT - dt);
   if (player && player.alive && state === 'play' && player.ai) botSteer(player, dt);
   else if (player && player.alive && state === 'play') {
-    if (touchMode) {
-      // joystick: direction and how hard it is pushed
+    if (touchMode || padMode) {
+      // joystick or gamepad stick: direction and how hard it is pushed
       const reach = stick.mag > 0 ? (player.Rs * 1.1 + 40) * (0.25 + 1.35 * stick.mag) : 0;
       player.tx = player.x + stick.vx * reach;
       player.ty = player.y + stick.vy * reach;
@@ -9587,6 +9627,236 @@ function render() {
   drawStick();
 }
 
+// ---------- gamepad ----------
+// The standard Gamepad API, read once a frame (padPoll from frame in 17-boot). In a run the left stick feeds the same
+// `stick` the touch joystick does and the buttons set `input`; whoever touched last is in charge: a press or a stick
+// out of its dead zone turns pad mode on (body.pad), a mouse move, a mouse or finger press, or a key turns it off.
+// Layout (mapping 'standard'): A 0, B 1, LB 4, RB 5, LT 6, RT 7, Select 8, Start 9, d-pad 12 up, 13 down, 14 left, 15 right.
+const PAD = { dead: 0.18, trig: 0.5, rep0: 0.4, rep: 0.12 }; // stick dead zone, trigger threshold, d-pad repeat: first after, then every
+const pad = { idx: -1, prev: [], now: [], hold: 0, dir: '', m: 0, ax: 0, ay: 0, runA: false, root: null, lockT: 0 };
+const padDown = (i) => !!pad.now[i] && !pad.prev[i]; // pressed in this frame
+const padHeld = (i) => !!pad.now[i];
+// in a run with nothing over it: the pause card, the admin panel and the album take the buttons for themselves
+const padInRun = () => state === 'play' && pauseEl.classList.contains('hidden') && admEl.classList.contains('hidden') && !albumOpen();
+
+function padFind() {
+  // the first connected pad with the standard layout drives; any other pad is ignored
+  let list = [];
+  try {
+    list = navigator.getGamepads ? navigator.getGamepads() : [];
+  } catch (e) {}
+  for (let i = 0; i < (list ? list.length : 0); i++) {
+    const g = list[i];
+    if (g && g.connected !== false && g.mapping === 'standard') return g;
+  }
+  return null;
+}
+
+function padPoll(rdt) {
+  const g = padFind();
+  const prev = pad.prev;
+  pad.prev = pad.now;
+  pad.now = prev;
+  pad.now.length = 0;
+  if (!g) {
+    pad.idx = -1;
+    pad.m = 0;
+    pad.runA = false;
+    if (padMode) {
+      stick.mag = 0; // the pad went quiet without a disconnect event (a sleeping wireless pad): stop, do not bite on
+      input.dashHeld = false;
+    }
+    return;
+  }
+  pad.idx = g.index;
+  const b = g.buttons || [];
+  for (let i = 0; i < 17; i++) {
+    const x = b[i];
+    // a trigger counts past half way; other buttons by their own pressed flag
+    pad.now[i] = !!x && (i === 6 || i === 7 ? x.value > PAD.trig : !!x.pressed || x.value > PAD.trig);
+  }
+  const ax = +g.axes[0] || 0,
+    ay = +g.axes[1] || 0,
+    m = Math.hypot(ax, ay),
+    was = pad.m;
+  pad.ax = ax;
+  pad.ay = ay;
+  pad.m = m;
+  let pressed = false;
+  for (let i = 0; i < 17; i++) if (padDown(i)) pressed = true;
+  // a stick resting a little off centre (drift) never takes over: only a press or a push out of the dead zone
+  if (pressed || (m > PAD.dead && was <= PAD.dead)) {
+    if (!padMode) pad.root = null; // the screen under the mouse gets its first focus now
+    setPad(true);
+  }
+  if (!padMode) return;
+  if (padDown(8)) toggleMute();
+  if (padDown(9)) {
+    if (!pauseEl.classList.contains('hidden')) closePause();
+    else if (padInRun()) openPause();
+  }
+  if (!padInRun()) {
+    pad.runA = false; // an A held through the start of a run is the menu's press, not a bite
+    padScreens(rdt);
+    return;
+  }
+  pad.root = null;
+  pad.dir = '';
+  if (m > PAD.dead) {
+    stick.vx = ax / m;
+    stick.vy = ay / m;
+    stick.mag = Math.min(1, (m - PAD.dead) / (1 - PAD.dead));
+  } else stick.mag = 0; // a released stick stops the candy
+  const a = padHeld(0) || padHeld(7);
+  if (padDown(0) || padDown(7)) {
+    input.dash = true;
+    pad.runA = true;
+  }
+  if (!a) pad.runA = false;
+  input.dashHeld = pad.runA; // held: a new bite each time the lunge is ready again, like the touch button
+  if (padDown(1) || padDown(6)) input.dodge = true;
+}
+
+// whoever touched last is in charge
+addEventListener('pointermove', (e) => {
+  if (e.pointerType === 'mouse' && padMode) setPad(false);
+});
+addEventListener('pointerdown', () => setPad(false), { capture: true });
+addEventListener('keydown', () => setPad(false), { capture: true });
+addEventListener('gamepaddisconnected', () => {
+  if (padMode) openPause(); // the pad went away mid-run: stop before the candy gets eaten
+});
+
+// ---------- gamepad on the screens ----------
+// The d-pad (or the stick past half way) moves the focus to the nearest button that way, A presses it, B goes back,
+// LB/RB step through the open items of a choice row. Nothing here knows the screens' buttons: any visible button,
+// radio or link of the top window is a stop, so new screens and rows work by themselves.
+const PAD_ROOTS = ['album', 'adm', 'pause', 'over', 'menu']; // the top window first
+const PAD_HOME = { menu: 'play', pause: 'resume', over: 'again', album: 'albumX' }; // each screen's main button
+const padShown = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+function padRoot() {
+  for (const id of PAD_ROOTS) {
+    const el = $(id);
+    if (el && !el.classList.contains('hidden') && padShown(el)) return el;
+  }
+  return null;
+}
+function padItems(root) {
+  if (!root) return [];
+  // the name is optional and the admin panel is not for players: both are skipped
+  return [...root.querySelectorAll('button, [role=radio], a[href]')].filter(
+    (el) => el.id !== 'nick' && el.id !== 'pAdmin' && !el.disabled && padShown(el),
+  );
+}
+function padFocus(el) {
+  el.focus({ preventScroll: true });
+  el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); // a stop outside a scrolled window or row brings it into view
+  if (menuEl.contains(el) && !menuGo.contains(el)) {
+    // the sticky Play block covers the bottom of the menu card: lift the stop above it, as opening a section does
+    const box = getComputedStyle(secsEl).overflowY === 'auto' ? secsEl : menuCard,
+      bottom = box === menuCard ? menuGo.getBoundingClientRect().top : box.getBoundingClientRect().bottom,
+      r = el.getBoundingClientRect();
+    if (r.bottom > bottom) box.scrollTop += r.bottom - bottom + 8;
+  }
+}
+function padHome(root) {
+  const items = padItems(root),
+    main = $(PAD_HOME[root && root.id]),
+    el = items.includes(main) ? main : items[0];
+  if (el) padFocus(el);
+}
+function padNav(dir) {
+  const root = padRoot();
+  if (!root) return false;
+  const items = padItems(root),
+    cur = document.activeElement;
+  if (!items.includes(cur)) {
+    padHome(root); // the focused button went away (a section folded, a card redrawn): start from the screen's main button
+    return !!root.contains(document.activeElement);
+  }
+  const r = cur.getBoundingClientRect(),
+    cx = r.left + r.width / 2,
+    cy = r.top + r.height / 2,
+    v = dir === 'up' || dir === 'down';
+  let best = null,
+    bw = Infinity;
+  for (const el of items) {
+    if (el === cur) continue;
+    const q = el.getBoundingClientRect(),
+      dx = q.left + q.width / 2 - cx,
+      dy = q.top + q.height / 2 - cy,
+      main = dir === 'up' ? -dy : dir === 'down' ? dy : dir === 'left' ? -dx : dx;
+    if (main <= 4) continue;
+    // the way it points, plus twice the step aside; the sticky Play block is the menu's last stop going down, so the
+    // section heads scrolled out below it are reached first
+    const w = main + 2 * (v ? Math.abs(dx) : Math.abs(dy)) + (dir === 'down' && menuGo.contains(el) && !menuGo.contains(cur) ? 1e5 : 0);
+    if (w < bw) {
+      bw = w;
+      best = el;
+    }
+  }
+  if (!best) return false;
+  padFocus(best);
+  return true;
+}
+function padBack(root) {
+  if (root.id === 'album') closeAlbum();
+  else if (root.id === 'pause') closePause();
+  else if (root.id === 'over' && padShown($('overX'))) $('overX').click();
+}
+function padRow(root, step) {
+  // LB/RB: the previous or next open item of the row in focus, or of the flavours; a locked one is skipped
+  if (root.id !== 'menu') return;
+  const cur = document.activeElement,
+    inRow = cur && cur.closest ? cur.closest('.pr') : null,
+    row = inRow && root.contains(inRow) ? inRow : $('sw');
+  const open = [...row.querySelectorAll('[role=radio]')].filter((x) => !x.classList.contains('lock') && !x.disabled),
+    next = open[open.findIndex((x) => x.getAttribute('aria-checked') === 'true') + step];
+  if (!next) return;
+  next.click();
+  if (inRow) {
+    const now = row.querySelector('[aria-checked="true"]'); // the row may have been drawn anew
+    if (now) padFocus(now);
+  }
+}
+function padScreens(rdt) {
+  const root = padRoot(),
+    ax = pad.ax,
+    ay = pad.ay;
+  let dir = '';
+  if (padHeld(12)) dir = 'up';
+  else if (padHeld(13)) dir = 'down';
+  else if (padHeld(14)) dir = 'left';
+  else if (padHeld(15)) dir = 'right';
+  else if (Math.max(Math.abs(ax), Math.abs(ay)) > 0.5) dir = Math.abs(ax) > Math.abs(ay) ? (ax > 0 ? 'right' : 'left') : ay > 0 ? 'down' : 'up';
+  if (root !== pad.root) {
+    pad.root = root; // a window opened or closed: its main button takes the focus
+    if (root) padHome(root);
+    // a direction still held from before (steering when Start or a death came) waits until the pad is let go,
+    // and the end card ignores the buttons for a moment, so A mashed through a death does not skip it
+    pad.dir = dir;
+    pad.hold = Infinity;
+    pad.lockT = root && root.id === 'over' ? 0.5 : 0;
+  }
+  if (!root) return;
+  if (pad.lockT > 0) pad.lockT -= rdt;
+  else if (padDown(0)) {
+    const el = document.activeElement;
+    if (padItems(root).includes(el)) el.click();
+    else padHome(root);
+  } else if (padDown(1)) padBack(root);
+  else if (padDown(4) || padDown(5)) padRow(root, padDown(5) ? 1 : -1);
+  if (!dir) pad.dir = '';
+  else if (dir !== pad.dir) {
+    pad.dir = dir; // a new direction moves at once, then repeats while held
+    pad.hold = PAD.rep0;
+    padNav(dir);
+  } else if ((pad.hold -= rdt) <= 0) {
+    pad.hold += PAD.rep;
+    padNav(dir);
+  }
+}
+
 // ---------- input ----------
 function stickMove(e) {
   let dx = e.clientX - stick.bx,
@@ -9618,6 +9888,7 @@ function stickEnd(e) {
 cvs.addEventListener('pointermove', (e) => {
   if (e.pointerType === 'mouse') {
     setTouch(false);
+    if (padMode) return setPad(false); // the move that hands control back does not pull the candy yet
     input.sx = e.clientX;
     input.sy = e.clientY;
   } else if (e.pointerId === stick.id) stickMove(e);
@@ -11059,6 +11330,7 @@ function frame(now) {
   if (n >= 1 && n <= 3 && Math.abs(dt - n * fp) < fp * 0.3) dt = n * fp;
   if (dt > 0.05) dt = 0.05;
   const w0 = performance.now();
+  padPoll(dt); // the gamepad, before the run reads its input
   annFrame(dt, paused); // the big word lives in real time: the swallow's slow-down does not drag it
   if (!paused) {
     let sc = CHEAT.slow ? 0.45 : 1;
@@ -11199,6 +11471,20 @@ function start(data) {
 window.__kus = {
   PLATFORM,
   drawIcon,
+  pad,
+  PAD,
+  padPoll,
+  padRoot,
+  padItems,
+  padNav,
+  padHome,
+  setPad,
+  setTouch,
+  stick,
+  input,
+  get padMode() {
+    return padMode;
+  },
   LANG,
   t,
   STR,

@@ -709,10 +709,18 @@ test('missions: the sugar of a mission finished in a run the app never ended is 
   const a2 = await g.page.evaluate(() => ({ bank: window.__kus.sugar, kills: window.__kus.M.act.some((m) => m.type === 'kills') }));
   await reload();
   const a3 = await g.page.evaluate(() => window.__kus.sugar);
-  const kept = await g.page.evaluate(() => localStorage.getItem('kus.sugar')); // shows why, if the next check fails
+  // this check has failed now and then in full runs (the bank came back 0) and never in isolation: if it fails again,
+  // say what the reloaded page found in storage, now and a moment later, and any page errors
+  let why = '';
+  if (a2.bank !== 50 + a.paid || a3 !== 50 + a.paid) {
+    const look = () => g.page.evaluate(() => ({ sugar: localStorage.getItem('kus.sugar'), m: (localStorage.getItem('kus.m') || '').slice(0, 80), keys: Object.keys(localStorage).length }));
+    const now = await look();
+    await g.page.waitForTimeout(1500);
+    why = ` (storage ${JSON.stringify(now)}, 1.5 s later ${JSON.stringify(await look())}; page errors: ${g.errors.join(' | ') || 'none'})`;
+  }
   assert(a.done && a.paid > 0 && a.bank === 50, `mission done ${a.done}, paid ${a.paid}, bank mid-run ${a.bank}`);
-  assert(a2.bank === 50 + a.paid && !a2.kills, `after the restart the bank is ${a2.bank}, want ${50 + a.paid}`);
-  assert(a3 === a2.bank, `a second restart changed the bank: ${a2.bank} -> ${a3} (kus.sugar ${kept}; page errors: ${g.errors.join(' | ') || 'none'})`);
+  assert(a2.bank === 50 + a.paid && !a2.kills, `after the restart the bank is ${a2.bank}, want ${50 + a.paid}${why}`);
+  assert(a3 === a2.bank, `a second restart changed the bank: ${a2.bank} -> ${a3}${why}`);
   // a run that ends as usual pays the mission inside its own sugar, and a restart adds nothing
   const b = await finish(true);
   await reload();
@@ -3377,6 +3385,690 @@ test('fonts: the font tool refuses a lost weight and a download that is not woff
   assert(!throws(() => checkFace('Rubik Bubbles', "@font-face{font-family:'Rubik Bubbles';font-weight: 400;src:url(x)}", woff2)), 'a good Rubik Bubbles face was refused');
   assert(throws(() => checkFace('Nunito', "@font-face{font-family:'Nunito';font-weight: 700;src:url(x)}", woff2)), 'a Nunito face of weight 700 only (800 and 900 lost) was taken');
   assert(throws(() => checkFace('Nunito', "@font-face{font-family:'Nunito';font-weight: 700 900;src:url(x)}", html)), 'an HTML page was taken as a font');
+});
+
+// A fake standard gamepad: window.__pad holds its axes and buttons, __press(i, on, value) presses one.
+// Triggers (6, 7) can be given a value with pressed false, as an analogue trigger half way down.
+const PADFAKE = `window.__pad = { axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })) };
+  navigator.getGamepads = () => [{ id: 'fake', index: 0, mapping: 'standard', connected: true, axes: __pad.axes, buttons: __pad.buttons }];
+  window.__press = (i, on = true, value) => { __pad.buttons[i] = { pressed: value === undefined ? on : false, value: value === undefined ? (on ? 1 : 0) : value }; };`;
+
+test('gamepad: the stick moves like the touch joystick, the dead zone stops the candy', async () => {
+  const g = await open({ init: PADFAKE });
+  const o = await g.page.evaluate(`(() => { ${QUIET}
+    const out = {};
+    k.place(P, 2000, 2000, 0); // the middle of the field: no wall and none of the parked bots to bounce off
+    __pad.axes[0] = 0.9;
+    k.padPoll(1 / 60);
+    out.mode = document.body.classList.contains('pad');
+    out.vx = k.stick.vx;
+    out.mag = k.stick.mag;
+    const x0 = P.x;
+    for (let i = 0; i < 60; i++) { k.padPoll(1 / 60); k.update(1 / 60); }
+    out.dx = P.x - x0;
+    out.v0 = Math.hypot(P.vx, P.vy);
+    __pad.axes[0] = 0.1; __pad.axes[1] = 0.05;
+    k.padPoll(1 / 60);
+    out.mag2 = k.stick.mag;
+    for (let i = 0; i < 60; i++) { k.padPoll(1 / 60); k.update(1 / 60); }
+    out.v1 = Math.hypot(P.vx, P.vy);
+    return out; })()`);
+  assert(o.mode, 'the stick did not switch to pad mode');
+  assert(Math.abs(o.vx - 1) < 0.01 && Math.abs(o.mag - (0.9 - 0.18) / 0.82) < 0.01, `stick vx ${o.vx}, mag ${o.mag}`);
+  assert(o.dx > 30, `the candy moved ${o.dx} in a second`);
+  assert(o.mag2 === 0 && o.v1 < o.v0 * 0.2, `dead zone: mag ${o.mag2}, speed ${o.v0} -> ${o.v1}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+  // a pad that drifts a little from the start does not take over
+  const d = await open({ init: PADFAKE + '__pad.axes[0] = 0.1;' });
+  const mode = await d.page.evaluate(() => {
+    window.__kus.padPoll(1 / 60);
+    return document.body.classList.contains('pad');
+  });
+  assert(!mode, 'a drifting stick (0.1) switched to pad mode');
+  await d.close();
+});
+
+test('gamepad: A bites once on a press and again only after the cooldown; B tongues; Start pauses; Select mutes', async () => {
+  const g = await open({ init: PADFAKE });
+  const o = await g.page.evaluate(`(() => { ${QUIET}
+    const out = {};
+    let starts = 0, was = 0;
+    const run = (n, each) => {
+      for (let i = 0; i < n; i++) {
+        if (each) each(i);
+        k.padPoll(1 / 60);
+        k.update(1 / 60);
+        if (was <= 0 && P.dashT > 0) starts++;
+        was = P.dashT;
+      }
+    };
+    const fresh = () => { starts = 0; was = 0; P.dashCd = 0; P.dashT = 0; };
+    fresh();
+    run(60, (i) => __press(0, i === 0));
+    out.tap = starts;
+    fresh();
+    run(90, () => __press(0, true));
+    out.holdPad = starts;
+    __press(0, false);
+    k.padPoll(1 / 60);
+    k.setPad(false);
+    k.setTouch(true);
+    fresh();
+    run(90, () => { k.input.dashHeld = true; });
+    out.holdTouch = starts;
+    k.input.dashHeld = false;
+    k.setTouch(false);
+    fresh();
+    run(30, (i) => __press(7, false, i === 0 ? 0.8 : 0));
+    out.rt = starts;
+    __press(1, true);
+    k.padPoll(1 / 60);
+    out.b = k.input.dodge;
+    k.update(1 / 60);
+    __press(1, false);
+    k.padPoll(1 / 60);
+    __press(6, false, 0.8);
+    k.padPoll(1 / 60);
+    out.lt = k.input.dodge;
+    k.update(1 / 60);
+    __press(6, false, 0);
+    k.padPoll(1 / 60);
+    k.pause(false);
+    const card = () => !document.getElementById('pause').classList.contains('hidden');
+    __press(9, true); k.padPoll(1 / 60); out.paused = card();
+    __press(9, false); k.padPoll(1 / 60);
+    __press(9, true); k.padPoll(1 / 60); out.resumed = !card();
+    __press(9, false); k.padPoll(1 / 60);
+    const s0 = k.Sfx.on;
+    __press(8, true); k.padPoll(1 / 60); out.muted = k.Sfx.on !== s0;
+    __press(8, false); k.padPoll(1 / 60);
+    k.pause(true);
+    return out; })()`);
+  assert(o.tap === 1, `one press of A gave ${o.tap} lunges`);
+  assert(Math.abs(o.holdPad - o.holdTouch) <= 1 && o.holdPad >= 1, `holding A gave ${o.holdPad} lunges, holding the touch button ${o.holdTouch}`);
+  assert(o.rt === 1, `RT at 0.8 gave ${o.rt} lunges`);
+  assert(o.b && o.lt, `B tongue ${o.b}, LT tongue ${o.lt}`);
+  assert(o.paused && o.resumed, `Start: paused ${o.paused}, resumed ${o.resumed}`);
+  assert(o.muted, 'Select did not toggle the sound');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+  // A held down in the menu and still held when the run starts gives no lunge
+  const m = await open({ init: PADFAKE, play: false, returning: true });
+  const r = await m.page.evaluate(() => {
+    const k = window.__kus;
+    __press(0, true);
+    k.padPoll(1 / 60);
+    k.startGame();
+    k.pause(true);
+    const P = k.player;
+    P.spawnT = 0;
+    P.dashCd = 0;
+    let lunged = false;
+    for (let i = 0; i < 30; i++) {
+      k.padPoll(1 / 60);
+      k.update(1 / 60);
+      if (P.dashT > 0) lunged = true;
+    }
+    return { state: k.state, lunged, held: k.input.dashHeld };
+  });
+  assert(r.state === 'play' && !r.lunged && !r.held, `A held from the menu: ${JSON.stringify(r)}`);
+  assert(m.errors.length === 0, m.errors.join(' | '));
+  await m.close();
+});
+
+test('gamepad: a mouse move or a key hands control back; a disconnect pauses the run', async () => {
+  const g = await open({ init: PADFAKE });
+  const look = () => g.page.evaluate(() => ({ pad: document.body.classList.contains('pad'), sx: window.__kus.input.sx }));
+  const on = async () => {
+    await g.page.evaluate(() => {
+      __pad.axes[0] = 0.9;
+      window.__kus.padPoll(1 / 60);
+      __pad.axes[0] = 0;
+      window.__kus.padPoll(1 / 60);
+    });
+    return look();
+  };
+  await g.page.evaluate(`(() => { ${QUIET} })()`);
+  const a = await on();
+  await g.page.mouse.move(700, 450);
+  const b = await look();
+  assert(a.pad && !b.pad, `a mouse move left pad mode on: ${JSON.stringify([a, b])}`);
+  assert(b.sx === a.sx, `the mouse move that ended pad mode pulled the candy: sx ${a.sx} -> ${b.sx}`);
+  const c = await on();
+  await g.page.keyboard.press('KeyX');
+  const d = await look();
+  assert(c.pad && !d.pad, 'a key left pad mode on');
+  await on();
+  const paused = await g.page.evaluate(() => {
+    window.__kus.pause(false);
+    dispatchEvent(new Event('gamepaddisconnected'));
+    return !document.getElementById('pause').classList.contains('hidden');
+  });
+  assert(paused, 'a disconnect in pad mode did not pause the run');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('gamepad: with two pads only the first standard one drives', async () => {
+  const g = await open({});
+  const o = await g.page.evaluate(`(() => { ${QUIET}
+    const btns = () => Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+    navigator.getGamepads = () => [null, { index: 1, mapping: '', connected: true, axes: [0.9, 0, 0, 0], buttons: btns() },
+      { index: 2, mapping: 'standard', connected: true, axes: [-0.9, 0, 0, 0], buttons: btns() },
+      { index: 3, mapping: 'standard', connected: true, axes: [0, 0.9, 0, 0], buttons: btns() }];
+    k.padPoll(1 / 60);
+    return { vx: k.stick.vx, vy: k.stick.vy, idx: k.pad.idx }; })()`);
+  assert(Math.abs(o.vx + 1) < 0.01 && Math.abs(o.vy) < 0.01 && o.idx === 2, `two pads: ${JSON.stringify(o)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+// From the screen's first focus, walk the d-pad in all four directions from every button reached: the set reached must be
+// every candidate of the top window (padItems), and never the name field or the admin button.
+const PADWALK = `const reach = () => {
+    const k = window.__kus, root = k.padRoot(), items = k.padItems(root);
+    k.padHome(root);
+    const start = document.activeElement, seen = new Set([start]), q = [start];
+    while (q.length) {
+      const el = q.shift();
+      for (const d of ['up', 'down', 'left', 'right']) {
+        el.focus({ preventScroll: true });
+        if (k.padNav(d) && !seen.has(document.activeElement)) { seen.add(document.activeElement); q.push(document.activeElement); }
+      }
+    }
+    const name = (x) => x.id || (x.getAttribute('aria-label') || x.textContent || x.className).trim().slice(0, 24);
+    return { root: root && root.id, n: items.length, miss: items.filter((x) => !seen.has(x)).map(name),
+      extra: [...seen].filter((x) => !items.includes(x)).map(name), skipped: items.filter((x) => x.id === 'nick' || x.id === 'pAdmin').length };
+  };
+  const first = () => document.activeElement && document.activeElement.id;`;
+const walked = (w, label) => {
+  assert(w.n > 0 && w.miss.length === 0 && w.extra.length === 0 && w.skipped === 0, `${label}: ${JSON.stringify(w)}`);
+};
+
+test('gamepad: every button on every screen is reachable with the d-pad', async () => {
+  // the menu, one folding section open at a time
+  const m = await open({ init: PADFAKE, play: false, returning: true });
+  const menu = await m.page.evaluate(`(() => { ${PADWALK}
+    const k = window.__kus, out = { secs: [] };
+    k.setPad(true);
+    k.padPoll(1 / 60);
+    out.home = first();
+    out.closed = reach();
+    for (const sh of document.querySelectorAll('#menu .sec .sh')) {
+      if (sh.getAttribute('aria-expanded') !== 'true') sh.click();
+      out.secs.push([sh.parentElement.id, reach()]);
+    }
+    return out; })()`);
+  assert(menu.home === 'play', `the menu's first focus is ${menu.home}`);
+  walked(menu.closed, 'menu');
+  assert(menu.secs.length >= 4, `sections: ${menu.secs.length}`);
+  for (const [id, w] of menu.secs) walked(w, `menu, ${id} open`);
+  // the album over the menu
+  const album = await m.page.evaluate(`(() => { ${PADWALK}
+    const k = window.__kus;
+    document.getElementById('albumBtn').click();
+    k.padPoll(1 / 60);
+    return { home: first(), w: reach() }; })()`);
+  assert(album.home === 'albumX', `the album's first focus is ${album.home}`);
+  walked(album.w, 'album');
+  assert(m.errors.length === 0, m.errors.join(' | '));
+  await m.close();
+  // the pause and the end card of a run
+  const g = await open({ init: PADFAKE });
+  const run = await g.page.evaluate(`(() => { ${QUIET} ${PADWALK}
+    const out = {};
+    k.pause(false);
+    k.setPad(true);
+    __press(9, true); k.padPoll(1 / 60); __press(9, false); k.padPoll(1 / 60);
+    out.pauseHome = first();
+    out.pause = reach();
+    __press(9, true); k.padPoll(1 / 60); __press(9, false); k.padPoll(1 / 60);
+    k.pause(true);
+    P.alive = false;
+    k.die(null);
+    const over = document.getElementById('over');
+    for (let f = 0; over.classList.contains('hidden') && f < 300; f++) k.update(1 / 60);
+    k.padPoll(1 / 60);
+    out.overHome = first();
+    out.over = reach();
+    return out; })()`);
+  assert(run.pauseHome === 'resume', `the pause's first focus is ${run.pauseHome}`);
+  walked(run.pause, 'pause');
+  assert(run.overHome === 'again', `the end card's first focus is ${run.overHome}`);
+  walked(run.over, 'end card');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+  // the trophy card after beating the Big Cake
+  const w = await open({ init: PADFAKE, play: false, returning: true });
+  const won = await w.page.evaluate(`(() => { ${STG} ${PADWALK}
+    const P = free(); P.mass = 1600; S().i = 2; S().endT = -99; run(0.1);
+    const B = S().cur.b; B.spawnT = 0; B.ai = null;
+    B.mass = 60; k.place(B, 600, 600, 0); for (let i = 0; i < 40; i++) { B.mass = 60; k.place(B, 600, 600, 0); k.update(1 / 60); }
+    k.place(B, 2000, 2000, 0); k.place(P, 2000 - B.Rs - P.Rs + 6, 2000, 0); let f = 0;
+    while (k.state === 'play' && f++ < 400) { P.tx = B.x; P.ty = B.y; B.tx = B.x; B.ty = B.y; P.biteCd = Math.min(P.biteCd, 0); k.update(1 / 60); }
+    k.setPad(true);
+    k.padPoll(1 / 60);
+    return { state: k.state, home: first(), w: reach() }; })()`);
+  assert(won.state === 'won' && won.home === 'again', `the trophy card: state ${won.state}, first focus ${won.home}`);
+  walked(won.w, 'trophy card');
+  assert(w.errors.length === 0, w.errors.join(' | '));
+  await w.close();
+});
+
+test('gamepad: A presses, B goes back, LB/RB step through open items of a row', async () => {
+  const own = `localStorage.setItem('kus.own', JSON.stringify({ v: 1, hat: ['bow', 'chef'] }));`; // bow and chef owned, cap (between) locked
+  const g = await open({ init: PADFAKE + own, play: false, returning: true });
+  const o = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {},
+      tap = (i) => {
+        __press(i, true);
+        k.padPoll(1 / 60);
+        __press(i, false);
+        k.padPoll(1 / 60);
+      },
+      idx = (row) => [...document.querySelectorAll(row + ' [role=radio]')].findIndex((x) => x.getAttribute('aria-checked') === 'true');
+    k.setPad(true);
+    k.padPoll(1 / 60);
+    const sh = document.querySelector('#secLook .sh');
+    sh.focus();
+    tap(0);
+    out.open = sh.getAttribute('aria-expanded');
+    const hats = [...document.querySelectorAll('#hats [role=radio]')];
+    out.openHats = hats.map((x, i) => (x.classList.contains('lock') ? -1 : i)).filter((i) => i >= 0);
+    hats[idx('#hats')].focus();
+    out.h0 = idx('#hats');
+    tap(5);
+    out.h1 = idx('#hats');
+    tap(5);
+    out.h2 = idx('#hats');
+    out.focusInRow = !!document.activeElement.closest('#hats');
+    tap(4);
+    out.h3 = idx('#hats');
+    document.querySelector('#sw [role=radio]').click(); // a first visit picks a random flavour: start from the first, rows do not wrap
+    document.getElementById('play').focus();
+    out.f0 = idx('#sw');
+    tap(5);
+    out.f1 = idx('#sw');
+    // holding the d-pad down for a second from the top of the menu
+    let moves = 0;
+    const count = () => moves++;
+    k.padItems(k.padRoot())[0].focus();
+    addEventListener('focusin', count);
+    __press(13, true);
+    for (let i = 0; i < 60; i++) k.padPoll(1 / 60);
+    __press(13, false);
+    k.padPoll(1 / 60);
+    removeEventListener('focusin', count);
+    out.moves = moves;
+    // B closes the album
+    document.getElementById('albumBtn').click();
+    k.padPoll(1 / 60);
+    tap(1);
+    out.albumShut = document.getElementById('album').classList.contains('hidden');
+    return out;
+  });
+  assert(o.open === 'true', `A on the Look head left it ${o.open}`);
+  assert(o.openHats.length >= 3 && o.h0 === o.openHats[0] && o.h1 === o.openHats[1] && o.h2 === o.openHats[2], `RB on hats: ${JSON.stringify(o)}`);
+  assert(o.focusInRow && o.h3 === o.openHats[1], `LB on hats went to ${o.h3}, focus in the row ${o.focusInRow}`);
+  assert(o.f1 === o.f0 + 1, `RB outside a row changed the flavour ${o.f0} -> ${o.f1}`);
+  assert(Math.abs(o.moves - (1 + Math.floor((1 - 0.4) / 0.12) + 1)) <= 1, `holding the d-pad for 1 s moved ${o.moves} times`);
+  assert(o.albumShut, 'B did not close the album');
+  // B resumes from the pause and leaves the end card for the menu
+  const r = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {},
+      tap = (i) => {
+        __press(i, true);
+        k.padPoll(1 / 60);
+        __press(i, false);
+        k.padPoll(1 / 60);
+      };
+    k.startGame();
+    k.player.spawnT = 0;
+    tap(9);
+    out.paused = !document.getElementById('pause').classList.contains('hidden');
+    tap(1);
+    out.resumed = document.getElementById('pause').classList.contains('hidden') && k.state === 'play';
+    k.pause(true);
+    k.player.alive = false;
+    k.die(null);
+    const over = document.getElementById('over');
+    for (let f = 0; over.classList.contains('hidden') && f < 300; f++) k.update(1 / 60);
+    for (let i = 0; i < 40; i++) k.padPoll(1 / 60); // the end card ignores the buttons for its first half second
+    tap(1);
+    out.menu = !document.getElementById('menu').classList.contains('hidden') && over.classList.contains('hidden');
+    return out;
+  });
+  assert(r.paused && r.resumed, `B in the pause: ${JSON.stringify(r)}`);
+  assert(r.menu, 'B on the end card did not go to the menu');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('gamepad: focus follows the top window and survives a vanished button', async () => {
+  const g = await open({ init: PADFAKE, play: false, returning: true });
+  const o = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {},
+      tap = (i) => {
+        __press(i, true);
+        k.padPoll(1 / 60);
+        __press(i, false);
+        k.padPoll(1 / 60);
+      },
+      inside = (id) => !!document.activeElement.closest('#' + id);
+    k.setPad(true);
+    k.padPoll(1 / 60);
+    document.getElementById('albumBtn').click();
+    k.padPoll(1 / 60);
+    out.album = inside('album');
+    tap(1);
+    out.backInMenu = inside('menu');
+    // a button that goes away under the focus
+    const sh = document.querySelector('#secMis .sh');
+    sh.focus();
+    sh.remove();
+    out.nav = k.padNav('down');
+    out.after = document.activeElement.id;
+    k.startGame();
+    k.player.spawnT = 0;
+    tap(9);
+    out.pause = inside('pause');
+    return out;
+  });
+  assert(o.album && o.backInMenu, `the album over the menu: ${JSON.stringify(o)}`);
+  assert(o.nav && o.after === 'play', `after the focused button vanished: ${JSON.stringify(o)}`);
+  assert(o.pause, 'the pause over the run did not take the focus');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('gamepad: a whole run from the menu to the end card with the pad alone', async () => {
+  const g = await open({ init: PADFAKE, play: false, returning: true });
+  const o = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {},
+      step = (n = 1) => {
+        for (let i = 0; i < n; i++) {
+          k.padPoll(1 / 60);
+          k.update(1 / 60);
+        }
+      },
+      tap = (i) => {
+        __press(i, true);
+        step();
+        __press(i, false);
+        step();
+      };
+    k.pause(true);
+    tap(0); // A: «Играть» has the first focus
+    out.started = k.state;
+    const P = k.player;
+    P.spawnT = 0;
+    P.dashCd = 0;
+    const x0 = P.x;
+    __pad.axes[0] = 0.9;
+    step(30);
+    out.moved = P.x - x0;
+    __press(0, true);
+    step();
+    out.bit = P.dashT > 0;
+    __press(0, false);
+    __pad.axes[0] = 0;
+    step();
+    P.alive = false;
+    k.die(null);
+    const over = document.getElementById('over');
+    for (let f = 0; over.classList.contains('hidden') && f < 300; f++) step();
+    k.padPoll(1 / 60); // the card came up at the end of that frame: the next poll gives it the focus
+    out.home = document.activeElement.id;
+    for (let i = 0; i < 40; i++) k.padPoll(1 / 60); // the end card ignores the buttons for its first half second
+    tap(0); // A: «Ещё кусь»
+    out.again = k.state;
+    return out;
+  });
+  assert(o.started === 'play' && o.moved > 10 && o.bit, `the run: ${JSON.stringify(o)}`);
+  assert(o.home === 'again' && o.again === 'play', `the end card: ${JSON.stringify(o)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('gamepad: pad glyphs replace key hints and go back with the mouse', async () => {
+  const shown = `const shown = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+    const glyph = (id) => { const g = document.querySelector('#' + id + ' .pg'); return shown(g) ? g.textContent.trim() : ''; };
+    const look = () => ({ pad: document.body.classList.contains('pad'), dash: glyph('dash'), dodge: glyph('dodge'), pause: glyph('pauseBtn'),
+      space: shown(document.querySelector('#dash small')), shift: shown(document.querySelector('#dodge small')), bars: shown(document.querySelector('#pauseBtn svg')),
+      pad1: shown(document.querySelector('[data-th="help.pad1"]')) ? document.querySelector('[data-th="help.pad1"]').textContent : '',
+      pad2: shown(document.querySelector('[data-th="help.pad2"]')),
+      mouse: shown(document.querySelector('[data-th="help.mouse"]')), space2: shown(document.querySelector('[data-th="help.space"]')),
+      ring: document.activeElement !== document.body && document.activeElement.matches(':focus-visible') });`;
+  for (const [locale, word] of [
+    ['ru-RU', 'стик'],
+    ['en-US', 'stick'],
+  ]) {
+    // the help lines, in the menu with «Как играть» open
+    const m = await open({ init: PADFAKE, play: false, returning: true, locale });
+    const a = await m.page.evaluate(`(() => { ${shown}
+      const k = window.__kus;
+      document.querySelector('#secHelp .sh').click();
+      __press(13, true); k.padPoll(1 / 60); __press(13, false); k.padPoll(1 / 60);
+      return look(); })()`);
+    await m.page.mouse.move(600, 300);
+    await m.page.mouse.move(620, 310);
+    const b = await m.page.evaluate(`(() => { ${shown} return look(); })()`);
+    assert(a.pad && a.pad1.includes(word) && a.pad2 && !a.mouse && !a.space2, `${locale} menu, pad: ${JSON.stringify(a)}`);
+    assert(!b.pad && !b.pad1 && !b.pad2 && b.mouse && b.space2 && !b.ring, `${locale} menu, after the mouse: ${JSON.stringify(b)}`);
+    assert(m.errors.length === 0, m.errors.join(' | '));
+    await m.close();
+  }
+  // the buttons of a run
+  const g = await open({ init: PADFAKE });
+  const c = await g.page.evaluate(`(() => { ${shown}
+    __pad.axes[0] = 0.9; window.__kus.padPoll(1 / 60); __pad.axes[0] = 0; window.__kus.padPoll(1 / 60);
+    return look(); })()`);
+  await g.page.mouse.move(600, 300);
+  await g.page.mouse.move(620, 310);
+  const d = await g.page.evaluate(`(() => { ${shown} return look(); })()`);
+  assert(c.pad && c.dash === 'A' && c.dodge === 'B' && c.pause === '☰' && !c.space && !c.shift && !c.bars, `run, pad: ${JSON.stringify(c)}`);
+  assert(!d.pad && !d.dash && !d.dodge && !d.pause && d.space && d.shift && d.bars, `run, after the mouse: ${JSON.stringify(d)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('gamepad: 1280x800 — nothing off screen and page text is 12 px or more', async () => {
+  const kinds = (bad) => [...new Set(bad.map((x) => x.replace(/ "[^"]*"/, '')))].join(' | '); // one line per kind of offender
+  // every visible element with text of its own: font 12 px or more; inside the screen, or inside a scrolling box that is
+  const check = `const check = (where) => {
+    const bad = [], W = innerWidth, H = innerHeight;
+    const scroller = (el) => { for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) { const s = getComputedStyle(p);
+      if (/(auto|scroll)/.test(s.overflowX + s.overflowY)) return p; } return null; };
+    const inside = (r, b) => r.left >= b.left - 1 && r.right <= b.right + 1 && r.top >= b.top - 1 && r.bottom <= b.bottom + 1;
+    for (const el of document.body.querySelectorAll('*')) {
+      if (el.closest('#err, script, style, canvas, svg')) continue;
+      const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+      if (!own || !el.getClientRects().length || getComputedStyle(el).visibility === 'hidden') continue;
+      const name = where + ' ' + (el.id || el.className || el.tagName) + ' "' + el.textContent.trim().slice(0, 16) + '"';
+      const fs = parseFloat(getComputedStyle(el).fontSize);
+      if (fs < 12) bad.push(name + ' ' + fs + 'px');
+      const r = el.getBoundingClientRect(), box = scroller(el);
+      if (!inside(r, box ? box.getBoundingClientRect() : { left: 0, top: 0, right: W, bottom: H }) && !box) bad.push(name + ' off screen');
+      if (box && !inside(box.getBoundingClientRect(), { left: 0, top: 0, right: W, bottom: H })) bad.push(name + ' in a box off screen');
+      if ((el.matches('.st .sn, .pz') && el.scrollWidth > el.clientWidth + 1)) bad.push(name + ' does not fit its tile');
+    }
+    return bad;
+  };`;
+  const m = await open({ init: PADFAKE, play: false, returning: true, width: 1280, height: 800 });
+  const menu = await m.page.evaluate(`(() => { ${check}
+    const k = window.__kus;
+    k.setPad(true);
+    k.padPoll(1 / 60);
+    let bad = check('menu');
+    for (const sh of document.querySelectorAll('#menu .sec .sh')) { if (sh.getAttribute('aria-expanded') !== 'true') sh.click(); bad = bad.concat(check('menu ' + sh.parentElement.id)); }
+    document.getElementById('albumBtn').click();
+    k.padPoll(1 / 60);
+    return bad.concat(check('album')); })()`);
+  assert(menu.length === 0, kinds(menu));
+  assert(m.errors.length === 0, m.errors.join(' | '));
+  await m.close();
+  const g = await open({ init: PADFAKE, width: 1280, height: 800 });
+  const run = await g.page.evaluate(`(() => { ${QUIET} ${check}
+    k.setPad(true);
+    k.update(1 / 60);
+    let bad = check('run');
+    k.pause(false);
+    __press(9, true); k.padPoll(1 / 60); __press(9, false); k.padPoll(1 / 60);
+    bad = bad.concat(check('pause'));
+    __press(9, true); k.padPoll(1 / 60); __press(9, false); k.padPoll(1 / 60);
+    k.pause(true);
+    P.alive = false;
+    k.die(null);
+    const over = document.getElementById('over');
+    for (let f = 0; over.classList.contains('hidden') && f < 300; f++) k.update(1 / 60);
+    k.padPoll(1 / 60);
+    return bad.concat(check('end card')); })()`);
+  assert(run.length === 0, kinds(run));
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('gamepad: a stick still held when a window opens leaves the focus on its main button', async () => {
+  const g = await open({ init: PADFAKE });
+  const o = await g.page.evaluate(`(() => { ${QUIET}
+    const out = {}, poll = (n) => { for (let i = 0; i < n; i++) k.padPoll(1 / 60); };
+    k.pause(false);
+    __pad.axes[0] = 0.7; __pad.axes[1] = 0.7; // steering down and right, then Start without letting go
+    poll(1);
+    __press(9, true); poll(1); __press(9, false);
+    poll(60);
+    out.pause = document.activeElement.id;
+    __pad.axes[0] = 0; __pad.axes[1] = 0; poll(1);
+    __press(9, true); poll(1); __press(9, false); poll(1);
+    k.pause(true);
+    __pad.axes[0] = 0.9; // dying while steering right
+    P.alive = false;
+    k.die(null);
+    const over = document.getElementById('over');
+    for (let f = 0; over.classList.contains('hidden') && f < 300; f++) { k.padPoll(1 / 60); k.update(1 / 60); }
+    poll(60);
+    out.over = document.activeElement.id;
+    __pad.axes[0] = 0; poll(1);
+    __pad.axes[0] = 0.9; poll(1); // a fresh push after letting go does move
+    out.moved = document.activeElement.id !== 'again';
+    return out; })()`);
+  assert(o.pause === 'resume', `the pause opened with the stick held: focus on ${o.pause}`);
+  assert(o.over === 'again', `the end card came up with the stick held: focus on ${o.over}`);
+  assert(o.moved, 'a fresh push after the stick came back did not move the focus');
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('gamepad: mashing A through a death keeps the end card up for a moment', async () => {
+  const g = await open({ init: PADFAKE });
+  const o = await g.page.evaluate(`(() => { ${QUIET}
+    const out = {};
+    k.setPad(true);
+    P.alive = false;
+    k.die(null);
+    const over = document.getElementById('over');
+    let f = 0, shownFor = 0;
+    for (; f < 600 && shownFor < 20; f++) { // A about seven times a second, until the card has been up for 20 frames
+      __press(0, f % 8 < 3);
+      k.padPoll(1 / 60);
+      k.update(1 / 60);
+      if (!over.classList.contains('hidden')) shownFor++;
+    }
+    out.state = k.state;
+    out.card = !over.classList.contains('hidden');
+    __press(0, false);
+    for (let i = 0; i < 30; i++) k.padPoll(1 / 60);
+    __press(0, true); k.padPoll(1 / 60); __press(0, false); k.padPoll(1 / 60);
+    out.later = k.state;
+    return out; })()`);
+  assert(o.state === 'dead' && o.card, `mashing A skipped the end card: ${JSON.stringify(o)}`);
+  assert(o.later === 'play', `a deliberate A after the moment did not start again: ${o.later}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('gamepad: in the menu the focused button is never hidden behind the Play block', async () => {
+  for (const [width, height] of [
+    [1280, 800],
+    [1200, 720],
+    [844, 390],
+  ]) {
+    const g = await open({ init: PADFAKE, play: false, returning: true, width, height });
+    const hidden = await g.page.evaluate(() => {
+      const k = window.__kus,
+        bad = [];
+      k.setPad(true);
+      k.padPoll(1 / 60);
+      for (const id of ['secLook', 'secSet']) {
+        const sh = document.querySelector('#' + id + ' .sh');
+        if (sh.getAttribute('aria-expanded') !== 'true') sh.click();
+        k.padItems(k.padRoot())[0].focus();
+        for (let i = 0; i < 40; i++) {
+          if (!k.padNav('down')) break;
+          const el = document.activeElement,
+            r = el.getBoundingClientRect(),
+            hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          if (!el.contains(hit)) bad.push(id + ' ' + (el.id || el.getAttribute('aria-label') || el.textContent.trim().slice(0, 16)));
+        }
+      }
+      return bad;
+    });
+    assert(hidden.length === 0, `${width}x${height}: focus under another element: ${hidden.join(' | ')}`);
+    assert(g.errors.length === 0, g.errors.join(' | '));
+    await g.close();
+  }
+});
+
+test('gamepad: a newcomer playing with the pad gets pad tips, not mouse ones', async () => {
+  for (const [locale, mouse] of [
+    ['ru-RU', /мыш|клик/i],
+    ['en-US', /mouse|click/i],
+  ]) {
+    const g = await open({ init: PADFAKE, play: false, locale });
+    const o = await g.page.evaluate(() => {
+      const k = window.__kus;
+      __press(0, true); // the first A: pad mode, «Играть» in focus and pressed
+      k.padPoll(1 / 60);
+      __press(0, false);
+      k.padPoll(1 / 60);
+      k.pause(true);
+      const P = k.player,
+        feed = () => document.getElementById('feed').textContent;
+      P.spawnT = 0;
+      const start = feed();
+      const prey = k.blobs.find((b) => b.tame);
+      if (prey) k.place(prey, P.x + P.Rs + prey.Rs + 20, P.y, Math.PI);
+      for (let i = 0; i < 3; i++) k.update(1 / 60);
+      return { state: k.state, start, bite: feed(), prey: !!prey, pad1: k.t('tip.pad'), pad2: k.t('tip.biteP') };
+    });
+    assert(o.state === 'play' && o.prey, `${locale}: ${JSON.stringify(o)}`);
+    assert(!mouse.test(o.start) && o.start.includes(o.pad1.replace(/<[^>]+>/g, '')), `${locale}, first tip: "${o.start}"`);
+    assert(!mouse.test(o.bite) && o.bite.includes(o.pad2.replace(/<[^>]+>/g, '')), `${locale}, bite tip: "${o.bite}"`);
+    assert(g.errors.length === 0, g.errors.join(' | '));
+    await g.close();
+  }
+});
+
+test('gamepad: a pad that vanishes without a disconnect event stops the candy', async () => {
+  const g = await open({ init: PADFAKE });
+  const o = await g.page.evaluate(`(() => { ${QUIET}
+    __pad.axes[0] = 0.9;
+    __press(0, true);
+    k.padPoll(1 / 60);
+    k.update(1 / 60);
+    const before = { mag: k.stick.mag, held: k.input.dashHeld };
+    navigator.getGamepads = () => [null, null, null, null];
+    k.padPoll(1 / 60);
+    return { before, mag: k.stick.mag, held: k.input.dashHeld }; })()`);
+  assert(o.before.mag > 0 && o.before.held, `the pad was not driving: ${JSON.stringify(o)}`);
+  assert(o.mag === 0 && !o.held, `the candy kept going after the pad vanished: ${JSON.stringify(o)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
 });
 
 for (const [name, fn] of tests) {

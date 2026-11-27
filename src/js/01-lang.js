@@ -61,6 +61,14 @@ const STR = {
   ],
   'help.finger': ['<b>Води пальцем по экрану</b>: под ним появится джойстик', '<b>Drag a finger on the screen</b>: a joystick appears under it'],
   'help.kus': ['<b>«Кусь»</b>: рывок с укусом посильнее, можно держать', '<b>“Kusь!”</b>: a dash with a stronger bite, you can hold it'],
+  'help.pad1': [
+    '<b>Левый стик</b>: плыть. <b>A</b> или <b>RT</b>: кусь, <b>B</b> или <b>LT</b>: язык',
+    '<b>Left stick</b>: swim. <b>A</b> or <b>RT</b>: bite, <b>B</b> or <b>LT</b>: tongue',
+  ],
+  'help.pad2': [
+    '<b>Start</b>: пауза, <b>Select</b>: звук. В меню <b>крестовина</b> и <b>A</b>, <b>B</b>: назад, <b>LB</b> и <b>RB</b>: листать ряд',
+    '<b>Start</b>: pause, <b>Select</b>: sound. In menus the <b>d-pad</b> and <b>A</b>, <b>B</b>: back, <b>LB</b> and <b>RB</b>: flip through a row',
+  ],
   'help.tongue': ['<b>«Язык»</b>: язык-присоска, тянет добычу к пасти', '<b>“Tongue”</b>: a sticky tongue pulls prey to your mouth'],
   'help.t1': ['Кусает только пасть, так что заходи со спины', 'Only the mouth bites, so come in from behind'],
   'help.t2': ['Тебя тоже будут кусать: ранки затянутся, а есть можно дальше', 'You will get bitten too: wounds heal, and you can keep eating'],
@@ -291,6 +299,7 @@ const STR = {
   'tip.touchL': ['Справа води пальцем, слева <b>Кусь</b> и <b>Язык</b>', 'Drag on the right, <b>Kusь!</b> and <b>Tongue</b> on the left'],
   'tip.touchR': ['Слева води пальцем, справа <b>Кусь</b> и <b>Язык</b>', 'Drag on the left, <b>Kusь!</b> and <b>Tongue</b> on the right'],
   'tip.colorsT': ['<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты', 'A <b>red</b> outline will eat you, a <b>green</b> one you can eat'],
+  'tip.pad': ['<b>Левый стик</b>: плыви, пасть смотрит, куда плывёшь', '<b>Left stick</b>: swim, the mouth looks where you go'],
   'tip.mouse': ['Веди мышью: пасть смотрит на курсор', 'Move the mouse: the mouth looks at the cursor'],
   'tip.colorsM': [
     '<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты',
@@ -340,6 +349,10 @@ const STR = {
   'tip.biteT': [
     'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Кусь</b>: рывок с укусом',
     'Reach a <b>green</b> candy with your mouth, it bites by itself. <b>Kusь!</b>: dash and bite',
+  ],
+  'tip.biteP': [
+    'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>A</b>: рывок с укусом',
+    'Reach a <b>green</b> candy with your mouth, it bites by itself. <b>A</b>: dash and bite',
   ],
   'tip.biteM': [
     'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Клик</b>: рывок с укусом',

@@ -105,6 +105,7 @@ function frame(now) {
   if (n >= 1 && n <= 3 && Math.abs(dt - n * fp) < fp * 0.3) dt = n * fp;
   if (dt > 0.05) dt = 0.05;
   const w0 = performance.now();
+  padPoll(dt); // the gamepad, before the run reads its input
   annFrame(dt, paused); // the big word lives in real time: the swallow's slow-down does not drag it
   if (!paused) {
     let sc = CHEAT.slow ? 0.45 : 1;
@@ -245,6 +246,20 @@ function start(data) {
 window.__kus = {
   PLATFORM,
   drawIcon,
+  pad,
+  PAD,
+  padPoll,
+  padRoot,
+  padItems,
+  padNav,
+  padHome,
+  setPad,
+  setTouch,
+  stick,
+  input,
+  get padMode() {
+    return padMode;
+  },
   LANG,
   t,
   STR,

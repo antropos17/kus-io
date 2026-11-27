@@ -124,6 +124,18 @@ function setTouch(on) {
   touchMode = on;
   document.body.classList.toggle('touch', on);
 }
+let padMode = false; // playing with a gamepad (14-gamepad): body.pad shows its glyphs and the focus ring
+function setPad(on) {
+  if (padMode === on) return;
+  padMode = on;
+  document.body.classList.toggle('pad', on);
+  if (!on) {
+    stick.mag = 0; // the mouse or a finger takes over from a standstill
+    input.dashHeld = false;
+    const f = document.activeElement;
+    if (f && f !== document.body && f.tagName !== 'INPUT' && f.blur) f.blur(); // no focus ring left behind for the mouse
+  }
+}
 function haptic(ms) {
   // a tap in the hand on every bite, where the device allows it
   try {
