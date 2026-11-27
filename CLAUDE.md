@@ -21,6 +21,8 @@ node tools/wrap-curve.mjs 30 normal    the autopilot's runaway-wrapper catch rat
 node tools/sugar-curve.mjs 8 35 normal [weak]    hours of play to the whole wardrobe and to the first purchase, for any PRICE_K and MIS_SUGAR (MIS=300,400 X2=1 OUT=f.json; a smoke run is `2 1`, a full one of 8 chains × 35 hours takes about 2.5 hours of wall time, see docs/sugar.md)
 node tools/announce-curve.mjs 20 normal    how often each word of swallows in a row comes per run (add weak, or daily=<twist>)
 node tools/perf.mjs 6 3    frame cost on an emulated phone (CPU x6, 390x844): first frame, real-loop fps, style/layout per second, update/render ms
+SKIN=galaxy node tools/perf.mjs 6 3    every candy on the field in one pattern: the worst case for a pattern's frame cost (compare with SKIN=dots on the same build; real fps on a busy machine is noisy, see docs/skin-art-perf.md)
+node tools/skin-shots.mjs <dir> [ids]    the same menu and run screenshots of four patterns at 360x640 and 390x844 (HTML=file for another build), for before/after of skin work
 npm run check      exit with an error if index.html does not match src/
 npm run icons      rebuild the store icons and splash in store/ (App Store 1024, Android adaptive layers, 2732 splash, Play 512, Windows .ico) from drawIcon
 npm run og         rebuild og.png, the 1200×630 link preview picture, from a real frame of the game
