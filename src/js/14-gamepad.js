@@ -4,7 +4,7 @@
 // out of its dead zone turns pad mode on (body.pad), a mouse move, a mouse or finger press, or a key turns it off.
 // Layout (mapping 'standard'): A 0, B 1, LB 4, RB 5, LT 6, RT 7, Select 8, Start 9, d-pad 12 up, 13 down, 14 left, 15 right.
 const PAD = { dead: 0.18, trig: 0.5, rep0: 0.4, rep: 0.12 }; // stick dead zone, trigger threshold, d-pad repeat: first after, then every
-const pad = { idx: -1, prev: [], now: [], hold: 0, dir: '', m: 0, ax: 0, ay: 0, runA: false, root: null };
+const pad = { idx: -1, prev: [], now: [], hold: 0, dir: '', m: 0, ax: 0, ay: 0, runA: false, root: null, lockT: 0 };
 const padDown = (i) => !!pad.now[i] && !pad.prev[i]; // pressed in this frame
 const padHeld = (i) => !!pad.now[i];
 // in a run with nothing over it: the pause card, the admin panel and the album take the buttons for themselves
@@ -33,6 +33,10 @@ function padPoll(rdt) {
     pad.idx = -1;
     pad.m = 0;
     pad.runA = false;
+    if (padMode) {
+      stick.mag = 0; // the pad went quiet without a disconnect event (a sleeping wireless pad): stop, do not bite on
+      input.dashHeld = false;
+    }
     return;
   }
   pad.idx = g.index;
@@ -118,6 +122,13 @@ function padItems(root) {
 function padFocus(el) {
   el.focus({ preventScroll: true });
   el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); // a stop outside a scrolled window or row brings it into view
+  if (menuEl.contains(el) && !menuGo.contains(el)) {
+    // the sticky Play block covers the bottom of the menu card: lift the stop above it, as opening a section does
+    const box = getComputedStyle(secsEl).overflowY === 'auto' ? secsEl : menuCard,
+      bottom = box === menuCard ? menuGo.getBoundingClientRect().top : box.getBoundingClientRect().bottom,
+      r = el.getBoundingClientRect();
+    if (r.bottom > bottom) box.scrollTop += r.bottom - bottom + 8;
+  }
 }
 function padHome(root) {
   const items = padItems(root),
@@ -147,7 +158,9 @@ function padNav(dir) {
       dy = q.top + q.height / 2 - cy,
       main = dir === 'up' ? -dy : dir === 'down' ? dy : dir === 'left' ? -dx : dx;
     if (main <= 4) continue;
-    const w = main + 2 * (v ? Math.abs(dx) : Math.abs(dy)); // the way it points, plus twice the step aside
+    // the way it points, plus twice the step aside; the sticky Play block is the menu's last stop going down, so the
+    // section heads scrolled out below it are reached first
+    const w = main + 2 * (v ? Math.abs(dx) : Math.abs(dy)) + (dir === 'down' && menuGo.contains(el) && !menuGo.contains(cur) ? 1e5 : 0);
     if (w < bw) {
       bw = w;
       best = el;
@@ -178,37 +191,32 @@ function padRow(root, step) {
   }
 }
 function padScreens(rdt) {
-  const root = padRoot();
+  const root = padRoot(),
+    ax = pad.ax,
+    ay = pad.ay;
+  let dir = '';
+  if (padHeld(12)) dir = 'up';
+  else if (padHeld(13)) dir = 'down';
+  else if (padHeld(14)) dir = 'left';
+  else if (padHeld(15)) dir = 'right';
+  else if (Math.max(Math.abs(ax), Math.abs(ay)) > 0.5) dir = Math.abs(ax) > Math.abs(ay) ? (ax > 0 ? 'right' : 'left') : ay > 0 ? 'down' : 'up';
   if (root !== pad.root) {
     pad.root = root; // a window opened or closed: its main button takes the focus
     if (root) padHome(root);
+    // a direction still held from before (steering when Start or a death came) waits until the pad is let go,
+    // and the end card ignores the buttons for a moment, so A mashed through a death does not skip it
+    pad.dir = dir;
+    pad.hold = Infinity;
+    pad.lockT = root && root.id === 'over' ? 0.5 : 0;
   }
   if (!root) return;
-  if (padDown(0)) {
+  if (pad.lockT > 0) pad.lockT -= rdt;
+  else if (padDown(0)) {
     const el = document.activeElement;
     if (padItems(root).includes(el)) el.click();
     else padHome(root);
   } else if (padDown(1)) padBack(root);
   else if (padDown(4) || padDown(5)) padRow(root, padDown(5) ? 1 : -1);
-  const ax = pad.ax,
-    ay = pad.ay,
-    dir = padHeld(12)
-      ? 'up'
-      : padHeld(13)
-        ? 'down'
-        : padHeld(14)
-          ? 'left'
-          : padHeld(15)
-            ? 'right'
-            : Math.max(Math.abs(ax), Math.abs(ay)) <= 0.5
-              ? ''
-              : Math.abs(ax) > Math.abs(ay)
-                ? ax > 0
-                  ? 'right'
-                  : 'left'
-                : ay > 0
-                  ? 'down'
-                  : 'up';
   if (!dir) pad.dir = '';
   else if (dir !== pad.dir) {
     pad.dir = dir; // a new direction moves at once, then repeats while held

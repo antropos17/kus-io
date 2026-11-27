@@ -299,6 +299,7 @@ const STR = {
   'tip.touchL': ['Справа води пальцем, слева <b>Кусь</b> и <b>Язык</b>', 'Drag on the right, <b>Kusь!</b> and <b>Tongue</b> on the left'],
   'tip.touchR': ['Слева води пальцем, справа <b>Кусь</b> и <b>Язык</b>', 'Drag on the left, <b>Kusь!</b> and <b>Tongue</b> on the right'],
   'tip.colorsT': ['<b>Красный</b> контур съест тебя, <b>зелёного</b> съешь ты', 'A <b>red</b> outline will eat you, a <b>green</b> one you can eat'],
+  'tip.pad': ['<b>Левый стик</b>: плыви, пасть смотрит, куда плывёшь', '<b>Left stick</b>: swim, the mouth looks where you go'],
   'tip.mouse': ['Веди мышью: пасть смотрит на курсор', 'Move the mouse: the mouth looks at the cursor'],
   'tip.colorsM': [
     '<b>Красная</b> обводка: тебя проглотят целиком. <b>Зелёная</b>: проглотишь ты',
@@ -348,6 +349,10 @@ const STR = {
   'tip.biteT': [
     'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Кусь</b>: рывок с укусом',
     'Reach a <b>green</b> candy with your mouth, it bites by itself. <b>Kusь!</b>: dash and bite',
+  ],
+  'tip.biteP': [
+    'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>A</b>: рывок с укусом',
+    'Reach a <b>green</b> candy with your mouth, it bites by itself. <b>A</b>: dash and bite',
   ],
   'tip.biteM': [
     'Дотянись пастью до <b>зелёной</b> конфеты, укус сам. <b>Клик</b>: рывок с укусом',

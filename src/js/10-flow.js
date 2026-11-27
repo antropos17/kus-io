@@ -313,7 +313,7 @@ function startGame() {
   if (touchMode) {
     addFeed(SET.lefty ? t('tip.touchL') : t('tip.touchR'));
     if (!tutor) addFeed(t('tip.colorsT')); // the first run tells this after the first bite
-  } else if (tutor) addFeed(t('tip.mouse'));
+  } else if (tutor) addFeed(padMode ? t('tip.pad') : t('tip.mouse'));
   else addFeed(t('tip.colorsM'));
   if (day) {
     if (tutor)
@@ -693,7 +693,8 @@ function updateHUD(dt) {
         q.tame = false;
         tutor = null;
         if (player.stats.bites > 0) addFeed(touchMode ? t('tip.colorsT') : t('tip.colorsM'), 5200);
-      } else if (Math.hypot(q.x - player.x, q.y - player.y) - q.Rs - player.Rs < 50) hint('bite', touchMode ? t('tip.biteT') : t('tip.biteM'));
+      } else if (Math.hypot(q.x - player.x, q.y - player.y) - q.Rs - player.Rs < 50)
+        hint('bite', touchMode ? t('tip.biteT') : padMode ? t('tip.biteP') : t('tip.biteM'));
     }
     if (run.dayNote && !tutor) {
       let live = 0;
