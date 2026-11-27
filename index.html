@@ -1585,111 +1585,167 @@ function skinTile(id) {
   const S = 256,
     h = S / 2,
     c = document.createElement('canvas');
-  c.width = c.height = S;
+  const sc = SKIN_BIG[id] ? 2 : 1; // whole-body pictures are painted at twice the size, in the same 256 space
+  c.width = c.height = S * sc;
   const g = c.getContext('2d'),
     lite = 'rgba(255,255,255,0.36)',
     dark = 'rgba(45,12,24,0.34)';
-  let span = 0.8; // how many body radii one tile covers; 3.2 = a single picture centred on the body
+  let span = 0.8, // how many body radii one tile covers; 3.2 = a single picture centred on the body
+    fx = null; // the living layer of the dearest patterns, moved by drawSkin
+  g.scale(sc, sc);
   g.lineJoin = 'round';
   if (id === 'stripes') {
-    g.strokeStyle = lite;
-    g.lineWidth = S * 0.17;
-    for (let k = 0; k <= 4; k++) {
-      g.beginPath();
-      g.moveTo(k * h + 30, -30);
-      g.lineTo(-30, k * h + 30);
-      g.stroke();
-    }
+    // puffy candy-cane ribbons with a shine down the middle
     span = 0.85;
-  } else if (id === 'dots') {
-    g.fillStyle = lite;
-    for (const [x, y] of [
-      [0.25, 0.25],
-      [0.75, 0.75],
-    ]) {
-      g.beginPath();
-      g.arc(x * S, y * S, S * 0.13, 0, TAU);
-      g.fill();
+    for (let k = -1; k <= 5; k++) {
+      puff(g, band(k * h, S * 0.12), lite, 5, sc);
+      shine(g, k * h, 0.35);
     }
+  } else if (id === 'dots') {
+    // puffy sugar dots, big and small
     span = 0.7;
+    const p = new Path2D();
+    for (const [x, y, r] of [
+      [0.25, 0.25, 0.13],
+      [0.75, 0.75, 0.13],
+      [0.75, 0.25, 0.05],
+      [0.25, 0.75, 0.05],
+    ]) {
+      p.moveTo((x + r) * S, y * S);
+      p.arc(x * S, y * S, r * S, 0, TAU);
+    }
+    puff(g, p, 'rgba(255,255,255,0.42)', 5, sc);
   } else if (id === 'waffle') {
-    g.strokeStyle = dark;
-    g.lineWidth = S * 0.1;
+    // raised ridges with a pale crest, the cells sinking darker towards their middle
+    span = 0.5;
+    for (const [x, y] of [
+      [0, 0],
+      [S, 0],
+      [0, S],
+      [S, S],
+    ]) {
+      const cg = g.createRadialGradient(x, y, 0, x, y, h * 0.75);
+      cg.addColorStop(0, 'rgba(45,12,24,0.22)');
+      cg.addColorStop(1, 'rgba(45,12,24,0)');
+      g.fillStyle = cg;
+      g.fillRect(0, 0, S, S);
+    }
+    const w = S * 0.11,
+      p = new Path2D();
+    p.rect(h - w / 2, -20, w, S + 40);
+    p.rect(-20, h - w / 2, S + 40, w);
+    puff(g, p, 'rgba(255,238,210,0.26)', 5, sc, 'rgba(45,12,24,0.34)');
+    g.strokeStyle = 'rgba(255,255,255,0.3)';
+    g.lineWidth = 2.5;
     g.beginPath();
     g.moveTo(h, 0);
     g.lineTo(h, S);
     g.moveTo(0, h);
     g.lineTo(S, h);
     g.stroke();
-    g.strokeStyle = 'rgba(255,255,255,0.2)';
-    g.lineWidth = S * 0.03;
-    g.beginPath();
-    g.moveTo(h + S * 0.075, 0);
-    g.lineTo(h + S * 0.075, S);
-    g.moveTo(0, h + S * 0.075);
-    g.lineTo(S, h + S * 0.075);
-    g.stroke();
-    span = 0.5;
   } else if (id === 'hearts') {
-    g.fillStyle = lite;
+    // puffy sugar hearts with a shine on each lobe, and a bead between them
+    span = 0.9;
     for (const [x, y] of [
       [0.25 * S, 0.27 * S],
       [0.75 * S, 0.77 * S],
     ]) {
-      const q = S * 0.14;
-      g.beginPath();
-      g.moveTo(x, y + q * 0.9);
-      g.bezierCurveTo(x - q * 1.3, y - q * 0.1, x - q * 0.6, y - q, x, y - q * 0.35);
-      g.bezierCurveTo(x + q * 0.6, y - q, x + q * 1.3, y - q * 0.1, x, y + q * 0.9);
-      g.fill();
+      const q = S * 0.15,
+        p = new Path2D();
+      p.moveTo(x, y + q * 0.9);
+      p.bezierCurveTo(x - q * 1.3, y - q * 0.1, x - q * 0.6, y - q, x, y - q * 0.35);
+      p.bezierCurveTo(x + q * 0.6, y - q, x + q * 1.3, y - q * 0.1, x, y + q * 0.9);
+      p.closePath();
+      puff(g, p, 'rgba(255,255,255,0.66)', 7, sc, 'rgba(45,12,24,0.3)');
+      gloss(g, x - q * 0.5, y - q * 0.3, q * 0.3, 0.6);
+      gloss(g, x + q * 0.5, y - q * 0.3, q * 0.3, 0.6);
     }
-    span = 0.9;
+    for (const [x, y] of [
+      [0.75 * S, 0.25 * S],
+      [0.25 * S, 0.77 * S],
+    ]) {
+      const p = new Path2D();
+      p.arc(x, y, S * 0.035, 0, TAU);
+      puff(g, p, 'rgba(255,255,255,0.6)', 4, sc, 'rgba(45,12,24,0.3)');
+      gloss(g, x, y - S * 0.008, S * 0.018, 0.7);
+    }
   } else if (id === 'stars') {
-    g.fillStyle = lite;
+    // puffy stars with a round shine, little sparkles between them
+    span = 0.9;
     for (const [x, y] of [
       [0.25 * S, 0.25 * S],
       [0.75 * S, 0.75 * S],
     ]) {
-      g.beginPath();
+      const p = new Path2D();
       for (let i = 0; i < 10; i++) {
         const a = -Math.PI / 2 + (i * Math.PI) / 5,
-          r = S * (i % 2 ? 0.07 : 0.16);
-        i ? g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r) : g.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+          r = S * (i % 2 ? 0.075 : 0.165);
+        i ? p.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r) : p.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
       }
-      g.closePath();
-      g.fill();
+      p.closePath();
+      puff(g, p, 'rgba(255,255,255,0.6)', 6, sc, 'rgba(45,12,24,0.3)');
+      gloss(g, x, y, S * 0.06, 0.55);
     }
-    span = 0.9;
+    glint(g, 0.75 * S, 0.22 * S, 9);
+    glint(g, 0.22 * S, 0.76 * S, 7);
   } else if (id === 'swirl') {
-    g.fillStyle = lite;
+    // a lollipop: six puffy arms turning out of a sugar bead
     span = 3.2;
+    const p = new Path2D();
     for (let a = 0; a < 6; a++) {
       const a0 = (a * TAU) / 6;
-      g.beginPath();
-      g.moveTo(h, h);
-      for (let r = 0; r <= h * 1.3; r += 6) g.lineTo(h + Math.cos(a0 + r * 0.022) * r, h + Math.sin(a0 + r * 0.022) * r);
-      for (let r = h * 1.3; r >= 0; r -= 6) g.lineTo(h + Math.cos(a0 + r * 0.022 + TAU / 12) * r, h + Math.sin(a0 + r * 0.022 + TAU / 12) * r);
-      g.closePath();
-      g.fill();
+      p.moveTo(h, h);
+      for (let r = 0; r <= h * 1.3; r += 6) p.lineTo(h + Math.cos(a0 + r * 0.022) * r, h + Math.sin(a0 + r * 0.022) * r);
+      for (let r = h * 1.3; r >= 0; r -= 6) p.lineTo(h + Math.cos(a0 + r * 0.022 + TAU / 12) * r, h + Math.sin(a0 + r * 0.022 + TAU / 12) * r);
+      p.closePath();
     }
+    puff(g, p, 'rgba(255,255,255,0.42)', 3, sc);
+    const bead = new Path2D();
+    bead.arc(h, h, 9, 0, TAU);
+    puff(g, bead, 'rgba(255,255,255,0.6)', 3, sc);
   } else if (id === 'tiger') {
-    g.fillStyle = 'rgba(45,12,24,0.42)';
+    // tapered stripes reaching in from both flanks, some of them forked, short marks across the crown and the chin
     span = 3.2;
+    const p = new Path2D();
     for (let i = -4; i <= 4; i++)
       for (const sd of [-1, 1]) {
-        const y = h + i * 22 + (sd > 0 ? 11 : 0),
-          x0 = h + sd * 120,
-          x1 = h + sd * (16 + (Math.abs(i) % 2) * 16);
-        g.beginPath();
-        g.moveTo(x0, y - 8);
-        g.quadraticCurveTo(h + sd * 60, y - 4 + i, x1, y + 4);
-        g.quadraticCurveTo(h + sd * 60, y + 8, x0, y + 9);
-        g.closePath();
-        g.fill();
+        const y = h + i * 19 + (sd > 0 ? 9 : 0),
+          len = 42 + hash1(i * 3.1 + sd) * 30,
+          w = 7 + hash1(i * 1.7 + sd * 2) * 5,
+          x0 = h + sd * 100,
+          x1 = h + sd * (100 - len - 26),
+          bend = (hash1(i * 5.3 + sd) - 0.5) * 10;
+        p.moveTo(x0, y - w);
+        p.quadraticCurveTo((x0 + x1) / 2, y - w * 0.7 + bend, x1, y + bend * 0.6);
+        p.quadraticCurveTo((x0 + x1) / 2, y + w * 0.8 + bend, x0, y + w);
+        p.closePath();
+        if (hash1(i * 9.1 + sd * 4) > 0.55) {
+          // a fork: a thin branch leaving the stripe halfway
+          const xm = (x0 + x1) / 2 + sd * 6,
+            ym = y + bend * 0.5;
+          p.moveTo(xm + sd * 8, ym - 2);
+          p.quadraticCurveTo(xm - sd * 4, ym + 6, xm - sd * 14, ym + 13);
+          p.quadraticCurveTo(xm, ym + 6, xm + sd * 8, ym + 3);
+          p.closePath();
+        }
       }
+    for (const sd of [-1, 1])
+      for (let i = -1; i <= 1; i++) {
+        const x = h + i * 22 - 8,
+          y0 = h + sd * 96,
+          y1 = h + sd * (58 + Math.abs(i) * 10),
+          w = 6 - Math.abs(i);
+        p.moveTo(x - w, y0);
+        p.quadraticCurveTo(x - w * 0.6, (y0 + y1) / 2, x + i * 4, y1);
+        p.quadraticCurveTo(x + w * 0.8, (y0 + y1) / 2, x + w, y0);
+        p.closePath();
+      }
+    puff(g, p, 'rgba(45,12,24,0.62)', 3, sc, 'rgba(45,12,24,0.25)', 'rgba(255,225,205,0.22)');
   } else if (id === 'cow') {
-    g.fillStyle = dark;
+    // soft-edged patches of uneven shape with a pale rim, and a few freckles
     span = 3.2;
+    const p = new Path2D(),
+      q = new Path2D();
     for (const [x, y, rx, ry, a] of [
       [-40, -32, 28, 20, 0.5],
       [32, -46, 22, 16, -0.4],
@@ -1699,25 +1755,27 @@ function skinTile(id) {
       [6, -4, 13, 10, 0],
       [16, 60, 14, 10, 0.6],
       [70, -22, 12, 9, 0.2],
-    ]) {
-      g.beginPath();
-      g.ellipse(h + x, h + y, rx, ry, a, 0, TAU);
-      g.fill();
+    ])
+      lump(p, h + x, h + y, rx, ry, a, x * 0.13 + y);
+    puff(g, p, 'rgba(45,12,24,0.5)', 4, sc, 'rgba(45,12,24,0.22)', 'rgba(255,228,210,0.22)');
+    for (let i = 0; i < 9; i++) {
+      const a = hash1(i * 3.7) * TAU,
+        r = 20 + hash1(i * 6.3) * 60;
+      q.moveTo(h + Math.cos(a) * r + 2.2, h + Math.sin(a) * r);
+      q.arc(h + Math.cos(a) * r, h + Math.sin(a) * r, 1.6 + hash1(i * 2.1) * 1.4, 0, TAU);
     }
+    puff(g, q, 'rgba(45,12,24,0.42)', 1.5, sc);
   } else if (id === 'rainbow') {
-    g.lineWidth = S * 0.09;
-    span = 0.9;
-    const cols = ['rgba(255,80,110,.5)', 'rgba(255,190,60,.5)', 'rgba(120,220,90,.5)', 'rgba(90,180,255,.5)'];
-    for (let k = 0; k < 8; k++) {
-      g.strokeStyle = cols[k % 4];
-      g.beginPath();
-      g.moveTo(k * h * 0.5 + 30, -30);
-      g.lineTo(-30, k * h * 0.5 + 30);
-      g.stroke();
+    // puffy ribbons in four colours, each with a shine down the middle; the tile flows along them (drawSkin)
+    span = 1.6;
+    const cols = ['rgba(255,80,110,.55)', 'rgba(255,190,60,.55)', 'rgba(120,220,90,.55)', 'rgba(90,180,255,.55)'];
+    for (let k = -1; k <= 9; k++) {
+      puff(g, band(k * h * 0.5, S * 0.085), cols[((k % 4) + 4) % 4], 4, sc, 'rgba(45,12,24,0.2)');
+      shine(g, k * h * 0.5, 0.4);
     }
+    fx = { kind: 'flow', period: 6 };
   } else if (id === 'bubbles') {
-    g.strokeStyle = lite;
-    g.lineWidth = S * 0.035;
+    // sugar bubbles: a puffy ring round a faint film, with two shines facing each other
     span = 0.9;
     for (const [x, y, r] of [
       [0.25, 0.25, 0.15],
@@ -1725,70 +1783,153 @@ function skinTile(id) {
       [0.75, 0.22, 0.07],
       [0.22, 0.75, 0.07],
     ]) {
+      const cx = x * S,
+        cy = y * S,
+        R = r * S,
+        t = Math.max(4, R * 0.22),
+        p = new Path2D();
+      g.fillStyle = 'rgba(255,255,255,0.08)';
       g.beginPath();
-      g.arc(x * S, y * S, r * S, 0, TAU);
-      g.stroke();
+      g.arc(cx, cy, R, 0, TAU);
+      g.fill();
+      p.arc(cx, cy, R + t / 2, 0, TAU);
+      p.moveTo(cx + R - t / 2, cy);
+      p.arc(cx, cy, R - t / 2, 0, TAU, true);
+      puff(g, p, 'rgba(255,255,255,0.5)', 3, sc);
+      gloss(g, cx - R * 0.45, cy - R * 0.45, R * 0.3, 0.6);
+      gloss(g, cx + R * 0.45, cy + R * 0.45, R * 0.22, 0.4);
     }
   } else if (id === 'zigzag') {
-    g.strokeStyle = lite;
-    g.lineWidth = S * 0.08;
+    // a piped ribbon running in zigzags, with a shine along it
     span = 0.7;
+    const w = S * 0.045;
     for (const y0 of [0.25, 0.75]) {
-      g.beginPath();
+      const xs = [],
+        ys = [],
+        p = new Path2D();
       for (let i = -1; i <= 5; i++) {
-        const x = i * S * 0.25,
-          y = y0 * S + (i % 2 ? -1 : 1) * S * 0.09;
-        i === -1 ? g.moveTo(x, y) : g.lineTo(x, y);
+        xs.push(i * S * 0.25);
+        ys.push(y0 * S + (i % 2 ? -1 : 1) * S * 0.09);
       }
+      p.moveTo(xs[0], ys[0] - w);
+      for (let i = 1; i < xs.length; i++) p.lineTo(xs[i], ys[i] - w);
+      for (let i = xs.length - 1; i >= 0; i--) p.lineTo(xs[i], ys[i] + w);
+      p.closePath();
+      puff(g, p, 'rgba(255,255,255,0.45)', 4, sc);
+      g.strokeStyle = 'rgba(255,255,255,0.4)';
+      g.lineWidth = 2.5;
+      g.beginPath();
+      for (let i = 0; i < xs.length; i++) i ? g.lineTo(xs[i], ys[i]) : g.moveTo(xs[i], ys[i]);
       g.stroke();
     }
   } else if (id === 'galaxy') {
+    // a night wash with three nebulae, a dust lane and fine star dust; the bright stars turn and twinkle in the living layer
     span = 3.2;
-    const gg = g.createRadialGradient(h, h, 10, h, h, 120);
-    gg.addColorStop(0, 'rgba(30,10,70,0.15)');
-    gg.addColorStop(1, 'rgba(20,5,50,0.62)');
+    const gg = g.createRadialGradient(h, h, 10, h, h, 92);
+    gg.addColorStop(0, 'rgba(40,15,90,0.25)');
+    gg.addColorStop(1, 'rgba(14,4,44,0.72)');
     g.fillStyle = gg;
     g.fillRect(0, 0, S, S);
-    for (let i = 0; i < 46; i++) {
+    for (const [x, y, r, col, al] of [
+      [-26, -14, 52, '170,90,255', 0.4],
+      [30, 22, 46, '60,210,230', 0.3],
+      [6, -36, 34, '255,100,190', 0.3],
+    ]) {
+      const ng = g.createRadialGradient(h + x, h + y, 0, h + x, h + y, r);
+      ng.addColorStop(0, `rgba(${col},${al})`);
+      ng.addColorStop(1, `rgba(${col},0)`);
+      g.fillStyle = ng;
+      g.fillRect(0, 0, S, S);
+    }
+    g.save();
+    g.translate(h, h);
+    g.rotate(-0.5);
+    g.scale(1, 0.22);
+    const dl = g.createRadialGradient(0, 0, 0, 0, 0, 90);
+    dl.addColorStop(0, 'rgba(255,240,255,0.22)');
+    dl.addColorStop(1, 'rgba(255,240,255,0)');
+    g.fillStyle = dl;
+    g.beginPath();
+    g.arc(0, 0, 90, 0, TAU);
+    g.fill();
+    g.restore();
+    for (let i = 0; i < 150; i++) {
       const a = hash1(i * 2.3) * TAU,
-        r = hash1(i * 5.1) * 100,
-        q = 1 + hash1(i * 9.7) * 2.6;
-      g.fillStyle = i % 5 ? 'rgba(255,255,255,0.85)' : 'rgba(255,220,120,0.95)';
+        r = Math.sqrt(hash1(i * 5.1)) * 86;
+      g.fillStyle = `rgba(255,255,255,${0.5 + hash1(i * 3.7) * 0.5})`;
       g.beginPath();
-      g.arc(h + Math.cos(a) * r, h + Math.sin(a) * r, q, 0, TAU);
+      g.arc(h + Math.cos(a) * r, h + Math.sin(a) * r, 0.35 + hash1(i * 9.7) * 0.7, 0, TAU);
       g.fill();
     }
+    fx = { kind: 'spin', speed: 0.12, pulse: 2.1 };
+    fx.c = skinLayer((f) => {
+      for (let i = 0; i < 18; i++) {
+        const a = hash1(i * 7.9) * TAU,
+          r = 10 + Math.sqrt(hash1(i * 1.3)) * 70,
+          x = h + Math.cos(a) * r,
+          y = h + Math.sin(a) * r;
+        f.shadowColor = i % 4 ? 'rgba(200,220,255,0.9)' : 'rgba(255,220,140,0.9)';
+        f.shadowBlur = 8;
+        f.fillStyle = i % 4 ? '#fff' : '#ffe9b0';
+        f.beginPath();
+        f.arc(x, y, 0.9 + hash1(i * 4.4) * 1.1, 0, TAU);
+        f.fill();
+      }
+      f.shadowBlur = 0;
+      for (let i = 0; i < 3; i++) glint(f, h + (hash1(i * 6.1) - 0.5) * 110, h + (hash1(i * 3.9) - 0.5) * 110, 7 + i * 2);
+    }, 2);
   } else if (id === 'glaze') {
-    // icing poured over the back of the head, with sprinkles
+    // thick icing poured over the back of the head, with drips and sprinkles
     span = 3.2;
-    const edge = (y) => h - 6 + 13 * Math.sin(y * 0.085) + 9 * Math.sin(y * 0.21 + 1);
-    g.fillStyle = 'rgba(255,250,240,0.8)';
-    g.beginPath();
-    g.moveTo(0, 0);
-    for (let y = 0; y <= S; y += 4) g.lineTo(edge(y), y);
-    g.lineTo(0, S);
-    g.closePath();
-    g.fill();
-    g.lineCap = 'round';
-    g.lineWidth = 5;
+    const edge = (y) => h - 6 + 13 * Math.sin(y * 0.085) + 9 * Math.sin(y * 0.21 + 1),
+      p = new Path2D();
+    p.moveTo(0, 0);
+    for (let y = 0; y <= S; y += 4) p.lineTo(edge(y), y);
+    p.lineTo(0, S);
+    p.closePath();
+    for (const [y, L, w] of [
+      [h - 44, 16, 9],
+      [h - 6, 26, 11],
+      [h + 30, 12, 8],
+      [h + 58, 20, 9],
+    ]) {
+      // a drip: a neck off the edge ending in a round drop
+      const e = edge(y);
+      p.moveTo(e - 6, y - w);
+      p.quadraticCurveTo(e + L * 0.45, y - w * 0.3, e + L, y - w * 0.55);
+      p.arc(e + L, y, w * 0.55, -Math.PI / 2, Math.PI / 2);
+      p.quadraticCurveTo(e + L * 0.45, y + w * 0.3, e - 6, y + w);
+      p.closePath();
+    }
+    puff(g, p, 'rgba(255,250,240,0.85)', 5, sc, 'rgba(45,12,24,0.3)', 'rgba(190,150,130,0.4)');
+    gloss(g, h - 40, h - 30, 26, 0.45);
+    gloss(g, h - 26, h + 38, 18, 0.35);
     for (let i = 0; i < 26; i++) {
       const a = hash1(i * 3.1) * TAU,
         r = 12 + hash1(i * 7.7) * 74,
         x = h + Math.cos(a) * r,
-        y = h + Math.sin(a) * r,
-        t = hash1(i * 1.9) * TAU;
+        y = h + Math.sin(a) * r;
       if (x > edge(y) - 12) continue;
-      g.strokeStyle = SPRINKLES_C[i % SPRINKLES_C.length];
-      g.beginPath();
-      g.moveTo(x - Math.cos(t) * 5, y - Math.sin(t) * 5);
-      g.lineTo(x + Math.cos(t) * 5, y + Math.sin(t) * 5);
-      g.stroke();
+      puff(g, rod(x, y, hash1(i * 1.9) * TAU, 14, 4.6), SPRINKLES_C[i % SPRINKLES_C.length], 1.2, sc, 'rgba(45,12,24,0.25)');
     }
   } else if (id === 'checks') {
-    // gingham: see-through bands across and down, lighter where they cross
+    // gingham: see-through bands across and down, lighter where they cross, woven of fine threads
     g.fillStyle = 'rgba(255,255,255,0.27)';
     g.fillRect(0, 0, h, S);
     g.fillRect(0, 0, S, h);
+    g.lineWidth = 1.2;
+    for (let x = 2; x < h; x += 5) {
+      g.strokeStyle = 'rgba(255,255,255,0.16)';
+      g.beginPath();
+      g.moveTo(x, 0);
+      g.lineTo(x, S);
+      g.stroke();
+      g.strokeStyle = 'rgba(45,12,24,0.08)';
+      g.beginPath();
+      g.moveTo(0, x + 2);
+      g.lineTo(S, x + 2);
+      g.stroke();
+    }
     span = 0.7;
   } else if (id === 'marble') {
     // soft pale veins, each with a fine thread down the middle
@@ -1809,10 +1950,12 @@ function skinTile(id) {
       g.lineWidth = 1.6;
       g.stroke();
     }
+    // polished: two soft shines
+    gloss(g, h - 30, h - 34, 34, 0.28);
+    gloss(g, h + 26, h + 30, 22, 0.2);
   } else if (id === 'leopard') {
     // rosettes: broken dark rings round a warm centre, a few loose spots between
-    span = 1;
-    g.lineCap = 'round';
+    span = 1.3;
     const ros = [
       [0.22, 0.24, 30],
       [0.72, 0.16, 26],
@@ -1820,6 +1963,9 @@ function skinTile(id) {
       [0.14, 0.8, 27],
       [0.86, 0.74, 28],
     ];
+    const ring = new Path2D(),
+      warm = new Path2D(),
+      spots = new Path2D();
     for (let ox = -S; ox <= S; ox += S)
       for (let oy = -S; oy <= S; oy += S)
         for (let i = 0; i < ros.length; i++) {
@@ -1827,48 +1973,46 @@ function skinTile(id) {
             y = ros[i][1] * S + oy,
             r = ros[i][2];
           if (x < -r * 2 || x > S + r * 2 || y < -r * 2 || y > S + r * 2) continue;
-          g.fillStyle = 'rgba(255,190,90,0.26)';
-          g.beginPath();
-          g.ellipse(x, y, r * 0.8, r * 0.7, i, 0, TAU);
-          g.fill();
-          g.strokeStyle = 'rgba(45,12,24,0.5)';
-          g.lineWidth = 9;
+          lump(warm, x, y, r * 0.8, r * 0.7, i, i * 2.3);
           for (let k = 0; k < 4; k++) {
-            const a0 = k * 1.5708 + hash1(i * 3 + k) * 0.7;
-            g.beginPath();
-            g.ellipse(x, y, r, r * 0.86, i, a0, a0 + 0.85 + hash1(i + k * 5) * 0.4);
-            g.stroke();
+            // a piece of the ring: an arc band between two ellipses
+            const a0 = k * 1.5708 + hash1(i * 3 + k) * 0.7,
+              a1 = a0 + 0.85 + hash1(i + k * 5) * 0.4;
+            ring.moveTo(x + Math.cos(a0) * (r + 6), y + Math.sin(a0) * (r + 6) * 0.86);
+            ring.ellipse(x, y, r + 6, (r + 6) * 0.86, 0, a0, a1);
+            ring.ellipse(x, y, r - 6, (r - 6) * 0.86, 0, a1, a0, true);
+            ring.closePath();
           }
-          g.fillStyle = 'rgba(45,12,24,0.5)';
-          g.beginPath();
-          g.arc(x + r * 1.45, y - r * 0.9, 5, 0, TAU);
-          g.fill();
+          lump(spots, x + r * 1.45, y - r * 0.9, 6, 5, i, i * 4.1);
         }
+    puff(g, warm, 'rgba(255,190,90,0.3)', 3, 1, 'rgba(45,12,24,0.12)', 'rgba(255,230,180,0.3)');
+    puff(g, ring, 'rgba(45,12,24,0.55)', 2.5, 1, 'rgba(45,12,24,0.2)', 'rgba(255,228,210,0.22)');
+    puff(g, spots, 'rgba(45,12,24,0.55)', 2, 1, 'rgba(45,12,24,0.2)', 'rgba(255,228,210,0.22)');
   } else if (id === 'mosaic') {
-    // little tiles in four shades set in dark grout
-    span = 1;
+    // little glazed tiles in four shades set in dark grout
+    span = 1.5;
     const n = 4,
       q = S / n,
-      cols = [lite, 'rgba(255,214,110,0.34)', 'rgba(120,200,255,0.32)', 'rgba(255,120,170,0.3)', 'rgba(255,255,255,0.12)'];
+      cols = ['rgba(255,255,255,0.4)', 'rgba(255,214,110,0.4)', 'rgba(120,200,255,0.38)', 'rgba(255,120,170,0.36)', 'rgba(255,255,255,0.16)'];
     g.fillStyle = 'rgba(45,12,24,0.36)';
     g.fillRect(0, 0, S, S);
     for (let j = 0; j < n; j++)
       for (let i = 0; i < n; i++) {
         const x = i * q,
           y = j * q,
-          d = (k) => 6 + hash1(i * 7.1 + j * 3.7 + k) * 6;
-        g.beginPath();
-        g.moveTo(x + d(1), y + d(2));
-        g.lineTo(x + q - d(3), y + d(4));
-        g.lineTo(x + q - d(5), y + q - d(6));
-        g.lineTo(x + d(7), y + q - d(8));
-        g.closePath();
+          d = (k) => 6 + hash1(i * 7.1 + j * 3.7 + k) * 6,
+          p = new Path2D();
+        p.moveTo(x + d(1), y + d(2));
+        p.lineTo(x + q - d(3), y + d(4));
+        p.lineTo(x + q - d(5), y + q - d(6));
+        p.lineTo(x + d(7), y + q - d(8));
+        p.closePath();
         g.globalCompositeOperation = 'destination-out';
         g.fillStyle = '#000';
-        g.fill();
+        g.fill(p);
         g.globalCompositeOperation = 'source-over';
-        g.fillStyle = cols[(i * 3 + j * 2 + ((hash1(i + j * 9) * 3) | 0)) % cols.length];
-        g.fill();
+        puff(g, p, cols[(i * 3 + j * 2 + ((hash1(i + j * 9) * 3) | 0)) % cols.length], 3, 1, 'rgba(45,12,24,0.3)');
+        gloss(g, x + q * 0.5, y + q * 0.42, q * 0.22, 0.32);
       }
   } else if (id === 'foil') {
     // crumpled gold foil: a gold wash broken into facets that catch the light
@@ -1898,35 +2042,56 @@ function skinTile(id) {
           g.closePath();
           g.fill();
         }
-    g.strokeStyle = 'rgba(255,255,240,0.3)';
-    g.lineWidth = 26;
-    g.beginPath();
-    g.moveTo(60, 230);
-    g.lineTo(220, 40);
-    g.stroke();
-  } else if (id === 'aurora') {
-    // northern lights: curtains of green, teal and violet hanging over a night wash
-    span = 3.2;
-    g.fillStyle = 'rgba(16,24,70,0.32)';
-    g.fillRect(0, 0, S, S);
-    const cols = ['90,255,170', '80,215,255', '200,120,255'];
-    for (let k = 0; k < 3; k++)
-      for (let x = 0; x < S; x += 2) {
-        const yc = 105 + k * 34 + 18 * Math.sin(x * 0.028 + k * 2.1) + 7 * Math.sin(x * 0.09 + k),
-          L = 44 + 22 * Math.sin(x * 0.05 + k * 1.3) + 12 * hash1(x * 0.37 + k),
-          gr = g.createLinearGradient(0, yc - L, 0, yc + 6);
-        gr.addColorStop(0, `rgba(${cols[k]},0)`);
-        gr.addColorStop(0.85, `rgba(${cols[k]},0.55)`);
-        gr.addColorStop(1, `rgba(${cols[k]},0)`);
-        g.fillStyle = gr;
-        g.fillRect(x, yc - L, 2, L + 6);
+    // creases: each fold catches light on one side and shade on the other, and a few sparkles; a shine sweeps across (living layer)
+    g.lineWidth = 0.8;
+    for (let j = 0; j < n; j++)
+      for (let i = 0; i < n; i++) {
+        g.strokeStyle = (i + j) % 2 ? 'rgba(255,255,225,0.5)' : 'rgba(110,60,0,0.35)';
+        g.beginPath();
+        g.moveTo(px(i, j), py(i, j));
+        g.lineTo(px(i + 1, j + 1), py(i + 1, j + 1));
+        g.moveTo(px(i + 1, j), py(i + 1, j));
+        g.lineTo(px(i + 1, j + 1), py(i + 1, j + 1));
+        g.stroke();
       }
+    for (let i = 0; i < 6; i++) glint(g, h + (hash1(i * 4.7) - 0.5) * 130, h + (hash1(i * 8.3) - 0.5) * 130, 5 + hash1(i * 2.9) * 6);
+    fx = { kind: 'sweep', period: 2.6 };
+    fx.c = skinLayer((f) => {
+      const gr = f.createLinearGradient(S * 0.36, 0, S * 0.64, 0);
+      gr.addColorStop(0, 'rgba(255,255,235,0)');
+      gr.addColorStop(0.5, 'rgba(255,255,235,0.75)');
+      gr.addColorStop(1, 'rgba(255,255,235,0)');
+      f.fillStyle = gr;
+      f.fillRect(0, 0, S, S);
+    }, 1);
+  } else if (id === 'aurora') {
+    // northern lights: curtains of green, teal and violet over a starry night; a second veil drifts and breathes (living layer)
+    span = 3.2;
+    const curtains = (f, cols, y0, al) => {
+      for (let k = 0; k < cols.length; k++)
+        for (let x = 0; x < S; x += 2) {
+          const yc = y0 + k * 34 + 18 * Math.sin(x * 0.028 + k * 2.1) + 7 * Math.sin(x * 0.09 + k),
+            L = 44 + 22 * Math.sin(x * 0.05 + k * 1.3) + 12 * hash1(x * 0.37 + k),
+            gr = f.createLinearGradient(0, yc - L, 0, yc + 6);
+          gr.addColorStop(0, `rgba(${cols[k]},0)`);
+          gr.addColorStop(0.85, `rgba(${cols[k]},${al})`);
+          gr.addColorStop(1, `rgba(${cols[k]},0)`);
+          f.fillStyle = gr;
+          f.fillRect(x, yc - L, 2, L + 6);
+        }
+    };
+    g.fillStyle = 'rgba(16,24,70,0.36)';
+    g.fillRect(0, 0, S, S);
     g.fillStyle = 'rgba(255,255,255,0.8)';
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 30; i++) {
       g.beginPath();
-      g.arc(50 + hash1(i * 2.7) * 156, 52 + hash1(i * 6.1) * 44, 1 + hash1(i * 4.3) * 1.4, 0, TAU);
+      g.arc(h + (hash1(i * 2.7) - 0.5) * 150, h + (hash1(i * 6.1) - 0.5) * 150, 0.5 + hash1(i * 4.3) * 1.1, 0, TAU);
       g.fill();
     }
+    curtains(g, ['90,255,170', '80,215,255', '200,120,255'], 105, 0.55);
+    for (let i = 0; i < 3; i++) glint(g, h + (hash1(i * 5.3) - 0.5) * 120, h - 30 - hash1(i * 2.2) * 40, 5 + i * 1.5);
+    fx = { kind: 'drift' };
+    fx.c = skinLayer((f) => curtains(f, ['255,130,210', '120,255,220'], 120, 0.45), 2);
   }
   let pat = null;
   try {
@@ -1935,23 +2100,160 @@ function skinTile(id) {
   } catch (e) {
     pat = null;
   }
-  return (skinArt[id] = { c, pat, span });
+  if (fx && fx.c && pat) fx.pat = ctx.createPattern(fx.c, 'repeat');
+  return (skinArt[id] = { c, pat, span, fx });
+}
+const FX_MIN = 16, // on-screen radius in px under which a pattern's living layer is not drawn
+  SKIN_BIG = { swirl: 1, tiger: 1, cow: 1, glaze: 1, marble: 1, foil: 1, aurora: 1, galaxy: 1 }; // whole-body pictures, painted at 512
+let skinM = null; // one matrix for every pattern fill: nothing is made per body per frame
+function skinAt(pat, W, span, b, ang, dx) {
+  // a tile of W pixels on the body: centred on it, span radii wide, turned by ang, slid by dx tile pixels along its own x
+  const k = (span * b.Rs) / W,
+    cs = Math.cos(ang) * k,
+    sn = Math.sin(ang) * k,
+    m = skinM || (skinM = new DOMMatrix());
+  m.a = cs;
+  m.b = sn;
+  m.c = -sn;
+  m.d = cs;
+  m.e = b.x - (cs - sn) * W * 0.5 + cs * dx;
+  m.f = b.y - (sn + cs) * W * 0.5 + sn * dx;
+  pat.setTransform(m);
+  ctx.fillStyle = pat;
+  ctx.fill(b.path);
 }
 function drawSkin(b) {
   // the pattern rides on the body: centred on it, scaled with it, turning with the face
   const a = skinTile(b.skin);
   if (!a.pat) return;
-  const k = (a.span * b.Rs) / 256,
-    cs = Math.cos(b.fa) * k,
-    sn = Math.sin(b.fa) * k;
+  const f = a.fx,
+    px = b.Rs * cam.z,
+    // the rainbow's own flow costs no fill, so only reduced motion stops it; the overlays need full detail and a candy big enough,
+    // and fade in over 8 px above FX_MIN, so a lod step or a camera kick never makes them pop
+    live = f && !lod && !calm && px >= FX_MIN,
+    T = last / 1000 + b.ph,
+    W = a.c.width;
   try {
-    a.pat.setTransform(new DOMMatrix([cs, sn, -sn, cs, b.x - (cs - sn) * 128, b.y - (sn + cs) * 128]));
+    skinAt(a.pat, W, a.span, b, b.fa, f && !calm && f.kind === 'flow' ? ((T / f.period) % 1) * W : 0);
+    if (!live || !f.pat) return;
+    const V = f.c.width,
+      fade = Math.min(1, (px - FX_MIN) / 8);
+    if (f.kind === 'sweep') {
+      ctx.globalAlpha = fade;
+      skinAt(f.pat, V, a.span, b, b.fa, (((T / f.period) % 1) - 0.5) * V);
+    } else if (f.kind === 'drift') {
+      ctx.globalAlpha = (0.55 + 0.45 * Math.sin(T * 0.9)) * fade;
+      skinAt(f.pat, V, a.span, b, b.fa, Math.sin(T * 0.35) * V * 0.08);
+    } else {
+      ctx.globalAlpha = (0.6 + 0.4 * Math.sin(T * f.pulse)) * fade;
+      skinAt(f.pat, V, a.span, b, b.fa + T * f.speed, 0);
+    }
+    ctx.globalAlpha = 1;
   } catch (e) {
     a.pat = null;
-    return;
+    ctx.globalAlpha = 1;
   }
-  ctx.fillStyle = a.pat;
-  ctx.fill(b.path);
+}
+// the shared material of the patterns: a soft contact shadow, the fill, a soft rim just inside the edge and a fine contour.
+// all of it is round, so it reads the same whichever way the tile turns with the face
+function puff(g, p, fill, k, sc, halo, rim) {
+  g.save();
+  g.shadowColor = halo || 'rgba(45,12,24,0.36)';
+  g.shadowBlur = k * 1.4 * sc;
+  g.fillStyle = fill;
+  g.fill(p);
+  g.restore();
+  g.save();
+  g.clip(p);
+  g.shadowColor = rim || 'rgba(45,12,24,0.4)';
+  g.shadowBlur = k * sc;
+  g.lineWidth = k;
+  g.strokeStyle = rim || 'rgba(45,12,24,0.2)';
+  g.stroke(p);
+  g.restore();
+  g.lineWidth = Math.max(0.6, k * 0.18);
+  g.strokeStyle = 'rgba(45,12,24,0.16)';
+  g.stroke(p);
+}
+function gloss(g, x, y, r, al) {
+  // a round shine
+  const gr = g.createRadialGradient(x, y, 0, x, y, r);
+  gr.addColorStop(0, `rgba(255,255,255,${al})`);
+  gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr;
+  g.beginPath();
+  g.arc(x, y, r, 0, TAU);
+  g.fill();
+}
+function glint(g, x, y, r) {
+  // a four-pointed sparkle with a soft glow
+  gloss(g, x, y, r * 0.6, 0.7);
+  g.fillStyle = 'rgba(255,255,250,0.95)';
+  for (let q = 0; q < 2; q++) {
+    const ax = q ? 0 : 1,
+      ay = q;
+    g.beginPath();
+    g.moveTo(x - ax * r, y - ay * r);
+    g.quadraticCurveTo(x + ay * r * 0.1, y + ax * r * 0.1, x + ax * r, y + ay * r);
+    g.quadraticCurveTo(x - ay * r * 0.1, y - ax * r * 0.1, x - ax * r, y - ay * r);
+    g.fill();
+  }
+}
+function band(c, d) {
+  // a diagonal ribbon over a 256 tile: every point with |x + y - c| <= d, drawn past the edges so tiles meet
+  const p = new Path2D();
+  p.moveTo(-40, c - d + 40);
+  p.lineTo(296, c - d - 296);
+  p.lineTo(296, c + d - 296);
+  p.lineTo(-40, c + d + 40);
+  p.closePath();
+  return p;
+}
+function shine(g, c, al) {
+  // a thin light line down the middle of a band(c, …)
+  g.strokeStyle = `rgba(255,255,255,${al})`;
+  g.lineWidth = 3;
+  g.beginPath();
+  g.moveTo(-40, c + 40);
+  g.lineTo(296, c - 296);
+  g.stroke();
+}
+function lump(p, x, y, rx, ry, a, seed) {
+  // add a soft lump of uneven outline to path p: nine points round an ellipse, joined by curves through their midpoints
+  const N = 9,
+    px = [],
+    py = [];
+  for (let i = 0; i < N; i++) {
+    const t = (i / N) * TAU,
+      k = 0.78 + hash1(seed + i * 1.7) * 0.4,
+      ex = Math.cos(t) * rx * k,
+      ey = Math.sin(t) * ry * k;
+    px.push(x + ex * Math.cos(a) - ey * Math.sin(a));
+    py.push(y + ex * Math.sin(a) + ey * Math.cos(a));
+  }
+  p.moveTo((px[N - 1] + px[0]) / 2, (py[N - 1] + py[0]) / 2);
+  for (let i = 0; i < N; i++) p.quadraticCurveTo(px[i], py[i], (px[i] + px[(i + 1) % N]) / 2, (py[i] + py[(i + 1) % N]) / 2);
+  p.closePath();
+  return p;
+}
+function rod(x, y, a, len, w) {
+  // a sprinkle: a capsule len long and w thick, centred at x, y, turned by a
+  const p = new Path2D(),
+    c = Math.cos(a) * (len - w) * 0.5,
+    s = Math.sin(a) * (len - w) * 0.5;
+  p.arc(x + c, y + s, w / 2, a - Math.PI / 2, a + Math.PI / 2);
+  p.arc(x - c, y - s, w / 2, a + Math.PI / 2, a + Math.PI * 1.5);
+  p.closePath();
+  return p;
+}
+function skinLayer(paint, sc) {
+  // the living layer's own see-through tile, in the same 256 space as the pattern
+  const c = document.createElement('canvas');
+  c.width = c.height = 256 * sc;
+  const f = c.getContext('2d');
+  f.scale(sc, sc);
+  paint(f);
+  return c;
 }
 const SPRINKLES_C = ['#ff5d8f', '#ffd23f', '#3fb8ff', '#6fd13c', '#b57bff', '#ff8a2a'];
 const SPRINKLES = ['#ff5d8f', '#ffd23f', '#7ad7ff', '#9be15d', '#c49bff', '#fff6e8', '#ff9a3d', '#4fe3c1'];
@@ -2733,6 +3035,7 @@ function woundProfile(u, w) {
 }
 
 let nextId = 1;
+let blobSeq = 0; // candies made so far, for their living-layer phase
 class Blob {
   constructor(o) {
     this.id = nextId++;
@@ -2748,6 +3051,7 @@ class Blob {
     this.R = massToR(this.mass);
     this.Rs = this.R;
     this.face = rand(-Math.PI, Math.PI);
+    this.ph = (blobSeq++ * 7.37) % 60; // a phase of its own for a pattern's living layer, so twins do not twinkle together; a counter, not Math.random, so seeded worlds stay the same
     this.tx = this.x;
     this.ty = this.y;
     this.wounds = [];
@@ -10345,6 +10649,7 @@ function renderSkins() {
           y = 46 - t / 2 + j * t;
         if (x > 92 || y > 92 || x + t < 0 || y + t < 0) continue;
         g.drawImage(art.c, x, y, t, t);
+        if (art.fx && art.fx.c) g.drawImage(art.fx.c, x, y, t, t); // the living layer, standing still
       }
     g.restore();
     g.lineWidth = 4;

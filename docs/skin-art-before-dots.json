@@ -1,0 +1,1 @@
+{"cpu":6,"size":"390x844","dpr":3,"runs":3,"skin":"dots","firstFrameMs":1020.9,"real":{"fps":124.4,"p95Ms":12.2,"worstMs":72.7,"over33":4},"perSec":{"scriptMs":589.1,"styleMs":67.7,"layoutMs":11.9,"styles":111.5,"layouts":8.1},"step":{"updateMs":2.4,"renderMs":4.8}}

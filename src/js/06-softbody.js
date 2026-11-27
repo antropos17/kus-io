@@ -9,6 +9,7 @@ function woundProfile(u, w) {
 }
 
 let nextId = 1;
+let blobSeq = 0; // candies made so far, for their living-layer phase
 class Blob {
   constructor(o) {
     this.id = nextId++;
@@ -24,6 +25,7 @@ class Blob {
     this.R = massToR(this.mass);
     this.Rs = this.R;
     this.face = rand(-Math.PI, Math.PI);
+    this.ph = (blobSeq++ * 7.37) % 60; // a phase of its own for a pattern's living layer, so twins do not twinkle together; a counter, not Math.random, so seeded worlds stay the same
     this.tx = this.x;
     this.ty = this.y;
     this.wounds = [];
