@@ -68,6 +68,8 @@ const SKINS = [
   ['foil', t('skin.foil')],
   ['aurora', t('skin.aurora')],
 ];
+const AD_SUGAR = 300, // sugar for one rewarded ad in the app's shop, a first guess like MIS_SUGAR
+  AD_DAY = 3; // rewarded ads a day, by the local date
 const MIS_SUGAR = 300; // a mission's payout in the first circle; each later circle adds 60% of it
 const MIS_CAP = { time: 150, combo: 8, mass: 1600 }; // targets that must stay reachable in one run
 const MIS_IDLE = 5; // runs in a row without headway after which a mission makes way

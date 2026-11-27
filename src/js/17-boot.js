@@ -106,6 +106,7 @@ function frame(now) {
   if (dt > 0.05) dt = 0.05;
   const w0 = performance.now();
   padPoll(dt); // the gamepad, before the run reads its input
+  contFrame(dt); // the «Продолжить» timer, in real time
   annFrame(dt, paused); // the big word lives in real time: the swallow's slow-down does not drag it
   if (!paused) {
     let sc = CHEAT.slow ? 0.45 : 1;
@@ -378,6 +379,26 @@ window.__kus = {
   renderMissions,
   misReward,
   die,
+  cont,
+  CONT,
+  contShow,
+  contYes,
+  contNo,
+  contFrame,
+  contMass,
+  NATIVE,
+  SHOP,
+  AD_SUGAR,
+  AD_DAY,
+  adsLeft,
+  adWatch,
+  openShop,
+  closeShop,
+  shopOpen,
+  PACKS,
+  credit,
+  buyPack,
+  loadPrices,
   WARDROBE,
   SKINS,
   skinTile,

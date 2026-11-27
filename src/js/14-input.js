@@ -107,6 +107,14 @@ addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeAlbum();
     return;
   }
+  if (shopOpen()) {
+    if (e.key === 'Escape') closeShop();
+    return;
+  }
+  if (cont.on) {
+    if (e.key === 'Escape') contNo();
+    if (e.key === 'Escape' || e.code === 'Space') return;
+  }
   if (e.key === 'Escape' || (e.code === 'KeyP' && !(e.target && e.target.tagName === 'INPUT'))) {
     if (!admEl.classList.contains('hidden')) closeAdmin();
     else if (!pauseEl.classList.contains('hidden')) closePause();

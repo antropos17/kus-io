@@ -689,6 +689,31 @@ body.pad #pauseBtn .pg{margin:0;width:auto;height:auto;background:none;color:var
 body.pad .help .kb,body.pad .help .tc{display:none}
 body.pad .help .pd{display:list-item}
 body.pad #skins .pz,body.pad #hats .pz,body.pad #eyes .pz,body.pad #trail .pz,body.pad #tray .pz,body.pad .st .sn,body.pad .st i,body.pad #trTiles span,body.pad #fpsTag{font-size:12px}
+
+/* «Продолжить»: a small card over the living field, the seconds on a ring */
+#cont .card{width:min(340px,100%);text-align:center;padding:22px 22px 18px}
+#cont h2{margin:0 0 12px;font:900 clamp(24px,5vw,30px)/1.05 var(--font)}
+#cont .cring{width:74px;height:74px;margin:0 auto 14px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient(var(--berry) calc(var(--p,1)*360deg),#ead2b9 0)}
+#cont .cring b{width:58px;height:58px;border-radius:50%;background:var(--cream);display:flex;align-items:center;justify-content:center;font:900 28px/1 var(--font)}
+@media (max-height:420px){#cont .card{padding:14px 18px 12px}#cont h2{margin-bottom:8px}#cont .cring{width:56px;height:56px;margin-bottom:10px}#cont .cring b{width:44px;height:44px;font-size:22px}}
+
+/* the app's sugar shop */
+#shopBtn{display:flex;align-items:center;width:auto;flex:none;margin:0;min-height:44px;padding:8px 14px;border-radius:999px;font-size:14px}
+#shopBtn.hidden{display:none}
+#shop .wrap{width:min(440px,100%)}
+#shop h2{margin:0}
+#shopBank{margin:4px 0 14px;font:800 15px/1.3 var(--font);color:#7a5a49;font-variant-numeric:tabular-nums}
+#adBtn{font-size:18px;padding:14px}
+#adBtn:disabled{filter:grayscale(.6);opacity:.7;cursor:default}
+#shopMsg{min-height:1.3em;margin:12px 0 0;text-align:center}
+@media (max-height:420px){#shop .card{padding:16px 18px 12px}#shopBank{margin-bottom:8px}#adBtn{font-size:16px;padding:11px}}
+#packs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+#packs p,#packs #packRetry{grid-column:1/-1;margin:0;text-align:center}
+#packs [data-id]{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:64px;padding:10px 4px;font:800 14px/1.1 var(--font);color:var(--ink);background:#fff;border:2px solid #ead2b9;border-radius:14px;cursor:pointer}
+#packs [data-id] b{font:900 18px/1 var(--font);color:var(--berry2);font-variant-numeric:tabular-nums}
+#packs [data-id]:disabled{opacity:.6;cursor:default}
+#packs [data-id].busy{opacity:1;border-color:var(--berry)}
+@media (max-height:420px){#packs{margin-top:8px}#packs [data-id]{min-height:52px;padding:7px 4px}}
 </style>
 </head>
 <body>
@@ -733,7 +758,7 @@ document.getElementById('nojs').style.display = 'none';
     <h1 class="logo" data-th="logo">КУСЬ<span>.io</span></h1>
     <p class="tag" data-t="menu.tag">Откусывай куски от других конфет и расти.</p>
     <input id="nick" maxlength="14" placeholder="Твоё имя" autocomplete="off" spellcheck="false" aria-label="Имя" data-tp="nick.ph" data-ta="a.nick">
-    <div class="bankRow later"><p id="bank" aria-live="polite"></p><button id="albumBtn" class="btn2" type="button"></button></div>
+    <div class="bankRow later"><p id="bank" aria-live="polite"></p><button id="albumBtn" class="btn2" type="button"></button><button id="shopBtn" class="btn2 hidden" type="button" data-t="shop.btn">Магазин</button></div>
     </div>
     <p id="chal" class="hidden"></p>
     <div class="secs"><!-- folding sections: the head says what is chosen, one opens at a time -->
@@ -791,6 +816,9 @@ document.getElementById('nojs').style.display = 'none';
   </div></div>
 </div>
 
+<div id="cont" class="ov center hidden" role="dialog" aria-label="Продолжить забег?" data-ta="cont.a">
+  <div class="card"><h2 data-t="cont.t">Ещё не конец!</h2><div class="cring" aria-hidden="true"><b id="contN">5</b></div><button id="contYes" class="btn" type="button" data-t="cont.yes">Продолжить</button><button id="contNo" class="btn2" type="button" data-t="cont.no">Нет, к итогу</button></div>
+</div>
 <div id="over" class="ov center hidden">
   <div class="wrap" id="overWrap"><button class="x" id="overX" type="button" aria-label="Закрыть" title="Закрыть" data-ta="a.close" data-tt="a.close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
     <svg id="trMedal" viewBox="-40 -40 80 80" aria-hidden="true"><circle r="36" fill="#ffe3ea" stroke="#ffc3d2" stroke-width="3"/><ellipse cy="22" rx="30" ry="6" fill="#f0d3b2"/><rect x="-25" y="-4" width="50" height="26" rx="6" fill="#7a3f26"/><rect x="-25" y="6" width="50" height="5" fill="#ff8fb0"/><g fill="#fff6e8"><rect x="-27" y="-11" width="54" height="12" rx="6"/><path d="M-20.2 1a3.2 3.2 0 006.4 0zM-7.2 1a3.2 3.2 0 006.4 0zM7.8 1a3.2 3.2 0 006.4 0zM16.8 1a3.2 3.2 0 006.4 0z"/><rect x="-20.2" y="-2" width="6.4" height="3"/><rect x="-7.2" y="-2" width="6.4" height="3"/><rect x="7.8" y="-2" width="6.4" height="3"/><rect x="16.8" y="-2" width="6.4" height="3"/></g><g stroke-width="2" stroke-linecap="round"><path stroke="#ff5d8f" d="M-18.3 -7L-13.7 -5"/><path stroke="#ffd23f" d="M-4.5 -10L-7.5 -6"/><path stroke="#7ad7ff" d="M4.6 -7.1L7.4 -2.9"/><path stroke="#9be15d" d="M18.4 -8.8L13.6 -7.2"/><path stroke="#c49bff" d="M-10.9 -5.5L-11.1 -0.5"/><path stroke="#fff6e8" d="M9.5 -2.5L14.5 -1.5"/></g><path d="M0-18Q2-27 8-30" fill="none" stroke="#5a8a2a" stroke-width="2"/><circle cy="-15" r="7.5" fill="#e8274b"/><circle cx="-2.6" cy="-18" r="2.2" fill="#fff" fill-opacity=".75"/></svg>
@@ -824,6 +852,15 @@ document.getElementById('nojs').style.display = 'none';
   </div><canvas id="trophyFx" aria-hidden="true"></canvas></div>
 </div>
 
+<div id="shop" class="ov center hidden" role="dialog" aria-label="Магазин сахара" data-ta="shop.a">
+  <div class="wrap"><button class="x" id="shopX" type="button" aria-label="Закрыть" title="Закрыть (Esc)" data-ta="a.close" data-tt="a.closeEsc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
+    <h2 class="dead" data-t="shop.a">Магазин сахара</h2>
+    <p id="shopBank"></p>
+    <button id="adBtn" class="btn" type="button"></button>
+    <div id="packs"></div>
+    <p class="best" id="shopMsg" aria-live="polite"></p>
+  </div></div>
+</div>
 <div id="album" class="ov center hidden" role="dialog" aria-label="Альбом" data-ta="album.t">
   <div class="wrap"><button class="x" id="albumX" type="button" aria-label="Закрыть" title="Закрыть (Esc)" data-ta="a.close" data-tt="a.closeEsc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="card">
     <h2 class="dead"><span data-t="album.t">Альбом</span> <span id="albumN"></span></h2>
@@ -1117,6 +1154,31 @@ const STR = {
   'mis.bites': ['Откуси кусков', 'Bite off pieces'],
   'mis.food': ['Собери посыпки', 'Collect sprinkles'],
   'mis.kills': ['Съешь конфет целиком', 'Swallow candies whole'],
+  'shop.btn': ['Магазин', 'Shop'],
+  'shop.a': ['Магазин сахара', 'Sugar shop'],
+  'ad.btn': [(n, left, all) => `▶ Реклама: +${n} · ещё ${left} из ${all}`, (n, left, all) => `▶ Ad: +${n} · ${left} of ${all} left`],
+  'ad.wait': ['загружаем…', 'loading…'],
+  'ad.got': [(n) => `+${n} сахара!`, (n) => `+${n} sugar!`],
+  'ad.closed': ['Реклама закрыта раньше — сахар не начислен', 'The ad was closed early — no sugar'],
+  'ad.err': ['Реклама сейчас недоступна, попробуй позже', 'No ad right now, try later'],
+  'ad.none': ['Завтра будет ещё 3', '3 more tomorrow'],
+  'pack.load': ['загружаем цены…', 'loading prices…'],
+  'pack.off': ['Магазин сейчас недоступен', 'The store is unavailable right now'],
+  'pack.retry': ['Ещё раз', 'Try again'],
+  'pack.busy': ['покупаем…', 'buying…'],
+  'pack.a': [(n, p) => `${n} сахара за ${p}`, (n, p) => `${n} sugar for ${p}`],
+  'pack.got': [(n) => `+${n} сахара!`, (n) => `+${n} sugar!`],
+  'pack.err': ['Покупка не прошла. Деньги не списаны', 'The purchase failed. No money was taken'],
+  'pack.wait': [
+    'Покупка ждёт подтверждения — сахар придёт, когда она пройдёт',
+    'The purchase is awaiting approval — the sugar will come when it goes through',
+  ],
+  'pack.slow': ['Ждём ответа магазина — сахар придёт сам', 'Waiting for the store — the sugar will come on its own'],
+  'pack.late': [(n) => `Покупка прошла: +${n} сахара`, (n) => `Purchase complete: +${n} sugar`],
+  'cont.t': ['Ещё не конец!', 'Not over yet!'],
+  'cont.yes': ['Продолжить', 'Continue'],
+  'cont.no': ['Нет, к итогу', 'No, show results'],
+  'cont.a': ['Продолжить забег?', 'Continue the run?'],
   'mis.mass': ['Набери массу за одну жизнь', 'Reach this mass in one life'],
   'mis.wound': ['Укуси в свежую ранку', 'Bite into a fresh wound'],
   'mis.tongue': ['Поймай конфет языком', 'Catch candies with your tongue'],
@@ -1490,6 +1552,8 @@ const SKINS = [
   ['foil', t('skin.foil')],
   ['aurora', t('skin.aurora')],
 ];
+const AD_SUGAR = 300, // sugar for one rewarded ad in the app's shop, a first guess like MIS_SUGAR
+  AD_DAY = 3; // rewarded ads a day, by the local date
 const MIS_SUGAR = 300; // a mission's payout in the first circle; each later circle adds 60% of it
 const MIS_CAP = { time: 150, combo: 8, mass: 1600 }; // targets that must stay reachable in one run
 const MIS_IDLE = 5; // runs in a row without headway after which a mission makes way
@@ -1911,6 +1975,12 @@ const BOT_NAMES = [
 
 // The wardrobe: what can be bought with sugar, what it costs, what the player owns.
 // Top-level code here must not touch `sugar`, `M` or `chosenSkin` (later files): only functions do.
+// sugar packs of the app; the price is the store's, never written here; the sizes are a first guess
+const PACKS = [
+  { id: 'sugar_s', sugar: 5000 },
+  { id: 'sugar_m', sugar: 15000 },
+  { id: 'sugar_l', sugar: 40000 },
+];
 const PRICE_K = 1; // one multiplier over every price, tuned against the measured income
 // per slot: [id, base price] in the order shown; price 0 is free
 const WARDROBE = {
@@ -5401,6 +5471,88 @@ function annFrame(rdt, isPaused) {
   if (ann.t >= ANN.life) annHide();
 }
 
+// ---------- «Продолжить»: once per free run in the store builds ----------
+// The web never sees it. A death in a free run in 'app' or 'steam' holds the run's payout and offers to come back
+// with the mass the candy had in its last seconds; «Нет», the timer or leaving to the menu pay the run as before.
+const CONT = { delay: 1.1, secs: 5, back: 3, lock: 0.5, step: 0.25, span: 3 };
+const cont = { pend: false, on: false, left: 0, at: 0 }; // at: when the window showed, for the click lock
+const contLogM = new Float32Array(Math.ceil(CONT.span / CONT.step)); // the mass every CONT.step s, a ring
+let contAcc = 0,
+  contI = 0;
+const contEl = $('cont');
+function contCan() {
+  return PLATFORM !== 'web' && mode === 'free' && !run.contUsed;
+}
+function contClear() {
+  contLogM.fill(0);
+  contAcc = 0;
+  contI = 0;
+}
+function contLog(dt) {
+  contAcc += dt;
+  if (contAcc < CONT.step) return;
+  contAcc -= CONT.step;
+  contLogM[contI] = player.mass;
+  contI = (contI + 1) % contLogM.length;
+}
+function contMass() {
+  let m = DIFFS[diff].start;
+  for (let i = 0; i < contLogM.length; i++) m = Math.max(m, contLogM[i]);
+  return m;
+}
+function contHide() {
+  cont.pend = false;
+  cont.on = false;
+  contEl.classList.add('hidden');
+}
+function contShow() {
+  cont.on = true;
+  cont.at = performance.now();
+  cont.left = CONT.secs;
+  $('contN').textContent = CONT.secs;
+  contEl.style.setProperty('--p', '1');
+  contEl.classList.remove('hidden');
+}
+function contYes() {
+  if (!cont.pend) return;
+  const peak = player ? player.stats.maxMass : 0,
+    m = contMass();
+  contHide();
+  run.contUsed = true;
+  spawnPlayer(CONT.back);
+  player.mass = m;
+  shownMass = m;
+  player.stats.maxMass = Math.max(peak, m);
+  contClear();
+  hudT = 0;
+}
+function contNo() {
+  if (!cont.pend) return;
+  contHide();
+  finishRun();
+  showOver();
+}
+function contFrame(rdt) {
+  if (!cont.on) return; // real time
+  cont.left -= rdt;
+  if (cont.left <= 0) return contNo();
+  const s = Math.ceil(cont.left);
+  if ($('contN').textContent !== String(s)) $('contN').textContent = s;
+  contEl.style.setProperty('--p', (cont.left / CONT.secs).toFixed(3));
+}
+// a click that was a bite mashed through the death must not choose: the first CONT.lock s of the window ignore clicks
+const contClick = (fn) => () => {
+  if (performance.now() - cont.at >= CONT.lock * 1000) fn();
+};
+$('contYes').addEventListener('click', contClick(contYes));
+$('contNo').addEventListener('click', contClick(contNo));
+// leaving the app or closing the window while the offer is up pays the run at once: a backgrounded app may be killed
+// and the run's sugar and record must not go with it (the continue is the price of leaving)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) contNo();
+});
+addEventListener('pagehide', contNo);
+
 // ---------- candy of the day ----------
 // One three-minute run a day with a twist that is the same for everyone on that date. The twist comes from the local date alone, no server.
 const DAILY = [
@@ -5797,6 +5949,7 @@ function startGame() {
   run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0, mis: [] };
   for (const m of M.act) m.at = m.got;
   clearWrap();
+  contClear();
   sugarReset();
   runActive = true;
   timeLeft = timed() ? 180 : 0;
@@ -5881,6 +6034,10 @@ function die(by) {
   state = 'dead';
   deadT = 0;
   killer = by;
+  if (contCan()) {
+    cont.pend = true; // the payout waits for «Продолжить» or «Нет» (10-continue)
+    return;
+  }
   if (timed() && runActive && timeLeft > 0) {
     run.deaths++;
     addFeed(t('feed.back'));
@@ -5908,6 +6065,10 @@ function toMenu() {
   clearWrap();
   annReset();
   sugarSettle();
+  if (cont.pend) {
+    contHide(); // leaving the offer pays the run as «Нет» does
+    finishRun();
+  }
   if (state === 'play' && player && player.alive) {
     tally();
     player.alive = false;
@@ -5937,6 +6098,7 @@ function toMenu() {
   renderHats();
   renderMissions();
   renderBank();
+  lateFlush(); // a purchase or an ad that came during the run
   renderMode();
   menuSwitchT = 0;
   menuFade();
@@ -6321,9 +6483,12 @@ function update(dt) {
       endTimed();
     }
   }
+  if (state === 'play' && mode === 'free' && player && player.alive) contLog(dt);
   if (state === 'dead') {
     deadT += dt;
-    if (runActive) {
+    if (cont.pend) {
+      if (deadT > CONT.delay && !cont.on) contShow();
+    } else if (runActive) {
       if (deadT > 1.6) {
         spawnPlayer(3);
         hudT = 0;
@@ -6883,6 +7048,7 @@ function secondShift() {
   saveM();
   run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0, lap: stg.lap + 1, mis: [] };
   sugarReset();
+  contClear();
   runActive = true;
   state = 'play';
   P.safe = false;
@@ -9731,8 +9897,8 @@ addEventListener('gamepaddisconnected', () => {
 // The d-pad (or the stick past half way) moves the focus to the nearest button that way, A presses it, B goes back,
 // LB/RB step through the open items of a choice row. Nothing here knows the screens' buttons: any visible button,
 // radio or link of the top window is a stop, so new screens and rows work by themselves.
-const PAD_ROOTS = ['album', 'adm', 'pause', 'over', 'menu']; // the top window first
-const PAD_HOME = { menu: 'play', pause: 'resume', over: 'again', album: 'albumX' }; // each screen's main button
+const PAD_ROOTS = ['album', 'adm', 'pause', 'cont', 'over', 'shop', 'menu']; // the top window first
+const PAD_HOME = { menu: 'play', pause: 'resume', cont: 'contYes', over: 'again', album: 'albumX', shop: 'adBtn' }; // each screen's main button
 const padShown = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
 function padRoot() {
   for (const id of PAD_ROOTS) {
@@ -9802,6 +9968,8 @@ function padNav(dir) {
 function padBack(root) {
   if (root.id === 'album') closeAlbum();
   else if (root.id === 'pause') closePause();
+  else if (root.id === 'cont') contNo();
+  else if (root.id === 'shop') closeShop();
   else if (root.id === 'over' && padShown($('overX'))) $('overX').click();
 }
 function padRow(root, step) {
@@ -9836,7 +10004,7 @@ function padScreens(rdt) {
     // and the end card ignores the buttons for a moment, so A mashed through a death does not skip it
     pad.dir = dir;
     pad.hold = Infinity;
-    pad.lockT = root && root.id === 'over' ? 0.5 : 0;
+    pad.lockT = root && (root.id === 'over' || root.id === 'cont') ? 0.5 : 0; // A mashed for bites must not choose
   }
   if (!root) return;
   if (pad.lockT > 0) pad.lockT -= rdt;
@@ -9965,6 +10133,14 @@ addEventListener('keydown', (e) => {
   if (albumOpen()) {
     if (e.key === 'Escape') closeAlbum();
     return;
+  }
+  if (shopOpen()) {
+    if (e.key === 'Escape') closeShop();
+    return;
+  }
+  if (cont.on) {
+    if (e.key === 'Escape') contNo();
+    if (e.key === 'Escape' || e.code === 'Space') return;
   }
   if (e.key === 'Escape' || (e.code === 'KeyP' && !(e.target && e.target.tagName === 'INPUT'))) {
     if (!admEl.classList.contains('hidden')) closeAdmin();
@@ -10454,6 +10630,203 @@ admA.addEventListener('click', (e) => {
   t.animate && t.animate([{ transform: 'scale(.94)' }, { transform: 'scale(1)' }], 160);
 });
 updateCheatTag();
+
+// ---------- the sugar shop of the app: sugar for a rewarded ad, three a day (packs: below) ----------
+// Everything goes through the bridge window.KUS_NATIVE that the app wrapper provides (tests fake it):
+//   ad() → 'reward' | 'closed' | 'error'; products(ids) → [{ id, price }]; buy(id) → { status, tx }; onPurchase(cb).
+// Without the bridge, and on the web and Steam, there is no shop at all.
+const NATIVE = PLATFORM === 'app' && window.KUS_NATIVE ? window.KUS_NATIVE : null;
+const SHOP = { adWait: 120000, priceWait: 10000, buyWait: 60000 }; // ms; past adWait an ad counts as failed (it counts loading, a whole video and its end card)
+const shopEl = $('shop'),
+  shopBtn = $('shopBtn'),
+  adBtn = $('adBtn');
+let adBusy = false,
+  lateMsg = '';
+shopBtn.classList.toggle('hidden', !NATIVE);
+function adsSeen() {
+  let a = null;
+  try {
+    a = JSON.parse(localStorage.getItem('kus.ads') || 'null');
+  } catch (e) {}
+  return a && a.d === dayKey(new Date()) ? a.n | 0 : 0; // a new local day starts from zero
+}
+function adsLeft() {
+  return Math.max(0, AD_DAY - adsSeen());
+}
+const shopOpen = () => !shopEl.classList.contains('hidden');
+function shopSay(key, ...args) {
+  $('shopMsg').textContent = key ? t(key, ...args) : '';
+}
+function late(text) {
+  // a result that came while the shop was closed: the menu's bank row tells it, or the menu after the run does
+  if (state === 'menu' && !menuEl.classList.contains('hidden')) renderBank(text);
+  else lateMsg = text;
+}
+function lateFlush() {
+  if (lateMsg) renderBank(lateMsg);
+  lateMsg = '';
+}
+function shopBank() {
+  $('shopBank').textContent = t('bank', sugar);
+}
+function renderAd() {
+  const left = adsLeft();
+  adBtn.disabled = adBusy || !left;
+  adBtn.textContent = adBusy ? t('ad.wait') : left ? t('ad.btn', AD_SUGAR, left, AD_DAY) : t('ad.none');
+}
+function openShop() {
+  if (!NATIVE) return;
+  shopSay('');
+  shopBank();
+  renderAd();
+  loadPrices();
+  shopEl.classList.remove('hidden');
+  setTimeout(() => (adBtn.disabled ? $('shopX') : adBtn).focus({ preventScroll: true }), 30);
+}
+function closeShop() {
+  shopEl.classList.add('hidden');
+  renderBank();
+  renderSkins();
+  renderHats();
+  shopBtn.focus({ preventScroll: true });
+}
+function sfxHold(on) {
+  // the game is silent while an ad plays
+  const ac = Sfx.ac;
+  if (!ac) return;
+  if (on) ac.suspend().catch(() => {});
+  else if (Sfx.on) ac.resume().catch(() => {});
+}
+async function adWatch() {
+  if (!NATIVE || adBusy || !adsLeft()) return;
+  adBusy = true;
+  shopSay('');
+  renderAd();
+  sfxHold(true);
+  let r = 'error';
+  try {
+    r = await Promise.race([NATIVE.ad(), new Promise((ok) => setTimeout(() => ok('timeout'), SHOP.adWait))]);
+  } catch (e) {} // a rejected ad is a failed one
+  sfxHold(false);
+  adBusy = false;
+  let key = 'ad.err';
+  if (r === 'reward') {
+    sugar += AD_SUGAR;
+    saveSugar();
+    try {
+      localStorage.setItem('kus.ads', JSON.stringify({ d: dayKey(new Date()), n: adsSeen() + 1 }));
+    } catch (e) {}
+    Sfx.power();
+    key = 'ad.got';
+  } else if (r === 'closed') key = 'ad.closed';
+  renderAd();
+  if (shopOpen()) {
+    shopSay(key, AD_SUGAR);
+    shopBank();
+  } else late(t(key, AD_SUGAR));
+}
+shopBtn.addEventListener('click', openShop);
+$('shopX').addEventListener('click', closeShop);
+adBtn.addEventListener('click', adWatch);
+
+// ---------- sugar packs: the store names the price, one credit per transaction ----------
+let packBusy = false;
+const packFmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); // 15 000
+function credit(id, tx) {
+  // true when it paid; a transaction already paid (from buy or onPurchase, before or after a restart) pays nothing
+  const p = PACKS.find((q) => q.id === id);
+  if (!p) return false;
+  let seen = [];
+  try {
+    seen = JSON.parse(localStorage.getItem('kus.tx') || '[]') || [];
+  } catch (e) {}
+  if (tx && seen.includes(tx)) return false;
+  sugar += p.sugar;
+  saveSugar();
+  if (tx) {
+    seen.push(tx);
+    try {
+      localStorage.setItem('kus.tx', JSON.stringify(seen.slice(-50)));
+    } catch (e) {}
+  }
+  Sfx.power();
+  return true;
+}
+function packLock(id) {
+  for (const b of $('packs').querySelectorAll('[data-id]')) {
+    b.disabled = !!id;
+    b.classList.toggle('busy', b.dataset.id === id);
+    const s = b.querySelector('span');
+    s.textContent = b.dataset.id === id ? t('pack.busy') : b.dataset.price;
+  }
+}
+async function loadPrices() {
+  if (!NATIVE) return;
+  const box = $('packs');
+  box.innerHTML = `<p class="best">${t('pack.load')}</p>`;
+  let list = null;
+  try {
+    list = await Promise.race([NATIVE.products(PACKS.map((p) => p.id)), new Promise((ok) => setTimeout(() => ok(null), SHOP.priceWait))]);
+  } catch (e) {}
+  const got = Array.isArray(list) ? PACKS.filter((p) => list.some((q) => q && q.id === p.id)) : [];
+  if (!got.length) {
+    box.innerHTML = `<button id="packRetry" class="btn2" type="button">${t('pack.retry')}</button>`;
+    shopSay('pack.off');
+    return;
+  }
+  box.innerHTML = got
+    .map((p) => {
+      const price = String(list.find((q) => q.id === p.id).price || '');
+      return `<button type="button" data-id="${p.id}" data-price="${esc(price)}" aria-label="${esc(t('pack.a', packFmt(p.sugar), price))}"><b>${packFmt(p.sugar)}</b><span>${esc(price)}</span></button>`;
+    })
+    .join('');
+  if ($('shopMsg').textContent === t('pack.off')) shopSay('');
+  if (packBusy) packLock('-');
+}
+function packSay(key, n) {
+  if (shopOpen()) {
+    shopSay(key, n);
+    shopBank();
+  } else if (key) late(t(key, n));
+}
+async function buyPack(id) {
+  if (!NATIVE || packBusy) return;
+  const p = PACKS.find((q) => q.id === id);
+  if (!p) return;
+  packBusy = true;
+  packLock(id);
+  shopSay('');
+  const slow = setTimeout(() => {
+    packBusy = false; // the store may still answer: the sugar comes then, or later through onPurchase
+    packLock(null);
+    shopSay('pack.slow');
+  }, SHOP.buyWait);
+  let r = null;
+  try {
+    r = await NATIVE.buy(id);
+  } catch (e) {}
+  clearTimeout(slow);
+  packBusy = false;
+  packLock(null);
+  const st = r && r.status;
+  if (st === 'ok') packSay(credit(id, r.tx) ? 'pack.got' : '', p.sugar);
+  else if (st === 'cancel') shopSay('');
+  else packSay(st === 'pending' ? 'pack.wait' : 'pack.err');
+}
+$('packs').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.id === 'packRetry') loadPrices();
+  else buyPack(b.dataset.id);
+});
+if (NATIVE && NATIVE.onPurchase)
+  NATIVE.onPurchase((q) => {
+    // a purchase that went through later: after 'pending', or after the app was killed in the middle of one
+    if (!q || !credit(q.id, q.tx)) return;
+    const n = PACKS.find((p) => p.id === q.id).sugar;
+    if (shopOpen()) packSay('pack.got', n);
+    else late(t('pack.late', n));
+  });
 
 // ---------- pause, settings, challenge ----------
 const pauseEl = $('pause');
@@ -11331,6 +11704,7 @@ function frame(now) {
   if (dt > 0.05) dt = 0.05;
   const w0 = performance.now();
   padPoll(dt); // the gamepad, before the run reads its input
+  contFrame(dt); // the «Продолжить» timer, in real time
   annFrame(dt, paused); // the big word lives in real time: the swallow's slow-down does not drag it
   if (!paused) {
     let sc = CHEAT.slow ? 0.45 : 1;
@@ -11603,6 +11977,26 @@ window.__kus = {
   renderMissions,
   misReward,
   die,
+  cont,
+  CONT,
+  contShow,
+  contYes,
+  contNo,
+  contFrame,
+  contMass,
+  NATIVE,
+  SHOP,
+  AD_SUGAR,
+  AD_DAY,
+  adsLeft,
+  adWatch,
+  openShop,
+  closeShop,
+  shopOpen,
+  PACKS,
+  credit,
+  buyPack,
+  loadPrices,
   WARDROBE,
   SKINS,
   skinTile,

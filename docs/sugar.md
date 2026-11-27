@@ -36,4 +36,6 @@ One chain is one profile in one tab playing runs back to back (free, free, 3 min
 
 The full measurement is `OUT=normal.json node tools/sugar-curve.mjs 8 35 normal` and the same with `weak`, in the background (8 chains of 35 hours take about 2.5 hours). The acceptance: the median for the normal autopilot 27-33 hours, the first purchase within 15 minutes, the weak one close to it. If the hours are off, change `PRICE_K`; if the first purchase is late, raise `MIS_SUGAR` (early income grows faster than late) and fit `PRICE_K` again. Do not touch the relative prices.
 
-Steam: the plan is a paid game with the ×2 and «Продолжить» free once per run, which doubles a run's sugar. The tool's `X2=1` gives the price multiplier for that build; no platform flag exists yet, so nothing is built for it.
+There is no ×2 anywhere (decided 27.11), so one price list serves the web, the app and Steam. «Продолжить» (free once per free run in the app and Steam) makes a run longer but not richer per minute, so it does not move the hours. The tool's `X2=1` stays as an option for «what if every run paid double», without a build behind it.
+
+In the app the shop also pays `AD_SUGAR` (300, `02-tuning`) for a rewarded ad, up to `AD_DAY` (3) a day. That is income per day, not per hour of play, so `sugar-curve` does not see it: 900 a day shortens the road mostly for players who play little. `AD_SUGAR` and the pack sizes in `PACKS` (5 000, 15 000, 40 000) are first guesses, to be set together with the store prices before payments are configured.

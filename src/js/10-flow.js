@@ -296,6 +296,7 @@ function startGame() {
   run = { bites: 0, kills: 0, max: 0, deaths: 0, t0: time, cheated: false, sugar: 0, mis: [] };
   for (const m of M.act) m.at = m.got;
   clearWrap();
+  contClear();
   sugarReset();
   runActive = true;
   timeLeft = timed() ? 180 : 0;
@@ -380,6 +381,10 @@ function die(by) {
   state = 'dead';
   deadT = 0;
   killer = by;
+  if (contCan()) {
+    cont.pend = true; // the payout waits for «Продолжить» or «Нет» (10-continue)
+    return;
+  }
   if (timed() && runActive && timeLeft > 0) {
     run.deaths++;
     addFeed(t('feed.back'));
@@ -407,6 +412,10 @@ function toMenu() {
   clearWrap();
   annReset();
   sugarSettle();
+  if (cont.pend) {
+    contHide(); // leaving the offer pays the run as «Нет» does
+    finishRun();
+  }
   if (state === 'play' && player && player.alive) {
     tally();
     player.alive = false;
@@ -436,6 +445,7 @@ function toMenu() {
   renderHats();
   renderMissions();
   renderBank();
+  lateFlush(); // a purchase or an ad that came during the run
   renderMode();
   menuSwitchT = 0;
   menuFade();
@@ -820,9 +830,12 @@ function update(dt) {
       endTimed();
     }
   }
+  if (state === 'play' && mode === 'free' && player && player.alive) contLog(dt);
   if (state === 'dead') {
     deadT += dt;
-    if (runActive) {
+    if (cont.pend) {
+      if (deadT > CONT.delay && !cont.on) contShow();
+    } else if (runActive) {
       if (deadT > 1.6) {
         spawnPlayer(3);
         hudT = 0;
