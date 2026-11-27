@@ -2013,6 +2013,14 @@ let slowT = 0,
   slowDip = 0.32,
   frameNo = 0;
 const PUBLIC_URL = 'https://antropos17.github.io/kus-io/';
+// where the page runs: 'app' inside the Capacitor phone app, 'steam' inside the desktop wrapper (its preload sets
+// window.KUS_PLATFORM), 'web' everywhere else. The web page never changes because of it.
+const PLATFORM = (() => {
+  try {
+    if (window.Capacitor && window.Capacitor.isNativePlatform() === true) return 'app';
+  } catch (e) {}
+  return window.KUS_PLATFORM === 'steam' ? 'steam' : 'web';
+})();
 let mode = 'free',
   timeLeft = 0,
   runActive = false,
@@ -2093,7 +2101,8 @@ let chosen = randi(PALS.length),
   menuSwitchT = 0;
 const CHEAT = { god: false, cd: false, mega: false, peace: false, magnet: false, slow: false, heal: false, speed: 1 };
 try {
-  const cs = JSON.parse(localStorage.getItem('kus.cheat') || '{}');
+  // store builds have no admin panel, so cheats saved by an earlier build could never be turned off there
+  const cs = PLATFORM === 'web' ? JSON.parse(localStorage.getItem('kus.cheat') || '{}') : {};
   for (const k in CHEAT) if (k in cs) CHEAT[k] = cs[k];
 } catch (e) {}
 const saveCheats = () => {
@@ -10232,6 +10241,7 @@ $('resume').addEventListener('click', closePause);
 $('pauseX').addEventListener('click', closePause);
 $('admX').addEventListener('click', closeAdmin);
 $('overX').addEventListener('click', toMenu);
+if (PLATFORM !== 'web') $('pAdmin').classList.add('hidden'); // cheats look like a debug build in a store
 $('pAdmin').addEventListener('click', () => {
   pauseEl.classList.add('hidden');
   paused = false;
@@ -10286,12 +10296,19 @@ document.addEventListener('visibilitychange', () => {
     openPause();
   }
 }); // switching apps must not get you eaten
+// the address a shared link opens: the public site from an app (Android serves the page from https://localhost),
+// this page's own address on the web unless it is opened from disk or inside a preview
+function shareBase() {
+  return PLATFORM === 'web' && /^https?:$/.test(location.protocol) && !/claude|anthropic/i.test(location.hostname)
+    ? location.origin + location.pathname
+    : PUBLIC_URL;
+}
 $('chalBtn').addEventListener('click', () => {
   if (run.won) return shareWin();
   // a link that carries your score: the friend sees it as the target
   const score = Math.round(run.max),
     name = (nick.value || '').trim().slice(0, 14) || t('defName');
-  const base = /^https?:$/.test(location.protocol) && !/claude|anthropic/i.test(location.hostname) ? location.origin + location.pathname : PUBLIC_URL;
+  const base = shareBase();
   const daily = mode === 'daily' && run.rule, // a candy-of-the-day link opens the same day's run
     url = base + '?c=' + score + '&n=' + encodeURIComponent(name) + (daily ? '&d=' + run.day : ''),
     text = daily ? t('share.daily', run.rule.name, score) : t('share.free', score),
@@ -10318,7 +10335,7 @@ $('chalBtn').addEventListener('click', () => {
 });
 function shareWin() {
   // the win screen's «Поделиться»: the clear time and a link to the game
-  const base = /^https?:$/.test(location.protocol) && !/claude|anthropic/i.test(location.hostname) ? location.origin + location.pathname : PUBLIC_URL,
+  const base = shareBase(),
     text = t('share.win', mmss(run.won.secs)),
     box = $('chalLink');
   box.value = base;
@@ -11177,6 +11194,7 @@ function start(data) {
   requestAnimationFrame(frame);
 }
 window.__kus = {
+  PLATFORM,
   LANG,
   t,
   STR,

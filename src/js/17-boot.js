@@ -243,6 +243,7 @@ function start(data) {
   requestAnimationFrame(frame);
 }
 window.__kus = {
+  PLATFORM,
   LANG,
   t,
   STR,

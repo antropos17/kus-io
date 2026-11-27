@@ -58,6 +58,7 @@ $('resume').addEventListener('click', closePause);
 $('pauseX').addEventListener('click', closePause);
 $('admX').addEventListener('click', closeAdmin);
 $('overX').addEventListener('click', toMenu);
+if (PLATFORM !== 'web') $('pAdmin').classList.add('hidden'); // cheats look like a debug build in a store
 $('pAdmin').addEventListener('click', () => {
   pauseEl.classList.add('hidden');
   paused = false;
@@ -112,12 +113,19 @@ document.addEventListener('visibilitychange', () => {
     openPause();
   }
 }); // switching apps must not get you eaten
+// the address a shared link opens: the public site from an app (Android serves the page from https://localhost),
+// this page's own address on the web unless it is opened from disk or inside a preview
+function shareBase() {
+  return PLATFORM === 'web' && /^https?:$/.test(location.protocol) && !/claude|anthropic/i.test(location.hostname)
+    ? location.origin + location.pathname
+    : PUBLIC_URL;
+}
 $('chalBtn').addEventListener('click', () => {
   if (run.won) return shareWin();
   // a link that carries your score: the friend sees it as the target
   const score = Math.round(run.max),
     name = (nick.value || '').trim().slice(0, 14) || t('defName');
-  const base = /^https?:$/.test(location.protocol) && !/claude|anthropic/i.test(location.hostname) ? location.origin + location.pathname : PUBLIC_URL;
+  const base = shareBase();
   const daily = mode === 'daily' && run.rule, // a candy-of-the-day link opens the same day's run
     url = base + '?c=' + score + '&n=' + encodeURIComponent(name) + (daily ? '&d=' + run.day : ''),
     text = daily ? t('share.daily', run.rule.name, score) : t('share.free', score),
@@ -144,7 +152,7 @@ $('chalBtn').addEventListener('click', () => {
 });
 function shareWin() {
   // the win screen's «Поделиться»: the clear time and a link to the game
-  const base = /^https?:$/.test(location.protocol) && !/claude|anthropic/i.test(location.hostname) ? location.origin + location.pathname : PUBLIC_URL,
+  const base = shareBase(),
     text = t('share.win', mmss(run.won.secs)),
     box = $('chalLink');
   box.value = base;

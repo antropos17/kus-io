@@ -25,14 +25,18 @@ function assert(cond, msg) {
 // A fresh page with the game started. Bots are parked far away and cheats are off, so a test controls everything it needs.
 // returning: storage says a run was finished before, so the menu is the full one and not the short first-visit one.
 // locale: the browser language; Russian by default, since headless Chrome is English and the game picks its language from it.
-async function open({ width = 1200, height = 720, touch = false, dpr = 1, play = true, returning = false, locale = 'ru-RU' } = {}) {
+// init: a script run before the page's own (to fake a wrapper, for example); origin: serve index.html from that address
+// instead of file:// (an app wrapper serves it from https://localhost).
+async function open({ width = 1200, height = 720, touch = false, dpr = 1, play = true, returning = false, locale = 'ru-RU', init = '', origin = '' } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: dpr, hasTouch: touch, isMobile: touch, locale });
   const page = await ctx.newPage();
   if (returning) await page.addInitScript(() => localStorage.getItem('kus.best') === null && localStorage.setItem('kus.best', '0'));
+  if (init) await page.addInitScript(init);
+  if (origin) await ctx.route(origin + '/**', (r) => r.fulfill({ path: join(root, 'index.html'), contentType: 'text/html' }));
   page.setDefaultTimeout(120000);
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  await page.goto(URL);
+  await page.goto(origin ? origin + '/' : URL);
   await page.waitForTimeout(600);
   if (play) {
     if (touch) await page.tap('#play');
@@ -3229,6 +3233,43 @@ test('fonts: the page makes no network request and the logo and text use the emb
   });
   assert(errors.length === 0, errors.join(' | '));
   await ctx.close();
+});
+
+test('platform: web, app and steam; the store builds hide the admin, ignore saved cheats and share the public link', async () => {
+  const CHEAT = "localStorage.setItem('kus.cheat', '{\"god\":true}');";
+  const cases = [
+    ['web', ''],
+    ['app', 'window.Capacitor = { isNativePlatform: () => true };'],
+    ['steam', "window.KUS_PLATFORM = 'steam';"],
+    ['web', "window.KUS_PLATFORM = 'xbox';"], // an unknown name is the web
+    ['web', 'window.Capacitor = { isNativePlatform: () => false };'], // Capacitor's web build is the web
+    ['web', 'window.Capacitor = {};'], // a Capacitor object of another shape does not break the start
+  ];
+  for (const [want, fake] of cases) {
+    const g = await open({ init: fake + CHEAT, origin: 'https://localhost', returning: true });
+    const o = await g.page.evaluate(() => {
+      const k = window.__kus,
+        o = { platform: k.PLATFORM, god: k.CHEAT.god };
+      document.getElementById('pauseBtn').click();
+      o.adminShown = !!document.getElementById('pAdmin').offsetParent;
+      document.getElementById('resume').click();
+      k.pause(true);
+      for (const key in k.CHEAT) k.CHEAT[key] = key === 'speed' ? 1 : false;
+      k.player.alive = false;
+      k.die(null);
+      for (let i = 0; i < 300 && document.getElementById('over').classList.contains('hidden'); i++) k.update(1 / 60);
+      document.getElementById('chalBtn').click();
+      o.link = document.getElementById('chalLink').value;
+      return o;
+    });
+    const tag = `${want} (${fake || 'nothing'})`;
+    assert(o.platform === want, `${tag}: PLATFORM ${o.platform}`);
+    assert(o.adminShown === (want === 'web'), `${tag}: #pAdmin shown ${o.adminShown}`);
+    assert(o.god === (want === 'web'), `${tag}: saved cheat god read ${o.god}`);
+    assert(o.link.startsWith(want === 'web' ? 'https://localhost/' : 'https://antropos17.github.io/kus-io/'), `${tag}: link ${o.link}`);
+    assert(g.errors.length === 0, `${tag}: ${g.errors.join(' | ')}`);
+    await g.close();
+  }
 });
 
 for (const [name, fn] of tests) {
