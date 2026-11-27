@@ -1940,11 +1940,13 @@ test('late bots: bigger bots come only when the player is huge and alive', async
   await g.close();
 });
 
-test('late bots: a bot that eats a late bot stays under 3500', async () => {
+test('late bots: a bot is capped at 3500, also after eating a late bot', async () => {
   const g = await open({ play: true });
   const r = await g.page.evaluate(`(() => { ${QUIET}
     const B = k.blobs.find((b) => b.ai && !b.kind && b !== P);
-    B.mass = 5400; k.place(B, 3500, 3500, 0); k.update(1 / 60); k.update(1 / 60); return B.mass; })()`);
+    B.mass = 3400; k.place(B, 3500, 3500, 0); B.mass += 2000; // a late bot's mass lands the way a finished chunk adds it
+    k.update(1 / 60); k.update(1 / 60); return B.mass; })()`);
+  // food eaten later in a frame may add a few grams; the cap holds within a few grams
   assert(r <= 3520, `a bot's mass: ${r}`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
