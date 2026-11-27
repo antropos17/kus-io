@@ -57,11 +57,16 @@ async function draw(size, { fill = '', icon = 0, opt = {}, at = 0 } = {}) {
 }
 
 mkdirSync(out, { recursive: true });
+// a page that threw may have drawn a broken icon: stop before it overwrites a good file in store/
+function write(name, file) {
+  if (errors.length) throw new Error(`page errors, ${name} not written: ${errors.join(' | ')}`);
+  writeFileSync(join(out, name), file);
+}
 function save(name, png, size, alpha) {
   // read the header back: an icon with an alpha channel is refused by App Store Connect
   if (png.readUInt32BE(16) !== size || png.readUInt32BE(20) !== size || png[25] !== (alpha ? 6 : 2))
     throw new Error(`${name}: wrong size or colour type`);
-  writeFileSync(join(out, name), png);
+  write(name, png);
   console.log(`store/${name} ${size}x${size}${alpha ? '' : ', no alpha'}, ${Math.round(png.length / 1024)} KB`);
 }
 
@@ -80,9 +85,8 @@ const sizes = [16, 24, 32, 48, 64, 128, 256];
 const images = [];
 for (const n of sizes) images.push({ size: n, png: truePng(await draw(n, { icon: n }), n, n) });
 const file = ico(images);
-writeFileSync(join(out, 'kus.ico'), file);
+write('kus.ico', file);
 console.log(`store/kus.ico ${sizes.join(', ')}, ${Math.round(file.length / 1024)} KB`);
 
 await browser.close();
-if (errors.length) throw new Error(errors.join(' | '));
 process.exit(0); // the Chrome pipe can keep node waiting after close
