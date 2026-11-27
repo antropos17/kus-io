@@ -3724,6 +3724,19 @@ test('gamepad: every button on every screen is reachable with the d-pad', async 
   walked(co.w, 'continue');
   assert(c.errors.length === 0, c.errors.join(' | '));
   await c.close();
+  // the app's sugar shop over the menu
+  const sh = await open({ init: NATFAKE + PADFAKE, play: false, returning: true });
+  const so = await sh.page.evaluate(`(() => { ${PADWALK}
+    const k = window.__kus;
+    k.setPad(true);
+    k.padPoll(1 / 60);
+    k.openShop();
+    k.padPoll(1 / 60);
+    return { home: first(), w: reach() }; })()`);
+  assert(so.home === 'adBtn', `the shop's first focus is ${so.home}`);
+  walked(so.w, 'shop');
+  assert(sh.errors.length === 0, sh.errors.join(' | '));
+  await sh.close();
 });
 
 test('gamepad: A presses, B goes back, LB/RB step through open items of a row', async () => {
@@ -4364,6 +4377,202 @@ test('continue: an autopilot run that takes «Продолжить» does not br
   assert(r.bad.length === 0, `broke: ${JSON.stringify(r)}`);
   assert(g.errors.length === 0, g.errors.join(' | '));
   await g.close();
+});
+
+// the app with a controllable KUS_NATIVE bridge: window.__nat says what the next ad, price list and purchase answer
+const NATFAKE = `window.Capacitor = { isNativePlatform: () => true };
+window.__nat = { ad: 'reward', adMs: 0, prices: null, buy: { status: 'ok', tx: 't1' }, buyMs: 0, cb: null, calls: [] };
+window.KUS_NATIVE = {
+  ad: () => (__nat.calls.push('ad'), new Promise((r) => setTimeout(() => r(__nat.ad), __nat.adMs))),
+  products: (ids) => (__nat.calls.push('products'), new Promise((r, j) => setTimeout(() => (__nat.prices ? r(__nat.prices) : j(new Error('x'))), 0))),
+  buy: (id) => (__nat.calls.push('buy:' + id), new Promise((r) => setTimeout(() => r(__nat.buy), __nat.buyMs))),
+  onPurchase: (cb) => { __nat.cb = cb; },
+};`;
+const SLEEP = 'const sleep = (ms) => new Promise((r) => setTimeout(r, ms)); const k = window.__kus;';
+
+test('shop: only the app with a bridge has the shop button; web, steam and an app without a bridge do not', async () => {
+  for (const [tag, fake, want] of [
+    ['web', '', false],
+    ['steam', STEAMFAKE, false],
+    ['app without a bridge', APPFAKE, false],
+    ['app', NATFAKE, true],
+  ]) {
+    const g = await open({ init: fake, play: false, returning: true });
+    const o = await g.page.evaluate(() => {
+      const b = document.getElementById('shopBtn');
+      return { shown: !!b && !!b.offsetParent && !b.classList.contains('hidden') };
+    });
+    assert(o.shown === want, `${tag}: shop button shown ${o.shown}`);
+    assert(g.errors.length === 0, `${tag}: ${g.errors.join(' | ')}`);
+    await g.close();
+  }
+});
+
+test('ads: a watched ad pays AD_SUGAR and spends one of three a day', async () => {
+  const g = await open({ init: NATFAKE, play: false, returning: true });
+  const o = await g.page.evaluate(`(async () => { ${SLEEP}
+    const out = {}, bank0 = k.sugar;
+    k.openShop();
+    document.getElementById('adBtn').click();
+    await sleep(60);
+    out.paid = k.sugar - bank0; out.left = k.adsLeft(); out.n = JSON.parse(localStorage.getItem('kus.ads')).n;
+    out.ls = +localStorage.getItem('kus.sugar') - bank0;
+    out.msg = document.getElementById('shopMsg').textContent; out.want = k.t('ad.got', k.AD_SUGAR);
+    for (let i = 0; i < 2; i++) { document.getElementById('adBtn').click(); await sleep(60); }
+    out.left3 = k.adsLeft(); out.off = document.getElementById('adBtn').disabled; out.total = k.sugar - bank0;
+    document.getElementById('adBtn').click(); await sleep(60);
+    out.calls = __nat.calls.filter((c) => c === 'ad').length;
+    return out; })()`);
+  assert(o.paid === 300 && o.ls === 300 && o.left === 2 && o.n === 1, `the first ad: ${JSON.stringify(o)}`);
+  assert(o.msg === o.want, `the message: ${JSON.stringify(o)}`);
+  assert(o.left3 === 0 && o.off && o.total === 900 && o.calls === 3, `three a day: ${JSON.stringify(o)}`);
+  await g.page.reload();
+  await g.page.waitForTimeout(400);
+  const later = await g.page.evaluate(() => {
+    const k = window.__kus,
+      left = k.adsLeft(),
+      d = new Date();
+    d.setDate(d.getDate() - 1);
+    localStorage.setItem('kus.ads', JSON.stringify({ d: d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(), n: 3 }));
+    return left;
+  });
+  assert(later === 0, `after a reload ${later} left`);
+  await g.page.reload();
+  await g.page.waitForTimeout(400);
+  const next = await g.page.evaluate(() => window.__kus.adsLeft());
+  assert(next === 3, `a new day gives ${next}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('ads: an ad closed early or failed pays nothing and spends nothing', async () => {
+  const g = await open({ init: NATFAKE, play: false, returning: true });
+  const o = await g.page.evaluate(`(async () => { ${SLEEP}
+    const out = {}, bank0 = k.sugar;
+    k.openShop();
+    for (const r of ['closed', 'error']) {
+      __nat.ad = r;
+      document.getElementById('adBtn').click();
+      await sleep(60);
+      out[r] = { paid: k.sugar - bank0, left: k.adsLeft(), msg: document.getElementById('shopMsg').textContent, on: !document.getElementById('adBtn').disabled };
+    }
+    out.wantClosed = k.t('ad.closed'); out.wantErr = k.t('ad.err');
+    return out; })()`);
+  assert(o.closed.paid === 0 && o.closed.left === 3 && o.closed.msg === o.wantClosed && o.closed.on, `closed: ${JSON.stringify(o)}`);
+  assert(o.error.paid === 0 && o.error.left === 3 && o.error.msg === o.wantErr && o.error.on, `error: ${JSON.stringify(o)}`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('ads: an ad that answers after the timeout is ignored', async () => {
+  const g = await open({ init: NATFAKE, play: false, returning: true });
+  const o = await g.page.evaluate(`(async () => { ${SLEEP}
+    const out = {}, bank0 = k.sugar;
+    k.SHOP.adWait = 30; __nat.adMs = 200;
+    k.openShop();
+    document.getElementById('adBtn').click();
+    await sleep(80);
+    out.msg = document.getElementById('shopMsg').textContent === k.t('ad.err'); out.on = !document.getElementById('adBtn').disabled;
+    await sleep(250);
+    out.paid = k.sugar - bank0; out.left = k.adsLeft();
+    return out; })()`);
+  assert(o.msg && o.on && o.paid === 0 && o.left === 3, JSON.stringify(o));
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('ads: closing the shop during an ad still pays and tells in the bank row', async () => {
+  const g = await open({ init: NATFAKE, play: false, returning: true });
+  const o = await g.page.evaluate(`(async () => { ${SLEEP}
+    const bank0 = k.sugar;
+    __nat.adMs = 100;
+    k.openShop();
+    document.getElementById('adBtn').click();
+    k.closeShop();
+    await sleep(200);
+    return { paid: k.sugar - bank0, left: k.adsLeft(), shop: k.shopOpen(), bank: document.getElementById('bank').textContent, want: k.t('ad.got', k.AD_SUGAR) }; })()`);
+  assert(o.paid === 300 && o.left === 2 && !o.shop && o.bank === o.want, JSON.stringify(o));
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('ads: the game sound is suspended during the ad and comes back', async () => {
+  const g = await open({ init: NATFAKE, play: false, returning: true });
+  const o = await g.page.evaluate(`(async () => { ${SLEEP}
+    k.Sfx.init(); await sleep(100);
+    const out = { before: k.Sfx.ac && k.Sfx.ac.state };
+    __nat.adMs = 150;
+    k.openShop();
+    document.getElementById('adBtn').click();
+    await sleep(60);
+    out.during = k.Sfx.ac.state;
+    await sleep(250);
+    out.after = k.Sfx.ac.state;
+    return out; })()`);
+  assert(o.before === 'running' && o.during === 'suspended' && o.after === 'running', JSON.stringify(o));
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('shop: the gamepad lands on the ad button and B closes the shop', async () => {
+  const g = await open({ init: NATFAKE + PADFAKE, play: false, returning: true });
+  const o = await g.page.evaluate(() => {
+    const k = window.__kus,
+      out = {};
+    k.setPad(true);
+    k.padPoll(1 / 60);
+    k.openShop();
+    k.padPoll(1 / 60);
+    out.home = document.activeElement.id;
+    __press(1, true);
+    k.padPoll(1 / 60);
+    __press(1, false);
+    k.padPoll(1 / 60);
+    out.open = k.shopOpen();
+    return out;
+  });
+  assert(o.home === 'adBtn' && !o.open, JSON.stringify(o));
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('shop: the window fits at 360x640 and 844x390 in ru and en', async () => {
+  for (const [width, height] of [
+    [360, 640],
+    [844, 390],
+  ])
+    for (const locale of ['ru-RU', 'en-US']) {
+      const g = await open({
+        init: NATFAKE.replace(
+          'prices: null',
+          "prices: [{ id: 'sugar_s', price: 'US$ 1.99' }, { id: 'sugar_m', price: 'US$ 4.99' }, { id: 'sugar_l', price: 'US$ 99.99' }]",
+        ),
+        width,
+        height,
+        locale,
+        play: false,
+        returning: true,
+      });
+      const bad = await g.page.evaluate(async () => {
+        const k = window.__kus;
+        k.openShop();
+        await new Promise((r) => setTimeout(r, 120));
+        const out = [],
+          shop = document.getElementById('shop');
+        for (const el of shop.querySelectorAll('button')) {
+          if (el.classList.contains('hidden') || !el.offsetParent) continue;
+          el.scrollIntoView({ block: 'nearest' });
+          const r = el.getBoundingClientRect(),
+            id = el.id || el.dataset.id || el.textContent.trim().slice(0, 12);
+          if (r.left < 0 || r.top < 0 || r.right > innerWidth || r.bottom > innerHeight || !r.width) out.push(id + ' off screen');
+          else if (!el.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2))) out.push(id + ' covered');
+        }
+        return out;
+      });
+      assert(bad.length === 0, `${width}x${height} ${locale}: ${bad.join(', ')}`);
+      assert(g.errors.length === 0, g.errors.join(' | '));
+      await g.close();
+    }
 });
 
 for (const [name, fn] of tests) {

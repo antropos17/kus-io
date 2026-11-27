@@ -445,6 +445,7 @@ function toMenu() {
   renderHats();
   renderMissions();
   renderBank();
+  lateFlush(); // a purchase or an ad that came during the run
   renderMode();
   menuSwitchT = 0;
   menuFade();

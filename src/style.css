@@ -460,3 +460,14 @@ body.pad #skins .pz,body.pad #hats .pz,body.pad #eyes .pz,body.pad #trail .pz,bo
 #cont .cring{width:74px;height:74px;margin:0 auto 14px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:conic-gradient(var(--berry) calc(var(--p,1)*360deg),#ead2b9 0)}
 #cont .cring b{width:58px;height:58px;border-radius:50%;background:var(--cream);display:flex;align-items:center;justify-content:center;font:900 28px/1 var(--font)}
 @media (max-height:420px){#cont .card{padding:14px 18px 12px}#cont h2{margin-bottom:8px}#cont .cring{width:56px;height:56px;margin-bottom:10px}#cont .cring b{width:44px;height:44px;font-size:22px}}
+
+/* the app's sugar shop */
+#shopBtn{display:flex;align-items:center;width:auto;flex:none;margin:0;min-height:44px;padding:8px 14px;border-radius:999px;font-size:14px}
+#shopBtn.hidden{display:none}
+#shop .wrap{width:min(440px,100%)}
+#shop h2{margin:0}
+#shopBank{margin:4px 0 14px;font:800 15px/1.3 var(--font);color:#7a5a49;font-variant-numeric:tabular-nums}
+#adBtn{font-size:18px;padding:14px}
+#adBtn:disabled{filter:grayscale(.6);opacity:.7;cursor:default}
+#shopMsg{min-height:1.3em;margin:12px 0 0;text-align:center}
+@media (max-height:420px){#shop .card{padding:16px 18px 12px}#shopBank{margin-bottom:8px}#adBtn{font-size:16px;padding:11px}}

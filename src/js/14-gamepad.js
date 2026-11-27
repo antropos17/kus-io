@@ -102,8 +102,8 @@ addEventListener('gamepaddisconnected', () => {
 // The d-pad (or the stick past half way) moves the focus to the nearest button that way, A presses it, B goes back,
 // LB/RB step through the open items of a choice row. Nothing here knows the screens' buttons: any visible button,
 // radio or link of the top window is a stop, so new screens and rows work by themselves.
-const PAD_ROOTS = ['album', 'adm', 'pause', 'cont', 'over', 'menu']; // the top window first
-const PAD_HOME = { menu: 'play', pause: 'resume', cont: 'contYes', over: 'again', album: 'albumX' }; // each screen's main button
+const PAD_ROOTS = ['album', 'adm', 'pause', 'cont', 'over', 'shop', 'menu']; // the top window first
+const PAD_HOME = { menu: 'play', pause: 'resume', cont: 'contYes', over: 'again', album: 'albumX', shop: 'adBtn' }; // each screen's main button
 const padShown = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
 function padRoot() {
   for (const id of PAD_ROOTS) {
@@ -174,6 +174,7 @@ function padBack(root) {
   if (root.id === 'album') closeAlbum();
   else if (root.id === 'pause') closePause();
   else if (root.id === 'cont') contNo();
+  else if (root.id === 'shop') closeShop();
   else if (root.id === 'over' && padShown($('overX'))) $('overX').click();
 }
 function padRow(root, step) {

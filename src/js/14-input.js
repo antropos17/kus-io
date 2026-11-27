@@ -107,6 +107,10 @@ addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeAlbum();
     return;
   }
+  if (shopOpen()) {
+    if (e.key === 'Escape') closeShop();
+    return;
+  }
   if (cont.on) {
     if (e.key === 'Escape') contNo();
     if (e.key === 'Escape' || e.code === 'Space') return;
