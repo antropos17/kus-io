@@ -12,6 +12,15 @@ let slowT = 0,
   slowDip = 0.32,
   frameNo = 0;
 const PUBLIC_URL = 'https://antropos17.github.io/kus-io/';
+// where the page runs: 'app' inside the Capacitor phone app, 'steam' inside the desktop wrapper (its preload calls
+// contextBridge.exposeInMainWorld('KUS_PLATFORM', 'steam'): a plain window.KUS_PLATFORM = … in a preload stays in its
+// isolated world and the page would see 'web'), 'web' everywhere else. The web page never changes because of it.
+const PLATFORM = (() => {
+  try {
+    if (window.Capacitor && window.Capacitor.isNativePlatform() === true) return 'app';
+  } catch (e) {}
+  return window.KUS_PLATFORM === 'steam' ? 'steam' : 'web';
+})();
 let mode = 'free',
   timeLeft = 0,
   runActive = false,
@@ -92,7 +101,8 @@ let chosen = randi(PALS.length),
   menuSwitchT = 0;
 const CHEAT = { god: false, cd: false, mega: false, peace: false, magnet: false, slow: false, heal: false, speed: 1 };
 try {
-  const cs = JSON.parse(localStorage.getItem('kus.cheat') || '{}');
+  // store builds have no admin panel, so cheats saved by an earlier build could never be turned off there
+  const cs = PLATFORM === 'web' ? JSON.parse(localStorage.getItem('kus.cheat') || '{}') : {};
   for (const k in CHEAT) if (k in cs) CHEAT[k] = cs[k];
 } catch (e) {}
 const saveCheats = () => {

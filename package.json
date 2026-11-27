@@ -10,6 +10,8 @@
     "check": "node tools/build.mjs --check",
     "og": "node tools/build.mjs && node tools/og.mjs",
     "shots": "node tools/build.mjs && node tools/shots.mjs",
+    "icons": "node tools/build.mjs && node tools/icons.mjs",
+    "fonts": "node tools/fonts.mjs && node tools/build.mjs",
     "sfx": "node tools/sfx.mjs && node tools/build.mjs",
     "test": "node tools/build.mjs && node tests/run.mjs",
     "format": "prettier --write src/js tools tests"

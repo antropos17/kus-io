@@ -80,7 +80,7 @@ Between runs:
 
 ## Under the hood
 
-- The whole game is one HTML file with no external scripts (only web fonts are loaded). It is built from the sources in `src/` and can be opened straight from disk.
+- The whole game is one HTML file with no external scripts and no network requests (the fonts are embedded). It is built from the sources in `src/` and can be opened straight from disk.
 - Canvas 2D and plain JavaScript: no libraries, no framework, no server. All rivals are bots that run in the page.
 - Soft bodies: every candy is a ring of points that springs back to its shape, dents on contact and wobbles like jelly.
 - Sound: most effects are short recorded takes made with [earshot](https://github.com/Leonxlnx/earshot) and embedded in the page as data, so there are still no separate audio files. The stretchy strand, and any take that fails to decode, is synthesized with the Web Audio API.

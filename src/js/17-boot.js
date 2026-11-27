@@ -243,6 +243,8 @@ function start(data) {
   requestAnimationFrame(frame);
 }
 window.__kus = {
+  PLATFORM,
+  drawIcon,
   LANG,
   t,
   STR,
@@ -514,29 +516,36 @@ if (/tgWebApp/.test(location.hash) || window.TelegramWebviewProxy) {
   };
   document.head.appendChild(sc);
 }
-try {
-  // an icon for the browser tab and for "Add to Home Screen"
-  const ic = document.createElement('canvas');
-  ic.width = ic.height = 180;
-  const g = ic.getContext('2d');
-  g.fillStyle = '#2b1a14';
-  g.fillRect(0, 0, 180, 180);
+// The game's icon, a bitten candy on a dark square, drawn in a 180-unit box scaled to the side s. k scales the candy
+// about the centre (Android's foreground layer must fit its safe circle); bg false leaves the square see-through.
+// The tab icon and tools/icons.mjs (the app store icons) both draw with it.
+function drawIcon(g, s, { bg = true, k = 1 } = {}) {
+  const o = 90 - 90 / k, // the whole square in the scaled box
+    w = 180 / k;
+  g.save();
+  g.scale(s / 180, s / 180);
+  g.translate(90, 90);
+  g.scale(k, k);
+  g.translate(-90, -90);
+  if (bg) {
+    g.fillStyle = '#2b1a14';
+    g.fillRect(o, o, w, w);
+  }
   const gr = g.createRadialGradient(70, 62, 8, 90, 92, 80);
   gr.addColorStop(0, '#ff9ab5');
   gr.addColorStop(0.55, '#ff4f7b');
   gr.addColorStop(1, '#c8264f');
+  // the bite is left out by a clip (the square minus its circle), so it never erases what is under the icon
+  g.save();
+  g.beginPath();
+  g.rect(o, o, w, w);
+  g.arc(150, 40, 30, 0, TAU);
+  g.clip('evenodd');
   g.fillStyle = gr;
   g.beginPath();
   g.arc(90, 92, 64, 0, TAU);
   g.fill();
-  g.globalCompositeOperation = 'destination-out';
-  g.beginPath();
-  g.arc(150, 40, 30, 0, TAU);
-  g.fill();
-  g.globalCompositeOperation = 'destination-over';
-  g.fillStyle = '#2b1a14';
-  g.fillRect(0, 0, 180, 180);
-  g.globalCompositeOperation = 'source-over';
+  g.restore();
   g.fillStyle = '#fff';
   for (const x of [66, 112]) {
     g.beginPath();
@@ -557,6 +566,13 @@ try {
   g.fill();
   g.fillStyle = '#fffaf2';
   for (const x of [70, 82, 94, 106]) g.fillRect(x - 4, 107, 8, 10);
+  g.restore();
+}
+try {
+  // an icon for the browser tab and for "Add to Home Screen"
+  const ic = document.createElement('canvas');
+  ic.width = ic.height = 180;
+  drawIcon(ic.getContext('2d'), 180);
   const url = ic.toDataURL('image/png');
   for (const rel of ['icon', 'apple-touch-icon']) {
     const l = document.createElement('link');

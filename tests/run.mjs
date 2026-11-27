@@ -6,6 +6,9 @@ import { chromium } from 'playwright-core';
 import { pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { truePng, ico, rgbaOf } from '../tools/png.mjs';
+import { checkFace } from '../tools/fonts.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const URL = pathToFileURL(join(root, 'index.html')).href;
@@ -25,14 +28,18 @@ function assert(cond, msg) {
 // A fresh page with the game started. Bots are parked far away and cheats are off, so a test controls everything it needs.
 // returning: storage says a run was finished before, so the menu is the full one and not the short first-visit one.
 // locale: the browser language; Russian by default, since headless Chrome is English and the game picks its language from it.
-async function open({ width = 1200, height = 720, touch = false, dpr = 1, play = true, returning = false, locale = 'ru-RU' } = {}) {
+// init: a script run before the page's own (to fake a wrapper, for example); origin: serve index.html from that address
+// instead of file:// (an app wrapper serves it from https://localhost).
+async function open({ width = 1200, height = 720, touch = false, dpr = 1, play = true, returning = false, locale = 'ru-RU', init = '', origin = '' } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: dpr, hasTouch: touch, isMobile: touch, locale });
   const page = await ctx.newPage();
   if (returning) await page.addInitScript(() => localStorage.getItem('kus.best') === null && localStorage.setItem('kus.best', '0'));
+  if (init) await page.addInitScript(init);
+  if (origin) await ctx.route(origin + '/**', (r) => r.fulfill({ path: join(root, 'index.html'), contentType: 'text/html' }));
   page.setDefaultTimeout(120000);
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
-  await page.goto(URL);
+  await page.goto(origin ? origin + '/' : URL);
   await page.waitForTimeout(600);
   if (play) {
     if (touch) await page.tap('#play');
@@ -702,9 +709,10 @@ test('missions: the sugar of a mission finished in a run the app never ended is 
   const a2 = await g.page.evaluate(() => ({ bank: window.__kus.sugar, kills: window.__kus.M.act.some((m) => m.type === 'kills') }));
   await reload();
   const a3 = await g.page.evaluate(() => window.__kus.sugar);
+  const kept = await g.page.evaluate(() => localStorage.getItem('kus.sugar')); // shows why, if the next check fails
   assert(a.done && a.paid > 0 && a.bank === 50, `mission done ${a.done}, paid ${a.paid}, bank mid-run ${a.bank}`);
   assert(a2.bank === 50 + a.paid && !a2.kills, `after the restart the bank is ${a2.bank}, want ${50 + a.paid}`);
-  assert(a3 === a2.bank, `a second restart paid again: ${a2.bank} -> ${a3}`);
+  assert(a3 === a2.bank, `a second restart changed the bank: ${a2.bank} -> ${a3} (kus.sugar ${kept}; page errors: ${g.errors.join(' | ') || 'none'})`);
   // a run that ends as usual pays the mission inside its own sugar, and a restart adds nothing
   const b = await finish(true);
   await reload();
@@ -3194,6 +3202,181 @@ test('lang: the English stage pill says the number before an event is mass, not 
     return { label: el.querySelector('.t').textContent.trim(), num: el.querySelector('b').textContent.trim() }; })()`);
   assert(/mass/i.test(r.label) && !/\bin$/.test(r.label) && /^\d+$/.test(r.num), `stage pill: "${r.label}" + "${r.num}"`);
   await g.close();
+});
+
+test('fonts: the page makes no network request and the logo and text use the embedded fonts, offline', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 360, height: 640 }, locale: 'ru-RU' });
+  const asked = [];
+  await ctx.route(/^https?:/, (r) => {
+    asked.push(r.request().url());
+    r.abort();
+  });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto(URL);
+  await page.waitForTimeout(600);
+  const r = await page.evaluate(async () => {
+    const nun = await document.fonts.load('900 20px Nunito', 'Кусь io');
+    const rub = await document.fonts.load('20px "Rubik Bubbles"', 'КУСЬ.io');
+    // letters of Azerbaijani and Turkish names (latin-ext) must be in an embedded Nunito face, not a system font
+    const ranges = [...document.fonts].filter((f) => f.family.replace(/["']/g, '') === 'Nunito').flatMap((f) => f.unicodeRange.split(','));
+    const covered = (ch) =>
+      ranges.some((u) => {
+        const [lo, hi] = u.trim().replace(/^U\+/i, '').split('-');
+        const a = parseInt(lo.replace(/\?/g, '0'), 16),
+          b = parseInt((hi || lo).replace(/\?/g, 'F'), 16);
+        return ch.codePointAt(0) >= a && ch.codePointAt(0) <= b;
+      });
+    return {
+      nun: nun.length,
+      rub: rub.length,
+      logo: getComputedStyle(document.querySelector('.logo')).fontFamily,
+      missing: [...'ŞşƏəĞğİıÇçÖöÜü'].filter((ch) => !covered(ch)).join(''),
+    };
+  });
+  assert(asked.length === 0, `requests: ${asked.join(' ')}`);
+  assert(r.nun > 0 && r.rub > 0, `embedded faces loaded: ${JSON.stringify(r)}`);
+  assert(/^"?Rubik Bubbles"?,/.test(r.logo), `the logo's font: ${r.logo}`);
+  assert(r.missing === '', `letters with no embedded Nunito face: ${r.missing}`);
+  // such a name draws without errors
+  await page.fill('#nick', 'Şəkər');
+  await page.click('#play');
+  await page.waitForTimeout(250);
+  await page.evaluate(() => {
+    const k = window.__kus;
+    k.pause(true);
+    for (let i = 0; i < 5; i++) {
+      k.update(1 / 60);
+      k.render();
+    }
+  });
+  assert(errors.length === 0, errors.join(' | '));
+  await ctx.close();
+});
+
+test('platform: web, app and steam; the store builds hide the admin, ignore saved cheats and share the public link', async () => {
+  const CHEAT = "localStorage.setItem('kus.cheat', '{\"god\":true}');";
+  const cases = [
+    ['web', ''],
+    ['app', 'window.Capacitor = { isNativePlatform: () => true };'],
+    ['steam', "window.KUS_PLATFORM = 'steam';"],
+    ['web', "window.KUS_PLATFORM = 'xbox';"], // an unknown name is the web
+    ['web', 'window.Capacitor = { isNativePlatform: () => false };'], // Capacitor's web build is the web
+    ['web', 'window.Capacitor = {};'], // a Capacitor object of another shape does not break the start
+  ];
+  for (const [want, fake] of cases) {
+    const g = await open({ init: fake + CHEAT, origin: 'https://localhost', returning: true });
+    const o = await g.page.evaluate(() => {
+      const k = window.__kus,
+        o = { platform: k.PLATFORM, god: k.CHEAT.god };
+      document.getElementById('pauseBtn').click();
+      o.adminShown = !!document.getElementById('pAdmin').offsetParent;
+      document.getElementById('resume').click();
+      k.pause(true);
+      for (const key in k.CHEAT) k.CHEAT[key] = key === 'speed' ? 1 : false;
+      k.player.alive = false;
+      k.die(null);
+      for (let i = 0; i < 300 && document.getElementById('over').classList.contains('hidden'); i++) k.update(1 / 60);
+      document.getElementById('chalBtn').click();
+      o.link = document.getElementById('chalLink').value;
+      return o;
+    });
+    const tag = `${want} (${fake || 'nothing'})`;
+    assert(o.platform === want, `${tag}: PLATFORM ${o.platform}`);
+    assert(o.adminShown === (want === 'web'), `${tag}: #pAdmin shown ${o.adminShown}`);
+    assert(o.god === (want === 'web'), `${tag}: saved cheat god read ${o.god}`);
+    assert(o.link.startsWith(want === 'web' ? 'https://localhost/' : 'https://antropos17.github.io/kus-io/'), `${tag}: link ${o.link}`);
+    assert(g.errors.length === 0, `${tag}: ${g.errors.join(' | ')}`);
+    await g.close();
+  }
+});
+
+test('icons: the tab icon is drawn by drawIcon, the store icon is opaque, the Android foreground stays inside the safe circle', async () => {
+  const K = +(readFileSync(join(root, 'tools', 'icons.mjs'), 'utf8').match(/const FG_K = ([\d.]+)/) || [])[1];
+  assert(K > 0 && K <= 1, `FG_K in tools/icons.mjs: ${K}`);
+  const g = await open({ play: false });
+  const o = await g.page.evaluate((K) => {
+    const k = window.__kus,
+      canvas = (s) => {
+        const c = document.createElement('canvas');
+        c.width = c.height = s;
+        return c;
+      };
+    const tab = canvas(180);
+    k.drawIcon(tab.getContext('2d'), 180);
+    const o = { tab: tab.toDataURL('image/png') === document.querySelector('link[rel=apple-touch-icon]').href };
+    const full = canvas(1024),
+      fg = canvas(1024);
+    k.drawIcon(full.getContext('2d'), 1024);
+    k.drawIcon(fg.getContext('2d'), 1024, { bg: false, k: K });
+    const a = full.getContext('2d').getImageData(0, 0, 1024, 1024).data,
+      f = fg.getContext('2d').getImageData(0, 0, 1024, 1024).data,
+      R = (66 / 108 / 2) * 1024;
+    o.seeThrough = 0;
+    o.outside = 0;
+    o.inside = 0;
+    for (let i = 0; i < 1024 * 1024; i++) {
+      if (a[i * 4 + 3] !== 255) o.seeThrough++;
+      if (f[i * 4 + 3] > 0) {
+        const x = (i % 1024) + 0.5 - 512,
+          y = Math.floor(i / 1024) + 0.5 - 512;
+        if (x * x + y * y > R * R) o.outside++;
+        else o.inside++;
+      }
+    }
+    o.share = o.inside / (Math.PI * R * R);
+    // with no square of its own the icon must not erase what is under it (the splash draws it on the dark ground)
+    const sp = canvas(1024),
+      sg = sp.getContext('2d');
+    sg.fillStyle = '#140b08';
+    sg.fillRect(0, 0, 1024, 1024);
+    k.drawIcon(sg, 1024, { bg: false });
+    o.bite = [...sg.getImageData(Math.round((150 / 180) * 1024), Math.round((40 / 180) * 1024), 1, 1).data].join();
+    return o;
+  }, K);
+  assert(o.tab, 'the tab icon is not what drawIcon(g, 180) draws');
+  assert(o.seeThrough === 0, `${o.seeThrough} see-through pixels in the opaque icon`);
+  assert(o.outside === 0, `${o.outside} foreground pixels outside the Android safe circle`);
+  assert(o.bite === '20,11,8,255', `the bite erased the ground under the icon: ${o.bite}`);
+  assert(o.share > 0.3, `the foreground candy covers only ${(o.share * 100).toFixed(0)}% of the safe circle`);
+  assert(g.errors.length === 0, g.errors.join(' | '));
+  await g.close();
+});
+
+test('icons: truePng and ico write what they claim', async () => {
+  const px = Buffer.from([255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 10, 20, 30, 255]);
+  const rgb = truePng(px, 2, 2, false),
+    rgba = truePng(px, 2, 2);
+  assert(rgb[25] === 2 && rgba[25] === 6, `IHDR colour types ${rgb[25]} and ${rgba[25]}`);
+  const page = await browser.newPage();
+  const back = await rgbaOf(page, rgb);
+  await page.close();
+  assert(back.equals(px), `decoded ${[...back]}`);
+  const icon = ico([
+    { size: 2, png: rgba },
+    { size: 256, png: rgba },
+  ]);
+  assert(icon.subarray(0, 6).equals(Buffer.from([0, 0, 1, 0, 2, 0])), `ico header ${[...icon.subarray(0, 6)]}`);
+  assert(icon[6] === 2 && icon[6 + 16] === 0, `ico sizes ${icon[6]} and ${icon[22]} (0 means 256)`);
+  assert(icon.readUInt32LE(6 + 12) === 6 + 16 * 2 && icon.subarray(38, 46).equals(rgba.subarray(0, 8)), 'the first image does not start right after the directory');
+});
+
+test('fonts: the font tool refuses a lost weight and a download that is not woff2', async () => {
+  const woff2 = Buffer.from('wOF2 and the rest'),
+    html = Buffer.from('<html>captive portal</html>');
+  const throws = (f) => {
+    try {
+      f();
+    } catch (e) {
+      return true;
+    }
+    return false;
+  };
+  assert(!throws(() => checkFace('Nunito', "@font-face{font-family:'Nunito';font-weight: 700 900;src:url(x)}", woff2)), 'a good Nunito face was refused');
+  assert(!throws(() => checkFace('Rubik Bubbles', "@font-face{font-family:'Rubik Bubbles';font-weight: 400;src:url(x)}", woff2)), 'a good Rubik Bubbles face was refused');
+  assert(throws(() => checkFace('Nunito', "@font-face{font-family:'Nunito';font-weight: 700;src:url(x)}", woff2)), 'a Nunito face of weight 700 only (800 and 900 lost) was taken');
+  assert(throws(() => checkFace('Nunito', "@font-face{font-family:'Nunito';font-weight: 700 900;src:url(x)}", html)), 'an HTML page was taken as a font');
 });
 
 for (const [name, fn] of tests) {
